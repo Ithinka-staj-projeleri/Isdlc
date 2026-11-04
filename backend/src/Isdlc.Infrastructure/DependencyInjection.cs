@@ -23,9 +23,13 @@ public static class DependencyInjection
         services.AddSingleton<ICurrentUserService>(sp => sp.GetRequiredService<TemporaryCurrentUserService>());
 
         services.AddScoped<AuditableEntityInterceptor>();
+        services.AddScoped<AuditLogInterceptor>();
         services.AddDbContext<IsdlcDbContext>((sp, options) => options
             .UseSqlServer(connectionString)
-            .AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>()));
+            // Order matters: audit fields are filled first, then the log reads them.
+            .AddInterceptors(
+                sp.GetRequiredService<AuditableEntityInterceptor>(),
+                sp.GetRequiredService<AuditLogInterceptor>()));
 
         services.AddScoped<DatabaseSeeder>();
 

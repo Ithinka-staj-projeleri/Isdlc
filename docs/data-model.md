@@ -134,6 +134,28 @@ yalnızca fiyat veya takvim değişiyorsa 4.9'a dönülür. "Hayır" cevabı ver
 Aynı proje ve adım için birden fazla kayıt olabilir; bu, akıştaki geri dönüşleri (ör. 4.7 → 4.1) destekler.
 Kayıtlar değiştirilmez ve silinmez; süreç geçmişi bu tablodan okunur.
 
+### `AuditLog` — proje verisindeki her değişiklik
+
+`IAudited` arayüzünü taşıyan entity'ler kaydedilirken otomatik yazılır; kodda elle eklenmez. Değiştirilmez ve silinmez.
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | long | |
+| `EntityName` | string | "Project", "Risk" |
+| `EntityId` | int | Değişen kaydın `Id`'si |
+| `ProjectId` | int? (FK → Project) | `Project` için kendi `Id`'si; `IProjectRecord` kayıtlarında bağlı olduğu proje |
+| `Action` | `AuditAction` | |
+| `Changes` | string (JSON) | Değişen alanlar: `{"Status": {"old": "Active", "new": "Lost"}}` |
+| `UserId` | int (FK → User) | Kaydın `CreatedById` / `UpdatedById` alanından |
+| `CreatedAt` | DateTime (UTC) | Kaydın `CreatedAt` / `UpdatedAt` alanından |
+
+- Loglanan: `Project` ve ileride eklenecek proje kayıtları (Risk, Requirement, OpenIssue…).
+- Loglanmayan: ana veri (`ProcessStage`, `ProcessStep`, `ProcessStepJump`), `StepRecord` (kendisi zaten geçmiş tablosu), `User`.
+- `Changes` içinde yer almayan alanlar: `Id`, `PasswordHash`, `RowVersion` ve `AuditableEntity` alanları (bilgileri log satırında var).
+- Değeri gerçekten değişmeyen alan yazılmaz; hiçbir alan değişmediyse log satırı oluşmaz.
+- Alan adları C# adlarıdır (`Status`); Türkçe karşılıklarını Audit ekranı gösterir.
+- Kayıt ve logu aynı transaction'da yazılır: log yazılamazsa değişiklik de geri alınır.
+
 ## Enum'lar
 
 | Enum | Değerler |
@@ -145,6 +167,7 @@ Kayıtlar değiştirilmez ve silinmez; süreç geçmişi bu tablodan okunur.
 | `ProjectPriority` | `Low`, `Medium`, `High` |
 | `ProjectStatus` | `Active` (Aktif), `Closed` (Kapandı), `Rejected` (Reddedildi), `Lost` (Kaybedildi), `Redirected` (Yönlendirildi) |
 | `StepAction` | `Completed` (Tamamlandı), `Yes` (Evet), `No` (Hayır), `Rejected` (Yönetici kararıyla reddedildi) |
+| `AuditAction` | `Created` (Oluşturuldu), `Updated` (Güncellendi), `Deleted` (Silindi) |
 
 ## Süreç ilerleme kuralları
 
@@ -172,6 +195,7 @@ Kayıtlar değiştirilmez ve silinmez; süreç geçmişi bu tablodan okunur.
 5. Bir karar adımının birden fazla dönüş seçeneği olabilir; seçenekler `ProcessStepJump` tablosunda tutulur.
 6. 2.3 bir adım değildir; yöneticinin her adımda kullanabileceği "Talebi reddet" işlemiyle karşılanır.
 7. `ApproverRole` dolu olan adımı yalnızca o rol kapatabilir (5.1: Satış hazırlar, yönetici onaylar).
+8. Denetim kaydı alan bazında eski/yeni değer tutar ve proje bazında listelenebilir (`AuditLog.ProjectId`); `StepRecord` loglanmaz.
 
 ## Seed verisi
 

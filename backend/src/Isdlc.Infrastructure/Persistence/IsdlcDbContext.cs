@@ -1,3 +1,4 @@
+using Isdlc.Domain.Audit;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
@@ -14,6 +15,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
     public DbSet<ProcessStep> ProcessSteps => Set<ProcessStep>();
     public DbSet<ProcessStepJump> ProcessStepJumps => Set<ProcessStepJump>();
     public DbSet<StepRecord> StepRecords => Set<StepRecord>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
