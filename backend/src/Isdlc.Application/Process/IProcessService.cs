@@ -10,4 +10,10 @@ public interface IProcessService
 {
     /// <summary>All 13 stages with their steps, both in flow order.</summary>
     Task<IReadOnlyList<ProcessStageDto>> GetStagesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The project's place in the flow and what the signed-in user can do on the current step.
+    /// Throws NotFoundException when the project does not exist.
+    /// </summary>
+    Task<ProjectProcessDto> GetProjectProcessAsync(int projectId, CancellationToken cancellationToken);
 }
