@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Isdlc.Api.Common;
 using Isdlc.Infrastructure;
+using Isdlc.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +27,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+await app.Services.InitializeDatabaseAsync(app.Environment.IsDevelopment());
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
