@@ -129,10 +129,18 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Türkçe | Kodda |
 | --- | --- |
 | Talep / Proje | `Project` |
-| Talep Sahibi | `Requester` |
+| Talep Sahibi | `Requester` (`Project.RequesterName`; sistem kullanıcısı değildir) |
+| Talep kaynağı / kanalı / türü | `RequestSource`, `RequestChannel`, `RequestType` |
+| Proje durumu | `ProjectStatus` (`Active`, `Closed`, `Rejected`, `Lost`, `Redirected`) |
+| Öncelik | `ProjectPriority` |
+| Kullanıcı | `User` |
+| Rol | `UserRole` (kullanıcı başına tek rol) |
 | Aşama | `ProcessStage` |
 | Adım | `ProcessStep` |
+| "Hayır" cevabında dönülecek adım | `ProcessStepJump` |
 | Adımda yapılan işlem | `StepRecord` |
+| İşlem türü (Tamamlandı, Evet, Hayır, Reddedildi) | `StepAction` |
+| Oluşturan / güncelleyen bilgisi | `AuditableEntity` (`CreatedAt`, `CreatedById`, `UpdatedAt`, `UpdatedById`) |
 | Seviye | `Level` |
 | Doküman durumu | `DocumentStatus` |
 | Gereksinim | `Requirement` |
@@ -154,6 +162,8 @@ Backend iskeletinde uygulanmıştır; yeni kod bu yapıları kullanır.
 | Hatalar | Her hata `ProblemDetails` biçiminde döner (`title`, `status`, `detail`, `traceId`) | `Isdlc.Api/Common/GlobalExceptionHandler.cs` |
 | Kayıt yok | Servis `NotFoundException` fırlatır → 404 | `Isdlc.Application/Common/Exceptions/` |
 | İş kuralı ihlali | Servis `BusinessRuleException` fırlatır → 400. Mesaj kullanıcıya gösterilir, Türkçe yazılır | `Isdlc.Application/Common/Exceptions/` |
+| Yetki yok | Servis `ForbiddenException` fırlatır → 403 | `Isdlc.Application/Common/Exceptions/` |
+| Çakışma | Servis `ConflictException` fırlatır → 409. `RowVersion` uyuşmazlığı (`DbUpdateConcurrencyException`) da otomatik 409 olur | `Isdlc.Application/Common/Exceptions/` |
 | Beklenmeyen hata | 500 ve genel bir mesaj döner; ayrıntı yalnızca loga yazılır | `GlobalExceptionHandler` |
 | Enum | JSON'da metin olarak gönderilir: `"Active"` | `Program.cs` |
 | Tarih | `DateTime` UTC tutulur, ISO 8601 ve `Z` ekiyle gönderilir: `2026-11-04T12:00:00Z`. Veritabanından okunan tarihler otomatik UTC işaretlenir | `Persistence/Converters/UtcDateTimeConverter.cs` |
@@ -163,3 +173,21 @@ Backend iskeletinde uygulanmıştır; yeni kod bu yapıları kullanır.
 
 Controller'lar `try/catch` yazmaz; hatayı servis fırlatır, `GlobalExceptionHandler` çevirir.
 Biçim doğrulama hataları (`[Required]` vb.) ASP.NET Core tarafından otomatik 400 `ProblemDetails` olarak döner.
+
+## 8. Veritabanı kuralları
+
+Veri modeli: [docs/data-model.md](docs/data-model.md).
+
+- **Entity yeri:** `Isdlc.Domain/<Modul>/`. EF ayarları `Isdlc.Infrastructure/<Modul>/<Entity>Configuration.cs`
+  (`IEntityTypeConfiguration<T>`); DbContext bu sınıfları kendiliğinden bulur. Yeni entity için `IsdlcDbContext`'e bir `DbSet` eklenir.
+- **Metin kolonları** her zaman `HasMaxLength` ile sınırlanır.
+- **Enum'lar** veritabanında metin olarak tutulur (`"Active"`); ayrıca ayar gerekmez.
+- **Kayıt silinmez.** Bütün ilişkiler `Restrict`'tir; kullanıcı pasife alınır, süreç geçmişi korunur.
+- **Denetim alanları:** İşlem verisi tutan entity'ler `AuditableEntity`'den türer ve yapılandırmada `builder.ConfigureAuditFields()`
+  çağrılır. Alanları `AuditableEntityInterceptor` kaydederken doldurur; kodda elle atanmaz.
+- **Giriş yapan kullanıcı:** `ICurrentUserService.UserId`. `Identity` bitene kadar `TemporaryCurrentUserService`
+  her isteği `elif.yilmaz@isdlc.local` olarak çalıştırır.
+- **Eşzamanlılık:** `Project.RowVersion` aynı kaydın aynı anda güncellenmesini yakalar ve 409 döner.
+- **Seed:** `Isdlc.Infrastructure/Seed/*.json` dosyaları, tablo boşsa uygulama açılırken yüklenir. Örnek projeler yalnızca geliştirme ortamında yüklenir.
+- **Migration:** Geliştirme ortamında API açılırken otomatik uygulanır. Üretmek için (repo kökünde):
+  `dotnet ef migrations add <Ad> --project backend/src/Isdlc.Infrastructure --startup-project backend/src/Isdlc.Api --output-dir Persistence/Migrations`
