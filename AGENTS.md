@@ -121,6 +121,13 @@ Frontend'de `features/` altındaki klasörler aynı modüllerin kebab-case halid
 - Dal: `feature/<issue-no>-kisa-ad`, `fix/<issue-no>-kisa-ad`
 - Commit: Conventional Commits, kapsam modül adı: `feat(risks): add risk score calculation`
 - `main` dalına doğrudan push yapılmaz; değişiklikler PR ile gelir.
+- PR, CI (`.github/workflows/ci.yml`) yeşil olmadan birleştirilmez. CI şunları kontrol eder:
+  - **Backend:** derleme (uyarılar hata sayılır), testler, entity değişikliği için migration üretilmiş mi
+  - **Frontend:** derleme, testler
+- PR açmadan önce aynı kontroller lokalde çalıştırılabilir:
+  - `dotnet build backend/Isdlc.sln -warnaserror` ve `dotnet test backend/Isdlc.sln`
+  - `dotnet ef migrations has-pending-model-changes --project backend/src/Isdlc.Infrastructure --startup-project backend/src/Isdlc.Api`
+  - `frontend` klasöründe: `npm run build` ve `npx ng test --watch=false`
 
 ## 6. Alan sözlüğü
 
