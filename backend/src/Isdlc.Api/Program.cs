@@ -1,13 +1,34 @@
+using System.Text.Json.Serialization;
+using Isdlc.Api.Common;
 using Isdlc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddControllers();
+// Errors: every error response uses the ProblemDetails format.
+builder.Services.AddProblemDetails(options =>
+    options.CustomizeProblemDetails = context =>
+        context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier);
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// Routes: /api/v1/{controller in kebab-case}. JSON: enums as text.
+builder.Services
+    .AddControllers(options =>
+        options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseParameterTransformer())))
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+// The OpenAPI document reads these options, so Swagger also shows enums as text.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
 {
