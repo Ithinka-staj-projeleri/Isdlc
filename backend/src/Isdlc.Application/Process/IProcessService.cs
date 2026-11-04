@@ -1,3 +1,4 @@
+using Isdlc.Application.Common.Models;
 using Isdlc.Application.Process.Dtos;
 
 namespace Isdlc.Application.Process;
@@ -16,4 +17,11 @@ public interface IProcessService
     /// Throws NotFoundException when the project does not exist.
     /// </summary>
     Task<ProjectProcessDto> GetProjectProcessAsync(int projectId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The project's process history, newest first.
+    /// Throws NotFoundException when the project does not exist.
+    /// </summary>
+    Task<PagedResult<StepRecordDto>> GetStepRecordsAsync(
+        int projectId, PageRequest pageRequest, CancellationToken cancellationToken);
 }

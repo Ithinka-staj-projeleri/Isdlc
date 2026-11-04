@@ -1,5 +1,6 @@
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Application.Common.Models;
 using Isdlc.Application.Process.Dtos;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Projects;
@@ -103,5 +104,39 @@ public class ProcessService(IApplicationDbContext dbContext, ICurrentUserService
                 .ToList(),
             ProcessProgress.GetAvailableActions(
                 project.Status, isActive ? referenceStep?.Permission : null, userRole));
+    }
+
+    public async Task<PagedResult<StepRecordDto>> GetStepRecordsAsync(
+        int projectId, PageRequest pageRequest, CancellationToken cancellationToken)
+    {
+        // An empty list would hide a wrong id, so a missing project is a 404.
+        if (!await dbContext.Projects.AnyAsync(p => p.Id == projectId, cancellationToken))
+        {
+            throw new NotFoundException("Proje bulunamadı.");
+        }
+
+        var records = dbContext.StepRecords
+            .AsNoTracking()
+            .Where(r => r.ProjectId == projectId);
+
+        var totalCount = await records.CountAsync(cancellationToken);
+
+        var items = await records
+            .OrderByDescending(r => r.PerformedAt)
+            .ThenByDescending(r => r.Id)
+            .Skip(pageRequest.Skip)
+            .Take(pageRequest.PageSize)
+            .Select(r => new StepRecordDto(
+                r.Id,
+                r.ProcessStepId,
+                r.ProcessStep.Code,
+                r.Action,
+                r.JumpedToStep != null ? r.JumpedToStep.Code : null,
+                r.Note,
+                new UserSummaryDto(r.PerformedBy.Id, r.PerformedBy.FullName),
+                r.PerformedAt))
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<StepRecordDto>(items, totalCount);
     }
 }
