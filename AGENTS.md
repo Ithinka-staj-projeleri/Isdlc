@@ -185,6 +185,9 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
 - **Kayıt silinmez.** Bütün ilişkiler `Restrict`'tir; kullanıcı pasife alınır, süreç geçmişi korunur.
 - **Denetim alanları:** İşlem verisi tutan entity'ler `AuditableEntity`'den türer ve yapılandırmada `builder.ConfigureAuditFields()`
   çağrılır. Alanları `AuditableEntityInterceptor` kaydederken doldurur; kodda elle atanmaz.
+- **Denetim kaydı (`AuditLog`):** Proje verisi tutan entity'ler `IAudited` arayüzünü taşır; projeye ait kayıtlar
+  (Risk, Requirement vb.) ayrıca `IProjectRecord` taşır. Bu entity'lerdeki her değişiklik, alan bazında eski/yeni
+  değerleriyle `AuditLogs` tablosuna otomatik yazılır (`AuditLogInterceptor`). Seed tabloları, `StepRecord` ve `User` loglanmaz.
 - **Giriş yapan kullanıcı:** `ICurrentUserService.UserId`. `Identity` bitene kadar `TemporaryCurrentUserService`
   her isteği `elif.yilmaz@isdlc.local` olarak çalıştırır.
 - **Eşzamanlılık:** `Project.RowVersion` aynı kaydın aynı anda güncellenmesini yakalar ve 409 döner.
