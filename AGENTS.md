@@ -180,6 +180,11 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
 
 - **Entity yeri:** `Isdlc.Domain/<Modul>/`. EF ayarları `Isdlc.Infrastructure/<Modul>/<Entity>Configuration.cs`
   (`IEntityTypeConfiguration<T>`); DbContext bu sınıfları kendiliğinden bulur. Yeni entity için `IsdlcDbContext`'e bir `DbSet` eklenir.
+- **Veri erişimi:** Application servisleri veritabanına `IApplicationDbContext` üzerinden erişir
+  (`Isdlc.Application/Common/Interfaces/`); `IsdlcDbContext`'i doğrudan kullanmaz. Yeni entity'nin `DbSet`'i
+  hem `IsdlcDbContext`'e hem `IApplicationDbContext`'e eklenir. Yalnızca okuyan sorgular `AsNoTracking()` ile
+  yazılır ve `Select` ile doğrudan DTO'ya çevrilir.
+- **Servis kaydı:** Her modül kendi servisini `Isdlc.Application/DependencyInjection.cs` içindeki `AddApplication()`'a ekler.
 - **Metin kolonları** her zaman `HasMaxLength` ile sınırlanır.
 - **Enum'lar** veritabanında metin olarak tutulur (`"Active"`); ayrıca ayar gerekmez.
 - **Kayıt silinmez.** Bütün ilişkiler `Restrict`'tir; kullanıcı pasife alınır, süreç geçmişi korunur.

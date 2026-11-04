@@ -1,11 +1,13 @@
 using System.Text.Json.Serialization;
 using Isdlc.Api.Common;
+using Isdlc.Application;
 using Isdlc.Infrastructure;
 using Isdlc.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // Errors: every error response uses the ProblemDetails format.
