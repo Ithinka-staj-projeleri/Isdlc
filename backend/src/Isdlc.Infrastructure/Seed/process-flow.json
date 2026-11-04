@@ -1,0 +1,1025 @@
+{
+  "stages": [
+    {
+      "order": 1,
+      "title": "Talebin Kayda Alınması",
+      "shortTitle": "Talep Kaydı"
+    },
+    {
+      "order": 2,
+      "title": "Talebin Anlaşılması ve Seviye Belirleme",
+      "shortTitle": "Talep Anlama & Seviye"
+    },
+    {
+      "order": 3,
+      "title": "Proje Kabul Değerlendirmesi",
+      "shortTitle": "Proje Kabul"
+    },
+    {
+      "order": 4,
+      "title": "Ön Analiz, Talep Sahibi Teyidi ve Tahmini Plan",
+      "shortTitle": "Ön Analiz & Plan"
+    },
+    {
+      "order": 5,
+      "title": "Teklif ve Talep Sahibi Onayı",
+      "shortTitle": "Teklif & Onay"
+    },
+    {
+      "order": 6,
+      "title": "Projenin Başlatılması",
+      "shortTitle": "Proje Başlatma"
+    },
+    {
+      "order": 7,
+      "title": "Detaylı Analiz ve Talep Sahibi Teyidi",
+      "shortTitle": "Detaylı Analiz"
+    },
+    {
+      "order": 8,
+      "title": "Geliştirme",
+      "shortTitle": "Geliştirme"
+    },
+    {
+      "order": 9,
+      "title": "Test ve Kullanıcı Kabulü",
+      "shortTitle": "Test & UAT"
+    },
+    {
+      "order": 10,
+      "title": "Canlıya Hazırlık",
+      "shortTitle": "Canlıya Hazırlık"
+    },
+    {
+      "order": 11,
+      "title": "Canlıya Geçiş",
+      "shortTitle": "Canlıya Geçiş"
+    },
+    {
+      "order": 12,
+      "title": "Teslim",
+      "shortTitle": "Teslim"
+    },
+    {
+      "order": 13,
+      "title": "Faturalama ve Kapanış",
+      "shortTitle": "Faturalama & Kapanış"
+    }
+  ],
+  "steps": [
+    {
+      "code": "1.1",
+      "stageOrder": 1,
+      "order": 1,
+      "text": "Talep, Talep Kayıt Formu ile kayda alınır; talep kaynağı ve talep türü işaretlenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "1.2",
+      "stageOrder": 1,
+      "order": 2,
+      "text": "Talep, mevcut bir projeye bağlı olmayan yeni bir yazılım projesi mi?",
+      "isDecision": true,
+      "noBranchText": "Talep, türüne uygun akışa yönlendirilir; yönlendirme Talep Kayıt Formu’na yazılır ve Talep Sahibi’ne bildirilir.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": "Redirected",
+      "noJumps": []
+    },
+    {
+      "code": "1.3",
+      "stageOrder": 1,
+      "order": 3,
+      "text": "Proje numarası alınır ve teklif klasörü açılır; dış talepte Talep Sahibi, Müşteri İletişim Bilgileri Listesi’ne eklenir veya güncellenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "2.1",
+      "stageOrder": 2,
+      "order": 4,
+      "text": "Talep Sahibi ile görüşme yapılır; gizli bilgi paylaşılacaksa önce gizlilik sözleşmesi imzalanır. Talep Analiz Soru Listesi’ndeki sorular cevaplanır ve görüşme Talep Görüşme Tutanağı’na yazılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "2.2",
+      "stageOrder": 2,
+      "order": 5,
+      "text": "Talebin amacı, kapsamı, kullanıcıları ve beklenen çıktısı belirsizlik kalmayacak şekilde anlaşıldı mı?",
+      "isDecision": true,
+      "noBranchText": "Cevapsız sorular Talep Sahibi’ne yazılı iletilir; ek görüşme cevap geldiğinde yapılır. (2.3) Bir aydır cevap alınamıyorsa talep Yazılım Departman Yöneticisi kararıyla reddedilir ve klasör “01.Reddedilen Teklifler”e taşınır.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "2.4",
+      "stageOrder": 2,
+      "order": 6,
+      "text": "Talebin seviyesi ile efor tahmini belirlenir ve Proje Kabul Değerlendirme Formu’nun Bölüm 1’ine yazılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "3.1",
+      "stageOrder": 3,
+      "order": 7,
+      "text": "Talep, Proje Kabul Değerlendirme Formu’ndaki ölçütlere göre puanlanır; dış talepte müşteri uygunluğu, şirket ürünü talebinde ön fizibilite değerlendirilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "3.2",
+      "stageOrder": 3,
+      "order": 8,
+      "text": "Talep, Yazılım Departman Yöneticisi tarafından proje olarak kabul edildi ve önceliği belirlendi mi?",
+      "isDecision": true,
+      "noBranchText": "Ret veya erteleme gerekçesi forma yazılır ve Talep Sahibi’ne bildirilir; teklif klasörü “01.Reddedilen Teklifler”e taşınır.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": "SoftwareDepartmentManager",
+      "noOutcome": "Rejected",
+      "noJumps": []
+    },
+    {
+      "code": "4.1",
+      "stageOrder": 4,
+      "order": 9,
+      "text": "Kapsam, kapsam dışı işler, varsayımlar ve Talep Sahibi’nden beklenen girdiler Proje Kapsam Dokümanı’na; iş gereksinimleri seviyenin gerektirdiği ayrıntıda Proje Gereksinim Dokümanı’na yazılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "4.2",
+      "stageOrder": 4,
+      "order": 10,
+      "text": "Fiyatı belirleyecek ayrıntıda kavramsal tasarım hazırlanır: seviyenin gerektirdiği iş akışı, ekran taslağı, üst düzey mimari ve veri akışı.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "4.3",
+      "stageOrder": 4,
+      "order": 11,
+      "text": "Teknik kısıtlar, lisanslar ve bağlanılacak dış sistemler belirlenir; fiyatı etkileyen teknik gereksinimler yazılır; gerekiyorsa kavram kanıtlama (POC) yapılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "4.4",
+      "stageOrder": 4,
+      "order": 12,
+      "text": "Ön analiz dokümanları, Gereksinim İç Onay Kontrol Listesi’nde seviyeye ait maddelerle ekip içinde değerlendirilir; her iş gereksiniminin kavramsal tasarımda karşılığı olduğu kontrol edilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "4.5",
+      "stageOrder": 4,
+      "order": 13,
+      "text": "Gereksinim İç Onay Kontrol Listesi’nde ön analize ait bütün maddeler “Uygun” mu?",
+      "isDecision": true,
+      "noBranchText": "“Uygun” olmayan maddeler tamamlanır; sağlanamayan koşullu kabul koşulu Yazılım Departman Yöneticisi’ne iletilir.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": "SoftwareDepartmentManager",
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "4.6",
+      "stageOrder": 4,
+      "order": 14,
+      "text": "Proje Gereksinim Dokümanı, Kavramsal Tasarım Raporu ve Proje Kapsam Dokümanı taslağı Talep Sahibi’ne sunulur; şirket ürünü talebinde Product Owner’a sunulur.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "4.7",
+      "stageOrder": 4,
+      "order": 15,
+      "text": "Talep Sahibi gereksinimleri ve kavramsal tasarımı yazılı olarak teyit etti mi?",
+      "isDecision": true,
+      "noBranchText": "Düzeltme istekleri tutanağa yazılır; ilgili dokümanlar güncellenir. Akış 4.1’e dönülür.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "4.1",
+          "label": "Akış 4.1 adımına dön"
+        }
+      ]
+    },
+    {
+      "code": "4.8",
+      "stageOrder": 4,
+      "order": 16,
+      "text": "Teklifi etkileyebilecek riskler belirlenir, puanlanır ve önleyici aksiyonları yazılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "4.9",
+      "stageOrder": 4,
+      "order": 17,
+      "text": "Tahmini efor, süre, kaynak ve maliyet hesaplanır; dış talepte fiyat belirlenir. Donanım veya lisans gerekiyorsa satın alma ön çalışması yapılır; Proje Yöneticisi ve teknik ekip belirlenir. Talep Sahibi’nden beklenen girdiler tahmini plana yazılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "5.1",
+      "stageOrder": 5,
+      "order": 18,
+      "text": "Teklif hazırlanır (dış talepte Satış Temsilcisi tarafından) ve Talep Sahibi’ne gönderilmeden önce Yazılım Departman Yöneticisi tarafından onaylanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "SalesRepresentative",
+      "approverRole": "SoftwareDepartmentManager",
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "5.2",
+      "stageOrder": 5,
+      "order": 19,
+      "text": "Onaylı teklif ve ön analiz dokümanları Talep Sahibi’ne sunulur.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "5.3",
+      "stageOrder": 5,
+      "order": 20,
+      "text": "Talep Sahibi projeye devam etmek istiyor mu?",
+      "isDecision": true,
+      "noBranchText": "Sonuç ve kayıp nedeni Proje Kabul Değerlendirme Formu’na yazılır; teklif klasörü “01.Reddedilen Teklifler”e taşınır.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": "Lost",
+      "noJumps": []
+    },
+    {
+      "code": "5.4",
+      "stageOrder": 5,
+      "order": 21,
+      "text": "Teklif revizyon istenmeden onaylandı mı?",
+      "isDecision": true,
+      "noBranchText": "Revizyon talepleri tutanağa veya e-postaya yazılır; etkilenen ön analiz dokümanları güncellenir. Kapsam değişiyorsa Akış 4.1’e, yalnızca fiyat veya takvim değişiyorsa Akış 4.9’a dönülür.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "4.1",
+          "label": "Kapsam değişiyor"
+        },
+        {
+          "targetStepCode": "4.9",
+          "label": "Yalnızca fiyat veya takvim değişiyor"
+        }
+      ]
+    },
+    {
+      "code": "6.1",
+      "stageOrder": 6,
+      "order": 22,
+      "text": "Sözleşme veya resmî onay teklifle karşılaştırılarak kaydedilir; teklif klasörü “Aktif Projeler”e taşınır ve Proje Klasör Şablonu uygulanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "6.2",
+      "stageOrder": 6,
+      "order": 23,
+      "text": "Yeni Yazılım Projesi Kontrol Listesi açılır ve proje ekibi yazılır; Talep Sahibi tarafındaki kişiler ve onaycılar Müşteri İletişim Bilgileri Listesi’ne işlenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "6.3",
+      "stageOrder": 6,
+      "order": 24,
+      "text": "Açık Konular Listesi Talep Sahibi ile ortak kullanılacak şekilde açılır; varsayımlar, paylaşılacak riskler ve beklenen girdiler listeye aktarılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "6.4",
+      "stageOrder": 6,
+      "order": 25,
+      "text": "Proje başlangıç toplantısı yapılır; kapsam, takvim, roller, onaycılar, toplantı düzeni ve detaylı analiz takvimi Talep Sahibi ile teyit edilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "6.5",
+      "stageOrder": 6,
+      "order": 26,
+      "text": "Azure DevOps’ta proje açılır; detaylı analiz işleri Task olarak oluşturulur ve haftalık kaynak planına alınır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.1",
+      "stageOrder": 7,
+      "order": 27,
+      "text": "Paydaşlarla analiz toplantıları yapılır; mevcut ve hedeflenen iş akışları çizilir, iş gereksinimleri ayrıntılandırılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.2",
+      "stageOrder": 7,
+      "order": 28,
+      "text": "Seviyenin detaylı analizde gerektirdiği dokümanlar hazırlanır veya güncellenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.3",
+      "stageOrder": 7,
+      "order": 29,
+      "text": "Bağlanılacak her servisin teknik bilgileri servis sahibiyle teyit edilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.4",
+      "stageOrder": 7,
+      "order": 30,
+      "text": "Detaylı analizde netleşen kapsam teklif kapsamıyla karşılaştırılır; seviye yeniden değerlendirilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.5",
+      "stageOrder": 7,
+      "order": 31,
+      "text": "Netleşen kapsam teklif kapsamıyla aynı mı?",
+      "isDecision": true,
+      "noBranchText": "Kapsam farkı, değişiklik talebi veya teklif revizyonu olarak Talep Sahibi’ne sunulur; verilen karar Açık Konular Listesi’ne yazılır.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.6",
+      "stageOrder": 7,
+      "order": 32,
+      "text": "Proje planı kesinleştirilir; Talep Sahibi’nden beklenen girdiler sorumlusu ve son tarihiyle plana ve Açık Konular Listesi’ne yazılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.7",
+      "stageOrder": 7,
+      "order": 33,
+      "text": "Kaynak kod deposu, dal (branch) kuralları, otomatik derleme hattı, geliştirme ve test ortamları hazırlanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.8",
+      "stageOrder": 7,
+      "order": 34,
+      "text": "Test Planı hazırlanır; test kapsamı, ortamlar, kullanıcı kabul testi senaryoları ve kabul ölçütleri belirlenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.9",
+      "stageOrder": 7,
+      "order": 35,
+      "text": "Detaylı analiz dokümanları, Gereksinim İç Onay Kontrol Listesi’nde seviyeye ait maddelerle ekip içinde değerlendirilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.10",
+      "stageOrder": 7,
+      "order": 36,
+      "text": "Gereksinim İç Onay Kontrol Listesi’nde seviyeye ait bütün maddeler “Uygun” mu?",
+      "isDecision": true,
+      "noBranchText": "“Uygun” olmayan maddeler ilgili dokümanda tamamlanır.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.11",
+      "stageOrder": 7,
+      "order": 37,
+      "text": "İş akışları, gereksinimler, proje planı ve Test Planı, Talep Sahibi ve paydaşlarla yapılan gözden geçirme toplantısında sunulur.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "7.12",
+      "stageOrder": 7,
+      "order": 38,
+      "text": "Talep Sahibi analiz dokümanlarını, kabul testi senaryolarını ve proje planını yazılı olarak onayladı mı?",
+      "isDecision": true,
+      "noBranchText": "Düzeltme istekleri Açık Konular Listesi’ne yazılır; ilgili dokümanlar güncellenir. Akış 7.2’ye dönülür.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "7.2",
+          "label": "Akış 7.2 adımına dön"
+        }
+      ]
+    },
+    {
+      "code": "8.1",
+      "stageOrder": 8,
+      "order": 39,
+      "text": "Atanan User Story veya Bug kaydı Azure DevOps’ta “Active” durumuna alınır; kabul ölçütleri, Proje Gereksinim Dokümanı ve teknik gereksinimler incelenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "SoftwareDeveloper",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "8.2",
+      "stageOrder": 8,
+      "order": 40,
+      "text": "İşin gereksinimi, kabul ölçütü ve tasarımı geliştirmeye başlamak için yeterince açık mı?",
+      "isDecision": true,
+      "noBranchText": "Belirsiz konular İş Analisti’ne sorulur; cevaplar User Story’ye işlenir, kapsam değişirse değişiklik talebi açılır.",
+      "responsibleRole": "SoftwareDeveloper",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "8.3",
+      "stageOrder": 8,
+      "order": 41,
+      "text": "Geliştirme, işe bağlı ayrı bir dalda yapılır; birim testleri yazılır ve çalıştırılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "SoftwareDeveloper",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "8.4",
+      "stageOrder": 8,
+      "order": 42,
+      "text": "Teknik tasarım, entegrasyon, ortam ve kurulum bilgileri teknik dokümantasyona işlenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "SoftwareDeveloper",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "8.5",
+      "stageOrder": 8,
+      "order": 43,
+      "text": "Çekme isteği (pull request) açılır; kod, yazarı dışındaki bir kişi tarafından incelenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "SoftwareDeveloper",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "8.6",
+      "stageOrder": 8,
+      "order": 44,
+      "text": "Çekme isteği kod incelemesinden ve birim testlerinden başarıyla geçti mi?",
+      "isDecision": true,
+      "noBranchText": "Kod incelemesi yorumları uygulanır, başarısız testler düzeltilir; değişiklikler aynı çekme isteğine eklenir.",
+      "responsibleRole": "SoftwareDeveloper",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "8.7",
+      "stageOrder": 8,
+      "order": 45,
+      "text": "Değişiklik ana dala birleştirilir ve test ortamına yüklenir; sürüm notu yazılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "SoftwareDeveloper",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "8.8",
+      "stageOrder": 8,
+      "order": 46,
+      "text": "User Story’nin geliştirmesi Tamamlandı tanımını karşılıyor mu?",
+      "isDecision": true,
+      "noBranchText": "Eksik kalan geliştirme veya düzeltme tamamlanır. Akış 8.1’e dönülür.",
+      "responsibleRole": "SoftwareDeveloper",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "8.1",
+          "label": "Akış 8.1 adımına dön"
+        }
+      ]
+    },
+    {
+      "code": "9.1",
+      "stageOrder": 9,
+      "order": 47,
+      "text": "User Story’nin test senaryoları test ortamında uygulanır ve sonuçlar Test Planı’na kaydedilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "TestSpecialist",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "9.2",
+      "stageOrder": 9,
+      "order": 48,
+      "text": "User Story’nin bütün test senaryoları başarılı mı?",
+      "isDecision": true,
+      "noBranchText": "Hatalar Azure DevOps’ta Bug olarak kaydedilir ve ilgili Yazılım Geliştirici’ye atanır. Akış 8.1’e dönülür.",
+      "responsibleRole": "TestSpecialist",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "8.1",
+          "label": "Akış 8.1 adımına dön"
+        }
+      ]
+    },
+    {
+      "code": "9.3",
+      "stageOrder": 9,
+      "order": 49,
+      "text": "Kapsamdaki bütün User Story kayıtlarının geliştirmesi ve testi tamamlandı mı?",
+      "isDecision": true,
+      "noBranchText": "Sıradaki User Story ile geliştirmeye devam edilir. Akış 8.1’e dönülür.",
+      "responsibleRole": "TestSpecialist",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "8.1",
+          "label": "Akış 8.1 adımına dön"
+        }
+      ]
+    },
+    {
+      "code": "9.4",
+      "stageOrder": 9,
+      "order": 50,
+      "text": "Bütün kapsam için uçtan uca sistem testi, regresyon testi, performans ve güvenlik kontrolleri ile veri aktarım provası yapılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "TestSpecialist",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "9.5",
+      "stageOrder": 9,
+      "order": 51,
+      "text": "Sistem testi ve regresyon testi başarılı mı?",
+      "isDecision": true,
+      "noBranchText": "Hatalar Bug olarak kaydedilir ve ilgili Yazılım Geliştirici’ye atanır. Akış 8.1’e dönülür.",
+      "responsibleRole": "TestSpecialist",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "8.1",
+          "label": "Akış 8.1 adımına dön"
+        }
+      ]
+    },
+    {
+      "code": "9.6",
+      "stageOrder": 9,
+      "order": 52,
+      "text": "Kabul testi Talep Sahibi ile planlanır; test ortamı, verisi ve senaryoları paylaşılır, anahtar kullanıcılara sistem tanıtılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "9.7",
+      "stageOrder": 9,
+      "order": 53,
+      "text": "Kabul testi Talep Sahibi tarafından yapılır; bulgular Test Planı’na yazılır, kapsam dışı istekler değişiklik talebi olarak kaydedilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "9.8",
+      "stageOrder": 9,
+      "order": 54,
+      "text": "Kabul testi hataları kapatıldı veya “canlıya geçişi engellemez” olarak kayda alındı mı?",
+      "isDecision": true,
+      "noBranchText": "Hatalar Bug olarak kaydedilir ve Kabul Testi Onayı tablosuna “Kabul edilmedi (yeni tur)” yazılır. Akış 8.1’e dönülür.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "8.1",
+          "label": "Akış 8.1 adımına dön"
+        }
+      ]
+    },
+    {
+      "code": "9.9",
+      "stageOrder": 9,
+      "order": 55,
+      "text": "Kabul testi onayı Test Planı’na işlenir; Test Sonuç Raporu doldurulur ve Kontrol Listesi’nde Aşama 8–9 maddeleri işaretlenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "10.1",
+      "stageOrder": 10,
+      "order": 56,
+      "text": "Yayın Planı hazırlanır; ön koşullar ve geri dönüş planı yazılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "10.2",
+      "stageOrder": 10,
+      "order": 57,
+      "text": "Canlı ortam kurulur; provası başarılı olan başlangıç verileri aktarılır ve Talep Sahibi ile doğrulanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "10.3",
+      "stageOrder": 10,
+      "order": 58,
+      "text": "Onaylı rol ve yetki tasarımına göre kullanıcı hesapları canlı ortamda tanımlanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "10.4",
+      "stageOrder": 10,
+      "order": 59,
+      "text": "Son kullanıcı ve seviyenin gerektirdiği sistem yöneticisi (admin) kılavuzları ekran görüntüleriyle hazırlanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "10.5",
+      "stageOrder": 10,
+      "order": 60,
+      "text": "Teknik dokümantasyon son sürüme göre tamamlanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "10.6",
+      "stageOrder": 10,
+      "order": 61,
+      "text": "Bakım Planı hazırlanır; destek kanalı, cevap ve çözüm süreleri, garanti ve bakım kapsamı belirlenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "10.7",
+      "stageOrder": 10,
+      "order": 62,
+      "text": "Kullanıcı eğitimi planlanır ve verilir; her oturum Kullanıcı Eğitim Tutanağı ile kayda alınır, kayıtlar “02.Eğitim Planı” klasöründe saklanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "10.8",
+      "stageOrder": 10,
+      "order": 63,
+      "text": "Ön koşullar tamamlandı ve yayın tarihi Talep Sahibi’nce yazılı onaylandı mı?",
+      "isDecision": true,
+      "noBranchText": "Eksik ön koşullar tamamlanır; yayın tarihi değişirse yeni tarih için Talep Sahibi’nin yazılı onayı alınır. Akış 10.1’e dönülür.",
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "10.1",
+          "label": "Akış 10.1 adımına dön"
+        }
+      ]
+    },
+    {
+      "code": "11.1",
+      "stageOrder": 11,
+      "order": 64,
+      "text": "Yazılım, Yayın Planı’ndaki adımlara göre canlı ortama alınır; Talep Sahibi yayından önce ve sonra bilgilendirilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "11.2",
+      "stageOrder": 11,
+      "order": 65,
+      "text": "Canlı ortamda yayın sonrası doğrulama testi yapılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "11.3",
+      "stageOrder": 11,
+      "order": 66,
+      "text": "Yayın sonrası doğrulama testi başarılı mı?",
+      "isDecision": true,
+      "noBranchText": "Geri dönüş planı uygulanır; sorun Bug olarak kaydedilir. Akış 8.1’e dönülür.",
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "8.1",
+          "label": "Akış 8.1 adımına dön"
+        }
+      ]
+    },
+    {
+      "code": "11.4",
+      "stageOrder": 11,
+      "order": 67,
+      "text": "İlk destek dönemi başlatılır; bildirilen sorunlar destek kaydı (ticket) olarak açılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "ProjectManager",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "12.1",
+      "stageOrder": 12,
+      "order": 68,
+      "text": "Teslim edilen kapsam, dokümanlar, kılavuzlar ve erişimler Proje Teslim Tutanağı’na (fazlı teslimde her modül için Modül Teslim Tutanağı’na) yazılır ve imzaya sunulur.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "12.2",
+      "stageOrder": 12,
+      "order": 69,
+      "text": "Proje Teslim Tutanağı Talep Sahibi tarafından imzalandı mı?",
+      "isDecision": true,
+      "noBranchText": "İmzayı engelleyen konular Açık Konular Listesi’ne yazılır ve giderilir.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "12.3",
+      "stageOrder": 12,
+      "order": 70,
+      "text": "İmzalı tutanak “10.Proje Kapanışı” klasörüne kaydedilir; Kontrol Listesi’nde Aşama 10–12 maddeleri işaretlenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "13.1",
+      "stageOrder": 13,
+      "order": 71,
+      "text": "Dış talepte fatura için Satış Temsilcisi ve Muhasebe Birimi bilgilendirilir; iç talepte gerçekleşen efor ve maliyet raporlanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "13.2",
+      "stageOrder": 13,
+      "order": 72,
+      "text": "Proje, Bakım Planı’na göre bakım ve destek dönemine alınır; destek iletişim kişileri güncellenir ve bakım sözleşmesi yenileme hatırlatması takvime alınır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "13.3",
+      "stageOrder": 13,
+      "order": 73,
+      "text": "Açık Konular Listesi’ndeki kayıtlar kapatılır veya Bakım Planı’na devredilir; proje değerlendirme toplantısı yapılır, öğrenilen dersler Kontrol Listesi’nin Bölüm C’sine yazılır ve Aşama 13 maddeleri işaretlenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "13.4",
+      "stageOrder": 13,
+      "order": 74,
+      "text": "Kontrol Listesi’nde Aşama 8–13’e ait bütün maddeler “Evet” veya gerekçeli “Uygulanmaz” mı?",
+      "isDecision": true,
+      "noBranchText": "“Hayır” işaretli maddeler tamamlanır.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    },
+    {
+      "code": "13.5",
+      "stageOrder": 13,
+      "order": 75,
+      "text": "Proje klasörü kapanış kayıtlarıyla “Tamamlanmış Projeler”e taşınır; ISDLC Ana Proje Kayıt ve Numaralandırma Listesi’nde durum güncellenir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": []
+    }
+  ]
+}
