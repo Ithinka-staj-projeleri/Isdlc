@@ -106,6 +106,7 @@ Frontend'de `features/` altındaki klasörler aynı modüllerin kebab-case halid
 **API**
 - Yol: `/api/v1/<kaynak>`, kaynak çoğul ve kebab-case: `/api/v1/open-issues`
 - Alt kaynak: `/api/v1/projects/{id}/risks`
+- Ayrıntılı kurallar için Bölüm 7.
 
 **Frontend (Angular)**
 | Öğe | Kural | Örnek |
@@ -142,3 +143,23 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Denetim kaydı | `AuditLog` |
 
 Yeni bir kavram gerektiğinde önce bu tabloya eklenir.
+
+## 7. Ortak API kuralları
+
+Backend iskeletinde uygulanmıştır; yeni kod bu yapıları kullanır.
+
+| Konu | Kural | Backend'de nerede |
+| --- | --- | --- |
+| Yol | Controller'lar `ApiControllerBase`'den türer. Yol, controller adından otomatik üretilir: `OpenIssuesController` → `/api/v1/open-issues` | `Isdlc.Api/Common/ApiControllerBase.cs` |
+| Hatalar | Her hata `ProblemDetails` biçiminde döner (`title`, `status`, `detail`, `traceId`) | `Isdlc.Api/Common/GlobalExceptionHandler.cs` |
+| Kayıt yok | Servis `NotFoundException` fırlatır → 404 | `Isdlc.Application/Common/Exceptions/` |
+| İş kuralı ihlali | Servis `BusinessRuleException` fırlatır → 400. Mesaj kullanıcıya gösterilir, Türkçe yazılır | `Isdlc.Application/Common/Exceptions/` |
+| Beklenmeyen hata | 500 ve genel bir mesaj döner; ayrıntı yalnızca loga yazılır | `GlobalExceptionHandler` |
+| Enum | JSON'da metin olarak gönderilir: `"Active"` | `Program.cs` |
+| Tarih | `DateTime` UTC tutulur, ISO 8601 ve `Z` ekiyle gönderilir: `2026-11-04T12:00:00Z`. Veritabanından okunan tarihler otomatik UTC işaretlenir | `Persistence/Converters/UtcDateTimeConverter.cs` |
+| Sayfalama (istek) | Liste uç noktaları `?page=1&pageSize=20` alır: `List([FromQuery] PageRequest pageRequest)`. Sayfa boyutu en fazla 100. **Parametreye `page` adını verme**, değerler okunmaz | `Isdlc.Application/Common/Models/PageRequest.cs` |
+| Sayfalama (cevap) | Liste uç noktaları `PagedResult<T>` döner: `{ "items": [...], "totalCount": 42 }` | `Isdlc.Application/Common/Models/PagedResult.cs` |
+| JSON alan adları | camelCase (`totalCount`, `projectId`) | ASP.NET Core varsayılanı |
+
+Controller'lar `try/catch` yazmaz; hatayı servis fırlatır, `GlobalExceptionHandler` çevirir.
+Biçim doğrulama hataları (`[Required]` vb.) ASP.NET Core tarafından otomatik 400 `ProblemDetails` olarak döner.
