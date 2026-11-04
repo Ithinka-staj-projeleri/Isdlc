@@ -125,7 +125,7 @@ Frontend'de `features/` altındaki klasörler aynı modüllerin kebab-case halid
   - **Backend:** derleme (uyarılar hata sayılır), testler, entity değişikliği için migration üretilmiş mi
   - **Frontend:** derleme, testler
 - PR açmadan önce aynı kontroller lokalde çalıştırılabilir:
-  - `dotnet build backend/Isdlc.sln -warnaserror` ve `dotnet test backend/Isdlc.sln`
+  - `dotnet build backend/Isdlc.sln -warnaserror` ve `dotnet test backend/Isdlc.sln` (Docker açık olmalı; bkz. Bölüm 9)
   - `dotnet ef migrations has-pending-model-changes --project backend/src/Isdlc.Infrastructure --startup-project backend/src/Isdlc.Api`
   - `frontend` klasöründe: `npm run build` ve `npx ng test --watch=false`
 
@@ -206,3 +206,15 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
 - **Seed:** `Isdlc.Infrastructure/Seed/*.json` dosyaları, tablo boşsa uygulama açılırken yüklenir. Örnek projeler yalnızca geliştirme ortamında yüklenir.
 - **Migration:** Geliştirme ortamında API açılırken otomatik uygulanır. Üretmek için (repo kökünde):
   `dotnet ef migrations add <Ad> --project backend/src/Isdlc.Infrastructure --startup-project backend/src/Isdlc.Api --output-dir Persistence/Migrations`
+
+## 9. Backend testleri
+
+- Testler `backend/tests/Isdlc.Application.Tests` içinde, test edilen modülün klasöründe durur (`Process/ProcessServiceTests.cs`).
+- Çapraz test kuralı için: PLANNING.md → Birlikte çalışma kuralları.
+- **Veritabanı kullanan testler** gerçek SQL Server ile çalışır (Testcontainers). Test sınıfına `[Collection("Database")]`
+  yazılır ve kurucuda `DatabaseFixture` alınır. Servis, `database.CreateScope()` ile açılan kapsamdan alınır.
+- Fixture test çalışması başına bir kez Docker'da SQL Server açar, gerçek migration'ları ve seed'i yükler
+  (süreç akışı, kullanıcılar, örnek projeler). Bu yüzden `dotnet test` için **Docker açık olmalıdır**.
+- Bütün testler aynı veritabanını paylaşır. Veri değiştiren bir test, başka testlerin kullandığı seed kayıtlarını
+  değiştirmez; kendi kaydını oluşturup onunla çalışır.
+- Test adı neyi kontrol ettiğini söyler: `Metot_Durum_Beklenen` (ör. `GetStages_Returns13StagesInOrder`).

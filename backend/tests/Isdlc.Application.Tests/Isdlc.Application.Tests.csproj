@@ -10,8 +10,15 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Testcontainers.MsSql" Version="4.16.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Not a NuGet package: ASP.NET Core libraries that ship with .NET.
+         Lets database tests build services the same way the API does (AddInfrastructure). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Isdlc.Application\Isdlc.Application.csproj" />
     <ProjectReference Include="..\..\src\Isdlc.Domain\Isdlc.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Isdlc.Infrastructure\Isdlc.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
