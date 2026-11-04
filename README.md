@@ -38,7 +38,16 @@ veritabanını tamamen sıfırlamak için `docker compose down -v`.
 
 ### 2. Backend
 
+İlk seferde repo kökünde proje araçlarını (`dotnet-ef`) kur:
+
 ```bash
-cd backend
-dotnet build
+dotnet tool restore
 ```
+
+API'yi çalıştır (veritabanı açık olmalı):
+
+```bash
+dotnet run --project backend/src/Isdlc.Api
+```
+
+Swagger sayfası: http://localhost:5091/swagger
