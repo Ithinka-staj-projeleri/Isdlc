@@ -7,7 +7,7 @@ namespace Isdlc.Domain.Projects;
 /// <summary>
 /// A request and the project it turns into are the same record.
 /// </summary>
-public class Project : AuditableEntity
+public class Project : AuditableEntity, IAudited
 {
     public int Id { get; set; }
 

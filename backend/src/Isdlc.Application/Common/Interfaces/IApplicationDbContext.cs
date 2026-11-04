@@ -1,3 +1,4 @@
+using Isdlc.Domain.Audit;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
@@ -18,6 +19,7 @@ public interface IApplicationDbContext
     DbSet<ProcessStep> ProcessSteps { get; }
     DbSet<ProcessStepJump> ProcessStepJumps { get; }
     DbSet<StepRecord> StepRecords { get; }
+    DbSet<AuditLog> AuditLogs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

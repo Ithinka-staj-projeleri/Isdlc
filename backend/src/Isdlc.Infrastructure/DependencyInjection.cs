@@ -23,11 +23,15 @@ public static class DependencyInjection
         services.AddSingleton<ICurrentUserService>(sp => sp.GetRequiredService<TemporaryCurrentUserService>());
 
         services.AddScoped<AuditableEntityInterceptor>();
+        services.AddScoped<AuditLogInterceptor>();
         services.AddDbContext<IsdlcDbContext>((sp, options) => options
             // Queries that load several collections run as one SQL query (EF Core's default, set explicitly).
             // For a large collection, a query can opt into AsSplitQuery().
             .UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery))
-            .AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>()));
+            // Order matters: audit fields are filled first, then the log reads them.
+            .AddInterceptors(
+                sp.GetRequiredService<AuditableEntityInterceptor>(),
+                sp.GetRequiredService<AuditLogInterceptor>()));
 
         // Application services see the same DbContext instance through this interface.
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<IsdlcDbContext>());
