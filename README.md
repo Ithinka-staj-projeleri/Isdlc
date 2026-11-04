@@ -51,3 +51,7 @@ dotnet run --project backend/src/Isdlc.Api
 ```
 
 Swagger sayfası: http://localhost:5091/swagger
+
+Geliştirme ortamında API açılırken migration'lar uygulanır ve seed verisi (süreç akışı, kullanıcılar, örnek projeler)
+boş tablolara yüklenir. Veritabanını sıfırdan kurmak için `docker compose down -v` ve `docker compose up -d`,
+ardından API'yi yeniden başlat.
