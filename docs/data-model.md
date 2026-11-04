@@ -114,6 +114,7 @@ yalnızca fiyat veya takvim değişiyorsa 4.9'a dönülür. "Hayır" cevabı ver
 | `CurrentStepId` | int? (FK → ProcessStep) | Proje aktif değilse boş |
 | `StartDate` | DateOnly | |
 | `DueDate` | DateOnly? | |
+| `RowVersion` | byte[] | EF Core eşzamanlılık belirteci (SQL Server `rowversion`); bkz. [process-api.md](process-api.md) |
 | + `AuditableEntity` alanları | | |
 
 ### `StepRecord` — bir projede bir adımda yapılan her işlem
