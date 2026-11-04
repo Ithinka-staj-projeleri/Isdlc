@@ -1,3 +1,4 @@
+using Isdlc.Application.Common.Interfaces;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Isdlc.Infrastructure.Persistence;
 
-public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContext(options)
+public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContext(options), IApplicationDbContext
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Project> Projects => Set<Project>();

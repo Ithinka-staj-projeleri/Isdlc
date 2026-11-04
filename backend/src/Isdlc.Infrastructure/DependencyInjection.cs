@@ -24,8 +24,13 @@ public static class DependencyInjection
 
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddDbContext<IsdlcDbContext>((sp, options) => options
-            .UseSqlServer(connectionString)
+            // Queries that load several collections run as one SQL query (EF Core's default, set explicitly).
+            // For a large collection, a query can opt into AsSplitQuery().
+            .UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery))
             .AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>()));
+
+        // Application services see the same DbContext instance through this interface.
+        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<IsdlcDbContext>());
 
         services.AddScoped<DatabaseSeeder>();
 
