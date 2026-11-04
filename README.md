@@ -52,6 +52,12 @@ dotnet run --project backend/src/Isdlc.Api
 
 Swagger sayfası: http://localhost:5091/swagger
 
+Testleri çalıştır (Docker açık olmalı; testler kendi SQL Server konteynerini açıp kapatır):
+
+```bash
+dotnet test backend/Isdlc.sln
+```
+
 Geliştirme ortamında API açılırken migration'lar uygulanır ve seed verisi (süreç akışı, kullanıcılar, örnek projeler)
 boş tablolara yüklenir. Veritabanını sıfırdan kurmak için `docker compose down -v` ve `docker compose up -d`,
 ardından API'yi yeniden başlat.
