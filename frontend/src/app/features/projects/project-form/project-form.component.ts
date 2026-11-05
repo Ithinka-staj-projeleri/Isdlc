@@ -128,7 +128,7 @@ export class ProjectFormComponent {
 
     this.saving.set(true);
     this._projectService.create(this.toInput()).subscribe({
-      next: () => this._router.navigate(['/requests']),
+      next: (created) => this._router.navigate(['/projects', created.id]),
       error: (error: unknown) => {
         this.saving.set(false);
         this.showServerErrors(fieldErrorsOf(error));

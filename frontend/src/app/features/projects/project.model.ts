@@ -1,9 +1,11 @@
+import { ProjectStatus } from '../../shared/models/project-status';
 import { UserSummary } from '../../shared/models/user-summary';
 
 // Shapes of the Projects API. Contract: docs/projects-api.md
 // Enum values are the backend's text values; Turkish labels are in project-labels.ts.
 
-export type ProjectStatus = 'Active' | 'Closed' | 'Rejected' | 'Lost' | 'Redirected';
+/** Shared with other modules (shared/models/project-status). */
+export type { ProjectStatus } from '../../shared/models/project-status';
 export type RequestSource = 'Internal' | 'External';
 export type RequestChannel = 'Written' | 'Verbal';
 export type RequestType = 'NewProject' | 'AdditionalModule' | 'CompanyProduct' | 'Support';

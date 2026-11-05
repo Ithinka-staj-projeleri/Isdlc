@@ -123,6 +123,10 @@ export class ProjectListComponent {
     this.setFilter({ analyst: analystId || null });
   }
 
+  openProject(projectId: number): void {
+    this._router.navigate(['/projects', projectId]);
+  }
+
   onPageChange(page: number): void {
     this._router.navigate([], {
       relativeTo: this._route,
