@@ -119,3 +119,16 @@ Referans prototip: "ISDLC Analiz Merkezi" (tek HTML dosyası). Birebir kopyalanm
 
 **Veri modeli için not:** Akış her zaman ileri gitmez; bazı "Hayır" cevapları önceki bir adıma döner
 (ör. 4.7 → 4.1, 9.2 → 8.1). `StepRecord` bir adımın birden fazla kez işlenmesine izin vermelidir.
+
+## 5. Yapay zekâ denemesi (MVP dışı)
+
+AGENTS.md'ye göre AI özellikleri MVP'den sonraya bırakıldı. Bu kararı değiştirmeden, fikri erkenden sınamak için
+küçük bir deneme yapılıyor. Ayrıntılar: [docs/ai-vision.md](docs/ai-vision.md), kod: [ai/](ai/README.md).
+
+- **Sorumlu:** Erva. Süresi sınırlı (haftada yaklaşık 1 gün); MVP işleri her zaman önce gelir.
+- **Kapsam:** Toplantı notlarından açık konu önerileri çıkaran tek bir ajan (Python). Öneriler insan onayıyla kaydedilir.
+- **Kimseyi etkilemez:** Backend'de, frontend'de ve veritabanında değişiklik yapmaz; yalnızca hazır API'yi kullanır.
+  Ekip onayı alınana kadar `main`'e birleştirilmez.
+- **Yalnızca sahte veriyle** çalışılır.
+- **Ekip kararı gereken konular** (deneme sonunda): Python'un yığına eklenmesi, ajan tabloları, model sağlayıcısı ve
+  şirketin veri gönderme izni.
