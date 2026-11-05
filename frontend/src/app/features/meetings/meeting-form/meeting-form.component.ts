@@ -4,6 +4,8 @@ import { catchError, of } from 'rxjs';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
 import { LookupService } from '../../../shared/services/lookup.service';
+import { MeetingSuggestions, SuggestedAction } from '../../agents/models/meeting-suggestions';
+import { MeetingAssistantComponent } from '../meeting-assistant/meeting-assistant.component';
 import { MeetingService } from '../meeting.service';
 import { CreateMeeting, MEETING_TYPE_LABELS, Meeting, MeetingAction, MeetingType, UpdateMeeting } from '../models/meeting';
 
@@ -24,7 +26,7 @@ function today(): string {
  */
 @Component({
     selector: 'app-meeting-form',
-    imports: [ReactiveFormsModule],
+    imports: [ReactiveFormsModule, MeetingAssistantComponent],
     templateUrl: './meeting-form.component.html',
     styleUrl: './meeting-form.component.scss',
 })
@@ -60,6 +62,12 @@ export class MeetingFormComponent implements OnInit {
     protected readonly submitted = signal(false);
     protected readonly serverErrors = signal<Record<string, string[]>>({});
 
+    /** The date in the form, for the AI assistant (due dates like "gelecek çarşamba" are worked out from it). */
+    protected readonly meetingDate = toSignal(this.form.controls.date.valueChanges, { initialValue: this.form.controls.date.value });
+
+    /** Decision lines the AI assistant added, so asking again replaces them instead of adding them twice. */
+    private agentDecisionLines: string[] = [];
+
     protected get actions(): FormArray<FormGroup> {
         return this.form.controls.actions;
     }
@@ -86,18 +94,43 @@ export class MeetingFormComponent implements OnInit {
         });
     }
 
-    protected addAction(): void {
+    /** An empty row, or one filled from an AI suggestion (then it also keeps the evidence and warnings to show). */
+    protected addAction(suggestion?: SuggestedAction): void {
         if (this.actions.length >= MAX_ROWS) {
             return;
         }
 
         this.actions.push(this.fb.nonNullable.group({
-            title: [''],
-            ownerKind: this.fb.nonNullable.control<OwnerKind>('user'),
-            ownerUserId: this.fb.control<number | null>(null),
-            ownerName: [''],
-            dueDate: [''],
+            title: [suggestion?.title ?? ''],
+            ownerKind: this.fb.nonNullable.control<OwnerKind>(suggestion && suggestion.ownerUserId === null && suggestion.ownerName ? 'name' : 'user'),
+            ownerUserId: this.fb.control<number | null>(suggestion?.ownerUserId ?? null),
+            ownerName: [suggestion?.ownerName ?? ''],
+            dueDate: [suggestion?.dueDate ?? ''],
+            // Shown under the row, never sent: null for rows the person added.
+            evidence: this.fb.control<string | null>(suggestion?.evidence ?? null),
+            warnings: this.fb.nonNullable.control<string[]>(suggestion?.warnings ?? []),
         }));
+    }
+
+    /**
+     * Puts the AI suggestions into the form for review. Asking again replaces the earlier suggestions
+     * (rows and decision lines the person typed stay; edited suggestion rows are replaced too).
+     */
+    protected applySuggestions(suggestions: MeetingSuggestions): void {
+        for (let i = this.actions.length - 1; i >= 0; i--) {
+            if (this.actions.at(i).controls['evidence'].value !== null) {
+                this.actions.removeAt(i);
+            }
+        }
+        suggestions.actions.forEach(action => this.addAction(action));
+
+        const ownLines = this.form.controls.decisions.value
+            .split('\n')
+            .filter(line => line.trim() && !this.agentDecisionLines.includes(line.trim()));
+        this.agentDecisionLines = suggestions.decisions.map(d => d.title.trim());
+        this.form.controls.decisions.setValue([...ownLines, ...this.agentDecisionLines].join('\n'));
+
+        this.serverErrors.set({});
     }
 
     protected removeAction(index: number): void {

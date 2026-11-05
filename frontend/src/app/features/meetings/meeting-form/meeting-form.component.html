@@ -36,6 +36,9 @@
             </label>
 
             @if (meetingId() === null) {
+            <app-meeting-assistant class="full" [projectId]="projectId()" [meetingDate]="meetingDate()"
+                (suggested)="applySuggestions($event)" />
+
             <label class="field full" [class.invalid]="errorFor('decisions')">
                 Alınan kararlar (her satıra bir karar, isteğe bağlı)
                 <textarea formControlName="decisions" placeholder="İş emri durumları 6 adım olarak kesinleşti."></textarea>
@@ -77,6 +80,14 @@
                             Termin
                             <input type="date" formControlName="dueDate" />
                         </label>
+                        @if (row.get('evidence')?.value; as evidence) {
+                        <div class="agent-note wide">
+                            <span class="tag">Yapay zekâ önerisi</span> Dayanak: “{{ evidence }}”
+                            @for (warning of row.get('warnings')?.value; track $index) {
+                            <span class="warning">{{ warning }}</span>
+                            }
+                        </div>
+                        }
                     </div>
                     <button type="button" class="button small" (click)="removeAction(i)" [attr.aria-label]="(i + 1) + '. aksiyonu kaldır'">Kaldır</button>
                 </div>

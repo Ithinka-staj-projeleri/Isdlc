@@ -110,3 +110,26 @@ fieldset.actions {
         min-width: 0;
     }
 }
+
+// Under an action row the AI assistant filled: the sentence it is based on and its warnings.
+.agent-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+    color: var(--muted);
+    font-size: 12px;
+
+    .tag {
+        padding: 1px 8px;
+        border-radius: 999px;
+        background: #dde8f6;
+        color: var(--info);
+        font-weight: 600;
+    }
+
+    .warning {
+        flex-basis: 100%;
+        color: var(--warn);
+    }
+}
