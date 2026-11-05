@@ -153,7 +153,13 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Gereksinim | `Requirement` |
 | Risk | `Risk` (`Probability`, `Impact`, `Score`) |
 | Açık konu | `OpenIssue` |
+| Açık konu türü / durumu | `OpenIssueType` (`Question`, `Action`, `Decision`, `ChangeRequest`, `Dependency`, `Assumption`), `OpenIssueStatus` (`Open`, `InProgress`, `Closed`) |
+| Sorumlu (açık konu) | `OwnerUserId` (ekip üyesi) ya da `OwnerName` (sistem dışı kişi) |
+| Termin | `DueDate` |
 | Toplantı tutanağı | `Meeting` |
+| Toplantı türü | `MeetingType` |
+| Katılımcılar / gündem | `Participants`, `Agenda` |
+| Tutanaktan aktarılan kayıt | `OpenIssue.SourceMeetingId` |
 | Bildirim | `Notification` |
 | Denetim kaydı | `AuditLog` |
 

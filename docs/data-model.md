@@ -1,8 +1,9 @@
-# Veri Modeli — Temel Entity'ler (Faz 0)
+# Veri Modeli
 
-Bu doküman Faz 1'in ihtiyaç duyduğu 5 temel entity'yi tanımlar: `ProcessStage`, `ProcessStep`,
-`User`, `Project`, `StepRecord`. Diğer modüllerin entity'leri kendi fazlarında eklenir.
-Kaynak: "ISDLC Analiz Merkezi" prototipi. Durum: **taslak — ekip onayı bekliyor.**
+Faz 0'ın temel entity'leri (`ProcessStage`, `ProcessStep`, `User`, `Project`, `StepRecord`), denetim kaydı
+ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
+Kaynak: "ISDLC Analiz Merkezi" prototipi.
+Durum: temel entity'ler uygulandı; **`OpenIssue` ve `Meeting` taslak — ekip onayı bekliyor.**
 
 İsimlendirme AGENTS.md'ye uyar: entity tekil, tablo çoğul; `?` alanın boş bırakılabileceğini (nullable) gösterir.
 
@@ -16,10 +17,14 @@ User         1 ──── * Project             (BusinessAnalystId, ProjectMan
 ProcessStep  1 ──── * Project             (CurrentStepId)
 ProcessStep  1 ──── * ProcessStepJump * ── 1 ProcessStep   (TargetStepId: "Hayır" ile dönülecek adım)
 ProcessStep  1 ──── * StepRecord          (JumpedToStepId: geri dönüşte seçilen adım)
+Project      1 ──── * OpenIssue
+Project      1 ──── * Meeting
+Meeting      1 ──── * OpenIssue           (SourceMeetingId: tutanaktan aktarılan karar ve aksiyonlar)
+User         1 ──── * OpenIssue           (OwnerUserId: sorumlu ekip üyesi)
 ```
 
 - **Ana veri:** `ProcessStage`, `ProcessStep`, `ProcessStepJump`. Seed ile yüklenir, kullanıcı tarafından değiştirilmez.
-- **İşlem verisi:** `User`, `Project`, `StepRecord`. Uygulama kullanıldıkça oluşur.
+- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`. Uygulama kullanıldıkça oluşur.
 
 ## Ortak temel sınıf: `AuditableEntity`
 
@@ -156,6 +161,64 @@ Kayıtlar değiştirilmez ve silinmez; süreç geçmişi bu tablodan okunur.
 - Alan adları C# adlarıdır (`Status`); Türkçe karşılıklarını Audit ekranı gösterir.
 - Kayıt ve logu aynı transaction'da yazılır: log yazılamazsa değişiklik de geri alınır.
 
+## Proje kayıtları (Faz 2)
+
+Bir projeye bağlı kayıtlar (`OpenIssue`, `Meeting`; ileride `Risk`, `Requirement`…) şu ortak kurallara uyar:
+
+- `AuditableEntity`'den türer, `IAudited` ve `IProjectRecord` taşır: her değişiklik `AuditLogs`'a projesiyle birlikte yazılır.
+- **Kod:** Kullanıcıya gösterilen `Code`, proje içinde artan 3 haneli numaradır (`AK-001`, `TT-001`).
+  Yeni kayıtta projenin en büyük numarasının bir fazlası verilir. `(ProjectId, Code)` benzersizdir;
+  iki kayıt aynı anda aynı numarayı alırsa ikincisi 409 ile reddedilir ve kullanıcı tekrar dener.
+- **Yalnızca aktif projede** eklenir ve değiştirilir (`Project.Status = Active`); kapanmış projede okunur.
+- **Silinmez.** Açık konu kapatılır; yanlış girilmiş bir kayıt da gerekçesi açıklamaya yazılarak kapatılır.
+- Giriş yapmış her aktif kullanıcı ekleyip düzenleyebilir (MVP kararı).
+
+### `OpenIssue` — açık konu (Açık Konular Listesi, akış 6.3)
+
+Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, bağımlılık ve varsayım kayıtları.
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `ProjectId` | int (FK → Project) | |
+| `Code` | string | `AK-001`, proje içinde artan |
+| `Type` | `OpenIssueType` | |
+| `Title` | string | En fazla 300 karakter |
+| `Description` | string? | En fazla 2000 karakter |
+| `OwnerUserId` | int? (FK → User) | Sorumlu bir ekip üyesiyse |
+| `OwnerName` | string? | Sorumlu sistem dışından biriyse ("Müşteri BT", "Depo Müdürü"); en fazla 200 karakter |
+| `DueDate` | DateOnly? | Termin |
+| `Status` | `OpenIssueStatus` | |
+| `ClosedAt` | DateTime? (UTC) | `Closed` olunca otomatik dolar, yeniden açılınca boşalır |
+| `SourceMeetingId` | int? (FK → Meeting) | Kayıt bir tutanaktan aktarıldıysa |
+| + `AuditableEntity` alanları | | |
+
+- `OwnerUserId` ve `OwnerName`'den **tam olarak biri** doludur. `OwnerUserId` aktif bir kullanıcı olmalıdır.
+- **Gecikme** saklanmaz, hesaplanır: `Status != Closed` ve `DueDate` bugünden önce.
+- Kapatılan kayıt yeniden açılabilir (`Open`).
+
+### `Meeting` — toplantı tutanağı
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `ProjectId` | int (FK → Project) | |
+| `Code` | string | `TT-001`, proje içinde artan |
+| `Type` | `MeetingType` | |
+| `Date` | DateOnly | Toplantı tarihi |
+| `Participants` | string | Serbest metin ("Elif Yılmaz, Can Öztürk, Müşteri BT"); en fazla 1000 karakter |
+| `Agenda` | string | En fazla 4000 karakter |
+| + `AuditableEntity` alanları | | |
+
+- Toplantının **kararları ve aksiyonları tutanakta ayrıca metin olarak tutulmaz**; tutanak kaydedilirken
+  `OpenIssue` olarak oluşturulur ve `SourceMeetingId` ile tutanağa bağlanır:
+  - her **aksiyon** → `Type = Action`, `Status = Open`, verilen sorumlu ve terminle;
+  - her **karar** → `Type = Decision`, `Status = Closed`, sorumlu tutanağı kaydeden kullanıcı, termin toplantı tarihi.
+- Tutanak ve aktarılan kayıtlar tek `SaveChanges` ile kaydedilir: ya hepsi ya hiçbiri.
+- Tutanak detayında kararlar ve aksiyonlar `SourceMeetingId` üzerinden, güncel durumlarıyla listelenir.
+- Tutanak sonradan düzenlenebilir (tür, tarih, katılımcılar, gündem); kararlar ve aksiyonlar artık
+  açık konu olduğu için Açık Konular üzerinden yönetilir.
+
 ## Enum'lar
 
 | Enum | Değerler |
@@ -168,6 +231,9 @@ Kayıtlar değiştirilmez ve silinmez; süreç geçmişi bu tablodan okunur.
 | `ProjectStatus` | `Active` (Aktif), `Closed` (Kapandı), `Rejected` (Reddedildi), `Lost` (Kaybedildi), `Redirected` (Yönlendirildi) |
 | `StepAction` | `Completed` (Tamamlandı), `Yes` (Evet), `No` (Hayır), `Rejected` (Yönetici kararıyla reddedildi) |
 | `AuditAction` | `Created` (Oluşturuldu), `Updated` (Güncellendi), `Deleted` (Silindi) |
+| `OpenIssueType` | `Question` (Soru), `Action` (Aksiyon), `Decision` (Karar), `ChangeRequest` (Değişiklik Talebi), `Dependency` (Bağımlılık), `Assumption` (Varsayım) |
+| `OpenIssueStatus` | `Open` (Açık), `InProgress` (Devam ediyor), `Closed` (Kapandı) |
+| `MeetingType` | `RequestInterview` (Talep Görüşmesi), `AnalysisSession` (Analiz Oturumu), `KickOff` (Proje Başlangıç / Kick-off), `Review` (Gözden Geçirme), `Internal` (Departman İçi), `CustomerVisit` (Müşteri Ziyareti), `Handover` (Devir Görüşmesi), `ProjectEvaluation` (Proje Değerlendirme) |
 
 ## Süreç ilerleme kuralları
 
@@ -196,6 +262,10 @@ Kayıtlar değiştirilmez ve silinmez; süreç geçmişi bu tablodan okunur.
 6. 2.3 bir adım değildir; yöneticinin her adımda kullanabileceği "Talebi reddet" işlemiyle karşılanır.
 7. `ApproverRole` dolu olan adımı yalnızca o rol kapatabilir (5.1: Satış hazırlar, yönetici onaylar).
 8. Denetim kaydı alan bazında eski/yeni değer tutar ve proje bazında listelenebilir (`AuditLog.ProjectId`); `StepRecord` loglanmaz.
+9. Açık konunun sorumlusu bir kullanıcı (`OwnerUserId`) **ya da** sistem dışından biri (`OwnerName`) olabilir.
+10. Proje kayıtlarının kodu proje içinde artar (`AK-001`, `TT-001`).
+11. Proje kayıtları yalnızca aktif projede eklenir ve değiştirilir; silinmez.
+12. Tutanaktaki kararlar ve aksiyonlar ayrı metin olarak değil, tutanağa bağlı açık konu olarak tutulur.
 
 ## Seed verisi
 

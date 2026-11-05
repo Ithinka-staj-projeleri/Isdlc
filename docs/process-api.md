@@ -2,7 +2,8 @@
 
 `Process` modülünün uç noktaları, DTO'ları, iş kuralları ve hata durumları.
 Veri modeli ve süreç ilerleme kuralları için: [data-model.md](data-model.md).
-Durum: **taslak — ekip onayı bekliyor.** Sorumlu: Erva.
+Durum: **uygulandı.** Okuma uç noktaları ve `complete` main'de; `answer` (#27) ve `reject` (#29) PR'da.
+Yetki kuralı ekip kararı bekliyor (aşağıda). Sorumlu: Erva.
 
 Bütün uç noktalar AGENTS.md'deki ve Faz 0'daki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin,
 tarihler UTC / ISO 8601, hatalar `ProblemDetails`, listeler `items` + `totalCount`.
@@ -114,11 +115,14 @@ Sıralama: en yeni kayıt önce.
 
 | Alan | Kural |
 | --- | --- |
-| `expectedStepId` | Zorunlu. Kullanıcının ekranda gördüğü mevcut adım |
-| `answer` | Zorunlu. `StepAnswer` enum'u: `Yes`, `No` |
-| `jumpTargetStepId` | Yalnızca `answer = No` ve adımın dönüş seçenekleri varken zorunlu; aksi halde boş olmalı |
-| `note` | İsteğe bağlı, en fazla 1000 karakter |
-| `reason` | Zorunlu, en fazla 1000 karakter; `StepRecord.Note` alanına yazılır |
+| `expectedStepId` | Zorunlu. Kullanıcının ekranda gördüğü mevcut adım (`currentStep.id`) |
+| `answer` | Zorunlu. `StepAnswer` enum'u: `Yes`, `No`. Gönderilmezse 400 (sessizce `Yes` sayılmaz) |
+| `jumpTargetStepId` | Yalnızca `answer = No` ve adımın dönüş seçenekleri varken zorunlu ve `currentStep.noJumps[].targetStepId` değerlerinden biri olmalı; aksi halde gönderilmez |
+| `note` | İsteğe bağlı, en fazla 1000 karakter. Baştaki ve sondaki boşluklar kırpılır; boşsa kaydedilmez |
+| `reason` | Zorunlu (yalnızca boşluk da kabul edilmez), en fazla 1000 karakter; kırpılarak `StepRecord.Note` alanına yazılır |
+
+**Kontrollerin sırası** (üç işlemde aynı): proje var mı (404) → aktif mi (409) → `expectedStepId` mevcut adım mı (409)
+→ kullanıcı bu işlemi yapabilir mi (403) → istek bu adıma uygun mu (400) → kaydet (`RowVersion` çakışması 409).
 
 ## Yetki kuralları
 
@@ -130,8 +134,12 @@ Sıralama: en yeni kayıt önce.
 | `reject` | Yalnızca `SoftwareDepartmentManager` |
 
 > **Ekip kararı bekleniyor:** Prototipte onay adımları dışında herkes her adımı işleyebiliyordu.
-> Bu taslak daha sıkı bir kural öneriyor (yalnızca sorumlu rol). Daha esnek bir kural istenirse
-> (ör. projenin iş analisti her adımı işleyebilir) yalnızca bu tablo ve yetki kontrolü değişir.
+> Uygulanan kural daha sıkı (yalnızca sorumlu rol). Daha esnek bir kural istenirse
+> (ör. projenin iş analisti her adımı işleyebilir) yalnızca bu tablo ve `ProcessProgress` değişir.
+
+Kurallar `ProcessProgress` içinde tek yerdedir (`CanActOnStep`, `CanReject`). Hem `availableActions` (butonlar)
+hem işlemlerdeki 403 kontrolü aynı fonksiyonları kullanır; ikisi birbirinden farklı sonuç veremez.
+Yönetici her adımda reddedebilir, ama bu, sorumlu rolü başka olan bir adımı işleyebileceği anlamına gelmez.
 
 ## Hata durumları
 
@@ -140,13 +148,21 @@ Bütün hatalar `ProblemDetails` biçimindedir; `detail` alanı kullanıcıya g�
 | Durum | Kod | Örnek `detail` |
 | --- | --- | --- |
 | Proje bulunamadı | `404` | "Proje bulunamadı." |
-| İstek alanları geçersiz | `400` | "Gerekçe zorunludur." |
-| `complete` bir karar adımına gönderildi (veya `answer` karar olmayan adıma) | `400` | "Bu adım bir karar adımıdır; Evet/Hayır cevabı verilmelidir." |
-| `jumpTargetStepId` eksik, fazla veya seçenekler arasında değil | `400` | "Geçerli bir dönüş seçeneği seçilmelidir." |
-| Kullanıcının rolü yetmiyor | `403` | "Bu adım Yazılım Departman Yöneticisi tarafından onaylanır." |
+| İstek alanları geçersiz (otomatik doğrulama) | `400` | `errors` alanında: "Gerekçe zorunludur.", "Cevap (Evet/Hayır) belirtilmelidir." |
+| `complete` bir karar adımına gönderildi | `400` | "Bu adım bir karar adımıdır; Evet/Hayır cevabı verilmelidir." |
+| `answer` karar olmayan adıma gönderildi | `400` | "Bu adım bir karar adımı değil; Evet/Hayır cevabı verilmez, adım tamamlanır." |
+| `Yes` ile birlikte `jumpTargetStepId` | `400` | "Evet cevabında dönüş adımı seçilmez." |
+| `No`, adımın seçenekleri var ama `jumpTargetStepId` eksik veya listede değil | `400` | "Geçerli bir dönüş seçeneği seçilmelidir." |
+| `No`, adımın seçeneği yok ama `jumpTargetStepId` gönderildi | `400` | "Bu adımda dönüş seçeneği yok; dönüş adımı seçilmez." |
+| Giriş yapılmamış | `403` | "İşlem yapmak için giriş yapılmalıdır." |
+| Kullanıcının rolü adıma yetmiyor | `403` | "Bu adım Yazılım Departman Yöneticisi tarafından onaylanır." / "Bu adım İş Analisti tarafından yapılır." |
+| Yönetici olmayan kullanıcı reddediyor | `403` | "Talebi yalnızca Yazılım Departman Yöneticisi reddedebilir." |
 | Proje aktif değil | `409` | "Proje aktif değil; süreçte işlem yapılamaz." |
 | `expectedStepId` mevcut adımla aynı değil | `409` | "Proje bu arada başka bir adıma geçti. Sayfayı yenileyin." |
-| Aynı anda yapılan başka bir işlem kaydı değiştirdi | `409` | "Proje bu arada başka bir adıma geçti. Sayfayı yenileyin." |
+| Aynı anda yapılan başka bir işlem kaydı değiştirdi (`RowVersion`) | `409` | "Kayıt bu arada başka biri tarafından değiştirildi. Sayfayı yenileyin." |
+
+> Otomatik doğrulama hatalarının başlığı şimdilik ASP.NET varsayılanı ("One or more validation errors occurred.")
+> ve alan adları PascalCase (`ExpectedStepId`); ortak bir düzeltme bekliyor (bkz. #25).
 
 ## Eş zamanlı işlem koruması
 
@@ -158,7 +174,13 @@ Bütün hatalar `ProblemDetails` biçimindedir; `detail` alanı kullanıcıya g�
    eşzamanlılık belirteci (`[Timestamp]` / SQL Server `rowversion`) bulunur. Kayıt okunduktan sonra
    başka biri değiştirdiyse `SaveChanges` `DbUpdateConcurrencyException` fırlatır; bu da `409`'a çevrilir.
 
+3. **Proje her işlemde "değişti" işaretlenir:** Aynı adımda kalan bir "Hayır" projede hiçbir alanı değiştirmez;
+   EF Core da değişmeyen kaydı güncellemediği için `RowVersion` kontrolü atlanırdı. Bu yüzden `CurrentStepId`
+   her işlemde "değişti" işaretlenir ve güncelleme `RowVersion` kontrolüyle her zaman gönderilir. Değer değişmediği
+   için denetim kaydına boş satır düşmez.
+
 `StepRecord` eklenmesi ve `Project` güncellenmesi tek bir `SaveChanges` çağrısında yapılır; ya ikisi de kaydedilir ya hiçbiri.
+Lokal denemede (aynı anda iki istek) ikinci isteğin `RowVersion` ile 409 aldığı görüldü.
 
 ## Bildirim noktaları
 
@@ -176,19 +198,22 @@ public interface INotificationService
 
 | Olay | Kime | Mesaj örneği |
 | --- | --- | --- |
-| Proje `ApproverRole`'ü olan bir adıma geldi | O roldeki kullanıcılar | "ISDLC-2026-016 · 4.5 onayınızı bekliyor." |
-| "Hayır" ile önceki bir adıma dönüldü | Projenin iş analisti | "ISDLC-2026-016 · 4.7'den 4.1'e dönüldü." |
-| Proje kapandı (`Closed`, `Rejected`, `Lost`, `Redirected`) | Projenin iş analisti ve proje yöneticisi | "ISDLC-2026-011 kapandı: Kaybedildi." |
+| Proje `ApproverRole`'ü olan bir adıma geldi (3.2, 4.5, 5.1) | O roldeki kullanıcılar | "ISDLC-2026-016 · 4.5 onayınızı bekliyor." |
+| "Hayır" ile önceki bir adıma dönüldü | Projenin iş analisti | "ISDLC-2026-016 · 4.7 adımından 4.1 adımına dönüldü." |
+| Proje kapandı (`Closed`, `Rejected`, `Lost`, `Redirected`) | Projenin iş analisti ve proje yöneticisi (atanmışsa) | "ISDLC-2026-011 kapandı: Kaybedildi." |
+
+Bildirimler kayıt başarıyla kaydedildikten sonra gönderilir. `NullNotificationService` şimdilik yalnızca loga yazar
+("Notification not sent ..."); lokal denemede bildirimin doğru anda tetiklendiği buradan görülebilir.
 
 ## Kod yerleşimi
 
 | Katman | Dosyalar |
 | --- | --- |
 | `Isdlc.Domain/Process/` | `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `StepRecord`, enum'lar |
-| `Isdlc.Application/Process/` | `IProcessService`, `ProcessService`, DTO'lar, doğrulama, yetki kontrolü |
+| `Isdlc.Application/Process/` | `IProcessService`, `ProcessService`, DTO'lar; veritabanısız kurallar: `ProcessProgress` (ilerleme, aşama durumu, yetki), `ProcessTransitions` (işlemden sonraki durum ve adım), `ProcessMappings` (adım → DTO ifadesi) |
 | `Isdlc.Application/Notifications/` | `INotificationService`, `NullNotificationService` |
 | `Isdlc.Infrastructure/Process/` | EF yapılandırmaları, seeder |
-| `Isdlc.Api/Controllers/` | `ProcessStagesController` (`/process-stages`), `ProjectProcessController` (`/projects/{projectId}/process`, `/projects/{projectId}/step-records`) |
+| `Isdlc.Api/Controllers/` | `ProcessStagesController` (`/process-stages`), `ProjectProcessController` (`/projects/{projectId}/process`, `.../process/complete`, `.../process/answer`, `.../process/reject`, `/projects/{projectId}/step-records`) |
 
 İş kuralları (ilerleme, yetki, doğrulama) yalnızca `ProcessService` içindedir; controller'lar yalnızca isteği servise iletir.
 
