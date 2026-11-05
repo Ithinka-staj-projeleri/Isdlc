@@ -104,9 +104,5 @@ export class ProjectDetailComponent {
       queryParams: { tab: tab === 'general' ? null : tab },
       queryParamsHandling: 'merge',
     });
-
-    // The process tab can move the project on; reload so the summary shows the current step and status.
-    // (Until the process component tells us itself when something changed.)
-    this.project.reload();
   }
 }

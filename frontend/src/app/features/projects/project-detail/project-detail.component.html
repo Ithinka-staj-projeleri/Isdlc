@@ -45,7 +45,8 @@
   <section class="panel" role="tabpanel" [id]="'panel-' + tab()" [attr.aria-labelledby]="'tab-' + tab()">
     @switch (tab()) {
       @case ('process') {
-        <app-project-process [projectId]="p.id" />
+        <!-- After a step is completed, answered or rejected, reload so the summary shows the new step and status. -->
+        <app-project-process [projectId]="p.id" (processChanged)="project.reload()" />
       }
       @case ('open-issues') {
         <app-open-issue-list [projectId]="p.id" [readOnly]="readOnly()" />
