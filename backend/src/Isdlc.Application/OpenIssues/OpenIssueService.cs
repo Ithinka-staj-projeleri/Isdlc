@@ -47,8 +47,7 @@ public class OpenIssueService(
             .ThenBy(x => x.DueDate)
             .ThenBy(x => x.Code.Length)
             .ThenBy(x => x.Code)
-            .Skip(pageRequest.Skip)
-            .Take(pageRequest.PageSize)
+            .ApplyPaging(pageRequest)
             .Select(ToListItemDto(today))
             .ToListAsync(cancellationToken);
 
