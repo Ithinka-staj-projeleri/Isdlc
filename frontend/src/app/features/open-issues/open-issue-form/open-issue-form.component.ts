@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, input, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, of } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
 import { LookupService } from '../../../shared/services/lookup.service';
@@ -28,7 +29,8 @@ export class OpenIssueFormComponent implements OnInit {
 
     protected readonly typeLabels = OPEN_ISSUE_TYPE_LABELS;
     protected readonly types = Object.keys(OPEN_ISSUE_TYPE_LABELS) as OpenIssueType[];
-    protected readonly users = toSignal(inject(LookupService).users$, { initialValue: [] });
+    // A failed load leaves the list empty; the error interceptor has already told the user.
+    protected readonly users = toSignal(inject(LookupService).users$.pipe(catchError(() => of([]))), { initialValue: [] });
 
     protected readonly form = this.fb.nonNullable.group({
         type: this.fb.nonNullable.control<OpenIssueType>('Action', Validators.required),

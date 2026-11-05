@@ -1,0 +1,93 @@
+@use '../../../shared/styles/ui' as ui;
+
+:host {
+    display: block;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+
+    p {
+        flex: 1 1 320px;
+        margin: 0;
+        max-width: 75ch;
+    }
+}
+
+.button {
+    @include ui.button;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.note {
+    margin: 0 0 12px;
+    color: var(--muted);
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 12px;
+
+    &.loading {
+        opacity: .6;
+    }
+}
+
+.card {
+    @include ui.card;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    color: var(--fg);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+        border-color: var(--accent);
+    }
+}
+
+.head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.code {
+    @include ui.code;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.participants {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-size: 13px;
+
+    .open {
+        color: var(--warn);
+        font-weight: 600;
+    }
+
+    .done {
+        color: var(--ok);
+    }
+}

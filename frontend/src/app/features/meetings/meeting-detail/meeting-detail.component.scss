@@ -1,0 +1,75 @@
+@use '../../../shared/styles/ui' as ui;
+
+@include ui.dialog;
+
+.button {
+    @include ui.button;
+}
+
+.code {
+    @include ui.code;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.small {
+    font-size: 12px;
+}
+
+.info {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 6px 16px;
+    margin: 0 0 16px;
+
+    dt {
+        color: var(--muted);
+    }
+
+    dd {
+        margin: 0;
+    }
+
+    .agenda {
+        white-space: pre-line;
+    }
+}
+
+h4 {
+    margin: 16px 0 6px;
+    font-size: 14px;
+}
+
+.records {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        padding: 8px 0;
+        border-top: 1px solid var(--line);
+    }
+
+    .title {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.hint {
+    margin: 14px 0 6px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--bg);
+    font-size: 13px;
+
+    a {
+        color: var(--accent);
+    }
+}
