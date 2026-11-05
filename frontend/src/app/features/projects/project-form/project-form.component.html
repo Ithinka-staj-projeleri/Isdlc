@@ -1,0 +1,149 @@
+<header class="page-head">
+  <a routerLink="/requests" class="back">← Talepler</a>
+  <h2>Yeni talep</h2>
+  <p class="hint">Talep kaydedildiğinde sürecin ilk adımında (1.1 Talep Kaydı) başlar ve otomatik bir kod alır.</p>
+</header>
+
+<form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <section class="card">
+    <h3>Talep</h3>
+
+    <label class="field wide">
+      <span>Proje adı *</span>
+      <input formControlName="name" maxlength="200" [class.invalid]="errorFor('name')" />
+      @if (errorFor('name')) {
+        <small class="error">{{ errorFor('name') }}</small>
+      }
+    </label>
+
+    <label class="field wide">
+      <span>Açıklama *</span>
+      <textarea formControlName="description" rows="4" maxlength="2000" [class.invalid]="errorFor('description')"></textarea>
+      @if (errorFor('description')) {
+        <small class="error">{{ errorFor('description') }}</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Talep türü *</span>
+      <select formControlName="requestType" [class.invalid]="errorFor('requestType')">
+        <option [ngValue]="null" disabled>Seçin</option>
+        @for (option of typeOptions; track option[0]) {
+          <option [ngValue]="option[0]">{{ option[1] }}</option>
+        }
+      </select>
+      @if (errorFor('requestType')) {
+        <small class="error">{{ errorFor('requestType') }}</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Talep kaynağı *</span>
+      <select formControlName="source" [class.invalid]="errorFor('source')">
+        <option [ngValue]="null" disabled>Seçin</option>
+        @for (option of sourceOptions; track option[0]) {
+          <option [ngValue]="option[0]">{{ option[1] }}</option>
+        }
+      </select>
+      @if (errorFor('source')) {
+        <small class="error">{{ errorFor('source') }}</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Talep kanalı *</span>
+      <select formControlName="requestChannel" [class.invalid]="errorFor('requestChannel')">
+        <option [ngValue]="null" disabled>Seçin</option>
+        @for (option of channelOptions; track option[0]) {
+          <option [ngValue]="option[0]">{{ option[1] }}</option>
+        }
+      </select>
+      @if (errorFor('requestChannel')) {
+        <small class="error">{{ errorFor('requestChannel') }}</small>
+      }
+    </label>
+  </section>
+
+  <section class="card">
+    <h3>Talep sahibi</h3>
+
+    <label class="field">
+      <span>Müşteri / birim *</span>
+      <input formControlName="customerName" maxlength="200" [class.invalid]="errorFor('customerName')" />
+      @if (errorFor('customerName')) {
+        <small class="error">{{ errorFor('customerName') }}</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Talep sahibi *</span>
+      <input
+        formControlName="requesterName"
+        maxlength="200"
+        placeholder="Kişi ya da unvan"
+        [class.invalid]="errorFor('requesterName')"
+      />
+      @if (errorFor('requesterName')) {
+        <small class="error">{{ errorFor('requesterName') }}</small>
+      }
+    </label>
+
+    <label class="check wide">
+      <input type="checkbox" formControlName="requiresNda" />
+      <span>Görüşme öncesi gizlilik sözleşmesi (NDA) gerekiyor</span>
+    </label>
+  </section>
+
+  <section class="card">
+    <h3>Sorumlular ve tarihler</h3>
+
+    <label class="field">
+      <span>İş analisti</span>
+      <select formControlName="businessAnalystId" [class.invalid]="errorFor('businessAnalystId')">
+        <option [ngValue]="null">Atanmadı</option>
+        @for (user of analysts(); track user.id) {
+          <option [ngValue]="user.id">{{ user.fullName }}</option>
+        }
+      </select>
+      @if (errorFor('businessAnalystId')) {
+        <small class="error">{{ errorFor('businessAnalystId') }}</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Proje yöneticisi</span>
+      <select formControlName="projectManagerId" [class.invalid]="errorFor('projectManagerId')">
+        <option [ngValue]="null">Atanmadı</option>
+        @for (user of managers(); track user.id) {
+          <option [ngValue]="user.id">{{ user.fullName }}</option>
+        }
+      </select>
+      @if (errorFor('projectManagerId')) {
+        <small class="error">{{ errorFor('projectManagerId') }}</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Başlangıç tarihi *</span>
+      <input type="date" formControlName="startDate" [class.invalid]="errorFor('startDate')" />
+      @if (errorFor('startDate')) {
+        <small class="error">{{ errorFor('startDate') }}</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Bitiş tarihi</span>
+      <input type="date" formControlName="dueDate" [class.invalid]="dueDateError()" />
+      @if (dueDateError()) {
+        <small class="error">{{ dueDateError() }}</small>
+      }
+    </label>
+  </section>
+
+  <footer class="actions">
+    <a routerLink="/requests" class="button">İptal</a>
+    <button type="submit" class="button primary" [disabled]="saving()">
+      {{ saving() ? 'Kaydediliyor…' : 'Talebi kaydet' }}
+    </button>
+  </footer>
+</form>

@@ -9,6 +9,7 @@ export const routes: Routes = [
             { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
             { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard-page.component').then(m => m.DashboardPageComponent) },
             // "Talepler" and "Projeler" are the same list with a different filter (docs/projects-api.md, decision 3).
+            { path: 'requests/new', loadComponent: () => import('./features/projects/project-form/project-form.component').then(m => m.ProjectFormComponent) },
             { path: 'requests', data: { mode: 'requests' }, loadComponent: () => import('./features/projects/project-list/project-list.component').then(m => m.ProjectListComponent) },
             { path: 'projects', data: { mode: 'projects' }, loadComponent: () => import('./features/projects/project-list/project-list.component').then(m => m.ProjectListComponent) },
             { path: 'assessment', loadComponent: () => import('./features/assessment/assessment-page.component').then(m => m.AssessmentPageComponent) },

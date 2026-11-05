@@ -51,6 +51,26 @@ export interface Project extends ProjectListItem {
   updatedAt: string | null;
 }
 
+/**
+ * What the request form sends (POST /api/v1/projects, later also PUT).
+ * Status, current step, priority and level are not here: Process and Assessment own them.
+ */
+export interface ProjectInput {
+  name: string;
+  description: string;
+  source: RequestSource;
+  requestChannel: RequestChannel;
+  requestType: RequestType;
+  customerName: string;
+  requesterName: string;
+  requiresNda: boolean;
+  businessAnalystId: number | null;
+  projectManagerId: number | null;
+  /** Date only, e.g. "2026-11-05". */
+  startDate: string;
+  dueDate: string | null;
+}
+
 /** List filters; all optional. */
 export interface ProjectFilter {
   status?: ProjectStatus;

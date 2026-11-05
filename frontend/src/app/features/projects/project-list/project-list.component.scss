@@ -1,7 +1,21 @@
 // Colours and sizes come from the variables in src/styles.scss.
 
 .page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
+
+  .new-button {
+    padding: 8px 14px;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
 
   h2 {
     margin: 0;
