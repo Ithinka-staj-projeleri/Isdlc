@@ -1,0 +1,32 @@
+{
+  "name": "Saha Servis Mobil Uygulaması — analiz oturumundaki riskler",
+  "projectCode": "ISDLC-2026-014",
+  "sourceLabel": "Toplantı notları",
+  "text": "Katılımcılar: Elif Yılmaz (İş Analisti), Can Öztürk (Geliştirici), Saha Operasyon Müdürü, Müşteri BT.\n\nİş emri yaşam döngüsü konuşuldu. İş emri durumlarının Atandı, Yolda, Sahada, Beklemede, Tamamlandı ve İptal olmak üzere 6 adım olmasına karar verildi.\n\nERP entegrasyonu için test ortamı henüz yok. Müşteri BT, ERP test ortamı erişim bilgilerini gelecek cuma gönderecek. Bilgiler destek.bt@anadolu-ornek.com adresinden iletilecek.\n\nCan Öztürk, iş emri listesi ve servis formu ekran taslaklarını 12 Kasım'a kadar hazırlayacak.\n\nTeknisyenlerin fotoğraf çekip forma eklemesi isteniyor. Fotoğrafların en fazla kaç MB olabileceği ve kaç gün saklanacağı belli değil; Saha Operasyon Müdürü bunu netleştirecek.\n\nSaha Operasyon Müdürü, teklif kapsamında olmayan bir istek olarak araç takip ekranı da istedi. Bunun ayrıca değerlendirilmesi gerekiyor.\n\nTeknisyenlerin hepsinin Android telefon kullandığı varsayıldı; iOS desteği şimdilik düşünülmüyor.",
+  "expected": [
+    {
+      "keywords": [
+        "test ortamı",
+        "erp"
+      ],
+      "minScore": 9
+    },
+    {
+      "keywords": [
+        "fotoğraf"
+      ]
+    },
+    {
+      "keywords": [
+        "araç takip",
+        "kapsam"
+      ]
+    },
+    {
+      "keywords": [
+        "ios",
+        "android"
+      ]
+    }
+  ]
+}

@@ -486,3 +486,8 @@ $RECYCLE.BIN/
 
 # Local environment variables
 .env
+
+# Python (ai/)
+ai/.venv/
+ai/output/
+.pytest_cache/
