@@ -239,4 +239,9 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
   (süreç akışı, kullanıcılar, örnek projeler). Bu yüzden `dotnet test` için **Docker açık olmalıdır**.
 - Bütün testler aynı veritabanını paylaşır. Veri değiştiren bir test, başka testlerin kullandığı seed kayıtlarını
   değiştirmez; kendi kaydını oluşturup onunla çalışır.
+- Ortak yardımcılar (`tests/Isdlc.Application.Tests/Common/`):
+  - `TestProjects.CreateAsync(database, "4.7")`: istenen adımda bekleyen yeni bir proje; seed kullanıcılarının e-postaları da burada.
+  - `TestUser`: servisi belirli bir kullanıcı giriş yapmış gibi kurmak için (`new ProcessService(db, new TestUser(id), ...)`).
+  - `RecordingNotificationService`: gönderilen bildirimleri listede tutar; test ne gönderildiğini kontrol eder.
+- Saf kural sınıfları (`ProcessProgress`, `ProcessTransitions` gibi) veritabanısız test edilir; bütün kombinasyonlar burada denenir.
 - Test adı neyi kontrol ettiğini söyler: `Metot_Durum_Beklenen` (ör. `GetStages_Returns13StagesInOrder`).
