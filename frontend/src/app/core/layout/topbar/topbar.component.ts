@@ -1,9 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { AuthService, ROLE_LABELS } from '../../auth/auth.service';
 
 @Component({
-  imports: [],
   selector: 'app-topbar',
-  styleUrl: './topbar.component.scss',
   templateUrl: './topbar.component.html',
+  styleUrl: './topbar.component.scss',
 })
-export class TopbarComponent {}
+export class TopbarComponent {
+  auth = inject(AuthService);
+  roleLabels = ROLE_LABELS;
+}

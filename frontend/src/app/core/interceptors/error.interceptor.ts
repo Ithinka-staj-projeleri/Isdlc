@@ -14,6 +14,7 @@ const MESSAGES: Record<number, string> = {
 export const errorInterceptor: HttpInterceptorFn = (req, next) =>
   next(req).pipe(
     catchError((err: HttpErrorResponse) => {
+      if (req.url.includes('/auth/login')) return throwError(() => err);
       const status = err.error?.status ?? err.status;
       const message = MESSAGES[status] ?? 'Beklenmeyen bir hata oluştu.';
       console.error('API hatası:', err.error ?? err);
