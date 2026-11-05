@@ -3,6 +3,7 @@ using Isdlc.Domain.Identity;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Isdlc.Application.Common.Interfaces;
 
@@ -22,4 +23,7 @@ public interface IApplicationDbContext
     DbSet<AuditLog> AuditLogs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Change tracking details of a loaded entity (e.g. to mark a property as modified).</summary>
+    EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;
 }

@@ -99,6 +99,14 @@ public static class ProcessProgress
     /// <summary>Only the Software Department Manager can reject a request.</summary>
     public static bool CanReject(UserRole userRole) => userRole == UserRole.SoftwareDepartmentManager;
 
+    /// <summary>Why the user cannot complete or answer the step; null when they can.</summary>
+    public static string? WhyCannotActOnStep(StepPermissionInfo step, UserRole userRole) =>
+        CanActOnStep(step, userRole) ? null : GetBlockedReason(step);
+
+    /// <summary>Why the user cannot reject the request; null when they can. Rejecting is allowed on any step.</summary>
+    public static string? WhyCannotReject(StepPermissionInfo step, UserRole userRole) =>
+        CanReject(userRole) ? null : "Talebi yalnızca Yazılım Departman Yöneticisi reddedebilir.";
+
     /// <summary>Message for a user who cannot act on the step.</summary>
     public static string GetBlockedReason(StepPermissionInfo step) => step.ApproverRole is { } approver
         ? $"Bu adım {approver.ToDisplayName()} tarafından onaylanır."
