@@ -16,10 +16,14 @@ public class ProjectsController(IProjectService projectService) : ApiControllerB
         return await projectService.GetAsync(projectId, cancellationToken);
     }
 
-    /// <summary>A new request. It starts Active at step 1.1 and gets the next code of the year (ISDLC-2026-019).</summary>
+    /// <summary>
+    /// A new request. It starts Active at step 1.1 and gets the next code of the year (ISDLC-2026-019).
+    /// Only a Business Analyst can open a request.
+    /// </summary>
     [HttpPost]
     [ProducesResponseType<ProjectDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ProjectDto>> Create(CreateProjectDto request, CancellationToken cancellationToken)
     {

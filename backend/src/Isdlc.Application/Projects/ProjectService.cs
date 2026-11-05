@@ -32,6 +32,13 @@ public class ProjectService(
     public async Task<ProjectDto> CreateAsync(CreateProjectDto request, CancellationToken cancellationToken)
     {
         var userId = RequireSignedIn();
+
+        // Team decision: only a Business Analyst opens requests (docs/projects-api.md → Ortak kurallar).
+        if (!await IsActiveUserWithRoleAsync(userId, UserRole.BusinessAnalyst, cancellationToken))
+        {
+            throw new ForbiddenException("Talebi yalnızca İş Analisti açabilir.");
+        }
+
         await ValidatePeopleAsync(request.BusinessAnalystId, request.ProjectManagerId, cancellationToken);
 
         // Agreed with Process: a new request starts Active at the first step of the flow (1.1).
