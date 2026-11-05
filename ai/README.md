@@ -1,7 +1,8 @@
-# ai/ — Yapay zekâ ajanları (deneme)
+# ai/ — Yapay zekâ ajanları
 
-ISDLC için yapay zekâ ajanlarının Python ile yazılmış **deneme** sürümü. MVP'nin parçası değildir.
-Tasarım ve yol haritası: [docs/ai-vision.md](../docs/ai-vision.md). Sorumlu: Erva.
+ISDLC'nin yapay zekâ ajanları (Python). Toplantı ajanı, ekip onayıyla uygulamaya alındı: yeni tutanak formundaki
+"Yapay zekâ ile karar ve aksiyonları çıkar" butonu, backend üzerinden bu klasördeki HTTP servisini çağırır.
+Komut satırı ve risk ajanı deneme olarak duruyor. Tasarım ve yol haritası: [docs/ai-vision.md](../docs/ai-vision.md). Sorumlu: Erva.
 
 Şu an iki ajan var. Her ajan birkaç **görevden** oluşur; her görev kendi prompt dosyası ve cevap şemasıyla
 ayrı bir model çağrısıdır.
@@ -57,7 +58,33 @@ Testler gerçek modeli çağırmaz (`FakeLlmClient`); anahtar ve internet gerekm
 .venv/Scripts/python -m pytest
 ```
 
-## Toplantı ajanını çalıştırma
+## Uygulamayla birlikte çalıştırma (HTTP servisi)
+
+Backend, servisi `appsettings.Development.json`'daki `Agents:ServiceUrl` (`http://localhost:8000`) adresinden,
+`Agents:ServiceKey` anahtarıyla çağırır. Aynı anahtar `ai/.env` içinde `AGENT_SERVICE_KEY` olarak durur
+(`.env.example`'daki geliştirme değeri). Servis çalışmıyorsa uygulamadaki yapay zekâ butonu görünmez.
+
+Lokalde (Python kurulumu yukarıda):
+
+```bash
+.venv/Scripts/python -m uvicorn isdlc_ai.server:app --port 8000
+```
+
+Ya da Docker ile (kök klasörde):
+
+```bash
+docker compose --profile ai up -d --build
+```
+
+| Uç nokta | Ne yapar |
+| --- | --- |
+| `GET /health` | Servis ayakta mı, model ayarlı mı (`modelConfigured`) |
+| `POST /v1/meeting/suggestions` | Notlardan açık konu önerileri (`X-Agent-Key` gerekir). Sözleşme: [open-issues-meetings-api.md](../docs/open-issues-meetings-api.md) → "Yapay zekâ önerileri" |
+
+Servis yalnızca backend tarafından çağrılır; ISDLC API'sine ve veritabanına bu akışta dokunmaz.
+Model hata verirse Türkçe bir mesajla `503` döner; backend bu mesajı kullanıcıya iletir.
+
+## Toplantı ajanını komut satırından çalıştırma
 
 Önce backend'i lokalde çalıştırın (kök README). Proje Id'lerini Swagger'dan görebilirsiniz.
 
@@ -127,6 +154,7 @@ Prompt veya model değiştirildiğinde sonuçlar öncekiyle karşılaştırılı
 ai/
 ├─ isdlc_ai/
 │  ├─ __main__.py            # komut satırı: python -m isdlc_ai meeting ...
+│  ├─ server.py              # HTTP servisi (backend çağırır): uvicorn isdlc_ai.server:app
 │  ├─ config.py              # ai/.env ayarları
 │  ├─ llm.py                 # LlmClient arayüzü, GeminiClient, FakeLlmClient
 │  ├─ masking.py             # kişisel veri gizleme
@@ -161,8 +189,7 @@ Görev başka türde bir kayıt üretiyorsa (ör. gereksinim) mevcut ajana deği
 
 ## Henüz yapılmayanlar
 
-- `Meetings` backend'i hazır olunca: önerilerle birlikte tutanağın kendisi de kaydedilecek (`POST /meetings`).
-- Öneriler şu an komut satırında onaylanıyor. Sonraki adımda backend'de `AgentSuggestion` tablosu ve proje ekranında öneri paneli gelecek (bkz. ai-vision.md).
+- Uygulamada öneriler tutanak formunda inceleniyor; kabul / ret oranlarını ölçmek için `AgentSuggestion` tablosu ve öneri paneli sonra gelecek (bkz. ai-vision.md).
+- Tutanak taslağı görevi (`--minutes`) henüz uygulamaya bağlı değil; yalnızca komut satırında.
 - Risk alanları ve 1-5 ölçeği varsayım; Risks sözleşmesi yazılınca `RiskSuggestion` ona göre düzeltilecek.
-- Sorumlu şu an her zaman `ownerName` olarak gönderiliyor; kullanıcı listesi API'si gelince ekip üyeleri `ownerUserId` ile eşleştirilecek.
-- Python için CI işi yok; ekip Python'u onaylarsa `.github/workflows/ci.yml`'ye eklenecek.
+- Komut satırında sorumlu her zaman `ownerName` olarak gönderiliyor. Uygulamada backend, adı aktif bir kullanıcıyla eşleşen sorumluyu `ownerUserId` yapıyor.

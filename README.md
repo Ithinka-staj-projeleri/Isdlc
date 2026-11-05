@@ -8,6 +8,7 @@ Proje kuralları için [AGENTS.md](AGENTS.md), plan ve iş dağılımı için [P
 - [.NET SDK 10](https://dotnet.microsoft.com/download)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - [Node.js](https://nodejs.org/) (frontend için)
+- [Python 3.11+](https://www.python.org/) (isteğe bağlı: yapay zekâ servisi için)
 
 ## Lokalde çalıştırma
 
@@ -61,3 +62,15 @@ dotnet test backend/Isdlc.sln
 Geliştirme ortamında API açılırken migration'lar uygulanır ve seed verisi (süreç akışı, kullanıcılar, örnek projeler)
 boş tablolara yüklenir. Veritabanını sıfırdan kurmak için `docker compose down -v` ve `docker compose up -d`,
 ardından API'yi yeniden başlat.
+
+### Yapay zekâ servisi (isteğe bağlı)
+
+Tutanak formundaki "Yapay zekâ ile karar ve aksiyonları çıkar" butonu bu servisle çalışır. Servis kapalıyken buton
+görünmez; uygulamanın geri kalanı etkilenmez. `ai/.env.example` dosyasını `ai/.env` adıyla kopyalayıp
+`GEMINI_API_KEY` değerini gir, sonra servisi Docker ile başlat:
+
+```bash
+docker compose --profile ai up -d --build
+```
+
+Python ile lokalde çalıştırma ve ayrıntılar: [ai/README.md](ai/README.md). Yalnızca sahte veriyle kullan.

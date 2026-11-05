@@ -19,6 +19,7 @@ ISDLC (Yazılım Geliştirme Yaşam Döngüsü) sürecini yöneten, şirket içi
 | Veritabanı | MSSQL (lokalde Docker ile) |
 | Veri erişimi | Entity Framework Core, code-first migrations |
 | Kod ve iş takibi | GitHub |
+| Yapay zekâ ajanları | Python (FastAPI), ayrı servis (`ai/`); yalnızca backend çağırır, veritabanına erişmez |
 
 Yığına yeni bir kütüphane veya paket eklenmeden önce geliştiriciye sorulur.
 
@@ -42,9 +43,10 @@ Aşağıdaki liste kesin değildir; kapsam netleştikçe güncellenir.
 | Gösterge paneli | `Dashboard` | Özet göstergeler |
 | Bildirimler | `Notifications` | Uygulama içi bildirimler |
 | Denetim kaydı | `Audit` | Yapılan değişikliklerin kaydı |
+| Yapay zekâ yardımcıları | `Agents` | Toplantı notlarından karar ve aksiyon önerisi (ekip onayıyla MVP'ye alındı) |
 
 **Sonraki sürümlere bırakılanlar:** Test & UAT, Teklif & Maliyet, Kaynak Planlama, Faturalama,
-Proje Devir, Otomasyon, AI özellikleri.
+Proje Devir, Otomasyon, toplantı yardımcısı dışındaki AI özellikleri (bkz. [docs/ai-vision.md](docs/ai-vision.md)).
 
 ## 4. Klasör yapısı
 
@@ -63,6 +65,7 @@ Proje Devir, Otomasyon, AI özellikleri.
 │  │  └─ Isdlc.Infrastructure/   # DbContext, EF yapılandırmaları, migrations, seed
 │  └─ tests/
 │     └─ Isdlc.Application.Tests/
+├─ ai/                         # yapay zekâ ajanları (Python): isdlc_ai/server.py HTTP servisi, prompt'lar, eval'ler
 ├─ frontend/
 │  └─ src/app/
 │     ├─ core/                   # kimlik doğrulama, interceptor, guard, sayfa düzeni
@@ -124,10 +127,12 @@ Frontend'de `features/` altındaki klasörler aynı modüllerin kebab-case halid
 - PR, CI (`.github/workflows/ci.yml`) yeşil olmadan birleştirilmez. CI şunları kontrol eder:
   - **Backend:** derleme (uyarılar hata sayılır), testler, entity değişikliği için migration üretilmiş mi
   - **Frontend:** derleme, testler
+  - **AI service:** Python testleri (gerçek model çağrılmaz)
 - PR açmadan önce aynı kontroller lokalde çalıştırılabilir:
   - `dotnet build backend/Isdlc.sln -warnaserror` ve `dotnet test backend/Isdlc.sln` (Docker açık olmalı; bkz. Bölüm 9)
   - `dotnet ef migrations has-pending-model-changes --project backend/src/Isdlc.Infrastructure --startup-project backend/src/Isdlc.Api`
   - `frontend` klasöründe: `npm run build` ve `npx ng test --watch=false`
+  - `ai` klasöründe: `.venv/Scripts/python -m pytest` (kurulum: [ai/README.md](ai/README.md))
 
 ## 6. Alan sözlüğü
 
@@ -162,6 +167,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Tutanaktan aktarılan kayıt | `OpenIssue.SourceMeetingId` |
 | Bildirim | `Notification` |
 | Denetim kaydı | `AuditLog` |
+| Yapay zekâ yardımcısı / önerisi | `Agents` modülü; tutanak önerileri `MeetingSuggestionsDto` (kaydedilmez, formu doldurur) |
 
 Yeni bir kavram gerektiğinde önce bu tabloya eklenir.
 
@@ -176,6 +182,7 @@ Backend iskeletinde uygulanmıştır; yeni kod bu yapıları kullanır.
 | Kayıt yok | Servis `NotFoundException` fırlatır → 404 | `Isdlc.Application/Common/Exceptions/` |
 | İş kuralı ihlali | Servis `BusinessRuleException` fırlatır → 400. Mesaj kullanıcıya gösterilir, Türkçe yazılır | `Isdlc.Application/Common/Exceptions/` |
 | Yetki yok | Servis `ForbiddenException` fırlatır → 403 | `Isdlc.Application/Common/Exceptions/` |
+| Servis kullanılamıyor | Bağlı olunan servis (ör. yapay zekâ servisi) kapalıysa `ServiceUnavailableException` → 503. Mesaj Türkçe | `Isdlc.Application/Common/Exceptions/` |
 | Çakışma | Servis `ConflictException` fırlatır → 409. `RowVersion` uyuşmazlığı (`DbUpdateConcurrencyException`) da otomatik 409 olur | `Isdlc.Application/Common/Exceptions/` |
 | Beklenmeyen hata | 500 ve genel bir mesaj döner; ayrıntı yalnızca loga yazılır | `GlobalExceptionHandler` |
 | Enum | JSON'da metin olarak gönderilir: `"Active"` | `Program.cs` |
@@ -224,6 +231,10 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
   e-postalar `Isdlc.Infrastructure/Seed/users.json`'da).
 - **Bildirimler:** Modüller bildirimi yalnızca `INotificationService` ile gönderir (`Isdlc.Application/Notifications/`).
   `Notifications` modülü bitene kadar `NullNotificationService` bildirimi yalnızca loga yazar.
+- **Yapay zekâ servisi:** Backend, `ai/` servisini `Agents:ServiceUrl` adresinden `Agents:ServiceKey` anahtarıyla çağırır
+  (`Isdlc.Infrastructure/Agents/`). Adres boşsa ya da servis cevap vermiyorsa `GET /api/v1/agents/status` kapalı döner ve
+  ekranlar yapay zekâ butonlarını göstermez. Ajan kayıt oluşturmaz; önerileri kişi inceleyip normal ekrandan kaydeder.
+  Yalnızca sahte veriyle çalışılır (şirketin veri gönderme kararı bekleniyor).
 - **Eşzamanlılık:** `Project.RowVersion` aynı kaydın aynı anda güncellenmesini yakalar ve 409 döner.
 - **Seed:** `Isdlc.Infrastructure/Seed/*.json` dosyaları, tablo boşsa uygulama açılırken yüklenir. Örnek projeler yalnızca geliştirme ortamında yüklenir.
 - **Migration:** Geliştirme ortamında API açılırken otomatik uygulanır. Üretmek için (repo kökünde):

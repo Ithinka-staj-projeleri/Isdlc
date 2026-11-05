@@ -163,6 +163,50 @@ Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enu
 - Tutanak detayında ve listedeki sayılarda türü `Decision` olan kayıtlar karar, diğerleri aksiyon sayılır;
   `openActionCount` kapanmamış aksiyonlardır.
 
+## Yapay zekâ önerileri (`Agents`)
+
+Yeni tutanak formundaki "Yapay zekâ ile karar ve aksiyonları çıkar" butonu için. Hiçbir şey kaydedilmez; öneriler
+formu doldurur, kişi düzenleyip tutanağı yukarıdaki `POST /meetings` ile kaydeder. Tasarım: [ai-vision.md](ai-vision.md).
+
+| İstek | Açıklama | Başarılı cevap |
+| --- | --- | --- |
+| `GET /agents/status` | Yapay zekâ servisi ayarlı ve çalışıyor mu (butonu göstermek için) | `200` `{ "meetingAssistantEnabled": true }` |
+| `POST /projects/{projectId}/meetings/suggestions` | Ham notlardan öneriler | `200` `MeetingSuggestionsDto` |
+
+```jsonc
+// SuggestMeetingItemsDto (POST)
+{ "meetingDate": "2026-11-05", "notes": "Ekran taslaklarını Can Öztürk 12 Kasım'a kadar hazırlayacak.
+..." }
+
+// MeetingSuggestionsDto
+{
+  "summary": "ERP entegrasyonu ve raporlar konuşuldu.",
+  "decisions": [ { "title": "Raporlar PDF olarak da alınacak", "evidence": "Raporların PDF olarak da alınmasına karar verildi." } ],
+  "actions": [
+    { "title": "Ekran taslakları", "ownerUserId": 4, "ownerName": null, "dueDate": "2026-11-12",
+      "evidence": "Ekran taslaklarını Can Öztürk 12 Kasım'a kadar hazırlayacak.", "warnings": [] }
+  ],
+  "others": [ { "type": "Question", "title": "Fotoğraflar kaç gün saklanacak?", "ownerName": "Saha Operasyon Müdürü", "dueDate": null, "evidence": "..." } ],
+  "skippedCount": 0,
+  "modelName": "gemini-..."
+}
+```
+
+| Alan | Kural |
+| --- | --- |
+| `meetingDate` | Zorunlu; terminler bu tarihe göre çözülür ("gelecek çarşamba") |
+| `notes` | Zorunlu, en fazla 20000 karakter. E-posta, telefon, IBAN ve TCKN modele gitmeden gizlenir; **yalnızca sahte veri** |
+| `actions[].ownerUserId` | Notlardaki ad aktif bir kullanıcının adıyla aynıysa (Türkçe büyük/küçük harf farkı gözetilmez) dolar; değilse `ownerName` |
+| `decisions` | Sorumlu yoktur: karar, tutanağı kaydeden kişi adına kapalı kaydedilir |
+| `others` | Soru, bağımlılık, varsayım, değişiklik talebi. Tutanak formunda yerleri yok; Açık Konular'dan elle eklenir |
+| `warnings` | Ajanın uyarıları: dayanak notlarda bulunamadı, termin toplantıdan önce, sorumlu yok |
+
+Hatalar: proje yok `404`, proje aktif değil `409` ("Proje aktif değil; kayıt eklenemez veya değiştirilemez."),
+servis ayarlı değil, çalışmıyor ya da model hata verdi `503` (Türkçe `detail`, ör. "Yapay zekâ servisine şu an ulaşılamıyor.").
+
+Backend, `ai/` servisini `Agents:ServiceUrl` adresinden `X-Agent-Key: Agents:ServiceKey` başlığıyla çağırır
+(`Isdlc.Infrastructure/Agents/HttpMeetingAgentClient.cs`). Tarayıcı Python servisini hiçbir zaman doğrudan çağırmaz.
+
 ## Hata durumları
 
 | Durum | Kod | Örnek `detail` |
