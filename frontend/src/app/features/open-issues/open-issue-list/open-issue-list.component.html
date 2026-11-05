@@ -1,0 +1,102 @@
+<div class="toolbar">
+    <label class="field">
+        Kayıt türü
+        <select [ngModel]="type()" (ngModelChange)="setType($event)">
+            <option value="">Tümü</option>
+            @for (t of types; track t) {
+            <option [value]="t">{{ typeLabels[t] }}</option>
+            }
+        </select>
+    </label>
+    <label class="field">
+        Durum
+        <select [ngModel]="status()" (ngModelChange)="setStatus($event)">
+            <option value="">Tümü</option>
+            @for (s of statuses; track s) {
+            <option [value]="s">{{ statusLabels[s] }}</option>
+            }
+        </select>
+    </label>
+    <label class="check">
+        <input type="checkbox" [ngModel]="overdueOnly()" (ngModelChange)="setOverdueOnly($event)" />
+        Yalnızca gecikenler
+    </label>
+    <span class="spacer"></span>
+    @if (!readOnly()) {
+    <button type="button" class="button primary" (click)="editing.set('new')">+ Kayıt ekle</button>
+    }
+</div>
+
+@if (readOnly()) {
+<p class="note">Proje aktif olmadığı için kayıtlar yalnızca görüntülenebilir.</p>
+}
+
+@if (issues.error()) {
+<app-empty-state message="Açık konular yüklenemedi." />
+} @else if (issues.hasValue()) {
+@let result = issues.value();
+@if (result.items.length === 0) {
+<app-empty-state [message]="hasFilter() ? 'Bu filtrede kayıt bulunmuyor.' : 'Bu projede henüz açık konu kaydı yok.'" />
+} @else {
+<div class="table-wrap" [class.loading]="issues.isLoading()">
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Konu</th>
+                <th>Kayıt türü</th>
+                <th>Sorumlu</th>
+                <th>Termin</th>
+                <th>Durum</th>
+                @if (!readOnly()) { <th><span class="visually-hidden">İşlemler</span></th> }
+            </tr>
+        </thead>
+        <tbody>
+            @for (issue of result.items; track issue.id) {
+            <tr [class.closed]="issue.status === 'Closed'">
+                <td class="code">{{ issue.code }}</td>
+                <td>
+                    <b>{{ issue.title }}</b>
+                    @if (issue.sourceMeeting) {
+                    <div class="muted small">Tutanak: <span class="code">{{ issue.sourceMeeting.code }}</span></div>
+                    }
+                </td>
+                <td><app-status-badge [label]="typeLabels[issue.type]" [tone]="typeTones[issue.type]" /></td>
+                <td>{{ issue.owner.name }}</td>
+                <td>
+                    @if (issue.isOverdue) {
+                    <app-status-badge [label]="(issue.dueDate | dateOnly) + ' · gecikti'" tone="bad" />
+                    } @else {
+                    {{ issue.dueDate | dateOnly }}
+                    }
+                </td>
+                <td><app-status-badge [label]="statusLabels[issue.status]" [tone]="statusTones[issue.status]" /></td>
+                @if (!readOnly()) {
+                <td class="actions">
+                    @if (issue.status === 'Closed') {
+                    <button type="button" class="button small" [disabled]="busyId() === issue.id"
+                        (click)="changeStatus(issue, 'Open')">Yeniden aç</button>
+                    } @else {
+                    <button type="button" class="button small" [disabled]="busyId() === issue.id"
+                        (click)="changeStatus(issue, 'Closed')">Kapat</button>
+                    }
+                    <button type="button" class="button small" (click)="editing.set(issue.id)">Düzenle</button>
+                </td>
+                }
+            </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@if (result.totalCount > pageSize) {
+<app-pagination [page]="page()" [pageSize]="pageSize" [totalCount]="result.totalCount" (pageChange)="page.set($event)" />
+}
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}
+
+@if (editing(); as target) {
+<app-open-issue-form [projectId]="projectId()" [openIssueId]="target === 'new' ? null : target"
+    (saved)="onSaved()" (cancelled)="editing.set(null)" />
+}
