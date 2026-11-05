@@ -11,6 +11,10 @@
       <span class="code">{{ p.code }}</span>
       <h2>{{ p.name }}</h2>
       <app-status-badge [label]="statusLabels[p.status]" [tone]="statusTones[p.status]" />
+      @if (p.status === 'Active') {
+        <!-- A closed project keeps its information, so there is nothing to edit. -->
+        <a [routerLink]="['/projects', p.id, 'edit']" class="edit-button">Düzenle</a>
+      }
     </div>
 
     <p class="meta">

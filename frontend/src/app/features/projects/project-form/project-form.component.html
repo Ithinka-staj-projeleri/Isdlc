@@ -1,8 +1,27 @@
 <header class="page-head">
-  <a routerLink="/requests" class="back">← Talepler</a>
-  <h2>Yeni talep</h2>
-  <p class="hint">Talep kaydedildiğinde sürecin ilk adımında (1.1 Talep Kaydı) başlar ve otomatik bir kod alır.</p>
+  <a [routerLink]="backLink().path" class="back">← {{ backLink().label }}</a>
+  @if (isEdit()) {
+    <h2>
+      Talebi düzenle
+      @if (existing(); as p) {
+        <span class="code">{{ p.code }}</span>
+      }
+    </h2>
+    <p class="hint">Durum, mevcut adım, öncelik ve seviye burada değişmez; bunlar süreç ve seviye modüllerinde belirlenir.</p>
+  } @else {
+    <h2>Yeni talep</h2>
+    <p class="hint">Talep kaydedildiğinde sürecin ilk adımında (1.1 Talep Kaydı) başlar ve otomatik bir kod alır.</p>
+  }
 </header>
+
+@if (isEdit() && loadFailed()) {
+  <p class="notice bad">Proje yüklenemedi. Proje silinmiş ya da adres yanlış olabilir.</p>
+} @else if (isEdit() && !existing()) {
+  <p class="notice">Yükleniyor…</p>
+} @else {
+@if (locked()) {
+  <p class="notice warn">Bu proje aktif değil; bilgileri artık değiştirilemez.</p>
+}
 
 <form [formGroup]="form" (ngSubmit)="save()" novalidate>
   <section class="card">
@@ -141,9 +160,12 @@
   </section>
 
   <footer class="actions">
-    <a routerLink="/requests" class="button">İptal</a>
-    <button type="submit" class="button primary" [disabled]="saving()">
-      {{ saving() ? 'Kaydediliyor…' : 'Talebi kaydet' }}
-    </button>
+    <a [routerLink]="backLink().path" class="button">İptal</a>
+    @if (!locked()) {
+      <button type="submit" class="button primary" [disabled]="saving()">
+        {{ saving() ? 'Kaydediliyor…' : isEdit() ? 'Değişiklikleri kaydet' : 'Talebi kaydet' }}
+      </button>
+    }
   </footer>
 </form>
+}
