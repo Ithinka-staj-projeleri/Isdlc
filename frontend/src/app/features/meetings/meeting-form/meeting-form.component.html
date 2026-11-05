@@ -1,0 +1,101 @@
+<!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
+<div class="overlay">
+    <form class="dialog" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <h3>{{ meetingId() === null ? 'Yeni toplantı tutanağı' : 'Tutanak ' + (code() ?? '') + ' · bilgileri düzenle' }}</h3>
+
+        @if (loading()) {
+        <p class="muted">Yükleniyor…</p>
+        } @else {
+        <div class="grid">
+            <label class="field" [class.invalid]="errorFor('type')">
+                Toplantı türü
+                <select formControlName="type">
+                    @for (t of types; track t) {
+                    <option [value]="t">{{ typeLabels[t] }}</option>
+                    }
+                </select>
+                @if (errorFor('type'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('date')">
+                Tarih
+                <input type="date" formControlName="date" />
+                @if (errorFor('date'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field full" [class.invalid]="errorFor('participants')">
+                Katılımcılar
+                <input formControlName="participants" maxlength="1000" placeholder="Ad Soyad, kurum" />
+                @if (errorFor('participants'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field full" [class.invalid]="errorFor('agenda')">
+                Gündem
+                <textarea formControlName="agenda" maxlength="4000"></textarea>
+                @if (errorFor('agenda'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            @if (meetingId() === null) {
+            <label class="field full" [class.invalid]="errorFor('decisions')">
+                Alınan kararlar (her satıra bir karar, isteğe bağlı)
+                <textarea formControlName="decisions" placeholder="İş emri durumları 6 adım olarak kesinleşti."></textarea>
+                @if (errorFor('decisions'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <fieldset class="full actions" formArrayName="actions">
+                <legend>Aksiyonlar (isteğe bağlı)</legend>
+                @for (row of actions.controls; track row; let i = $index) {
+                <div class="action" [formGroupName]="i">
+                    <span class="no">{{ i + 1 }}</span>
+                    <div class="action-fields">
+                        <label class="field wide" [class.invalid]="actionError(i, 'title')">
+                            Konu
+                            <input formControlName="title" maxlength="300" />
+                            @if (actionError(i, 'title'); as error) { <span class="error">{{ error }}</span> }
+                        </label>
+                        <label class="field" [class.invalid]="actionError(i, 'owner')">
+                            Sorumlu
+                            <span class="owner">
+                                <select formControlName="ownerKind" aria-label="Sorumlu türü">
+                                    <option value="user">Ekip üyesi</option>
+                                    <option value="name">Sistem dışı</option>
+                                </select>
+                                @if (row.get('ownerKind')?.value === 'user') {
+                                <select formControlName="ownerUserId" aria-label="Sorumlu ekip üyesi">
+                                    <option [ngValue]="null">Seçin…</option>
+                                    @for (user of users(); track user.id) {
+                                    <option [ngValue]="user.id">{{ user.fullName }}</option>
+                                    }
+                                </select>
+                                } @else {
+                                <input formControlName="ownerName" maxlength="200" aria-label="Sorumlunun adı" placeholder="Ad veya birim" />
+                                }
+                            </span>
+                            @if (actionError(i, 'owner'); as error) { <span class="error">{{ error }}</span> }
+                        </label>
+                        <label class="field">
+                            Termin
+                            <input type="date" formControlName="dueDate" />
+                        </label>
+                    </div>
+                    <button type="button" class="button small" (click)="removeAction(i)" [attr.aria-label]="(i + 1) + '. aksiyonu kaldır'">Kaldır</button>
+                </div>
+                }
+                <button type="button" class="button small" (click)="addAction()" [disabled]="actions.length >= maxRows">+ Aksiyon ekle</button>
+            </fieldset>
+
+            <p class="full hint">Kaydedince kararlar "Karar" (kapalı), aksiyonlar "Aksiyon" (açık) türünde Açık Konular Listesi'ne eklenir.</p>
+            } @else {
+            <p class="full hint">Kararlar ve aksiyonlar Açık Konular ekranından güncellenir.</p>
+            }
+        </div>
+        }
+
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="cancelled.emit()">Vazgeç</button>
+            <button type="submit" class="button primary" [disabled]="loading() || saving()">
+                {{ saving() ? 'Kaydediliyor…' : (meetingId() === null ? 'Tutanağı kaydet' : 'Kaydet') }}
+            </button>
+        </div>
+    </form>
+</div>

@@ -2,7 +2,7 @@ import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { map } from 'rxjs';
+import { catchError, map, of } from 'rxjs';
 import { PROJECT_STATUS_LABELS } from '../../models/project-status';
 import { LookupService, ProjectOption } from '../../services/lookup.service';
 
@@ -37,7 +37,11 @@ export class ProjectPickerComponent {
     private readonly router = inject(Router);
 
     protected readonly statusLabels = PROJECT_STATUS_LABELS;
-    protected readonly projects = toSignal(inject(LookupService).projects$, { initialValue: [] as ProjectOption[] });
+    // A failed load shows an empty list (the error interceptor has told the user); the next page visit asks again.
+    protected readonly projects = toSignal(
+        inject(LookupService).projects$.pipe(catchError(() => of([] as ProjectOption[]))),
+        { initialValue: [] as ProjectOption[] },
+    );
 
     private readonly projectIdParam = toSignal(
         this.route.queryParamMap.pipe(map(params => Number(params.get('projectId')) || null)),

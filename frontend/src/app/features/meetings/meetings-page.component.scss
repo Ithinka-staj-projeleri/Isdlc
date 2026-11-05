@@ -1,0 +1,29 @@
+:host {
+    display: block;
+}
+
+.page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+
+    h2 {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    p {
+        margin: 4px 0 0;
+    }
+
+    app-project-picker {
+        flex: 0 1 420px;
+    }
+}
+
+.muted {
+    color: var(--muted);
+}
