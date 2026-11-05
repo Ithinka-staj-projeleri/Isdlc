@@ -1,0 +1,103 @@
+@if (process.error()) {
+<app-empty-state message="Süreç bilgisi yüklenemedi." />
+} @else if (process.hasValue() && flow().length) {
+@let p = process.value();
+
+<div class="summary">
+    <div class="progress" role="progressbar" aria-label="Süreç ilerlemesi" [attr.aria-valuenow]="p.progressPercent"
+        aria-valuemin="0" aria-valuemax="100">
+        <div class="bar" [style.width.%]="p.progressPercent"></div>
+    </div>
+    <span class="percent">%{{ p.progressPercent }}</span>
+    <app-status-badge [label]="statusLabels[p.status]" [tone]="statusTone(p)" />
+    @if (p.currentStep) {
+    <span class="muted">Mevcut adım: <b class="code">{{ p.currentStep.code }}</b></span>
+    }
+</div>
+
+@if (p.status !== 'Active') {
+<p class="ended" [class.closed]="p.status === 'Closed'">
+    @if (p.status === 'Closed') { Süreç tamamlandı; proje kapatıldı. }
+    @else { Süreç sona erdi: {{ statusLabels[p.status] }}. }
+</p>
+}
+
+<div class="layout">
+    <nav class="card stages" aria-label="Aşamalar">
+        @for (stage of p.stages; track stage.stageId) {
+        <button type="button" [class]="'stage ' + stage.state.toLowerCase()"
+            [class.on]="stage.order === selectedStage()?.order" (click)="pickStage(stage.order)"
+            [attr.aria-current]="stage.order === selectedStage()?.order ? 'true' : null"
+            [attr.title]="stageStateLabels[stage.state]">
+            <span class="no">{{ stage.state === 'Completed' ? '✓' : stage.order }}</span>
+            <span class="name">
+                {{ stage.shortTitle }}
+                <span class="small muted">{{ stage.stepCount }} adım · {{ stageStateLabels[stage.state] }}</span>
+            </span>
+        </button>
+        }
+    </nav>
+
+    @if (selectedStage(); as stage) {
+    <section class="card steps">
+        <h3>{{ stage.order }}. {{ stage.title }}</h3>
+        <ol>
+            @for (step of stage.steps; track step.id) {
+            @let state = stepState(step, p);
+            <li [class]="'step ' + state" [attr.aria-current]="state === 'current' ? 'step' : null">
+                <span class="code">{{ step.code }}</span>
+                <div class="body">
+                    <p class="text">{{ step.text }}</p>
+                    <div class="meta">
+                        <span class="muted small">{{ roleLabels[step.responsibleRole] }}</span>
+                        @if (step.isDecision) { <app-status-badge label="Karar" tone="info" /> }
+                        @if (step.approverRole) {
+                        <app-status-badge [label]="'Onay: ' + roleLabels[step.approverRole]" tone="warn" />
+                        }
+                        @if (state !== 'current' && latestRecordByStep().get(step.id); as record) {
+                        @let badge = recordBadge(record);
+                        <app-status-badge [label]="badge.label" [tone]="badge.tone" />
+                        }
+                        @if (state === 'current') { <app-status-badge label="Mevcut adım" tone="info" /> }
+                    </div>
+
+                    @if (state === 'current') {
+                    <app-step-actions [projectId]="p.projectId" [step]="step" [actions]="p.availableActions"
+                        (updated)="onUpdated($event)" (failed)="onFailed()" />
+                    }
+                </div>
+            </li>
+            }
+        </ol>
+    </section>
+    }
+</div>
+
+<section class="card history">
+    <h3>Süreç geçmişi</h3>
+    @if (records.hasValue() && records.value().items.length) {
+    <ol>
+        @for (record of history(); track record.id) {
+        <li>
+            <span class="code">{{ record.stepCode }}</span>
+            <div class="body">
+                <span>
+                    <b>{{ actionLabels[record.action] }}</b>
+                    @if (record.jumpedToStepCode) { → {{ record.jumpedToStepCode }} adımına dönüldü }
+                </span>
+                @if (record.note) { <span class="note">{{ record.note }}</span> }
+                <span class="muted small">{{ record.performedBy.fullName }} · {{ record.performedAt | localDate }}</span>
+            </div>
+        </li>
+        }
+    </ol>
+    @if (records.value().items.length > historyShown()) {
+    <button type="button" class="button small" (click)="historyShown.set(historyShown() + 10)">Daha fazla göster</button>
+    }
+    } @else if (records.hasValue()) {
+    <p class="muted">Henüz bir adımda işlem yapılmadı.</p>
+    }
+</section>
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}
