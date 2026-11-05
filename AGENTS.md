@@ -106,6 +106,7 @@ Frontend'de `features/` altındaki klasörler aynı modüllerin kebab-case halid
 **API**
 - Yol: `/api/v1/<kaynak>`, kaynak çoğul ve kebab-case: `/api/v1/open-issues`
 - Alt kaynak: `/api/v1/projects/{id}/risks`
+- Ayrıntılı kurallar için Bölüm 7.
 
 **Frontend (Angular)**
 | Öğe | Kural | Örnek |
@@ -120,6 +121,13 @@ Frontend'de `features/` altındaki klasörler aynı modüllerin kebab-case halid
 - Dal: `feature/<issue-no>-kisa-ad`, `fix/<issue-no>-kisa-ad`
 - Commit: Conventional Commits, kapsam modül adı: `feat(risks): add risk score calculation`
 - `main` dalına doğrudan push yapılmaz; değişiklikler PR ile gelir.
+- PR, CI (`.github/workflows/ci.yml`) yeşil olmadan birleştirilmez. CI şunları kontrol eder:
+  - **Backend:** derleme (uyarılar hata sayılır), testler, entity değişikliği için migration üretilmiş mi
+  - **Frontend:** derleme, testler
+- PR açmadan önce aynı kontroller lokalde çalıştırılabilir:
+  - `dotnet build backend/Isdlc.sln -warnaserror` ve `dotnet test backend/Isdlc.sln` (Docker açık olmalı; bkz. Bölüm 9)
+  - `dotnet ef migrations has-pending-model-changes --project backend/src/Isdlc.Infrastructure --startup-project backend/src/Isdlc.Api`
+  - `frontend` klasöründe: `npm run build` ve `npx ng test --watch=false`
 
 ## 6. Alan sözlüğü
 
@@ -128,10 +136,18 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Türkçe | Kodda |
 | --- | --- |
 | Talep / Proje | `Project` |
-| Talep Sahibi | `Requester` |
+| Talep Sahibi | `Requester` (`Project.RequesterName`; sistem kullanıcısı değildir) |
+| Talep kaynağı / kanalı / türü | `RequestSource`, `RequestChannel`, `RequestType` |
+| Proje durumu | `ProjectStatus` (`Active`, `Closed`, `Rejected`, `Lost`, `Redirected`) |
+| Öncelik | `ProjectPriority` |
+| Kullanıcı | `User` |
+| Rol | `UserRole` (kullanıcı başına tek rol) |
 | Aşama | `ProcessStage` |
 | Adım | `ProcessStep` |
+| "Hayır" cevabında dönülecek adım | `ProcessStepJump` |
 | Adımda yapılan işlem | `StepRecord` |
+| İşlem türü (Tamamlandı, Evet, Hayır, Reddedildi) | `StepAction` |
+| Oluşturan / güncelleyen bilgisi | `AuditableEntity` (`CreatedAt`, `CreatedById`, `UpdatedAt`, `UpdatedById`) |
 | Seviye | `Level` |
 | Doküman durumu | `DocumentStatus` |
 | Gereksinim | `Requirement` |
@@ -142,3 +158,79 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Denetim kaydı | `AuditLog` |
 
 Yeni bir kavram gerektiğinde önce bu tabloya eklenir.
+
+## 7. Ortak API kuralları
+
+Backend iskeletinde uygulanmıştır; yeni kod bu yapıları kullanır.
+
+| Konu | Kural | Backend'de nerede |
+| --- | --- | --- |
+| Yol | Controller'lar `ApiControllerBase`'den türer. Yol, controller adından otomatik üretilir: `OpenIssuesController` → `/api/v1/open-issues` | `Isdlc.Api/Common/ApiControllerBase.cs` |
+| Hatalar | Her hata `ProblemDetails` biçiminde döner (`title`, `status`, `detail`, `traceId`) | `Isdlc.Api/Common/GlobalExceptionHandler.cs` |
+| Kayıt yok | Servis `NotFoundException` fırlatır → 404 | `Isdlc.Application/Common/Exceptions/` |
+| İş kuralı ihlali | Servis `BusinessRuleException` fırlatır → 400. Mesaj kullanıcıya gösterilir, Türkçe yazılır | `Isdlc.Application/Common/Exceptions/` |
+| Yetki yok | Servis `ForbiddenException` fırlatır → 403 | `Isdlc.Application/Common/Exceptions/` |
+| Çakışma | Servis `ConflictException` fırlatır → 409. `RowVersion` uyuşmazlığı (`DbUpdateConcurrencyException`) da otomatik 409 olur | `Isdlc.Application/Common/Exceptions/` |
+| Beklenmeyen hata | 500 ve genel bir mesaj döner; ayrıntı yalnızca loga yazılır | `GlobalExceptionHandler` |
+| Enum | JSON'da metin olarak gönderilir: `"Active"` | `Program.cs` |
+| Tarih | `DateTime` UTC tutulur, ISO 8601 ve `Z` ekiyle gönderilir: `2026-11-04T12:00:00Z`. Veritabanından okunan tarihler otomatik UTC işaretlenir | `Persistence/Converters/UtcDateTimeConverter.cs` |
+| Sayfalama (istek) | Liste uç noktaları `?page=1&pageSize=20` alır: `List([FromQuery] PageRequest pageRequest)`. Sayfa boyutu en fazla 100. **Parametreye `page` adını verme**, değerler okunmaz. Serviste sıralanmış sorguya `.ApplyPaging(pageRequest)` uygulanır | `Isdlc.Application/Common/Models/PageRequest.cs`, `PagingExtensions.cs` |
+| Sayfalama (cevap) | Liste uç noktaları `PagedResult<T>` döner: `{ "items": [...], "totalCount": 42 }` | `Isdlc.Application/Common/Models/PagedResult.cs` |
+| JSON alan adları | camelCase (`totalCount`, `projectId`) | ASP.NET Core varsayılanı |
+
+Controller'lar `try/catch` yazmaz; hatayı servis fırlatır, `GlobalExceptionHandler` çevirir.
+
+**Doğrulama hataları (400)** DTO'daki özniteliklerden (`[Required]`, `[MaxLength]`, `[Range]` vb.) otomatik üretilir
+(`Isdlc.Api/Common/ValidationConfiguration.cs`):
+
+```json
+{ "title": "Girilen bilgiler geçersiz.", "status": 400,
+  "errors": { "expectedStepId": ["Mevcut adım belirtilmelidir."], "note": ["En fazla 1000 karakter olabilir."] } }
+```
+
+- `errors` anahtarları JSON alan adıdır (camelCase); frontend hatayı aynı adlı form alanının altında gösterir.
+  Okunamayan bir istek gövdesi (bozuk JSON) boş anahtarla (`""`) döner.
+- Özniteliğe yazılan `ErrorMessage` kullanılır. Yazılmamışsa Türkçe varsayılan mesaj çıkar ("Bu alan zorunludur.",
+  "En fazla 1000 karakter olabilir."). Alana özel bir açıklama gerekiyorsa `ErrorMessage` Türkçe yazılır.
+
+## 8. Veritabanı kuralları
+
+Veri modeli: [docs/data-model.md](docs/data-model.md).
+
+- **Entity yeri:** `Isdlc.Domain/<Modul>/`. EF ayarları `Isdlc.Infrastructure/<Modul>/<Entity>Configuration.cs`
+  (`IEntityTypeConfiguration<T>`); DbContext bu sınıfları kendiliğinden bulur. Yeni entity için `IsdlcDbContext`'e bir `DbSet` eklenir.
+- **Veri erişimi:** Application servisleri veritabanına `IApplicationDbContext` üzerinden erişir
+  (`Isdlc.Application/Common/Interfaces/`); `IsdlcDbContext`'i doğrudan kullanmaz. Yeni entity'nin `DbSet`'i
+  hem `IsdlcDbContext`'e hem `IApplicationDbContext`'e eklenir. Yalnızca okuyan sorgular `AsNoTracking()` ile
+  yazılır ve `Select` ile doğrudan DTO'ya çevrilir.
+- **Servis kaydı:** Her modül kendi servisini `Isdlc.Application/DependencyInjection.cs` içindeki `AddApplication()`'a ekler.
+- **Metin kolonları** her zaman `HasMaxLength` ile sınırlanır.
+- **Enum'lar** veritabanında metin olarak tutulur (`"Active"`); ayrıca ayar gerekmez.
+- **Kayıt silinmez.** Bütün ilişkiler `Restrict`'tir; kullanıcı pasife alınır, süreç geçmişi korunur.
+- **Denetim alanları:** İşlem verisi tutan entity'ler `AuditableEntity`'den türer ve yapılandırmada `builder.ConfigureAuditFields()`
+  çağrılır. Alanları `AuditableEntityInterceptor` kaydederken doldurur; kodda elle atanmaz.
+- **Denetim kaydı (`AuditLog`):** Proje verisi tutan entity'ler `IAudited` arayüzünü taşır; projeye ait kayıtlar
+  (Risk, Requirement vb.) ayrıca `IProjectRecord` taşır. Bu entity'lerdeki her değişiklik, alan bazında eski/yeni
+  değerleriyle `AuditLogs` tablosuna otomatik yazılır (`AuditLogInterceptor`). Seed tabloları, `StepRecord` ve `User` loglanmaz.
+- **Giriş yapan kullanıcı:** `ICurrentUserService.UserId`. `Identity` bitene kadar `TemporaryCurrentUserService`
+  her isteği `elif.yilmaz@isdlc.local` olarak çalıştırır. Lokal denemede başka bir rolle çalışmak için
+  `TemporaryUser:Email` ayarı değiştirilir (`appsettings.Development.json` ya da `TemporaryUser__Email` ortam değişkeni;
+  e-postalar `Isdlc.Infrastructure/Seed/users.json`'da).
+- **Bildirimler:** Modüller bildirimi yalnızca `INotificationService` ile gönderir (`Isdlc.Application/Notifications/`).
+  `Notifications` modülü bitene kadar `NullNotificationService` bildirimi yalnızca loga yazar.
+- **Eşzamanlılık:** `Project.RowVersion` aynı kaydın aynı anda güncellenmesini yakalar ve 409 döner.
+- **Seed:** `Isdlc.Infrastructure/Seed/*.json` dosyaları, tablo boşsa uygulama açılırken yüklenir. Örnek projeler yalnızca geliştirme ortamında yüklenir.
+- **Migration:** Geliştirme ortamında API açılırken otomatik uygulanır. Üretmek için (repo kökünde):
+  `dotnet ef migrations add <Ad> --project backend/src/Isdlc.Infrastructure --startup-project backend/src/Isdlc.Api --output-dir Persistence/Migrations`
+
+## 9. Backend testleri
+
+- Testler `backend/tests/Isdlc.Application.Tests` içinde, test edilen modülün klasöründe durur (`Process/ProcessServiceTests.cs`).
+- Çapraz test kuralı için: PLANNING.md → Birlikte çalışma kuralları.
+- **Veritabanı kullanan testler** gerçek SQL Server ile çalışır (Testcontainers). Test sınıfına `[Collection("Database")]`
+  yazılır ve kurucuda `DatabaseFixture` alınır. Servis, `database.CreateScope()` ile açılan kapsamdan alınır.
+- Fixture test çalışması başına bir kez Docker'da SQL Server açar, gerçek migration'ları ve seed'i yükler
+  (süreç akışı, kullanıcılar, örnek projeler). Bu yüzden `dotnet test` için **Docker açık olmalıdır**.
+- Bütün testler aynı veritabanını paylaşır. Veri değiştiren bir test, başka testlerin kullandığı seed kayıtlarını
+  değiştirmez; kendi kaydını oluşturup onunla çalışır.
+- Test adı neyi kontrol ettiğini söyler: `Metot_Durum_Beklenen` (ör. `GetStages_Returns13StagesInOrder`).
