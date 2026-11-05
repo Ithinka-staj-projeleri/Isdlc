@@ -39,4 +39,12 @@ public interface IProcessService
     /// Errors: as CompleteStepAsync, plus 400 for a non-decision step or an invalid return step.
     /// </summary>
     Task<ProjectProcessDto> AnswerStepAsync(int projectId, AnswerStepDto request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The Software Department Manager rejects the request on any step: the project becomes Rejected
+    /// and a Rejected record with the reason is written on the current step.
+    /// Errors: 404 project missing, 409 not active / step changed / concurrent update,
+    /// 403 not the manager, 400 missing reason.
+    /// </summary>
+    Task<ProjectProcessDto> RejectAsync(int projectId, RejectProjectDto request, CancellationToken cancellationToken);
 }

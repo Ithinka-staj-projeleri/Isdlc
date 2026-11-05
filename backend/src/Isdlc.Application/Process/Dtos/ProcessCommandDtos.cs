@@ -36,3 +36,16 @@ public record AnswerStepDto
     [MaxLength(1000, ErrorMessage = "Not en fazla 1000 karakter olabilir.")]
     public string? Note { get; init; }
 }
+
+/// <summary>POST .../process/reject — the Software Department Manager rejects the request on any step.</summary>
+public record RejectProjectDto
+{
+    /// <summary>The current step the user saw on screen. If the project has moved on, the request fails with 409.</summary>
+    [Range(1, int.MaxValue, ErrorMessage = "Mevcut adım belirtilmelidir.")]
+    public int ExpectedStepId { get; init; }
+
+    /// <summary>Why the request is rejected; saved as the note of the StepRecord. Required (also rejects whitespace).</summary>
+    [Required(ErrorMessage = "Gerekçe zorunludur.")]
+    [MaxLength(1000, ErrorMessage = "Gerekçe en fazla 1000 karakter olabilir.")]
+    public string? Reason { get; init; }
+}

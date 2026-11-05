@@ -150,7 +150,8 @@ public class ProcessService(
     public async Task<ProjectProcessDto> CompleteStepAsync(
         int projectId, CompleteStepDto request, CancellationToken cancellationToken)
     {
-        var (project, step, user) = await LoadForCommandAsync(projectId, request.ExpectedStepId, cancellationToken);
+        var (project, step, user) = await LoadForCommandAsync(
+            projectId, request.ExpectedStepId, ProcessProgress.WhyCannotActOnStep, cancellationToken);
 
         if (step.IsDecision)
         {
@@ -169,7 +170,8 @@ public class ProcessService(
     public async Task<ProjectProcessDto> AnswerStepAsync(
         int projectId, AnswerStepDto request, CancellationToken cancellationToken)
     {
-        var (project, step, user) = await LoadForCommandAsync(projectId, request.ExpectedStepId, cancellationToken);
+        var (project, step, user) = await LoadForCommandAsync(
+            projectId, request.ExpectedStepId, ProcessProgress.WhyCannotActOnStep, cancellationToken);
 
         if (!step.IsDecision)
         {
@@ -217,6 +219,20 @@ public class ProcessService(
         return await GetProjectProcessAsync(projectId, cancellationToken);
     }
 
+    public async Task<ProjectProcessDto> RejectAsync(
+        int projectId, RejectProjectDto request, CancellationToken cancellationToken)
+    {
+        var (project, step, user) = await LoadForCommandAsync(
+            projectId, request.ExpectedStepId, ProcessProgress.WhyCannotReject, cancellationToken);
+
+        // The record is written on the step the request was on, with the reason as its note.
+        var transition = ProcessTransitions.AfterRejected();
+        await SaveTransitionAsync(project, step, user, StepAction.Rejected, request.Reason, transition, cancellationToken);
+        await NotifyAfterTransitionAsync(project, step, transition, null, cancellationToken);
+
+        return await GetProjectProcessAsync(projectId, cancellationToken);
+    }
+
     // ---- Shared by the commands (complete, answer, reject) ----
 
     private record CurrentStepInfo(
@@ -245,9 +261,11 @@ public class ProcessService(
     /// <summary>
     /// Loads the project (tracked, so RowVersion is checked on save), its current step and the acting user,
     /// and runs the checks every command shares, in this order: 404, 409 not active, 409 step changed, 403 role.
+    /// whyForbidden is the command's own permission rule (ProcessProgress.WhyCannot...): null means allowed.
     /// </summary>
     private async Task<(Project Project, CurrentStepInfo Step, ActingUser User)> LoadForCommandAsync(
-        int projectId, int expectedStepId, CancellationToken cancellationToken)
+        int projectId, int expectedStepId, Func<StepPermissionInfo, UserRole, string?> whyForbidden,
+        CancellationToken cancellationToken)
     {
         var project = await dbContext.Projects.SingleOrDefaultAsync(p => p.Id == projectId, cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
@@ -283,9 +301,9 @@ public class ProcessService(
             throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
         }
 
-        if (!ProcessProgress.CanActOnStep(step.Permission, user.Role))
+        if (whyForbidden(step.Permission, user.Role) is { } reason)
         {
-            throw new ForbiddenException(ProcessProgress.GetBlockedReason(step.Permission));
+            throw new ForbiddenException(reason);
         }
 
         return (project, step, user);
