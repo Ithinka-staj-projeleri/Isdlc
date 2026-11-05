@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -85,7 +86,7 @@ public static class ValidationConfiguration
             }
 
             // "$" is the whole body (broken JSON); "$.field" is one field that could not be read.
-            var cleanKey = key == "$" ? string.Empty : key.StartsWith("$.") ? key[2..] : key;
+            var cleanKey = ToCamelCasePath(key == "$" ? string.Empty : key.StartsWith("$.") ? key[2..] : key);
             var fallbackMessage = key == "$" ? "İstek gövdesi okunamadı." : "Geçersiz değer.";
             foreach (var error in entry!.Errors)
             {
@@ -96,6 +97,13 @@ public static class ValidationConfiguration
 
         return cleaned;
     }
+
+    /// <summary>
+    /// "DueDate" → "dueDate", "Actions[0].OwnerName" → "actions[0].ownerName".
+    /// Rules that check several fields (IValidatableObject) report C# names, so every key is normalized here.
+    /// </summary>
+    private static string ToCamelCasePath(string key) =>
+        string.Join('.', key.Split('.').Select(JsonNamingPolicy.CamelCase.ConvertName));
 
     /// <summary>
     /// Fills in a Turkish message only where the developer did not write one.
