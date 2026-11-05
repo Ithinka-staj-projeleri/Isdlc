@@ -17,16 +17,26 @@ builder.Services.AddProblemDetails(options =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Routes: /api/v1/{controller in kebab-case}. JSON: enums as text.
+// Validation errors (400): Turkish messages, camelCase field names (see ValidationConfiguration).
 builder.Services
     .AddControllers(options =>
-        options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseParameterTransformer())))
+    {
+        options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseParameterTransformer()));
+        ValidationConfiguration.Configure(options);
+    })
+    .ConfigureApiBehaviorOptions(ValidationConfiguration.ConfigureApiBehavior)
     .AddJsonOptions(options =>
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        // Unreadable JSON gets our Turkish message instead of the serializer's English one.
+        options.AllowInputFormatterExceptionMessages = false;
+    });
 
 // The OpenAPI document reads these options, so Swagger also shows enums as text.
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+    options.AddOperationTransformer<CamelCaseQueryParametersTransformer>());
 
 var app = builder.Build();
 

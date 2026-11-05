@@ -174,12 +174,24 @@ Backend iskeletinde uygulanmıştır; yeni kod bu yapıları kullanır.
 | Beklenmeyen hata | 500 ve genel bir mesaj döner; ayrıntı yalnızca loga yazılır | `GlobalExceptionHandler` |
 | Enum | JSON'da metin olarak gönderilir: `"Active"` | `Program.cs` |
 | Tarih | `DateTime` UTC tutulur, ISO 8601 ve `Z` ekiyle gönderilir: `2026-11-04T12:00:00Z`. Veritabanından okunan tarihler otomatik UTC işaretlenir | `Persistence/Converters/UtcDateTimeConverter.cs` |
-| Sayfalama (istek) | Liste uç noktaları `?page=1&pageSize=20` alır: `List([FromQuery] PageRequest pageRequest)`. Sayfa boyutu en fazla 100. **Parametreye `page` adını verme**, değerler okunmaz | `Isdlc.Application/Common/Models/PageRequest.cs` |
+| Sayfalama (istek) | Liste uç noktaları `?page=1&pageSize=20` alır: `List([FromQuery] PageRequest pageRequest)`. Sayfa boyutu en fazla 100. **Parametreye `page` adını verme**, değerler okunmaz. Serviste sıralanmış sorguya `.ApplyPaging(pageRequest)` uygulanır | `Isdlc.Application/Common/Models/PageRequest.cs`, `PagingExtensions.cs` |
 | Sayfalama (cevap) | Liste uç noktaları `PagedResult<T>` döner: `{ "items": [...], "totalCount": 42 }` | `Isdlc.Application/Common/Models/PagedResult.cs` |
 | JSON alan adları | camelCase (`totalCount`, `projectId`) | ASP.NET Core varsayılanı |
 
 Controller'lar `try/catch` yazmaz; hatayı servis fırlatır, `GlobalExceptionHandler` çevirir.
-Biçim doğrulama hataları (`[Required]` vb.) ASP.NET Core tarafından otomatik 400 `ProblemDetails` olarak döner.
+
+**Doğrulama hataları (400)** DTO'daki özniteliklerden (`[Required]`, `[MaxLength]`, `[Range]` vb.) otomatik üretilir
+(`Isdlc.Api/Common/ValidationConfiguration.cs`):
+
+```json
+{ "title": "Girilen bilgiler geçersiz.", "status": 400,
+  "errors": { "expectedStepId": ["Mevcut adım belirtilmelidir."], "note": ["En fazla 1000 karakter olabilir."] } }
+```
+
+- `errors` anahtarları JSON alan adıdır (camelCase); frontend hatayı aynı adlı form alanının altında gösterir.
+  Okunamayan bir istek gövdesi (bozuk JSON) boş anahtarla (`""`) döner.
+- Özniteliğe yazılan `ErrorMessage` kullanılır. Yazılmamışsa Türkçe varsayılan mesaj çıkar ("Bu alan zorunludur.",
+  "En fazla 1000 karakter olabilir."). Alana özel bir açıklama gerekiyorsa `ErrorMessage` Türkçe yazılır.
 
 ## 8. Veritabanı kuralları
 
