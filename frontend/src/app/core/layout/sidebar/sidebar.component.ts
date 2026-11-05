@@ -27,5 +27,10 @@ export class SidebarComponent {
         { path: '/meetings', label: 'Toplantı Tutanakları' },
       ]
     },
+    {
+      title: 'Kütüphane', items: [
+        { path: '/process-library', label: 'Süreç Kütüphanesi' },
+      ]
+    },
   ];
 }
