@@ -75,7 +75,10 @@ builder.Services
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddOpenApi(options =>
-    options.AddOperationTransformer<CamelCaseQueryParametersTransformer>());
+{
+    options.AddOperationTransformer<CamelCaseQueryParametersTransformer>();
+    options.AddDocumentTransformer<BearerSecurityTransformer>();
+});
 
 var app = builder.Build();
 
