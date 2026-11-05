@@ -1,0 +1,96 @@
+// Colours and sizes come from the variables in src/styles.scss.
+
+.page-head {
+  margin-bottom: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+    color: var(--ink);
+  }
+
+  .hint {
+    margin: 4px 0 0;
+    color: var(--muted);
+  }
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  input,
+  select {
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--fg);
+    font: inherit;
+  }
+
+  input {
+    flex: 1 1 260px;
+    max-width: 360px;
+  }
+}
+
+// Same look as the shared data table (shared/components/data-table).
+.table-wrap {
+  overflow-x: auto;
+  transition: opacity 0.15s;
+
+  &.loading {
+    opacity: 0.6;
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+th,
+td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+
+  // Long names may wrap, so the table fits without scrolling sideways.
+  &.wrap {
+    white-space: normal;
+    min-width: 160px;
+  }
+}
+
+th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  background: var(--bg);
+}
+
+tbody tr:hover {
+  background: var(--accent-soft);
+}
+
+.code {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.step {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.muted {
+  color: var(--muted);
+}

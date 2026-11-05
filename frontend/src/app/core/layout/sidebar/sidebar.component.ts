@@ -15,6 +15,7 @@ export class SidebarComponent {
     {
       title: 'Çalışma', items: [
         { path: '/dashboard', label: 'Gösterge Paneli' },
+        { path: '/requests', label: 'Talepler' },
         { path: '/projects', label: 'Projeler' },
       ]
     },
