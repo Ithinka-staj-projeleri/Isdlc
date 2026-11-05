@@ -1,9 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { showsFieldErrors } from '../../core/http/problem-details';
 import { PagedResult } from '../../shared/models/paged-result';
 import { UserLookup, UserRole } from '../../shared/models/user-summary';
-import { ProjectFilter, ProjectListItem } from './project.model';
+import { Project, ProjectFilter, ProjectInput, ProjectListItem } from './project.model';
 
 /** Calls to the Projects API. Screens never call HttpClient directly. Contract: docs/projects-api.md */
 @Injectable({ providedIn: 'root' })
@@ -20,6 +21,14 @@ export class ProjectService {
       }
     }
     return this._http.get<PagedResult<ProjectListItem>>(this._baseUrl, { params });
+  }
+
+  /**
+   * Opens a new request (only a business analyst can). The form shows 400 field errors itself,
+   * so the error interceptor does not also show an alert for them.
+   */
+  create(input: ProjectInput): Observable<Project> {
+    return this._http.post<Project>(this._baseUrl, input, { context: showsFieldErrors() });
   }
 
   /** Active users for pickers, e.g. business analysts. */

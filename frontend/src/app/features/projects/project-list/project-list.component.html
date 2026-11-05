@@ -9,6 +9,10 @@
       }
     </p>
   </div>
+  @if (mode() === 'requests') {
+    <!-- Only a business analyst can open a request; the button will be hidden for other roles once sign-in is in. -->
+    <a routerLink="/requests/new" class="new-button">+ Yeni talep</a>
+  }
 </header>
 
 <section class="filters">
@@ -30,7 +34,7 @@
 
   <select aria-label="İş analisti" [value]="analystId()" (change)="onAnalystChange($any($event.target).value)">
     <option value="">Tüm iş analistleri</option>
-    @for (analyst of analysts.value() ?? []; track analyst.id) {
+    @for (analyst of analystOptions(); track analyst.id) {
       <option [value]="analyst.id">{{ analyst.fullName }}</option>
     }
   </select>

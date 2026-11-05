@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Params, Router } from '@angular/router';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged, map, Subject } from 'rxjs';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
@@ -25,7 +25,7 @@ const PAGE_SIZE = 20;
  */
 @Component({
   selector: 'app-project-list',
-  imports: [DatePipe, EmptyStateComponent, PaginationComponent, StatusBadgeComponent],
+  imports: [DatePipe, RouterLink, EmptyStateComponent, PaginationComponent, StatusBadgeComponent],
   templateUrl: './project-list.component.html',
   styleUrl: './project-list.component.scss',
 })
@@ -85,13 +85,17 @@ export class ProjectListComponent {
     stream: ({ params }) => this._projectService.list(params),
   });
 
-  readonly analysts = rxResource({
+  private readonly _analysts = rxResource({
     stream: () => this._projectService.users('BusinessAnalyst'),
   });
 
+  // A resource throws when its value is read in the error state (e.g. the API is down),
+  // which would stop the whole screen from updating. Read it only when there is a value.
+  readonly analystOptions = computed(() => (this._analysts.hasValue() ? this._analysts.value() : []));
+
   /** The last loaded page. Kept while the next one loads, so the table fades instead of disappearing. */
   private readonly _lastResult = linkedSignal<PagedResult<ProjectListItem> | undefined, PagedResult<ProjectListItem> | undefined>({
-    source: () => this.projects.value(),
+    source: () => (this.projects.hasValue() ? this.projects.value() : undefined),
     computation: (current, previous) => current ?? previous?.value,
   });
 
