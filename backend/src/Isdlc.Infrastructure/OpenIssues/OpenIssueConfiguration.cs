@@ -25,6 +25,7 @@ public class OpenIssueConfiguration : IEntityTypeConfiguration<OpenIssue>
 
         builder.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId);
         builder.HasOne(x => x.OwnerUser).WithMany().HasForeignKey(x => x.OwnerUserId);
+        builder.HasOne(x => x.SourceMeeting).WithMany().HasForeignKey(x => x.SourceMeetingId);
 
         builder.ConfigureAuditFields();
     }

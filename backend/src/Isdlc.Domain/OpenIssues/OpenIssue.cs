@@ -1,5 +1,6 @@
 using Isdlc.Domain.Common;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Meetings;
 using Isdlc.Domain.Projects;
 
 namespace Isdlc.Domain.OpenIssues;
@@ -35,4 +36,8 @@ public class OpenIssue : AuditableEntity, IAudited, IProjectRecord
 
     /// <summary>Set when the status becomes Closed, cleared when it is reopened.</summary>
     public DateTime? ClosedAt { get; set; }
+
+    /// <summary>The meeting whose decision or action this record came from; null when added directly.</summary>
+    public int? SourceMeetingId { get; set; }
+    public Meeting? SourceMeeting { get; set; }
 }

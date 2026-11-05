@@ -48,7 +48,7 @@ public class OpenIssueService(
             .ThenBy(x => x.Code.Length)
             .ThenBy(x => x.Code)
             .ApplyPaging(pageRequest)
-            .Select(ToListItemDto(today))
+            .Select(OpenIssueChecks.ToListItemDto(today))
             .ToListAsync(cancellationToken);
 
         return new PagedResult<OpenIssueListItemDto>(items, totalCount);
@@ -71,26 +71,24 @@ public class OpenIssueService(
     {
         var userId = RequireSignedIn();
         var project = await dbContext.GetWritableProjectAsync(projectId, cancellationToken);
-        await ValidateOwnerAsync(request.OwnerUserId, request.OwnerName, cancellationToken);
+        await dbContext.ValidateOwnerAsync(request.OwnerUserId, request.OwnerName, cancellationToken);
 
-        var highestCode = await dbContext.OpenIssues
+        var number = await dbContext.OpenIssues
             .Where(x => x.ProjectId == projectId)
-            .OrderByDescending(x => x.Code.Length)
-            .ThenByDescending(x => x.Code)
             .Select(x => x.Code)
-            .FirstOrDefaultAsync(cancellationToken);
+            .NextNumberAsync(cancellationToken);
 
         var issue = new OpenIssue
         {
             ProjectId = projectId,
-            Code = OpenIssueRules.FormatCode(OpenIssueRules.CodePrefix, OpenIssueRules.NextCodeNumber(highestCode)),
+            Code = OpenIssueRules.FormatCode(OpenIssueRules.CodePrefix, number),
             Status = OpenIssueStatus.Open,
         };
         ApplyContent(issue, request);
         dbContext.OpenIssues.Add(issue);
 
         await SaveNewAsync(issue, cancellationToken);
-        await NotifyOwnerAsync(project, issue, previousOwnerUserId: null, userId, cancellationToken);
+        await notifications.NotifyOwnerAsync(project, issue, previousOwnerUserId: null, userId, cancellationToken);
 
         return await GetAsync(projectId, issue.Id, cancellationToken);
     }
@@ -101,12 +99,12 @@ public class OpenIssueService(
         var userId = RequireSignedIn();
         var project = await dbContext.GetWritableProjectAsync(projectId, cancellationToken);
         var issue = await LoadForUpdateAsync(projectId, openIssueId, cancellationToken);
-        await ValidateOwnerAsync(request.OwnerUserId, request.OwnerName, cancellationToken);
+        await dbContext.ValidateOwnerAsync(request.OwnerUserId, request.OwnerName, cancellationToken);
 
         var previousOwnerUserId = issue.OwnerUserId;
         ApplyContent(issue, request);
         await dbContext.SaveChangesAsync(cancellationToken);
-        await NotifyOwnerAsync(project, issue, previousOwnerUserId, userId, cancellationToken);
+        await notifications.NotifyOwnerAsync(project, issue, previousOwnerUserId, userId, cancellationToken);
 
         return await GetAsync(projectId, issue.Id, cancellationToken);
     }
@@ -136,21 +134,6 @@ public class OpenIssueService(
         await dbContext.OpenIssues.SingleOrDefaultAsync(
             x => x.ProjectId == projectId && x.Id == openIssueId, cancellationToken)
         ?? throw new NotFoundException("Açık konu bulunamadı.");
-
-    /// <summary>Exactly one owner (400), and an owner user must be an active user (400).</summary>
-    private async Task ValidateOwnerAsync(int? ownerUserId, string? ownerName, CancellationToken cancellationToken)
-    {
-        if (OpenIssueRules.ValidateOwner(ownerUserId, ownerName) is { } error)
-        {
-            throw new BusinessRuleException(error);
-        }
-
-        if (ownerUserId is { } id
-            && !await dbContext.Users.AnyAsync(u => u.Id == id && u.IsActive, cancellationToken))
-        {
-            throw new BusinessRuleException("Seçilen sorumlu aktif bir kullanıcı değil.");
-        }
-    }
 
     private static void ApplyContent(OpenIssue issue, CreateOpenIssueDto request)
     {
@@ -188,29 +171,6 @@ public class OpenIssueService(
         }
     }
 
-    /// <summary>Tells a team member that the record was assigned to them (not when they did it themselves).</summary>
-    private async Task NotifyOwnerAsync(
-        ProjectRef project, OpenIssue issue, int? previousOwnerUserId, int actingUserId,
-        CancellationToken cancellationToken)
-    {
-        if (issue.OwnerUserId is { } ownerId && ownerId != previousOwnerUserId && ownerId != actingUserId)
-        {
-            await notifications.NotifyUsersAsync(
-                [ownerId], project.Id, $"{project.Code} · {issue.Code} size atandı: {issue.Title}", cancellationToken);
-        }
-    }
-
-    private static Expression<Func<OpenIssue, OpenIssueListItemDto>> ToListItemDto(DateOnly today) =>
-        x => new OpenIssueListItemDto(
-            x.Id,
-            x.Code,
-            x.Type,
-            x.Title,
-            new OwnerDto(x.OwnerUserId, x.OwnerUser != null ? x.OwnerUser.FullName : x.OwnerName!),
-            x.DueDate,
-            x.Status,
-            x.Status != OpenIssueStatus.Closed && x.DueDate != null && x.DueDate < today);
-
     private Expression<Func<OpenIssue, OpenIssueDto>> ToDto(DateOnly today) =>
         x => new OpenIssueDto(
             x.Id,
@@ -223,6 +183,7 @@ public class OpenIssueService(
             x.DueDate,
             x.Status,
             x.Status != OpenIssueStatus.Closed && x.DueDate != null && x.DueDate < today,
+            x.SourceMeeting != null ? new SourceMeetingDto(x.SourceMeeting.Id, x.SourceMeeting.Code) : null,
             x.ClosedAt,
             dbContext.Users
                 .Where(u => u.Id == x.CreatedById)

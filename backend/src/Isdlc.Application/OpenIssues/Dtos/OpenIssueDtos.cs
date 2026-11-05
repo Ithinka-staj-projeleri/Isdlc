@@ -7,6 +7,9 @@ namespace Isdlc.Application.OpenIssues.Dtos;
 /// <summary>Who is responsible: a team member (UserId set) or someone outside the system (UserId null).</summary>
 public record OwnerDto(int? UserId, string Name);
 
+/// <summary>The meeting minutes a record came from.</summary>
+public record SourceMeetingDto(int Id, string Code);
+
 public record OpenIssueListItemDto(
     int Id,
     string Code,
@@ -15,7 +18,8 @@ public record OpenIssueListItemDto(
     OwnerDto Owner,
     DateOnly? DueDate,
     OpenIssueStatus Status,
-    bool IsOverdue);
+    bool IsOverdue,
+    SourceMeetingDto? SourceMeeting);
 
 public record OpenIssueDto(
     int Id,
@@ -28,6 +32,7 @@ public record OpenIssueDto(
     DateOnly? DueDate,
     OpenIssueStatus Status,
     bool IsOverdue,
+    SourceMeetingDto? SourceMeeting,
     DateTime? ClosedAt,
     UserSummaryDto CreatedBy,
     DateTime CreatedAt,

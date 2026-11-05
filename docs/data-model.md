@@ -3,7 +3,7 @@
 Faz 0'ın temel entity'leri (`ProcessStage`, `ProcessStep`, `User`, `Project`, `StepRecord`), denetim kaydı
 ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
 Kaynak: "ISDLC Analiz Merkezi" prototipi.
-Durum: temel entity'ler uygulandı; **`OpenIssue` ve `Meeting` taslak — ekip onayı bekliyor.**
+Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor.**
 
 İsimlendirme AGENTS.md'ye uyar: entity tekil, tablo çoğul; `?` alanın boş bırakılabileceğini (nullable) gösterir.
 
@@ -216,6 +216,7 @@ Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, ba
   - her **karar** → `Type = Decision`, `Status = Closed`, sorumlu tutanağı kaydeden kullanıcı, termin toplantı tarihi.
 - Tutanak ve aktarılan kayıtlar tek `SaveChanges` ile kaydedilir: ya hepsi ya hiçbiri.
 - Tutanak detayında kararlar ve aksiyonlar `SourceMeetingId` üzerinden, güncel durumlarıyla listelenir.
+  Türü `Decision` olanlar karar, diğerleri aksiyon sayılır (aksiyonun türü sonradan değiştirilse bile tutanakta kalır).
 - Tutanak sonradan düzenlenebilir (tür, tarih, katılımcılar, gündem); kararlar ve aksiyonlar artık
   açık konu olduğu için Açık Konular üzerinden yönetilir.
 
@@ -239,6 +240,7 @@ Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, ba
 
 | İşlem | Sonuç |
 | --- | --- |
+| Yeni talep açılır (`Projects`) | `Status` = `Active`, `CurrentStepId` = akışın ilk adımı (`Order` en küçük, 1.1); `StepRecord` yazılmaz. 1.1'in metni talep kaydının kendisidir; tamamlanınca 1.2'ye geçilir |
 | Karar olmayan adım tamamlanır | `StepRecord(Completed)`; `CurrentStepId` sonraki adıma geçer |
 | Karar adımında "Evet" | `StepRecord(Yes)`; `CurrentStepId` sonraki adıma geçer |
 | "Hayır" + `NoOutcome` dolu | `StepRecord(No)`; `Status` = `NoOutcome`, `CurrentStepId` = boş |

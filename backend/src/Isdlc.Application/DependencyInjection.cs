@@ -1,4 +1,5 @@
 using Isdlc.Application.Identity;
+using Isdlc.Application.Meetings;
 using Isdlc.Application.Notifications;
 using Isdlc.Application.OpenIssues;
 using Isdlc.Application.Process;
@@ -16,6 +17,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IProcessService, ProcessService>();
         services.AddScoped<IOpenIssueService, OpenIssueService>();
+        services.AddScoped<IMeetingService, MeetingService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IUserService, UserService>();
 

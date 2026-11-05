@@ -1,6 +1,7 @@
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Domain.Audit;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
@@ -19,6 +20,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
     public DbSet<StepRecord> StepRecords => Set<StepRecord>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<OpenIssue> OpenIssues => Set<OpenIssue>();
+    public DbSet<Meeting> Meetings => Set<Meeting>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
