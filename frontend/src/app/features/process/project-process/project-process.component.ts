@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of } from 'rxjs';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
@@ -39,6 +39,13 @@ export class ProjectProcessComponent {
     private readonly processService = inject(ProcessService);
 
     readonly projectId = input.required<number>();
+
+    /**
+     * After a step command (complete, answer, reject), so the page can refresh what it shows about the project
+     * (current step, status): (processChanged)="project.reload()". Also after a failed command, since a 409
+     * means someone else moved the project on meanwhile.
+     */
+    readonly processChanged = output<void>();
 
     protected readonly roleLabels = USER_ROLE_LABELS;
     protected readonly statusLabels = PROJECT_STATUS_LABELS;
@@ -142,11 +149,13 @@ export class ProjectProcessComponent {
         this.process.set(process);
         this.pickedStage.set(null);
         this.records.reload();
+        this.processChanged.emit();
     }
 
     /** A command failed (e.g. someone else moved the project on): load the current state again. */
     protected onFailed(): void {
         this.process.reload();
         this.records.reload();
+        this.processChanged.emit();
     }
 }
