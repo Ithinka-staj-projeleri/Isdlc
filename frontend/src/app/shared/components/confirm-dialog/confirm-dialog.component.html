@@ -1,0 +1,12 @@
+@if (open()) {
+<div class="overlay">
+    <div class="dialog">
+        <h3>{{ title() }}</h3>
+        <p>{{ message() }}</p>
+        <div class="actions">
+            <button (click)="cancelled.emit()">Vazgeç</button>
+            <button class="primary" (click)="confirmed.emit()">Onayla</button>
+        </div>
+    </div>
+</div>
+}
