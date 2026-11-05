@@ -36,6 +36,14 @@ export class ProjectService {
     return this._http.post<Project>(this._baseUrl, input, { context: showsFieldErrors() });
   }
 
+  /**
+   * Updates the basic information of an active project (409 when it is not active).
+   * Status, current step, priority and level are not sent: Process and Assessment own them.
+   */
+  update(projectId: number, input: ProjectInput): Observable<Project> {
+    return this._http.put<Project>(`${this._baseUrl}/${projectId}`, input, { context: showsFieldErrors() });
+  }
+
   /** Active users for pickers, e.g. business analysts. */
   users(role?: UserRole): Observable<UserLookup[]> {
     const params = role ? new HttpParams().set('role', role) : undefined;

@@ -32,6 +32,12 @@
     @include ui.code;
   }
 
+  .edit-button {
+    @include ui.button;
+    margin-left: auto;
+    text-decoration: none;
+  }
+
   .meta {
     display: flex;
     flex-wrap: wrap;
