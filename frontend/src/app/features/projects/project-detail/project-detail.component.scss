@@ -1,0 +1,129 @@
+@use '../../../shared/styles/ui' as ui;
+
+// Colours and sizes come from the variables in src/styles.scss and the shared ui mixins.
+
+.page-head {
+  margin-bottom: 12px;
+
+  .back {
+    color: var(--muted);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--accent);
+    }
+  }
+
+  .title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      color: var(--ink);
+    }
+  }
+
+  .code {
+    @include ui.code;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    margin: 8px 0 0;
+    color: var(--muted);
+
+    b {
+      color: var(--fg);
+    }
+
+    .step {
+      color: var(--accent);
+    }
+  }
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+
+  button {
+    padding: 8px 14px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--ink);
+    }
+
+    &.on {
+      border-bottom-color: var(--accent);
+      color: var(--accent);
+    }
+  }
+}
+
+.panel {
+  display: grid;
+  gap: 14px;
+}
+
+.card {
+  @include ui.card;
+  padding: 16px;
+
+  h3 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+
+  .description {
+    margin: 0 0 12px;
+    white-space: pre-line;
+  }
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 8px 16px;
+  margin: 0;
+
+  dt {
+    color: var(--muted);
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 2px;
+
+    dd {
+      margin-bottom: 8px;
+    }
+  }
+}
+
+.center {
+  text-align: center;
+}

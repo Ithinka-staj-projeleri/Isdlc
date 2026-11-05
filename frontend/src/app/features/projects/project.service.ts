@@ -23,6 +23,11 @@ export class ProjectService {
     return this._http.get<PagedResult<ProjectListItem>>(this._baseUrl, { params });
   }
 
+  /** One project with all its details. */
+  get(projectId: number): Observable<Project> {
+    return this._http.get<Project>(`${this._baseUrl}/${projectId}`);
+  }
+
   /**
    * Opens a new request (only a business analyst can). The form shows 400 field errors itself,
    * so the error interceptor does not also show an alert for them.

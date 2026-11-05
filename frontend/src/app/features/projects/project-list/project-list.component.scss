@@ -91,13 +91,24 @@ th {
   background: var(--bg);
 }
 
-tbody tr:hover {
-  background: var(--accent-soft);
+tbody tr {
+  cursor: pointer;
+
+  &:hover {
+    background: var(--accent-soft);
+  }
 }
 
-.code {
+.code a {
   font-weight: 600;
   color: var(--ink);
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--accent);
+    text-decoration: underline;
+  }
 }
 
 .step {

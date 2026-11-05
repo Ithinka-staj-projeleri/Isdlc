@@ -63,8 +63,11 @@
       </thead>
       <tbody>
         @for (project of rows(); track project.id) {
-          <tr>
-            <td class="code">{{ project.code }}</td>
+          <!-- The whole row opens the project; the code is also a real link for the keyboard and "open in new tab". -->
+          <tr (click)="openProject(project.id)">
+            <td class="code">
+              <a [routerLink]="['/projects', project.id]" (click)="$event.stopPropagation()">{{ project.code }}</a>
+            </td>
             <td class="wrap">{{ project.name }}</td>
             <td class="wrap">{{ project.customerName }}</td>
             <td>{{ requestTypeLabels[project.requestType] }}</td>

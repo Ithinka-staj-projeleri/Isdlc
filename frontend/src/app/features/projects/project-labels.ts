@@ -1,15 +1,11 @@
 import { BadgeTone } from '../../shared/components/status-badge/status-badge.component';
-import { ProjectStatus, RequestChannel, RequestSource, RequestType } from './project.model';
+import { ProjectStatus } from '../../shared/models/project-status';
+import { ProjectPriority, RequestChannel, RequestSource, RequestType } from './project.model';
 
 // Turkish text for the backend's enum values (AGENTS.md: everything on screen is Turkish).
 
-export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
-  Active: 'Aktif',
-  Closed: 'Kapandı',
-  Rejected: 'Reddedildi',
-  Lost: 'Kaybedildi',
-  Redirected: 'Yönlendirildi',
-};
+/** Status names are shared with other modules, so they live in shared/models/project-status. */
+export { PROJECT_STATUS_LABELS } from '../../shared/models/project-status';
 
 /** Badge colour per status: running blue, finished green, stopped red, sent elsewhere yellow. */
 export const PROJECT_STATUS_TONES: Record<ProjectStatus, BadgeTone> = {
@@ -18,6 +14,12 @@ export const PROJECT_STATUS_TONES: Record<ProjectStatus, BadgeTone> = {
   Rejected: 'bad',
   Lost: 'bad',
   Redirected: 'warn',
+};
+
+export const PROJECT_PRIORITY_LABELS: Record<ProjectPriority, string> = {
+  Low: 'Düşük',
+  Medium: 'Orta',
+  High: 'Yüksek',
 };
 
 export const REQUEST_TYPE_LABELS: Record<RequestType, string> = {
