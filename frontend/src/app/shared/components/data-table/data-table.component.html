@@ -1,1 +1,18 @@
-<p>data-table works!</p>
+@if (rows().length === 0) {
+<app-empty-state />
+} @else {
+<table>
+    <thead>
+        <tr>
+            @for (col of columns(); track col.key) { <th>{{ col.label }}</th> }
+        </tr>
+    </thead>
+    <tbody>
+        @for (row of rows(); track $index) {
+        <tr (click)="rowClick.emit(row)">
+            @for (col of columns(); track col.key) { <td>{{ row[col.key] }}</td> }
+        </tr>
+        }
+    </tbody>
+</table>
+}

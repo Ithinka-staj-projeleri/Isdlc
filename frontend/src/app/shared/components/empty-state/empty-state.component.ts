@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, input } from '@angular/core';
 
 @Component({
-  imports: [],
   selector: 'app-empty-state',
-  styleUrl: './empty-state.component.scss',
   templateUrl: './empty-state.component.html',
+  styleUrl: './empty-state.component.scss',
 })
-export class EmptyStateComponent {}
+export class EmptyStateComponent {
+  message = input('Kayıt bulunamadı.');
+}

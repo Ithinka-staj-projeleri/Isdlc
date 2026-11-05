@@ -1,9 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 @Component({
-  imports: [],
   selector: 'app-confirm-dialog',
-  styleUrl: './confirm-dialog.component.scss',
   templateUrl: './confirm-dialog.component.html',
+  styleUrl: './confirm-dialog.component.scss',
 })
-export class ConfirmDialogComponent {}
+export class ConfirmDialogComponent {
+  open = input(false);
+  title = input('Onay');
+  message = input('Bu işlemi onaylıyor musunuz?');
+  confirmed = output<void>();
+  cancelled = output<void>();
+}

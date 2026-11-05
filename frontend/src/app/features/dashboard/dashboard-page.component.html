@@ -1,12 +1,1 @@
-<app-data-table [columns]="columns" [rows]="rows" [cellTemplate]="cell" />
-<app-paginator [totalCount]="47" [page]="page()" (pageChange)="page.set($event)" />
-
-<ng-template #cell let-row let-col="column">
-    @if (col.key === 'status') {
-    <app-status-badge [tone]="row.status === 'Aktif' ? 'ok' : row.status === 'Beklemede' ? 'warn' : 'bad'">
-        {{ row.status }}
-    </app-status-badge>
-    } @else {
-    {{ row[col.key] }}
-    }
-</ng-template>
+<p>Gösterge Paneli</p>
