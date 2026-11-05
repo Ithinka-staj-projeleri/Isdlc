@@ -1,23 +1,21 @@
 # Projects Modülü — API Sözleşmesi
 
 Talep kaydı, proje listesi ve proje detayı. Veri modeli: [data-model.md](data-model.md) → `Project`.
-Durum: **taslak — ekip onayı bekliyor.** Sorumlu: Dide.
+Durum: **onaylandı** (5 Kasım 2026). Sorumlu: Dide.
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601
 (`DateOnly` alanları `2026-11-05` biçiminde), hatalar `ProblemDetails`, listeler `items` + `totalCount`,
 JSON alanları camelCase, doğrulama hataları `errors.<alanAdı>` altında Türkçe.
 
-## Açık sorular (ekip onayı)
+## Ekip kararları
 
-Her sorunun yanında önerilen cevap var; itiraz yoksa sözleşme bu cevaplarla kesinleşir.
-
-| # | Soru | Öneri | Kime |
-| --- | --- | --- | --- |
-| 1 | Talebi kim açabilir, kim düzenleyebilir? | MVP'de giriş yapmış her aktif kullanıcı. `Identity` gelince rol bazlı daraltılabilir | Ekip |
-| 2 | Kapanmış (aktif olmayan) projenin temel bilgileri düzenlenebilir mi? | Hayır, 409. Proje kayıtlarındaki kuralla aynı | Ekip |
-| 3 | Prototipteki "Talepler" ve "Projeler" menüleri ayrı mı kalacak? | Tek liste, `phase` filtresiyle: aşama 1–3 → talep, 4–13 → proje (aşağıda) | Baran |
-| 4 | Liste sütunları ve filtreler yeterli mi? | Aşağıdaki `ProjectListItemDto` ve filtreler | Baran |
-| 5 | Formdaki kullanıcı listesi (`GET /users`) kimde? | `Identity` modülünün işi; Baran onaylarsa Dide yazar | Baran |
+| # | Soru | Karar |
+| --- | --- | --- |
+| 1 | Talebi kim açabilir, kim düzenleyebilir? | **Yalnızca İş Analisti** talep açar (diğer roller 403). Düzenleme: giriş yapmış her aktif kullanıcı |
+| 2 | Kapanmış (aktif olmayan) projenin temel bilgileri düzenlenebilir mi? | Hayır, 409. Proje kayıtlarındaki kuralla aynı |
+| 3 | Prototipteki "Talepler" ve "Projeler" menüleri ayrı mı kalacak? | Tek liste, `phase` filtresiyle: aşama 1–3 → talep, 4–13 → proje (aşağıda) |
+| 4 | Liste sütunları ve filtreler yeterli mi? | Evet: aşağıdaki `ProjectListItemDto` ve filtreler |
+| 5 | Formdaki kullanıcı listesi (`GET /users`) kimde? | Dide yazar (`Identity` modülünün klasöründe); Baran onayladı |
 
 ## Erva ile alınan kararlar
 
@@ -29,7 +27,8 @@ Her sorunun yanında önerilen cevap var; itiraz yoksa sözleşme bu cevaplarla 
 ## Ortak kurallar
 
 - **Okuma:** giriş yapmış her kullanıcı.
-- **Ekleme / güncelleme:** giriş yapmış her aktif kullanıcı (soru 1). Güncelleme yalnızca aktif projede (soru 2).
+- **Talep açma:** yalnızca aktif bir **İş Analisti** (karar 1). Diğer roller 403 alır.
+- **Güncelleme:** giriş yapmış her aktif kullanıcı (karar 1), yalnızca aktif projede (karar 2).
 - **Silme yok.** Yanlış açılmış talebi Yazılım Departman Yöneticisi `Process` üzerinden reddeder (`POST .../process/reject`).
 - **Eş zamanlı düzenleme:** İstemci `rowVersion` göndermez; temel bilgilerde son kaydeden kazanır, her değişiklik
   denetim kaydında görünür (proje kayıtlarıyla aynı kural). `Project.RowVersion` aynı anda yapılan iki kaydı
@@ -43,14 +42,14 @@ Her sorunun yanında önerilen cevap var; itiraz yoksa sözleşme bu cevaplarla 
 | `GET /projects/{projectId}` | Proje detayı | `200` `ProjectDto` |
 | `POST /projects` | Yeni talep | `201` `ProjectDto` (`Location: /api/v1/projects/{id}`) |
 | `PUT /projects/{projectId}` | Temel bilgileri güncelle | `200` `ProjectDto` |
-| `GET /users` | Formdaki kişi seçimi için kullanıcı listesi (soru 5) | `200` `UserLookupDto[]` |
+| `GET /users` | Formdaki kişi seçimi için kullanıcı listesi (karar 5) | `200` `UserLookupDto[]` |
 
 **Liste filtreleri** (hepsi isteğe bağlı):
 
 | Parametre | Açıklama |
 | --- | --- |
 | `status` | `ProjectStatus` (`Active`, `Closed`, …) |
-| `phase` | `Request` → mevcut adımı aşama 1–3'te olan aktif projeler (talep); `Project` → aşama 4–13 (soru 3) |
+| `phase` | `Request` → mevcut adımı aşama 1–3'te olan aktif projeler (talep); `Project` → aşama 4–13 (karar 3) |
 | `search` | Kod, proje adı veya müşteri adında geçen metin (büyük/küçük harf duyarsız) |
 | `businessAnalystId` | İş analisti |
 | `page`, `pageSize` | Sayfalama |
@@ -142,6 +141,7 @@ yine olmazsa 409 döner. Açık konulardan farkı: talep formu uzun olduğu içi
 | Durum | Kod | Örnek `detail` |
 | --- | --- | --- |
 | Proje bulunamadı | `404` | "Proje bulunamadı." |
+| Talebi İş Analisti olmayan biri açmaya çalıştı | `403` | "Talebi yalnızca İş Analisti açabilir." |
 | Alanlar geçersiz | `400` | `errors.name`: "Proje adı zorunludur." |
 | Seçilen kişi uygun değil | `400` | "Seçilen iş analisti aktif bir İş Analisti değil." |
 | Bitiş tarihi başlangıçtan önce | `400` | `errors.dueDate`: "Bitiş tarihi başlangıç tarihinden önce olamaz." |
@@ -163,7 +163,7 @@ yine olmazsa 409 döner. Açık konulardan farkı: talep formu uzun olduğu içi
 | `Isdlc.Domain/Projects/` | `Project`, enum'lar (mevcut) |
 | `Isdlc.Application/Projects/` | `IProjectService`, `ProjectService`, DTO'lar, `ProjectFilter`, kod üretimi |
 | `Isdlc.Api/Controllers/` | `ProjectsController` (`/api/v1/projects`) |
-| `Isdlc.Application/Identity/`, `Isdlc.Api/Controllers/` | `GET /users` — soru 5'e göre |
+| `Isdlc.Application/Identity/`, `Isdlc.Api/Controllers/` | `UserLookupDto`, `GET /users` (karar 5) |
 
 ## Ekranlar (frontend)
 
