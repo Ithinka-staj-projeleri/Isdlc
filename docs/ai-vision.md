@@ -1,9 +1,9 @@
 # Yapay Zekâ Ajanları — Vizyon
 
 ISDLC sürecindeki işlerin bir kısmının yapay zekâ ajanlarıyla hazırlanması için ilk tasarım notu.
-Durum: **vizyon — MVP kapsamında değil.** AGENTS.md'ye göre AI özellikleri sonraki sürümlere bırakılmıştır.
-Bu belge, MVP'de alınacak kararların ileride ajan eklemeyi zorlaştırmaması için yazıldı. Sorumlu: Erva.
-İlk deneme (toplantı ajanı) [`ai/`](../ai/README.md) klasöründe başladı; bkz. "Deneme: toplantı ajanı".
+Durum: **toplantı yardımcısı MVP'de (ekip onayı); geri kalanı vizyon.** Sorumlu: Erva.
+Komut satırındaki denemenin ardından ekip, toplantı ajanını Python servisi olarak uygulamaya almayı onayladı:
+bkz. "Uygulamada: toplantı yardımcısı". Belgenin geri kalanı sonraki adımların tasarımıdır.
 
 ## Temel ilke: ajan hazırlar, insan onaylar
 
@@ -230,10 +230,33 @@ MVP'ye ajan eklenmez; ama şu kurallar ileride ajan eklemeyi kolaylaştırır:
 3. Her modülün `Create...Dto`'su tek başına anlamlı ve doğrulanabilir olur; ajan önerileri bu DTO'ların aynısıdır.
 4. Toplantı tutanakları ve notlar serbest metin olarak saklanır; ajanın girdisi bunlardır.
 
-## Deneme: toplantı ajanı
+## Uygulamada: toplantı yardımcısı
 
-MVP'yi geciktirmeden ajan fikrini gerçek kodla sınamak için süresi sınırlı bir deneme (haftada yaklaşık 1 gün).
-Kod: [`ai/`](../ai/README.md). Ekip onayı alınana kadar `main`'e birleştirilmez.
+Denemenin ilk ürünü. Yeni tutanak formunda ham toplantı notları yazılır, "Yapay zekâ ile karar ve aksiyonları çıkar"
+butonu önerileri forma doldurur; kişi düzenleyip tutanağı normal şekilde kaydeder.
+
+```
+Tutanak formu ──► POST /api/v1/projects/{id}/meetings/suggestions (.NET: giriş, proje aktif mi, mevcut adım)
+                     │  X-Agent-Key ile
+                     ▼
+                  ai/ servisi: POST /v1/meeting/suggestions (maskeleme, model çağrısı, doğrulama)
+                     │
+                     ▼
+                  .NET: kararlar / aksiyonlar / diğerleri; sorumlu adı aktif bir kullanıcıysa ownerUserId
+                     │
+                     ▼
+                  Form doldurulur ──► kişi kontrol eder ──► POST /meetings (normal kayıt, normal doğrulama)
+```
+
+- Bu adımda `AgentRun` / `AgentSuggestion` tabloları yoktur: inceleme formun kendisidir, kaydedilmeyen öneri iz bırakmaz.
+  Kabul / ret oranlarını ölçmek gerektiğinde (yol haritası adım 4) tablolar eklenir.
+- Servis çalışmıyorsa `GET /api/v1/agents/status` kapalı döner ve buton görünmez.
+- Sözleşme: [open-issues-meetings-api.md](open-issues-meetings-api.md) → "Yapay zekâ önerileri".
+
+## Deneme: toplantı ve risk ajanları (komut satırı)
+
+Ajan fikrini gerçek kodla sınamak için yapılan deneme. Kod: [`ai/`](../ai/README.md). Komut satırı hâlâ çalışır;
+eval'ler ve risk ajanı buradan kullanılır.
 
 | Konu | Karar |
 | --- | --- |
@@ -267,10 +290,10 @@ Denemenin sonunda ekibe şu sorularla dönülür: Ajan beklenen kayıtların ne 
 
 | Adım | İçerik | Ön koşul |
 | --- | --- | --- |
-| A | **Deneme:** toplantı ajanı, komut satırından onay (şu an) | OpenIssues API'si (hazır) |
+| A | **Deneme:** toplantı ajanı, komut satırından onay ✅ | OpenIssues API'si (hazır) |
 | 0 | MVP tamamlanır | — |
-| 1 | Ekip kararı: Python servisi, `AgentRun` / `AgentSuggestion` tabloları, model sağlayıcısı | Deneme sonuçları |
-| 2 | Toplantı ajanı uygulamaya girer: öneri paneli, tutanakla birlikte kayıt | Meetings modülü, Identity (servis hesabı) |
+| 1 | Ekip kararı: Python servisi ✅ (onaylandı); `AgentRun` / `AgentSuggestion` tabloları ve model sağlayıcısı bekliyor | Deneme sonuçları |
+| 2 | Toplantı ajanı uygulamaya girer: tutanak formunda öneri butonu (şu an); öneri paneli sonra | Meetings modülü (hazır) |
 | 3 | Pilot: Aşama 4'te doküman ajanı + gözden geçirme ajanı | Şablonlar, kontrol listesi, doküman içeriği saklama |
 | 4 | Ölçüm: önerilerin kabul, düzeltme ve ret oranları | Gerçek kullanım |
 | 5 | Diğer ajan tipleri ve `StepAutomation` ayar ekranı | Pilotun başarılı olması |
@@ -280,7 +303,7 @@ Denemenin sonunda ekibe şu sorularla dönülür: Ajan beklenen kayıtların ne 
 
 1. Hangi yapay zekâ servisi kullanılacak, verinin gönderilmesine şirket izin veriyor mu?
    Şirket kullanımı için doğrudan API anahtarı yerine kurumsal bulut servisi (Azure, Vertex AI, Bedrock) tercih edilir.
-2. Ajanlar ayrı bir Python servisi olarak mı yazılacak (öneri: evet)? Kabul edilirse AGENTS.md yığın ve klasör bölümleri güncellenir, CI'a Python işi eklenir.
-3. Ajan modülünün kod adı (öneri: `Agents`) ve sözlük karşılıkları (`AgentType`, `StepAutomation`, `AgentRun`, `AgentSuggestion`).
+2. ~~Ajanlar ayrı bir Python servisi olarak mı yazılacak?~~ **Evet** (ekip onayı). AGENTS.md yığın ve klasör bölümleri güncellendi, CI'a Python işi eklendi.
+3. Ajan modülünün kod adı: **`Agents`** (AGENTS.md'ye eklendi). Sözlük karşılıkları (`AgentType`, `StepAutomation`, `AgentRun`, `AgentSuggestion`) tablolar eklenirken yazılır.
 4. Ajan çalıştırmaları senkron mu (kullanıcı bekler), arka planda mı (bildirimle haber verilir) olacak?
 5. Talep Sahibi'ne giden içerikler (ör. 4.6'da sunulan dokümanlar) ajan taslağından üretildiyse bu belirtilecek mi?

@@ -1,7 +1,7 @@
 [project]
 name = "isdlc-ai"
 version = "0.1.0"
-description = "ISDLC AI agents (spike, not part of the MVP)"
+description = "ISDLC AI agents: HTTP service for the backend and a command line"
 requires-python = ">=3.11"
 
 [tool.pytest.ini_options]
