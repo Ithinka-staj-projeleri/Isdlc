@@ -32,13 +32,20 @@ public class ProjectService(
             query = query.Where(p => p.Status == status);
         }
 
+        // The two phases split every record in two: a waiting request (active, stages 1–3) or not.
+        // A closed record is never a waiting request, even if it was closed in stage 1–3 (e.g. redirected at 1.2).
         if (filter.Phase == ProjectPhase.Request)
         {
-            query = query.Where(p => p.CurrentStep != null && p.CurrentStep.ProcessStage.Order <= LastRequestStageOrder);
+            query = query.Where(p =>
+                p.Status == ProjectStatus.Active
+                && p.CurrentStep != null
+                && p.CurrentStep.ProcessStage.Order <= LastRequestStageOrder);
         }
         else if (filter.Phase == ProjectPhase.Project)
         {
-            query = query.Where(p => p.CurrentStep != null && p.CurrentStep.ProcessStage.Order > LastRequestStageOrder);
+            query = query.Where(p =>
+                p.Status != ProjectStatus.Active
+                || (p.CurrentStep != null && p.CurrentStep.ProcessStage.Order > LastRequestStageOrder));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
