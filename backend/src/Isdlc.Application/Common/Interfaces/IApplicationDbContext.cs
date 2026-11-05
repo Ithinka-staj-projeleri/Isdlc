@@ -1,5 +1,6 @@
 using Isdlc.Domain.Audit;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ public interface IApplicationDbContext
     DbSet<ProcessStepJump> ProcessStepJumps { get; }
     DbSet<StepRecord> StepRecords { get; }
     DbSet<AuditLog> AuditLogs { get; }
+    DbSet<OpenIssue> OpenIssues { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
