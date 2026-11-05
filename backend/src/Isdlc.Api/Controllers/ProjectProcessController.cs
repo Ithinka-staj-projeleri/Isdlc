@@ -42,4 +42,17 @@ public class ProjectProcessController(IProcessService processService) : ApiContr
     {
         return await processService.CompleteStepAsync(projectId, request, cancellationToken);
     }
+
+    /// <summary>Answers the current decision step with Yes or No. Returns the updated process state.</summary>
+    [HttpPost("/api/v1/projects/{projectId:int}/process/answer")]
+    [ProducesResponseType<ProjectProcessDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ProjectProcessDto> Answer(
+        int projectId, AnswerStepDto request, CancellationToken cancellationToken)
+    {
+        return await processService.AnswerStepAsync(projectId, request, cancellationToken);
+    }
 }

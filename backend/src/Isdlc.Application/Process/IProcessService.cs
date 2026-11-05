@@ -32,4 +32,11 @@ public interface IProcessService
     /// 403 role cannot act, 400 the step is a decision step.
     /// </summary>
     Task<ProjectProcessDto> CompleteStepAsync(int projectId, CompleteStepDto request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Answers the current decision step. "Yes" moves to the next step; "No" closes the project,
+    /// goes back to the chosen step, or stays on the step (docs/data-model.md → Süreç ilerleme kuralları).
+    /// Errors: as CompleteStepAsync, plus 400 for a non-decision step or an invalid return step.
+    /// </summary>
+    Task<ProjectProcessDto> AnswerStepAsync(int projectId, AnswerStepDto request, CancellationToken cancellationToken);
 }
