@@ -16,6 +16,7 @@ export const routes: Routes = [
             { path: 'risks', loadComponent: () => import('./features/risks/risks-page.component').then(m => m.RisksPageComponent) },
             { path: 'open-issues', loadComponent: () => import('./features/open-issues/open-issues-page.component').then(m => m.OpenIssuesPageComponent) },
             { path: 'meetings', loadComponent: () => import('./features/meetings/meetings-page.component').then(m => m.MeetingsPageComponent) },
+            { path: 'process-library', loadComponent: () => import('./features/process/process-library/process-library.component').then(m => m.ProcessLibraryComponent) },
         ],
     },
 ];
