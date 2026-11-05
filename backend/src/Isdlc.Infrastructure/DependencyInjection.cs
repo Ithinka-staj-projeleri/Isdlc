@@ -1,5 +1,6 @@
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Infrastructure.Identity;
+using Isdlc.Application.Identity;
 using Isdlc.Infrastructure.Persistence;
 using Isdlc.Infrastructure.Persistence.Interceptors;
 using Isdlc.Infrastructure.Persistence.Seeding;
@@ -38,6 +39,8 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<IsdlcDbContext>());
 
         services.AddScoped<DatabaseSeeder>();
+        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        services.AddScoped<UserPasswordSeeder>();
 
         return services;
     }
