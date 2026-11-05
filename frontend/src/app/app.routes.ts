@@ -8,7 +8,9 @@ export const routes: Routes = [
         children: [
             { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
             { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard-page.component').then(m => m.DashboardPageComponent) },
-            { path: 'projects', loadComponent: () => import('./features/projects/projects-page.component').then(m => m.ProjectsPageComponent) },
+            // "Talepler" and "Projeler" are the same list with a different filter (docs/projects-api.md, decision 3).
+            { path: 'requests', data: { mode: 'requests' }, loadComponent: () => import('./features/projects/project-list/project-list.component').then(m => m.ProjectListComponent) },
+            { path: 'projects', data: { mode: 'projects' }, loadComponent: () => import('./features/projects/project-list/project-list.component').then(m => m.ProjectListComponent) },
             { path: 'assessment', loadComponent: () => import('./features/assessment/assessment-page.component').then(m => m.AssessmentPageComponent) },
             { path: 'requirements', loadComponent: () => import('./features/requirements/requirements-page.component').then(m => m.RequirementsPageComponent) },
             { path: 'risks', loadComponent: () => import('./features/risks/risks-page.component').then(m => m.RisksPageComponent) },

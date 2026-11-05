@@ -1,0 +1,91 @@
+<header class="page-head">
+  <div>
+    <h2>{{ title() }}</h2>
+    <p class="hint">
+      @if (mode() === 'requests') {
+        Henüz proje olarak kabul edilmemiş talepler (aşama 1–3).
+      } @else {
+        Kabul edilmiş projeler (aşama 4–13) ve kapanmış kayıtlar.
+      }
+    </p>
+  </div>
+</header>
+
+<section class="filters">
+  <input
+    type="search"
+    placeholder="Kod, proje adı veya müşteri ara"
+    aria-label="Ara"
+    [value]="search()"
+    (input)="onSearchInput($any($event.target).value)"
+  />
+
+  @if (mode() === 'projects') {
+    <select aria-label="Durum" [value]="view()" (change)="onViewChange($any($event.target).value)">
+      @for (option of viewOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  }
+
+  <select aria-label="İş analisti" [value]="analystId()" (change)="onAnalystChange($any($event.target).value)">
+    <option value="">Tüm iş analistleri</option>
+    @for (analyst of analysts.value() ?? []; track analyst.id) {
+      <option [value]="analyst.id">{{ analyst.fullName }}</option>
+    }
+  </select>
+</section>
+
+@if (projects.error()) {
+  <app-empty-state message="Liste yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
+} @else if (projects.isLoading() && rows().length === 0) {
+  <app-empty-state message="Yükleniyor…" />
+} @else if (rows().length === 0) {
+  <app-empty-state [message]="mode() === 'requests' ? 'Bekleyen talep yok.' : 'Bu filtreye uyan proje yok.'" />
+} @else {
+  <div class="table-wrap" [class.loading]="projects.isLoading()">
+    <table>
+      <thead>
+        <tr>
+          <th>Kod</th>
+          <th>Proje adı</th>
+          <th>Müşteri</th>
+          <th>Tür</th>
+          <th>Mevcut adım</th>
+          <th>Durum</th>
+          <th>İş analisti</th>
+          <th>Bitiş</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (project of rows(); track project.id) {
+          <tr>
+            <td class="code">{{ project.code }}</td>
+            <td class="wrap">{{ project.name }}</td>
+            <td class="wrap">{{ project.customerName }}</td>
+            <td>{{ requestTypeLabels[project.requestType] }}</td>
+            <td>
+              @if (project.currentStep; as step) {
+                <span class="step">{{ step.code }}</span> {{ step.stageShortTitle }}
+              } @else {
+                <span class="muted">—</span>
+              }
+            </td>
+            <td>
+              <app-status-badge [label]="statusLabels[project.status]" [tone]="statusTones[project.status]" />
+            </td>
+            <td>{{ project.businessAnalyst?.fullName ?? '—' }}</td>
+            <td>{{ (project.dueDate | date: 'dd.MM.yyyy') ?? '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination
+    [page]="page()"
+    [pageSize]="pageSize"
+    [totalCount]="totalCount()"
+    (pageChange)="onPageChange($event)"
+  />
+}
