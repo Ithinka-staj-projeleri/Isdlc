@@ -1,1 +1,11 @@
-<p>open-issues-page works!</p>
+<header class="page-head">
+    <div>
+        <h2>Açık Konular Listesi</h2>
+        <p class="muted">Talep Sahibi ile ortak kullanılır · Akış 6.3</p>
+    </div>
+    <app-project-picker #picker />
+</header>
+
+@if (picker.selected(); as project) {
+<app-open-issue-list [projectId]="project.id" [readOnly]="project.status !== 'Active'" />
+}
