@@ -201,7 +201,11 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
   (Risk, Requirement vb.) ayrıca `IProjectRecord` taşır. Bu entity'lerdeki her değişiklik, alan bazında eski/yeni
   değerleriyle `AuditLogs` tablosuna otomatik yazılır (`AuditLogInterceptor`). Seed tabloları, `StepRecord` ve `User` loglanmaz.
 - **Giriş yapan kullanıcı:** `ICurrentUserService.UserId`. `Identity` bitene kadar `TemporaryCurrentUserService`
-  her isteği `elif.yilmaz@isdlc.local` olarak çalıştırır.
+  her isteği `elif.yilmaz@isdlc.local` olarak çalıştırır. Lokal denemede başka bir rolle çalışmak için
+  `TemporaryUser:Email` ayarı değiştirilir (`appsettings.Development.json` ya da `TemporaryUser__Email` ortam değişkeni;
+  e-postalar `Isdlc.Infrastructure/Seed/users.json`'da).
+- **Bildirimler:** Modüller bildirimi yalnızca `INotificationService` ile gönderir (`Isdlc.Application/Notifications/`).
+  `Notifications` modülü bitene kadar `NullNotificationService` bildirimi yalnızca loga yazar.
 - **Eşzamanlılık:** `Project.RowVersion` aynı kaydın aynı anda güncellenmesini yakalar ve 409 döner.
 - **Seed:** `Isdlc.Infrastructure/Seed/*.json` dosyaları, tablo boşsa uygulama açılırken yüklenir. Örnek projeler yalnızca geliştirme ortamında yüklenir.
 - **Migration:** Geliştirme ortamında API açılırken otomatik uygulanır. Üretmek için (repo kökünde):

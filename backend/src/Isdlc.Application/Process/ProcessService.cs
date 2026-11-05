@@ -1,14 +1,21 @@
+using Isdlc.Application.Common;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Common.Models;
+using Isdlc.Application.Notifications;
 using Isdlc.Application.Process.Dtos;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Microsoft.EntityFrameworkCore;
 
 namespace Isdlc.Application.Process;
 
-public class ProcessService(IApplicationDbContext dbContext, ICurrentUserService currentUser) : IProcessService
+public class ProcessService(
+    IApplicationDbContext dbContext,
+    ICurrentUserService currentUser,
+    INotificationService notifications,
+    TimeProvider timeProvider) : IProcessService
 {
     public async Task<IReadOnlyList<ProcessStageDto>> GetStagesAsync(CancellationToken cancellationToken)
     {
@@ -138,5 +145,132 @@ public class ProcessService(IApplicationDbContext dbContext, ICurrentUserService
             .ToListAsync(cancellationToken);
 
         return new PagedResult<StepRecordDto>(items, totalCount);
+    }
+
+    public async Task<ProjectProcessDto> CompleteStepAsync(
+        int projectId, CompleteStepDto request, CancellationToken cancellationToken)
+    {
+        var (project, step, user) = await LoadForCommandAsync(projectId, request.ExpectedStepId, cancellationToken);
+
+        if (step.IsDecision)
+        {
+            throw new BusinessRuleException("Bu adım bir karar adımıdır; Evet/Hayır cevabı verilmelidir.");
+        }
+
+        var nextStep = await dbContext.ProcessSteps
+            .AsNoTracking()
+            .Where(s => s.Order == step.Order + 1)
+            .Select(s => new NextStepInfo(s.Id, s.Code, s.ApproverRole))
+            .SingleOrDefaultAsync(cancellationToken);
+
+        var transition = ProcessTransitions.AfterCompleted(nextStep?.Id);
+        await SaveTransitionAsync(project, step, user, StepAction.Completed, request.Note, transition, cancellationToken);
+
+        if (transition.Status != ProjectStatus.Active)
+        {
+            await NotifyClosedAsync(project, cancellationToken);
+        }
+        else if (nextStep?.ApproverRole is { } approver)
+        {
+            await notifications.NotifyRoleAsync(
+                approver, project.Id, $"{project.Code} · {nextStep.Code} onayınızı bekliyor.", cancellationToken);
+        }
+
+        return await GetProjectProcessAsync(projectId, cancellationToken);
+    }
+
+    // ---- Shared by the commands (complete, answer, reject) ----
+
+    private record CurrentStepInfo(int Id, string Code, int Order, bool IsDecision, StepPermissionInfo Permission);
+
+    private record NextStepInfo(int Id, string Code, UserRole? ApproverRole);
+
+    private record ActingUser(int Id, UserRole Role);
+
+    /// <summary>
+    /// Loads the project (tracked, so RowVersion is checked on save), its current step and the acting user,
+    /// and runs the checks every command shares, in this order: 404, 409 not active, 409 step changed, 403 role.
+    /// </summary>
+    private async Task<(Project Project, CurrentStepInfo Step, ActingUser User)> LoadForCommandAsync(
+        int projectId, int expectedStepId, CancellationToken cancellationToken)
+    {
+        var project = await dbContext.Projects.SingleOrDefaultAsync(p => p.Id == projectId, cancellationToken)
+            ?? throw new NotFoundException("Proje bulunamadı.");
+
+        if (project.Status != ProjectStatus.Active || project.CurrentStepId is null)
+        {
+            throw new ConflictException("Proje aktif değil; süreçte işlem yapılamaz.");
+        }
+
+        if (project.CurrentStepId != expectedStepId)
+        {
+            throw new ConflictException("Proje bu arada başka bir adıma geçti. Sayfayı yenileyin.");
+        }
+
+        var step = await dbContext.ProcessSteps
+            .AsNoTracking()
+            .Where(s => s.Id == project.CurrentStepId)
+            .Select(s => new CurrentStepInfo(
+                s.Id, s.Code, s.Order, s.IsDecision,
+                new StepPermissionInfo(s.IsDecision, s.ResponsibleRole, s.ApproverRole)))
+            .SingleAsync(cancellationToken);
+
+        var user = currentUser.UserId is null
+            ? null
+            : await dbContext.Users
+                .AsNoTracking()
+                .Where(u => u.Id == currentUser.UserId && u.IsActive)
+                .Select(u => new ActingUser(u.Id, u.Role))
+                .SingleOrDefaultAsync(cancellationToken);
+
+        if (user is null)
+        {
+            throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
+        }
+
+        if (!ProcessProgress.CanActOnStep(step.Permission, user.Role))
+        {
+            throw new ForbiddenException(ProcessProgress.GetBlockedReason(step.Permission));
+        }
+
+        return (project, step, user);
+    }
+
+    /// <summary>
+    /// Writes the StepRecord and moves the project in one SaveChanges: both are saved or neither.
+    /// If someone else changed the project after it was loaded, RowVersion makes SaveChanges fail (409).
+    /// </summary>
+    private async Task SaveTransitionAsync(
+        Project project, CurrentStepInfo step, ActingUser user, StepAction action, string? note,
+        ProcessTransition transition, CancellationToken cancellationToken)
+    {
+        dbContext.StepRecords.Add(new StepRecord
+        {
+            ProjectId = project.Id,
+            ProcessStepId = step.Id,
+            Action = action,
+            Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
+            PerformedById = user.Id,
+            PerformedAt = timeProvider.GetUtcNow().UtcDateTime,
+        });
+
+        project.Status = transition.Status;
+        project.CurrentStepId = transition.CurrentStepId;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task NotifyClosedAsync(Project project, CancellationToken cancellationToken)
+    {
+        var userIds = new[] { project.BusinessAnalystId, project.ProjectManagerId }
+            .OfType<int>()
+            .Distinct()
+            .ToList();
+
+        if (userIds.Count > 0)
+        {
+            await notifications.NotifyUsersAsync(
+                userIds, project.Id, $"{project.Code} kapandı: {project.Status.ToDisplayName()}.", cancellationToken);
+        }
     }
 }

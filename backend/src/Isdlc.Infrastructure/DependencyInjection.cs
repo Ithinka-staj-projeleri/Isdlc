@@ -19,7 +19,8 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
 
         // TEMPORARY current user until the Identity module adds sign-in.
-        services.AddSingleton<TemporaryCurrentUserService>();
+        services.AddSingleton(new TemporaryCurrentUserService(
+            configuration["TemporaryUser:Email"] ?? TemporaryCurrentUserService.DefaultEmail));
         services.AddSingleton<ICurrentUserService>(sp => sp.GetRequiredService<TemporaryCurrentUserService>());
 
         services.AddScoped<AuditableEntityInterceptor>();
