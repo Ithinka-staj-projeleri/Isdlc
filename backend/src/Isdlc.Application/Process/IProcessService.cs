@@ -24,4 +24,12 @@ public interface IProcessService
     /// </summary>
     Task<PagedResult<StepRecordDto>> GetStepRecordsAsync(
         int projectId, PageRequest pageRequest, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Completes the current non-decision step and moves the project to the next step
+    /// (or closes it after the last step). Returns the updated process state.
+    /// Errors: 404 project missing, 409 not active / step changed / concurrent update,
+    /// 403 role cannot act, 400 the step is a decision step.
+    /// </summary>
+    Task<ProjectProcessDto> CompleteStepAsync(int projectId, CompleteStepDto request, CancellationToken cancellationToken);
 }

@@ -74,16 +74,11 @@ public static class ProcessProgress
             return Blocked("İşlem yapmak için giriş yapılmalıdır.");
         }
 
-        var canReject = userRole == UserRole.SoftwareDepartmentManager;
+        var canReject = CanReject(userRole.Value);
 
-        // An approval step can only be closed by the approver; any other step by its responsible role.
-        var requiredRole = currentStep.ApproverRole ?? currentStep.ResponsibleRole;
-        if (userRole != requiredRole)
+        if (!CanActOnStep(currentStep, userRole.Value))
         {
-            var reason = currentStep.ApproverRole is not null
-                ? $"Bu adım {requiredRole.ToDisplayName()} tarafından onaylanır."
-                : $"Bu adım {requiredRole.ToDisplayName()} tarafından yapılır.";
-            return new AvailableActionsDto(false, false, canReject, reason);
+            return new AvailableActionsDto(false, false, canReject, GetBlockedReason(currentStep));
         }
 
         return new AvailableActionsDto(
@@ -92,6 +87,22 @@ public static class ProcessProgress
             CanReject: canReject,
             BlockedReason: null);
     }
+
+    /// <summary>
+    /// Who can complete or answer a step. Used both for the buttons (GetAvailableActions)
+    /// and for the check in the commands, so the two can never disagree.
+    /// An approval step can only be closed by the approver; any other step by its responsible role.
+    /// </summary>
+    public static bool CanActOnStep(StepPermissionInfo step, UserRole userRole) =>
+        userRole == (step.ApproverRole ?? step.ResponsibleRole);
+
+    /// <summary>Only the Software Department Manager can reject a request.</summary>
+    public static bool CanReject(UserRole userRole) => userRole == UserRole.SoftwareDepartmentManager;
+
+    /// <summary>Message for a user who cannot act on the step.</summary>
+    public static string GetBlockedReason(StepPermissionInfo step) => step.ApproverRole is { } approver
+        ? $"Bu adım {approver.ToDisplayName()} tarafından onaylanır."
+        : $"Bu adım {step.ResponsibleRole.ToDisplayName()} tarafından yapılır.";
 
     private static AvailableActionsDto Blocked(string reason) => new(false, false, false, reason);
 }

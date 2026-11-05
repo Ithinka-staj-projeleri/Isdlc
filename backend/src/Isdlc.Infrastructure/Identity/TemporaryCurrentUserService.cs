@@ -7,10 +7,14 @@ namespace Isdlc.Infrastructure.Identity;
 /// <summary>
 /// TEMPORARY: until the Identity module adds sign-in, every request runs as one fixed seed user.
 /// This class and its registration in DependencyInjection.cs are the only places to change.
+/// The user can be switched for local testing with the "TemporaryUser:Email" setting
+/// (appsettings.Development.json or the TemporaryUser__Email environment variable).
 /// </summary>
-public class TemporaryCurrentUserService : ICurrentUserService
+public class TemporaryCurrentUserService(string email) : ICurrentUserService
 {
-    public const string Email = "elif.yilmaz@isdlc.local";
+    public const string DefaultEmail = "elif.yilmaz@isdlc.local";
+
+    public string Email { get; } = email;
 
     public int? UserId { get; private set; }
 

@@ -1,3 +1,4 @@
+using Isdlc.Application.Notifications;
 using Isdlc.Application.Process;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,6 +12,9 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<IProcessService, ProcessService>();
+
+        // TEMPORARY until the Notifications module: replace with the real service.
+        services.AddScoped<INotificationService, NullNotificationService>();
 
         return services;
     }
