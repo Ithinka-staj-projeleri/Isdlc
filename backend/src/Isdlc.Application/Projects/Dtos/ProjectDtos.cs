@@ -7,6 +7,46 @@ namespace Isdlc.Application.Projects.Dtos;
 /// <summary>Where an active project stands: the current step and its stage.</summary>
 public record CurrentStepSummaryDto(int Id, string Code, int StageOrder, string StageShortTitle);
 
+/// <summary>One row of GET /api/v1/projects: only what the list screen shows.</summary>
+public record ProjectListItemDto(
+    int Id,
+    string Code,
+    string Name,
+    string CustomerName,
+    RequestType RequestType,
+    ProjectStatus Status,
+    CurrentStepSummaryDto? CurrentStep, // null when the project is not active
+    UserSummaryDto? BusinessAnalyst,
+    int? Level,
+    ProjectPriority? Priority,
+    DateOnly StartDate,
+    DateOnly? DueDate);
+
+/// <summary>
+/// Where an active project is in the flow. The "Talepler" and "Projeler" menus are the same list with this filter.
+/// </summary>
+public enum ProjectPhase
+{
+    /// <summary>A request: the current step is in stages 1–3 (before the project is accepted).</summary>
+    Request,
+
+    /// <summary>An accepted project: the current step is in stages 4–13.</summary>
+    Project,
+}
+
+/// <summary>List filters, all optional: ?status=Active&amp;phase=Request&amp;search=portal&amp;businessAnalystId=1</summary>
+public record ProjectFilter
+{
+    public ProjectStatus? Status { get; init; }
+
+    public ProjectPhase? Phase { get; init; }
+
+    /// <summary>Text found in the code, project name or customer name.</summary>
+    public string? Search { get; init; }
+
+    public int? BusinessAnalystId { get; init; }
+}
+
 /// <summary>GET /api/v1/projects/{projectId}. Contract: docs/projects-api.md</summary>
 public record ProjectDto(
     int Id,
@@ -76,7 +116,7 @@ public record CreateProjectDto : IValidatableObject
 
     public DateOnly? DueDate { get; init; }
 
-    /// <summary>Rules that involve more than one field.</summary>
+    /// <summary>Rules that involve more than one field (shared by create and update).</summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (StartDate is { } start && DueDate is { } due && due < start)
@@ -86,3 +126,9 @@ public record CreateProjectDto : IValidatableObject
         }
     }
 }
+
+/// <summary>
+/// PUT /api/v1/projects/{projectId} — the same fields and rules as a new request.
+/// Code, status, current step, priority and level never change here.
+/// </summary>
+public record UpdateProjectDto : CreateProjectDto;

@@ -19,6 +19,70 @@ public class ProjectService(
     /// <summary>The first try plus 3 retries when another request took the same code at the same moment.</summary>
     private const int MaxCodeAttempts = 4;
 
+    /// <summary>Stages 1–3 are the request phase (up to project acceptance at 3.2); 4–13 is the project phase.</summary>
+    private const int LastRequestStageOrder = 3;
+
+    public async Task<PagedResult<ProjectListItemDto>> ListAsync(
+        ProjectFilter filter, PageRequest pageRequest, CancellationToken cancellationToken)
+    {
+        var query = dbContext.Projects.AsNoTracking();
+
+        if (filter.Status is { } status)
+        {
+            query = query.Where(p => p.Status == status);
+        }
+
+        if (filter.Phase == ProjectPhase.Request)
+        {
+            query = query.Where(p => p.CurrentStep != null && p.CurrentStep.ProcessStage.Order <= LastRequestStageOrder);
+        }
+        else if (filter.Phase == ProjectPhase.Project)
+        {
+            query = query.Where(p => p.CurrentStep != null && p.CurrentStep.ProcessStage.Order > LastRequestStageOrder);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            // The database collation ignores case, so "portal" also finds "Portal".
+            var search = filter.Search.Trim();
+            query = query.Where(p =>
+                p.Code.Contains(search) || p.Name.Contains(search) || p.CustomerName.Contains(search));
+        }
+
+        if (filter.BusinessAnalystId is { } analystId)
+        {
+            query = query.Where(p => p.BusinessAnalystId == analystId);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            // Newest request first. Longer codes first, so "-1000" comes before "-999".
+            .OrderByDescending(p => p.Code.Length)
+            .ThenByDescending(p => p.Code)
+            .ApplyPaging(pageRequest)
+            .Select(p => new ProjectListItemDto(
+                p.Id,
+                p.Code,
+                p.Name,
+                p.CustomerName,
+                p.RequestType,
+                p.Status,
+                p.CurrentStep != null
+                    ? new CurrentStepSummaryDto(
+                        p.CurrentStep.Id, p.CurrentStep.Code,
+                        p.CurrentStep.ProcessStage.Order, p.CurrentStep.ProcessStage.ShortTitle)
+                    : null,
+                p.BusinessAnalyst != null ? new UserSummaryDto(p.BusinessAnalyst.Id, p.BusinessAnalyst.FullName) : null,
+                p.Level,
+                p.Priority,
+                p.StartDate,
+                p.DueDate))
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<ProjectListItemDto>(items, totalCount);
+    }
+
     public async Task<ProjectDto> GetAsync(int projectId, CancellationToken cancellationToken)
     {
         return await dbContext.Projects
@@ -57,6 +121,33 @@ public class ProjectService(
 
         await SaveWithNewCodeAsync(project, cancellationToken);
         await NotifyAssignedPeopleAsync(project, previousAnalystId: null, previousManagerId: null, userId, cancellationToken);
+
+        return await GetAsync(project.Id, cancellationToken);
+    }
+
+    public async Task<ProjectDto> UpdateAsync(
+        int projectId, UpdateProjectDto request, CancellationToken cancellationToken)
+    {
+        var userId = RequireSignedIn();
+
+        var project = await dbContext.Projects.SingleOrDefaultAsync(p => p.Id == projectId, cancellationToken)
+            ?? throw new NotFoundException("Proje bulunamadı.");
+
+        // Team decision: a closed, rejected, lost or redirected project keeps its information as it was.
+        if (project.Status != ProjectStatus.Active)
+        {
+            throw new ConflictException("Proje aktif değil; bilgileri değiştirilemez.");
+        }
+
+        await ValidatePeopleAsync(request.BusinessAnalystId, request.ProjectManagerId, cancellationToken);
+
+        var previousAnalystId = project.BusinessAnalystId;
+        var previousManagerId = project.ProjectManagerId;
+        ApplyContent(project, request);
+
+        // A save at the same moment as another change to this project fails on RowVersion and returns 409.
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await NotifyAssignedPeopleAsync(project, previousAnalystId, previousManagerId, userId, cancellationToken);
 
         return await GetAsync(project.Id, cancellationToken);
     }
