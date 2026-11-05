@@ -3,7 +3,7 @@
     <span>Yazılım Departmanı</span>
 </div>
 <nav>
-    @for (group of groups; track group.title) {
+    @for (group of groups(); track group.title) {
     <h6>{{ group.title }}</h6>
     @for (item of group.items; track item.path) {
     <a [routerLink]="item.path" routerLinkActive="on">{{ item.label }}</a>
