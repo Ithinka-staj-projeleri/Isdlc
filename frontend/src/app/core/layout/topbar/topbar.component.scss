@@ -1,0 +1,21 @@
+:host {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+}
+
+h1 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.user {
+    color: var(--muted);
+}
