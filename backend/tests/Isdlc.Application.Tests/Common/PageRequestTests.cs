@@ -11,7 +11,6 @@ public class PageRequestTests
 
         Assert.Equal(1, request.Page);
         Assert.Equal(PageRequest.DefaultPageSize, request.PageSize);
-        Assert.Equal(0, request.Skip);
     }
 
     [Theory]
@@ -37,10 +36,32 @@ public class PageRequestTests
     }
 
     [Fact]
-    public void Skip_IsCalculatedFromPageAndPageSize()
+    public void ApplyPaging_ReturnsTheRequestedPage()
     {
-        var request = new PageRequest { Page = 3, PageSize = 20 };
+        var numbers = Enumerable.Range(1, 100).AsQueryable();
 
-        Assert.Equal(40, request.Skip);
+        var page = numbers.ApplyPaging(new PageRequest { Page = 3, PageSize = 20 }).ToList();
+
+        Assert.Equal(Enumerable.Range(41, 20), page);
+    }
+
+    [Fact]
+    public void ApplyPaging_LastPage_ReturnsOnlyTheRemainingItems()
+    {
+        var numbers = Enumerable.Range(1, 45).AsQueryable();
+
+        var page = numbers.ApplyPaging(new PageRequest { Page = 3, PageSize = 20 }).ToList();
+
+        Assert.Equal(Enumerable.Range(41, 5), page);
+    }
+
+    [Fact]
+    public void ApplyPaging_PageAfterTheEnd_IsEmpty()
+    {
+        var numbers = Enumerable.Range(1, 10).AsQueryable();
+
+        var page = numbers.ApplyPaging(new PageRequest { Page = 5, PageSize = 20 }).ToList();
+
+        Assert.Empty(page);
     }
 }
