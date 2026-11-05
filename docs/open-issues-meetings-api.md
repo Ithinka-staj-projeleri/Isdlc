@@ -1,7 +1,7 @@
 # OpenIssues ve Meetings Modülleri — API Sözleşmesi
 
 Açık Konular Listesi (akış 6.3) ve toplantı tutanakları. Veri modeli: [data-model.md](data-model.md) →
-"Proje kayıtları". Durum: **taslak — ekip onayı bekliyor.** Sorumlu: Erva.
+"Proje kayıtları". Durum: **uygulandı, ekip onayı bekliyor.** Sorumlu: Erva.
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601
 (`DateOnly` alanları `2026-11-05` biçiminde), hatalar `ProblemDetails`, listeler `items` + `totalCount`, JSON alanları camelCase.
@@ -157,13 +157,17 @@ Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enu
 **Aktarım** (`POST`): tutanak ve açık konular tek `SaveChanges` ile kaydedilir.
 - Her aksiyon → `OpenIssue(Type = Action, Status = Open)`, verilen sorumlu ve terminle.
 - Her karar → `OpenIssue(Type = Decision, Status = Closed)`, sorumlu kaydeden kullanıcı, termin toplantı tarihi.
-- Hepsinin `SourceMeetingId`'si yeni tutanaktır. Kodlar sırayla verilir (`AK-004`, `AK-005`…).
+- Hepsinin `SourceMeetingId`'si yeni tutanaktır. Kodlar sırayla verilir (`AK-004`, `AK-005`…): önce aksiyonlar, sonra kararlar, girildikleri sırayla.
+- Bir satır hatalıysa hiçbir şey kaydedilmez; mesaj satırı söyler: "2. aksiyon: Seçilen sorumlu aktif bir kullanıcı değil.", "3. karar en fazla 300 karakter olabilir.".
+  Biçim hataları alan adıyla döner: `errors["actions[0].title"]`.
+- Tutanak detayında ve listedeki sayılarda türü `Decision` olan kayıtlar karar, diğerleri aksiyon sayılır;
+  `openActionCount` kapanmamış aksiyonlardır.
 
 ## Hata durumları
 
 | Durum | Kod | Örnek `detail` |
 | --- | --- | --- |
-| Proje, açık konu veya tutanak bulunamadı | `404` | "Açık konu bulunamadı." |
+| Proje, açık konu veya tutanak bulunamadı | `404` | "Açık konu bulunamadı.", "Toplantı tutanağı bulunamadı." |
 | Alanlar geçersiz | `400` | "Konu zorunludur." |
 | Sorumlu kuralı | `400` | "Sorumlu olarak bir kullanıcı ya da bir ad girilmelidir; ikisi birden girilemez." |
 | Sorumlu kullanıcı yok veya pasif | `400` | "Seçilen sorumlu aktif bir kullanıcı değil." |
@@ -188,7 +192,8 @@ Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enu
 | `Isdlc.Api/Controllers/` | `OpenIssuesController`, `MeetingsController` (yollar tam yazılır: `/api/v1/projects/{projectId:int}/...`) |
 
 Kod numarası verme (`AK-001`) ve sorumlu kuralı iki modülde de kullanıldığı için tek yerde yazılır;
-tutanak aksiyonları açık konu servisinin doğrulamasını kullanır.
+tutanak aksiyonları açık konu servisinin doğrulamasını kullanır: `Common/RecordCodes.cs` (sonraki numara),
+`OpenIssues/OpenIssueRules.cs` (saf kurallar), `OpenIssues/OpenIssueChecks.cs` (sorumlu doğrulaması, atama bildirimi, liste satırı).
 
 ## Ekranlar (frontend)
 

@@ -109,6 +109,64 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Isdlc.Domain.Meetings.Meeting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Agenda")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Participants")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedById")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.HasIndex("ProjectId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Meetings");
+                });
+
             modelBuilder.Entity("Isdlc.Domain.OpenIssues.OpenIssue", b =>
                 {
                     b.Property<int>("Id")
@@ -148,6 +206,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("ProjectId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("SourceMeetingId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -174,6 +235,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("SourceMeetingId");
 
                     b.HasIndex("UpdatedById");
 
@@ -501,6 +564,28 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Isdlc.Domain.Meetings.Meeting", b =>
+                {
+                    b.HasOne("Isdlc.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Projects.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("Isdlc.Domain.OpenIssues.OpenIssue", b =>
                 {
                     b.HasOne("Isdlc.Domain.Identity.User", null)
@@ -520,6 +605,11 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Isdlc.Domain.Meetings.Meeting", "SourceMeeting")
+                        .WithMany()
+                        .HasForeignKey("SourceMeetingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -528,6 +618,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("OwnerUser");
 
                     b.Navigation("Project");
+
+                    b.Navigation("SourceMeeting");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Process.ProcessStep", b =>
