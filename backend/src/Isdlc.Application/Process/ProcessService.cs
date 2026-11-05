@@ -131,8 +131,7 @@ public class ProcessService(
         var items = await records
             .OrderByDescending(r => r.PerformedAt)
             .ThenByDescending(r => r.Id)
-            .Skip(pageRequest.Skip)
-            .Take(pageRequest.PageSize)
+            .ApplyPaging(pageRequest)
             .Select(r => new StepRecordDto(
                 r.Id,
                 r.ProcessStepId,
