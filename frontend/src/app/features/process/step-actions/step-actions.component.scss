@@ -1,0 +1,73 @@
+@use '../../../shared/styles/ui' as ui;
+
+:host {
+    display: block;
+    margin-top: 10px;
+}
+
+.box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel);
+}
+
+.field {
+    @include ui.field;
+}
+
+.button {
+    @include ui.button;
+
+    &.yes {
+        border-color: var(--ok);
+        background: var(--ok);
+        color: #fff;
+    }
+
+    &.no {
+        border-color: var(--bad);
+        color: var(--bad);
+    }
+
+    &.danger {
+        color: var(--bad);
+    }
+}
+
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.blocked {
+    margin: 0;
+    color: var(--warn);
+    font-weight: 600;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.small {
+    margin: 0;
+    font-size: 12px;
+}
+
+.reject {
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+
+    .field {
+        align-self: stretch;
+    }
+}
