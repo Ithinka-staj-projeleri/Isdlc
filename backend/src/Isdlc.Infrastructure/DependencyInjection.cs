@@ -2,6 +2,7 @@ using Isdlc.Application.Agents;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Infrastructure.Agents;
 using Isdlc.Infrastructure.Identity;
+using Isdlc.Application.Identity;
 using Isdlc.Infrastructure.Persistence;
 using Isdlc.Infrastructure.Persistence.Interceptors;
 using Isdlc.Infrastructure.Persistence.Seeding;
@@ -21,11 +22,6 @@ public static class DependencyInjection
 
         services.AddSingleton(TimeProvider.System);
 
-        // TEMPORARY current user until the Identity module adds sign-in.
-        services.AddSingleton(new TemporaryCurrentUserService(
-            configuration["TemporaryUser:Email"] ?? TemporaryCurrentUserService.DefaultEmail));
-        services.AddSingleton<ICurrentUserService>(sp => sp.GetRequiredService<TemporaryCurrentUserService>());
-
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddScoped<AuditLogInterceptor>();
         services.AddDbContext<IsdlcDbContext>((sp, options) => options
@@ -41,6 +37,8 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<IsdlcDbContext>());
 
         services.AddScoped<DatabaseSeeder>();
+        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        services.AddScoped<UserPasswordSeeder>();
 
         AddAgents(services, configuration);
 
