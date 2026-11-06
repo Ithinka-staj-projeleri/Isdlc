@@ -72,11 +72,12 @@ export class ProjectListComponent {
       return { ...filter, phase: 'Request' };
     }
 
+    // The Projeler page never shows waiting requests: they are on the Talepler page.
     const view = this.view();
     if (view === 'active') {
-      return { ...filter, phase: 'Project' };
+      return { ...filter, phase: 'Project', status: 'Active' };
     }
-    return view === 'all' ? filter : { ...filter, status: view };
+    return view === 'all' ? { ...filter, phase: 'Project' } : { ...filter, phase: 'Project', status: view };
   });
 
   /** Reloads whenever the filter changes; a newer request cancels the older one. */

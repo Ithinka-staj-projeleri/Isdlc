@@ -11,7 +11,11 @@ export type RequestChannel = 'Written' | 'Verbal';
 export type RequestType = 'NewProject' | 'AdditionalModule' | 'CompanyProduct' | 'Support';
 export type ProjectPriority = 'Low' | 'Medium' | 'High';
 
-/** Request = stages 1–3 ("Talepler"), Project = stages 4–13 ("Projeler"). Active projects only. */
+/**
+ * Every record is in exactly one phase.
+ * Request = waiting request: active, stages 1–3 ("Talepler").
+ * Project = everything else: active projects in stages 4–13 and all closed records ("Projeler").
+ */
 export type ProjectPhase = 'Request' | 'Project';
 
 /** The step an active project waits on. */

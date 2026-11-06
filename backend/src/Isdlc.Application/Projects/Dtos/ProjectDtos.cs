@@ -23,14 +23,18 @@ public record ProjectListItemDto(
     DateOnly? DueDate);
 
 /// <summary>
-/// Where an active project is in the flow. The "Talepler" and "Projeler" menus are the same list with this filter.
+/// Splits every record in two. The "Talepler" and "Projeler" menus are the same list with this filter;
+/// every record appears on exactly one of them.
 /// </summary>
 public enum ProjectPhase
 {
-    /// <summary>A request: the current step is in stages 1–3 (before the project is accepted).</summary>
+    /// <summary>A waiting request: active, current step in stages 1–3 (before the project is accepted at 3.2).</summary>
     Request,
 
-    /// <summary>An accepted project: the current step is in stages 4–13.</summary>
+    /// <summary>
+    /// Everything that has left the request phase: active projects in stages 4–13 and all closed records
+    /// (closed, rejected, lost, redirected). Combine with status=Active for active projects only.
+    /// </summary>
     Project,
 }
 
