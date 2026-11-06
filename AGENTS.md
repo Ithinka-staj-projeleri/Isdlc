@@ -121,7 +121,7 @@ Frontend'de `features/` altındaki klasörler aynı modüllerin kebab-case halid
 | Bileşen seçici | `app-` + kebab-case | `app-risk-list` |
 
 **Git**
-- Dal: `feature/<issue-no>-kisa-ad`, `fix/<issue-no>-kisa-ad`
+- Dal: `feature/kisa-ad`, `fix/kisa-ad` (ör. `feature/login-page`). GitHub Issue açılmaz.
 - Commit: Conventional Commits, kapsam modül adı: `feat(risks): add risk score calculation`
 - `main` dalına doğrudan push yapılmaz; değişiklikler PR ile gelir.
 - PR, CI (`.github/workflows/ci.yml`) yeşil olmadan birleştirilmez. CI şunları kontrol eder:

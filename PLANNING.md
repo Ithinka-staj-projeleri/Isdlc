@@ -84,8 +84,8 @@ Bu tek bir noktada tanımlanır; giriş sistemi gelince yalnızca orası değiş
 - **Migration çakışması:** Migration, PR açmadan hemen önce, main dala alındıktan sonra üretilir.
   PR başına tek migration olur. Çakışma çıkarsa kendi migration'ınızı silip yeniden üretin.
 - **Ortak dosyalar** (`Program.cs`, DbContext, `app.routes.ts`): küçük ve sık PR'lar açılır.
-- **İş takibi:** Her iş için bir GitHub Issue açılır. Dal adları AGENTS.md'deki kurala uyar.
-  Her PR'ı en az bir kişi inceler.
+- **İş takibi:** GitHub Issue açılmaz. Her iş ayrı ve küçük bir PR'dır; PR açıklaması işi ve nedenini anlatır.
+  Dal adları AGENTS.md'deki kurala uyar. Her PR'ı en az bir kişi inceler.
 - **Çapraz test:** Herkes başka birinin modülünün testini yazar.
   - Erva → Baran'ın modülleri
   - Baran → Dide'nin modülleri
