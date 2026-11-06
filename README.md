@@ -44,6 +44,24 @@ veritabanını tamamen sıfırlamak için `docker compose down -v`.
 ```bash
 dotnet tool restore
 ```
+İlk seferde JWT anahtarını ve test parolasını kendi bilgisayarına tanıt. Bu değerler repoya yazılmaz.
+Anahtar yoksa API açılmaz:
+
+```bash
+dotnet user-secrets set "Jwt:SigningKey" "<en az 32 karakterlik rastgele bir metin>" --project backend/src/Isdlc.Api
+dotnet user-secrets set "Identity:TestPassword" "<ekipçe belirlenen test parolası>" --project backend/src/Isdlc.Api
+```
+
+Rastgele anahtarı PowerShell ile üretebilirsin:
+
+```powershell
+([guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N"))
+```
+
+Test parolası bütün seed kullanıcılarının (örneğin `elif.yilmaz@isdlc.local`) parolası olur. Parola, API ilk
+açıldığında kullanıcının parolası boşsa yazılır. Parolayı sonradan değiştirirsen veritabanını sıfırla
+(`docker compose down -v`, sonra `docker compose up -d`). API açıkken Swagger'da önce `POST /api/v1/auth/login`
+ile token al, sonra sağ üstteki "Authorize" düğmesine yapıştır. Girişsiz hiçbir uç nokta çalışmaz.
 
 API'yi çalıştır (veritabanı açık olmalı):
 

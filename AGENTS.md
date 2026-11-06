@@ -225,10 +225,13 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
 - **Denetim kaydı (`AuditLog`):** Proje verisi tutan entity'ler `IAudited` arayüzünü taşır; projeye ait kayıtlar
   (Risk, Requirement vb.) ayrıca `IProjectRecord` taşır. Bu entity'lerdeki her değişiklik, alan bazında eski/yeni
   değerleriyle `AuditLogs` tablosuna otomatik yazılır (`AuditLogInterceptor`). Seed tabloları, `StepRecord` ve `User` loglanmaz.
-- **Giriş yapan kullanıcı:** `ICurrentUserService.UserId`. `Identity` bitene kadar `TemporaryCurrentUserService`
-  her isteği `elif.yilmaz@isdlc.local` olarak çalıştırır. Lokal denemede başka bir rolle çalışmak için
-  `TemporaryUser:Email` ayarı değiştirilir (`appsettings.Development.json` ya da `TemporaryUser__Email` ortam değişkeni;
-  e-postalar `Isdlc.Infrastructure/Seed/users.json`'da).
+- **Giriş yapan kullanıcı:** `ICurrentUserService.UserId`. API'de JWT'nin `sub` claim'inden okunur
+  (`HttpCurrentUserService`). Giriş: `POST /api/v1/auth/login` (`{ email, password }`), cevap
+  `{ token, expiresAt, user }`; hatalı giriş, pasif kullanıcı ve bilinmeyen e-posta aynı 401'i alır.
+  Girişsiz hiçbir uç nokta çalışmaz (`[AllowAnonymous]` olanlar hariç). Swagger'da token'ı "Authorize"
+  düğmesine yapıştırın. Lokal test parolası ve JWT anahtarı `dotnet user-secrets` ile verilir
+  (`Identity:TestPassword`, `Jwt:SigningKey`; bkz. README); repoya yazılmaz. Servis testlerinde kullanıcı
+  `TestUser` ile verilir (Bölüm 9).
 - **Bildirimler:** Modüller bildirimi yalnızca `INotificationService` ile gönderir (`Isdlc.Application/Notifications/`).
   `Notifications` modülü bitene kadar `NullNotificationService` bildirimi yalnızca loga yazar.
 - **Yapay zekâ servisi:** Backend, `ai/` servisini `Agents:ServiceUrl` adresinden `Agents:ServiceKey` anahtarıyla çağırır
