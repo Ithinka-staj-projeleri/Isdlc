@@ -13,7 +13,7 @@ JSON alanları camelCase, doğrulama hataları `errors.<alanAdı>` altında Tür
 | --- | --- | --- |
 | 1 | Talebi kim açabilir, kim düzenleyebilir? | **Yalnızca İş Analisti** talep açar (diğer roller 403). Düzenleme: giriş yapmış her aktif kullanıcı |
 | 2 | Kapanmış (aktif olmayan) projenin temel bilgileri düzenlenebilir mi? | Hayır, 409. Proje kayıtlarındaki kuralla aynı |
-| 3 | Prototipteki "Talepler" ve "Projeler" menüleri ayrı mı kalacak? | Tek liste, `phase` filtresiyle: aşama 1–3 → talep, 4–13 → proje (aşağıda) |
+| 3 | Prototipteki "Talepler" ve "Projeler" menüleri ayrı mı kalacak? | Tek liste, `phase` filtresiyle: onay bekleyen talepler (aktif, aşama 1–3) Talepler'de, geri kalan her şey (kabul edilmiş ve kapanmış) Projeler'de. Bir kayıt iki listede birden görünmez (aşağıda) |
 | 4 | Liste sütunları ve filtreler yeterli mi? | Evet: aşağıdaki `ProjectListItemDto` ve filtreler |
 | 5 | Formdaki kullanıcı listesi (`GET /users`) kimde? | Dide yazar (`Identity` modülünün klasöründe); Baran onayladı |
 
@@ -49,7 +49,7 @@ JSON alanları camelCase, doğrulama hataları `errors.<alanAdı>` altında Tür
 | Parametre | Açıklama |
 | --- | --- |
 | `status` | `ProjectStatus` (`Active`, `Closed`, …) |
-| `phase` | `Request` → mevcut adımı aşama 1–3'te olan aktif projeler (talep); `Project` → aşama 4–13 (karar 3) |
+| `phase` | Her kayıt tam olarak bir aşamadadır (karar 3). `Request` → onay bekleyen talepler: aktif ve mevcut adımı aşama 1–3'te. `Project` → geri kalan her şey: aşama 4–13'teki aktif projeler ve bütün kapanmış kayıtlar (aşama 1–3'te kapanmış olanlar dahil). Yalnızca aktif projeler için `phase=Project&status=Active` |
 | `search` | Kod, proje adı veya müşteri adında geçen metin (büyük/küçük harf duyarsız) |
 | `businessAnalystId` | İş analisti |
 | `page`, `pageSize` | Sayfalama |

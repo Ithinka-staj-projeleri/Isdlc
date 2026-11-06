@@ -1,1 +1,11 @@
-<p>meetings-page works!</p>
+<header class="page-head">
+    <div>
+        <h2>Toplantı Tutanakları</h2>
+        <p class="muted">Talep görüşmesi · analiz · proje toplantısı · müşteri ziyareti</p>
+    </div>
+    <app-project-picker #picker />
+</header>
+
+@if (picker.selected(); as project) {
+<app-meeting-list [projectId]="project.id" [readOnly]="project.status !== 'Active'" />
+}

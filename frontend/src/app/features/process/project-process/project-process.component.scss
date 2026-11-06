@@ -1,0 +1,275 @@
+@use '../../../shared/styles/ui' as ui;
+
+:host {
+    display: block;
+    // Sized by the tab it sits in, not by the window (the project detail page has its own layout around it).
+    container-type: inline-size;
+}
+
+.card {
+    @include ui.card;
+}
+
+.button {
+    @include ui.button;
+}
+
+.code {
+    @include ui.code;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.small {
+    font-size: 12px;
+}
+
+h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+}
+
+.summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin-bottom: 14px;
+}
+
+.progress {
+    flex: 1 1 200px;
+    max-width: 360px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--line);
+    overflow: hidden;
+
+    .bar {
+        height: 100%;
+        background: var(--accent);
+    }
+}
+
+.percent {
+    font-weight: 600;
+}
+
+.ended {
+    margin: 0 0 14px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #f8dedc;
+    color: var(--bad);
+    font-weight: 600;
+
+    &.closed {
+        background: #dcf1e3;
+        color: var(--ok);
+    }
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 250px) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.stages {
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+}
+
+.stage {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--fg);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+        background: var(--bg);
+    }
+
+    &.on {
+        background: var(--accent-soft);
+    }
+
+    .no {
+        flex: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--line);
+        font-size: 12px;
+        line-height: 24px;
+        text-align: center;
+    }
+
+    &.completed .no {
+        background: var(--ok);
+        color: #fff;
+    }
+
+    &.current .no {
+        background: var(--accent);
+        color: #fff;
+    }
+
+    &.stopped .no {
+        background: var(--bad);
+        color: #fff;
+    }
+
+    &.pending {
+        color: var(--muted);
+    }
+
+    .name {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.steps {
+    padding: 16px 20px;
+
+    ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+}
+
+.step {
+    display: flex;
+    gap: 14px;
+    padding: 12px 10px;
+    border-top: 1px solid var(--line);
+
+    &:first-child {
+        border-top: 0;
+    }
+
+    > .code {
+        flex: none;
+        min-width: 44px;
+        height: fit-content;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: var(--bg);
+        font-weight: 600;
+        text-align: center;
+    }
+
+    &.done > .code {
+        background: #dcf1e3;
+        color: var(--ok);
+    }
+
+    &.current {
+        border-radius: 6px;
+        background: var(--accent-soft);
+
+        > .code {
+            background: var(--accent);
+            color: #fff;
+        }
+    }
+
+    &.stopped > .code {
+        background: #f8dedc;
+        color: var(--bad);
+    }
+
+    &.pending .text {
+        color: var(--muted);
+    }
+}
+
+.body {
+    flex: 1;
+    min-width: 0;
+}
+
+.text {
+    margin: 0;
+}
+
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    margin-top: 6px;
+}
+
+.history {
+    margin-top: 16px;
+    padding: 16px 20px;
+
+    ol {
+        margin: 0 0 10px;
+        padding: 0;
+        list-style: none;
+    }
+
+    li {
+        display: flex;
+        gap: 14px;
+        padding: 8px 0;
+        border-top: 1px solid var(--line);
+
+        &:first-child {
+            border-top: 0;
+        }
+
+        > .code {
+            flex: none;
+            min-width: 44px;
+        }
+    }
+
+    .body {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .note {
+        white-space: pre-line;
+    }
+}
+
+// Narrow tab: the stages become a row that scrolls sideways above the steps.
+@container (max-width: 720px) {
+    .layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .stages {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 4px;
+    }
+
+    .stage {
+        flex: none;
+        width: auto;
+
+        .name .small {
+            display: none;
+        }
+    }
+}

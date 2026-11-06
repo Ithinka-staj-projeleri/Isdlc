@@ -1,0 +1,66 @@
+<!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
+<div class="overlay">
+    <form class="dialog" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <h3>{{ openIssueId() === null ? 'Yeni açık konu' : 'Açık konu ' + (code() ?? '') }}</h3>
+
+        @if (loading()) {
+        <p class="muted">Yükleniyor…</p>
+        } @else {
+        <div class="grid">
+            <label class="field" [class.invalid]="errorFor('type')">
+                Kayıt türü
+                <select formControlName="type">
+                    @for (t of types; track t) {
+                    <option [value]="t">{{ typeLabels[t] }}</option>
+                    }
+                </select>
+                @if (errorFor('type'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('dueDate')">
+                Termin
+                <input type="date" formControlName="dueDate" />
+                @if (errorFor('dueDate'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field full" [class.invalid]="errorFor('title')">
+                Konu
+                <input formControlName="title" maxlength="300" />
+                @if (errorFor('title'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field full" [class.invalid]="errorFor('description')">
+                Açıklama (isteğe bağlı)
+                <textarea formControlName="description" maxlength="2000"></textarea>
+                @if (errorFor('description'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <fieldset class="field full owner" [class.invalid]="errorFor('owner')">
+                <legend>Sorumlu</legend>
+                <div class="kinds">
+                    <label><input type="radio" formControlName="ownerKind" value="user" /> Ekip üyesi</label>
+                    <label><input type="radio" formControlName="ownerKind" value="name" /> Sistem dışından biri (ör. Müşteri BT)</label>
+                </div>
+                @if (form.controls.ownerKind.value === 'user') {
+                <select formControlName="ownerUserId" aria-label="Sorumlu ekip üyesi">
+                    <option [ngValue]="null">Seçin…</option>
+                    @for (user of users(); track user.id) {
+                    <option [ngValue]="user.id">{{ user.fullName }}</option>
+                    }
+                </select>
+                } @else {
+                <input formControlName="ownerName" maxlength="200" aria-label="Sorumlunun adı" placeholder="Ad veya birim" />
+                }
+                @if (errorFor('owner'); as error) { <span class="error">{{ error }}</span> }
+            </fieldset>
+        </div>
+        }
+
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="cancelled.emit()">Vazgeç</button>
+            <button type="submit" class="button primary" [disabled]="loading() || saving()">
+                {{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}
+            </button>
+        </div>
+    </form>
+</div>

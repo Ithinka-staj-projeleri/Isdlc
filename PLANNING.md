@@ -119,3 +119,16 @@ Referans prototip: "ISDLC Analiz Merkezi" (tek HTML dosyası). Birebir kopyalanm
 
 **Veri modeli için not:** Akış her zaman ileri gitmez; bazı "Hayır" cevapları önceki bir adıma döner
 (ör. 4.7 → 4.1, 9.2 → 8.1). `StepRecord` bir adımın birden fazla kez işlenmesine izin vermelidir.
+
+## 5. Yapay zekâ
+
+Ekip, komut satırındaki denemenin ardından toplantı ajanını MVP'ye almayı onayladı. Tasarım ve yol haritası:
+[docs/ai-vision.md](docs/ai-vision.md), kod: [ai/](ai/README.md). Sorumlu: Erva.
+
+- **Mimari:** Ajanlar ayrı bir Python servisidir (`ai/`, FastAPI). Yalnızca backend çağırır; servis veritabanına erişmez.
+  Servis çalışmıyorsa yapay zekâ butonları görünmez, uygulamanın geri kalanı etkilenmez.
+- **MVP kapsamı:** Yeni tutanak formunda "Yapay zekâ ile karar ve aksiyonları çıkar". Öneriler formu doldurur; kişi
+  düzenleyip tutanağı normal şekilde kaydeder. Ajan kendisi kayıt oluşturmaz.
+- **Sonraya kalanlar:** risk ajanı (`Risks` modülü gelince), `AgentRun` / `AgentSuggestion` tabloları ve öneri paneli,
+  diğer ajan tipleri.
+- **Yalnızca sahte veriyle** çalışılır; model sağlayıcısı ve şirketin veri gönderme izni ayrıca kararlaştırılacak.

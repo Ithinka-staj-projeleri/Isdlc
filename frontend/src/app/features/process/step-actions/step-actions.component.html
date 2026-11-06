@@ -1,0 +1,65 @@
+<div class="box">
+    @if (actions().blockedReason; as reason) {
+    <p class="blocked">{{ reason }}</p>
+    }
+
+    @if (canWork()) {
+    <label class="field">
+        Not (isteğe bağlı)
+        <textarea [ngModel]="note()" (ngModelChange)="note.set($event)" [maxlength]="maxText" rows="2"
+            [disabled]="busy()"></textarea>
+    </label>
+
+    <div class="buttons">
+        @if (actions().canComplete) {
+        <button type="button" class="button primary" [disabled]="busy()" (click)="complete()">Adımı tamamla</button>
+        }
+
+        @if (actions().canAnswer) {
+        <button type="button" class="button yes" [disabled]="busy()" (click)="answerYes()">Evet → sonraki adım</button>
+
+        @if (step().noOutcome; as outcome) {
+        <button type="button" class="button no" [disabled]="busy()" (click)="answerNoAndClose()">
+            Hayır → talep kapanır ({{ statusLabels[outcome] }})
+        </button>
+        }
+
+        @for (jump of step().noJumps; track jump.targetStepId) {
+        <button type="button" class="button no" [disabled]="busy()" (click)="answerNo(jump.targetStepId)">
+            Hayır → {{ step().noJumps.length > 1 ? jump.label + ': ' : '' }}{{ jump.targetStepCode }} adımına dön
+        </button>
+        }
+
+        @if (noStays()) {
+        <button type="button" class="button no" [disabled]="busy()" (click)="answerNo(null)">Hayır → adım tekrar yapılır</button>
+        }
+        }
+    </div>
+
+    @if (actions().canAnswer && step().noBranchText; as text) {
+    <p class="muted small">Hayır ise: {{ text }}</p>
+    }
+    }
+
+    @if (actions().canReject) {
+    <div class="reject">
+        @if (rejecting()) {
+        <label class="field" [class.invalid]="reasonMissing()">
+            Reddetme gerekçesi
+            <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event); reasonMissing.set(false)"
+                [maxlength]="maxText" rows="2" [disabled]="busy()"></textarea>
+            @if (reasonMissing()) { <span class="error">Gerekçe zorunludur.</span> }
+        </label>
+        <div class="buttons">
+            <button type="button" class="button" [disabled]="busy()" (click)="cancelReject()">Vazgeç</button>
+            <button type="button" class="button no" [disabled]="busy()" (click)="confirmReject()">Talebi reddet</button>
+        </div>
+        } @else {
+        <button type="button" class="button link danger" [disabled]="busy()" (click)="startReject()">Talebi reddet…</button>
+        }
+    </div>
+    }
+</div>
+
+<app-confirm-dialog [open]="!!pending()" [title]="pending()?.title ?? ''" [message]="pending()?.message ?? ''"
+    (confirmed)="onConfirmed()" (cancelled)="pending.set(null)" />

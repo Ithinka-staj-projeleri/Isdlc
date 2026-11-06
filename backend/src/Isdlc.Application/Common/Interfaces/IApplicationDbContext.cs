@@ -1,5 +1,6 @@
 using Isdlc.Domain.Audit;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
@@ -23,6 +24,7 @@ public interface IApplicationDbContext
     DbSet<StepRecord> StepRecords { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<OpenIssue> OpenIssues { get; }
+    DbSet<Meeting> Meetings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

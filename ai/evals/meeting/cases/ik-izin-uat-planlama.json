@@ -1,0 +1,12 @@
+{
+  "name": "İK İzin Yönetim Modülü — kabul testi planlama",
+  "projectCode": "ISDLC-2026-015",
+  "meetingDate": "2026-11-05",
+  "notes": "Kabul testi planlaması yapıldı. Toplantıda yalnızca durum bilgisi paylaşıldı, yeni bir istek gelmedi.\n\nKabul testinin 10-12 Kasım tarihlerinde yapılmasına karar verildi.\n\nİK Uzmanı, testte görev alacak anahtar kullanıcıların listesini 7 Kasım'a kadar iletecek.\n\nBurak Şahin test ortamına örnek personel ve izin verilerini yükleyecek.",
+  "expected": [
+    { "type": "Decision", "keywords": ["kabul testi", "10-12"] },
+    { "type": "Action", "keywords": ["anahtar kullanıcı"] },
+    { "type": "Action", "keywords": ["örnek", "veri"] }
+  ],
+  "expectedDueDates": { "anahtar kullanıcı": "2026-11-07" }
+}

@@ -1,0 +1,76 @@
+<div class="overlay">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="meeting-title">
+        @if (meeting.hasValue()) {
+        @let m = meeting.value();
+        <h3 id="meeting-title"><span class="code">{{ m.code }}</span> {{ typeLabels[m.type] }}</h3>
+
+        <dl class="info">
+            <dt>Tarih</dt>
+            <dd>{{ m.date | dateOnly }}</dd>
+            <dt>Katılımcılar</dt>
+            <dd>{{ m.participants }}</dd>
+            <dt>Gündem</dt>
+            <dd class="agenda">{{ m.agenda }}</dd>
+        </dl>
+
+        <h4>Kararlar ({{ m.decisions.length }})</h4>
+        @if (m.decisions.length) {
+        <ul class="records">
+            @for (d of m.decisions; track d.id) {
+            <li>
+                <span class="code">{{ d.code }}</span>
+                <span class="title">{{ d.title }}</span>
+            </li>
+            }
+        </ul>
+        } @else {
+        <p class="muted">Bu toplantıda karar kaydedilmedi.</p>
+        }
+
+        <h4>Aksiyonlar ({{ m.actions.length }})</h4>
+        @if (m.actions.length) {
+        <ul class="records">
+            @for (a of m.actions; track a.id) {
+            <li>
+                <span class="code">{{ a.code }}</span>
+                <span class="title">
+                    {{ a.title }}
+                    <span class="muted small">
+                        {{ a.owner.name }}@if (a.dueDate) { · {{ a.dueDate | dateOnly }} }
+                    </span>
+                </span>
+                @if (a.isOverdue) {
+                <app-status-badge label="Gecikti" tone="bad" />
+                }
+                <app-status-badge [label]="statusLabels[a.status]" [tone]="statusTones[a.status]" />
+            </li>
+            }
+        </ul>
+        } @else {
+        <p class="muted">Bu toplantıda aksiyon kaydedilmedi.</p>
+        }
+
+        @if (m.decisions.length || m.actions.length) {
+        <p class="hint">
+            Kararlar ve aksiyonlar artık açık konu kaydıdır;
+            <a routerLink="/open-issues" [queryParams]="{ projectId: m.projectId }">Açık Konular</a> ekranından güncellenir.
+        </p>
+        }
+
+        <p class="muted small">
+            {{ m.createdBy.fullName }} · {{ m.createdAt | localDate }}@if (m.updatedAt) { · son güncelleme {{ m.updatedAt | localDate }} }
+        </p>
+        } @else if (meeting.error()) {
+        <p class="muted">Tutanak yüklenemedi.</p>
+        } @else {
+        <p class="muted">Yükleniyor…</p>
+        }
+
+        <div class="dialog-actions">
+            @if (!readOnly() && meeting.hasValue()) {
+            <button type="button" class="button" (click)="edit.emit()">Bilgileri düzenle</button>
+            }
+            <button type="button" class="button primary" (click)="closed.emit()">Kapat</button>
+        </div>
+    </section>
+</div>

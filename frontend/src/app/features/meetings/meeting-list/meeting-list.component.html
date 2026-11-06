@@ -1,0 +1,61 @@
+<div class="toolbar">
+    <p class="muted">
+        Tutanaktaki her aksiyon kaydedildiğinde Açık Konular Listesi'ne aktarılır; kararlar "Karar" türünde kayıt olarak saklanır.
+    </p>
+    @if (!readOnly()) {
+    <button type="button" class="button primary" (click)="panel.set({ kind: 'new' })">+ Tutanak oluştur</button>
+    }
+</div>
+
+@if (readOnly()) {
+<p class="note">Proje aktif olmadığı için tutanaklar yalnızca görüntülenebilir.</p>
+}
+
+@if (meetings.error()) {
+<app-empty-state message="Tutanaklar yüklenemedi." />
+} @else if (meetings.hasValue()) {
+@let result = meetings.value();
+@if (result.items.length === 0) {
+<app-empty-state message="Bu projede henüz toplantı tutanağı yok." />
+} @else {
+<div class="cards" [class.loading]="meetings.isLoading()">
+    @for (meeting of result.items; track meeting.id) {
+    <button type="button" class="card" (click)="panel.set({ kind: 'detail', meetingId: meeting.id })">
+        <span class="head">
+            <span class="code">{{ meeting.code }}</span>
+            <b>{{ typeLabels[meeting.type] }}</b>
+            <span class="spacer"></span>
+            <span class="muted">{{ meeting.date | dateOnly }}</span>
+        </span>
+        <span class="participants">{{ meeting.participants }}</span>
+        <span class="counts">
+            <span>{{ meeting.decisionCount }} karar</span>
+            <span>{{ meeting.actionCount }} aksiyon</span>
+            @if (meeting.openActionCount > 0) {
+            <span class="open">{{ meeting.openActionCount }} aksiyon açık</span>
+            } @else if (meeting.actionCount > 0) {
+            <span class="done">Aksiyonlar tamamlandı</span>
+            }
+        </span>
+    </button>
+    }
+</div>
+@if (result.totalCount > pageSize) {
+<app-pagination [page]="page()" [pageSize]="pageSize" [totalCount]="result.totalCount" (pageChange)="page.set($event)" />
+}
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}
+
+@if (detailId(); as meetingId) {
+<app-meeting-detail [projectId]="projectId()" [meetingId]="meetingId" [readOnly]="readOnly()"
+    (edit)="panel.set({ kind: 'edit', meetingId })" (closed)="panel.set(null)" />
+}
+@if (editId(); as meetingId) {
+<app-meeting-form [projectId]="projectId()" [meetingId]="meetingId"
+    (saved)="onSaved($event.id)" (cancelled)="panel.set({ kind: 'detail', meetingId })" />
+}
+@if (creating()) {
+<app-meeting-form [projectId]="projectId()" (saved)="onSaved($event.id)" (cancelled)="panel.set(null)" />
+}

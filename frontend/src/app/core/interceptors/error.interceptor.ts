@@ -1,6 +1,8 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
+import { problemOf, SHOWS_FIELD_ERRORS } from '../http/problem-details';
 
+/** Used when the API sends no message of its own (server down, unexpected error, ...). */
 const MESSAGES: Record<number, string> = {
   0: 'Sunucuya ulaşılamıyor.',
   400: 'Gönderilen bilgiler geçersiz.',
@@ -14,10 +16,19 @@ const MESSAGES: Record<number, string> = {
 export const errorInterceptor: HttpInterceptorFn = (req, next) =>
   next(req).pipe(
     catchError((err: HttpErrorResponse) => {
-      const status = err.error?.status ?? err.status;
-      const message = MESSAGES[status] ?? 'Beklenmeyen bir hata oluştu.';
+      const problem = problemOf(err);
+      const status = problem?.status ?? err.status;
       console.error('API hatası:', err.error ?? err);
-      alert(message);
+
+      // The form shows these under its fields; an alert on top would say the same thing twice.
+      const fieldErrorsShownByForm = status === 400 && !!problem?.errors && req.context.get(SHOWS_FIELD_ERRORS);
+
+      if (!fieldErrorsShownByForm) {
+        // The API's own Turkish message is more helpful than the general one (500 never carries details).
+        const message = (status !== 500 && problem?.detail) || MESSAGES[status] || 'Beklenmeyen bir hata oluştu.';
+        alert(message);
+      }
+
       return throwError(() => err);
     }),
   );

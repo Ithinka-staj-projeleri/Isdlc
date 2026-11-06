@@ -1,0 +1,109 @@
+@if (notFound()) {
+  <app-empty-state message="Proje bulunamadı." />
+  <p class="center"><a routerLink="/projects">Projeler listesine dön</a></p>
+} @else if (project.error()) {
+  <app-empty-state message="Proje yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
+} @else if (loaded(); as p) {
+  <header class="page-head">
+    <a [routerLink]="backLink().path" class="back">← {{ backLink().label }}</a>
+
+    <div class="title">
+      <span class="code">{{ p.code }}</span>
+      <h2>{{ p.name }}</h2>
+      <app-status-badge [label]="statusLabels[p.status]" [tone]="statusTones[p.status]" />
+      @if (p.status === 'Active') {
+        <!-- A closed project keeps its information, so there is nothing to edit. -->
+        <a [routerLink]="['/projects', p.id, 'edit']" class="edit-button">Düzenle</a>
+      }
+    </div>
+
+    <p class="meta">
+      @if (p.currentStep; as step) {
+        <span>Mevcut adım: <b class="step">{{ step.code }}</b> {{ step.stageShortTitle }}</span>
+      }
+      <span>İş analisti: <b>{{ p.businessAnalyst?.fullName ?? 'Atanmadı' }}</b></span>
+      <span>Proje yöneticisi: <b>{{ p.projectManager?.fullName ?? 'Atanmadı' }}</b></span>
+    </p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Proje bölümleri">
+    @for (t of tabs; track t.key) {
+      <button
+        type="button"
+        role="tab"
+        [id]="'tab-' + t.key"
+        [attr.aria-selected]="tab() === t.key"
+        [attr.aria-controls]="'panel-' + t.key"
+        [class.on]="tab() === t.key"
+        (click)="selectTab(t.key)"
+      >
+        {{ t.label }}
+      </button>
+    }
+  </nav>
+
+  <section class="panel" role="tabpanel" [id]="'panel-' + tab()" [attr.aria-labelledby]="'tab-' + tab()">
+    @switch (tab()) {
+      @case ('process') {
+        <!-- After a step is completed, answered or rejected, reload so the summary shows the new step and status. -->
+        <app-project-process [projectId]="p.id" (processChanged)="project.reload()" />
+      }
+      @case ('open-issues') {
+        <app-open-issue-list [projectId]="p.id" [readOnly]="readOnly()" />
+      }
+      @case ('meetings') {
+        <app-meeting-list [projectId]="p.id" [readOnly]="readOnly()" />
+      }
+      @default {
+        <div class="card">
+          <h3>Talep</h3>
+          <p class="description">{{ p.description }}</p>
+          <dl>
+            <dt>Talep türü</dt>
+            <dd>{{ typeLabels[p.requestType] }}</dd>
+            <dt>Talep kaynağı</dt>
+            <dd>{{ sourceLabels[p.source] }}</dd>
+            <dt>Talep kanalı</dt>
+            <dd>{{ channelLabels[p.requestChannel] }}</dd>
+            <dt>Seviye</dt>
+            <dd>{{ p.level ?? 'Belirlenmedi' }}</dd>
+            <dt>Öncelik</dt>
+            <dd>{{ p.priority ? priorityLabels[p.priority] : 'Belirlenmedi' }}</dd>
+          </dl>
+        </div>
+
+        <div class="card">
+          <h3>Talep sahibi</h3>
+          <dl>
+            <dt>Müşteri / birim</dt>
+            <dd>{{ p.customerName }}</dd>
+            <dt>Talep sahibi</dt>
+            <dd>{{ p.requesterName }}</dd>
+            <dt>Gizlilik sözleşmesi (NDA)</dt>
+            <dd>{{ p.requiresNda ? 'Gerekiyor' : 'Gerekmiyor' }}</dd>
+          </dl>
+        </div>
+
+        <div class="card">
+          <h3>Sorumlular ve tarihler</h3>
+          <dl>
+            <dt>İş analisti</dt>
+            <dd>{{ p.businessAnalyst?.fullName ?? 'Atanmadı' }}</dd>
+            <dt>Proje yöneticisi</dt>
+            <dd>{{ p.projectManager?.fullName ?? 'Atanmadı' }}</dd>
+            <dt>Başlangıç</dt>
+            <dd>{{ p.startDate | dateOnly }}</dd>
+            <dt>Bitiş</dt>
+            <dd>{{ (p.dueDate | dateOnly) || '—' }}</dd>
+            <dt>Oluşturan</dt>
+            <dd>{{ p.createdBy.fullName }} · {{ p.createdAt | localDate }}</dd>
+            <dt>Son güncelleme</dt>
+            <dd>{{ (p.updatedAt | localDate) || '—' }}</dd>
+          </dl>
+        </div>
+      }
+    }
+  </section>
+} @else {
+  <app-empty-state message="Yükleniyor…" />
+}

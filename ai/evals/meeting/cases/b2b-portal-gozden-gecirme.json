@@ -1,0 +1,13 @@
+{
+  "name": "B2B Sipariş Portalı — ön analiz gözden geçirme",
+  "projectCode": "ISDLC-2026-016",
+  "meetingDate": "2026-11-03",
+  "notes": "Ön analiz dokümanları satış direktörü ile gözden geçirildi.\n\nBayilerin yalnızca kendi fiyat listelerini görmesi konusunda anlaşıldı; fiyat listesi bayi grubuna göre gösterilecek.\n\nSatış direktörü, sipariş onayında kredi limiti kontrolü yapılıp yapılmayacağını finans ekibine soracak ve bir hafta içinde dönüş yapacak.\n\nElif Yılmaz, kavramsal tasarım raporunu bayi grubu kararına göre güncelleyip 7 Kasım'da tekrar paylaşacak.\n\nBayi kullanıcılarının sisteme ERP'deki bayi kodu ile giriş yapacağı kabul edildi; bu henüz ERP ekibiyle teyit edilmedi.\n\nDirektörün asistanına 0532 111 22 33 numarasından ulaşılabilir.",
+  "expected": [
+    { "type": "Decision", "keywords": ["fiyat listesi", "bayi grubu"] },
+    { "type": "Question", "keywords": ["kredi limiti"] },
+    { "type": "Action", "keywords": ["kavramsal tasarım"] },
+    { "type": "Assumption", "keywords": ["bayi kodu", "giriş"] }
+  ],
+  "expectedDueDates": { "kredi limiti": "2026-11-10", "kavramsal tasarım": "2026-11-07" }
+}

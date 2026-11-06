@@ -22,6 +22,7 @@ public class GlobalExceptionHandler(
             BusinessRuleException => (StatusCodes.Status400BadRequest, "İşlem yapılamadı", exception.Message),
             ForbiddenException => (StatusCodes.Status403Forbidden, "Yetkiniz yok", exception.Message),
             ConflictException => (StatusCodes.Status409Conflict, "Kayıt güncel değil", exception.Message),
+            ServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Servis kullanılamıyor", exception.Message),
             // RowVersion mismatch: someone else saved the same record after it was read.
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Kayıt güncel değil",
                 "Kayıt bu arada başka biri tarafından değiştirildi. Sayfayı yenileyin."),

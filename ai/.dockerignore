@@ -1,0 +1,10 @@
+# Keep secrets, local files and test material out of the image.
+.env
+.venv/
+output/
+tests/
+evals/
+.pytest_cache/
+**/__pycache__/
+*.txt
+!requirements.txt

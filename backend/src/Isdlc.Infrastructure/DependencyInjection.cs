@@ -1,4 +1,6 @@
+using Isdlc.Application.Agents;
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Infrastructure.Agents;
 using Isdlc.Infrastructure.Identity;
 using Isdlc.Application.Identity;
 using Isdlc.Infrastructure.Persistence;
@@ -7,6 +9,7 @@ using Isdlc.Infrastructure.Persistence.Seeding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Isdlc.Infrastructure;
 
@@ -37,6 +40,33 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddScoped<UserPasswordSeeder>();
 
+        AddAgents(services, configuration);
+
         return services;
+    }
+
+    /// <summary>The AI service client (ai/). Without Agents:ServiceUrl the AI features are off and the screens hide them.</summary>
+    private static void AddAgents(IServiceCollection services, IConfiguration configuration)
+    {
+        var options = new AgentOptions
+        {
+            ServiceUrl = configuration["Agents:ServiceUrl"],
+            ServiceKey = configuration["Agents:ServiceKey"],
+        };
+
+        // One HttpClient for the app's lifetime; connections are renewed so a changed address (DNS) is picked up.
+        var http = new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) })
+        {
+            // A model call with one retry can take a while.
+            Timeout = TimeSpan.FromSeconds(90),
+        };
+        if (!string.IsNullOrWhiteSpace(options.ServiceUrl))
+        {
+            http.BaseAddress = new Uri(options.ServiceUrl.TrimEnd('/') + "/");
+        }
+
+        services.AddSingleton<IMeetingAgentClient>(sp =>
+            new HttpMeetingAgentClient(
+                http, options, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<HttpMeetingAgentClient>>()));
     }
 }

@@ -1,0 +1,164 @@
+// Shared look for feature screens: @use 'shared/styles/ui' as ui; then @include ui.button; etc.
+// Colors come from the tokens in styles.scss.
+
+@mixin button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--fg);
+    font: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+        background: var(--bg);
+    }
+
+    &:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
+
+    &.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+
+        &:hover:not(:disabled) {
+            filter: brightness(.95);
+        }
+    }
+
+    &.small {
+        padding: 3px 10px;
+        font-size: 13px;
+    }
+
+    &.link {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--accent);
+
+        &:hover:not(:disabled) {
+            background: none;
+            text-decoration: underline;
+        }
+    }
+}
+
+@mixin field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--muted);
+
+    input,
+    select,
+    textarea {
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel);
+        color: var(--fg);
+        font: 14px/1.4 inherit;
+        font-family: inherit;
+
+        &:focus {
+            outline: 2px solid var(--accent-soft);
+            border-color: var(--accent);
+        }
+    }
+
+    textarea {
+        min-height: 80px;
+        resize: vertical;
+    }
+
+    &.invalid {
+        input,
+        select,
+        textarea {
+            border-color: var(--bad);
+        }
+    }
+
+    .error {
+        color: var(--bad);
+    }
+}
+
+@mixin card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+}
+
+@mixin table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+    }
+
+    th {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    tbody tr:last-child td {
+        border-bottom: 0;
+    }
+}
+
+@mixin code {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 13px;
+}
+
+// A panel over the page for forms.
+@mixin dialog {
+    .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 48px 16px;
+        overflow-y: auto;
+        background: rgba(0, 0, 0, .4);
+    }
+
+    .dialog {
+        width: 100%;
+        max-width: 640px;
+        padding: 20px 24px;
+        border-radius: var(--r);
+        background: var(--panel);
+
+        h3 {
+            margin: 0 0 16px;
+        }
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 20px;
+    }
+}

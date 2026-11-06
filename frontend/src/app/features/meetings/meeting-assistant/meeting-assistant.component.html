@@ -1,0 +1,45 @@
+@if (enabled()) {
+<section class="assistant" aria-label="Yapay zekâ yardımcısı">
+    <label class="field">
+        Ham toplantı notları (isteğe bağlı)
+        <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" [maxlength]="maxNotes" [disabled]="busy()"
+            placeholder="Toplantıda konuşulanları serbest metin olarak yazın veya yapıştırın. Örn: Müşteri test kullanıcılarını cuma gününe kadar iletecek…"></textarea>
+    </label>
+    <p class="privacy">
+        Notlar yapay zekâ servisine gönderilir; e-posta, telefon gibi bilgiler göndermeden önce gizlenir.
+        Şimdilik yalnızca deneme verisi girin.
+    </p>
+    <button type="button" class="button ai" [disabled]="busy() || !notes().trim() || !meetingDate()" (click)="ask()">
+        {{ busy() ? 'Notlar inceleniyor…' : 'Yapay zekâ ile karar ve aksiyonları çıkar' }}
+    </button>
+
+    @if (result(); as r) {
+    <div class="result" role="status">
+        <p>
+            <b>{{ r.decisions.length }} karar ve {{ r.actions.length }} aksiyon forma eklendi.</b>
+            Kaydetmeden önce kontrol edin; tutanak siz kaydedince oluşur.
+        </p>
+        @if (r.summary) { <p class="muted">{{ r.summary }}</p> }
+
+        @if (r.others.length) {
+        <h5>Formda yeri olmayan öneriler</h5>
+        <ul>
+            @for (item of r.others; track $index) {
+            <li>
+                <b>{{ typeLabels[item.type] }}:</b> {{ item.title }}
+                @if (item.ownerName || item.dueDate) {
+                <span class="muted">({{ item.ownerName }}@if (item.ownerName && item.dueDate) { · }{{ item.dueDate | dateOnly }})</span>
+                }
+            </li>
+            }
+        </ul>
+        <p class="muted">Bunları tutanağı kaydettikten sonra Açık Konular ekranından ekleyebilirsiniz.</p>
+        }
+
+        @if (r.skippedCount) {
+        <p class="muted">{{ r.skippedCount }} öneri eksik ya da hatalı olduğu için atlandı.</p>
+        }
+    </div>
+    }
+</section>
+}

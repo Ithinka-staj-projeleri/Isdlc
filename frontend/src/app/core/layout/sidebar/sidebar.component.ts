@@ -15,6 +15,7 @@ export class SidebarComponent {
     {
       title: 'Çalışma', items: [
         { path: '/dashboard', label: 'Gösterge Paneli' },
+        { path: '/requests', label: 'Talepler' },
         { path: '/projects', label: 'Projeler' },
       ]
     },
@@ -25,6 +26,11 @@ export class SidebarComponent {
         { path: '/risks', label: 'Risk Yönetimi' },
         { path: '/open-issues', label: 'Açık Konular' },
         { path: '/meetings', label: 'Toplantı Tutanakları' },
+      ]
+    },
+    {
+      title: 'Kütüphane', items: [
+        { path: '/process-library', label: 'Süreç Kütüphanesi' },
       ]
     },
   ];

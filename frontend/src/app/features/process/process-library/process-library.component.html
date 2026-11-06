@@ -1,0 +1,84 @@
+<header class="page-head">
+    <div>
+        <h2>Süreç Kütüphanesi</h2>
+        <p class="muted">Yeni Yazılım Projesi (ISDLC) akışı. Her projenin Süreç sekmesinde bu adımlarla yürütülür.</p>
+    </div>
+    @if (stages()) {
+    <div class="summary">
+        <span><b>{{ summary().stageCount }}</b> aşama</span>
+        <span><b>{{ summary().stepCount }}</b> adım</span>
+        <span><b>{{ summary().decisionCount }}</b> karar noktası</span>
+        <span><b>{{ summary().approvalCount }}</b> onay adımı</span>
+    </div>
+    }
+</header>
+
+@if (loadFailed()) {
+<app-empty-state message="Süreç akışı yüklenemedi." />
+} @else if (!stages()) {
+<app-empty-state message="Yükleniyor…" />
+} @else if (selected(); as stage) {
+<div class="library">
+    <nav class="card stage-list" aria-label="Aşamalar">
+        @for (item of stages(); track item.id) {
+        <button type="button" class="stage" [class.on]="item.id === stage.id" [attr.aria-current]="item.id === stage.id ? 'true' : null"
+            (click)="select(item)">
+            <span class="no">{{ item.order }}</span>
+            <span class="name">{{ item.shortTitle }}</span>
+            <span class="count">{{ item.steps.length }}</span>
+        </button>
+        }
+    </nav>
+
+    <section class="card">
+        <h3>{{ stage.order }}. {{ stage.title }}</h3>
+
+        <ol class="steps">
+            @for (step of stage.steps; track step.id) {
+            <li class="step" [class.decision]="step.isDecision">
+                <span class="code">{{ step.code }}</span>
+                <div class="body">
+                    <p class="text">{{ step.text }}</p>
+                    <div class="meta">
+                        <span class="role">{{ roleLabels[step.responsibleRole] }}</span>
+                        @if (step.isDecision) {
+                        <app-status-badge label="Karar" tone="info" />
+                        }
+                        @if (step.approverRole) {
+                        <app-status-badge [label]="'Onay: ' + roleLabels[step.approverRole]" tone="warn" />
+                        }
+                    </div>
+
+                    @if (step.isDecision) {
+                    <div class="no-branch">
+                        <b>Hayır ise:</b>
+                        @if (step.noOutcome) {
+                        <span>Talep kapanır</span>
+                        <app-status-badge [label]="statusLabels[step.noOutcome]" tone="bad" />
+                        } @else if (step.noJumps.length) {
+                        <ul class="jumps">
+                            <!-- With one option the label only repeats the code; with several it tells them apart. -->
+                            @for (jump of step.noJumps; track jump.targetStepId) {
+                            <li>
+                                @if (step.noJumps.length > 1) {
+                                {{ jump.label }}:
+                                }
+                                <span class="code">{{ jump.targetStepCode }}</span> adımına dönülür
+                            </li>
+                            }
+                        </ul>
+                        } @else {
+                        <span>Adım tekrar yapılır; akış ilerlemez.</span>
+                        }
+                        @if (step.noBranchText) {
+                        <p class="muted">{{ step.noBranchText }}</p>
+                        }
+                    </div>
+                    }
+                </div>
+            </li>
+            }
+        </ol>
+    </section>
+</div>
+}
