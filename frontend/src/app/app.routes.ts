@@ -1,10 +1,17 @@
 import { Routes } from '@angular/router';
+import { authGuard, guestGuard } from './core/auth/auth.guard';
 import { LayoutComponent } from './core/layout/layout/layout.component';
 
 export const routes: Routes = [
     {
+        path: 'login',
+        canActivate: [guestGuard],
+        loadComponent: () => import('./features/identity/login-page.component').then(m => m.LoginPageComponent),
+    },
+    {
         path: '',
         component: LayoutComponent,
+        canActivate: [authGuard],
         children: [
             { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
             { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard-page.component').then(m => m.DashboardPageComponent) },
@@ -22,4 +29,5 @@ export const routes: Routes = [
             { path: 'process-library', loadComponent: () => import('./features/process/process-library/process-library.component').then(m => m.ProcessLibraryComponent) },
         ],
     },
+    { path: '**', redirectTo: '' },
 ];
