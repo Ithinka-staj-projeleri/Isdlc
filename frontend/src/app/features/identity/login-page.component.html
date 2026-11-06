@@ -1,0 +1,21 @@
+<div class="wrap">
+  <form class="card" (ngSubmit)="submit()">
+    <h1>ISDLC Analiz Merkezi</h1>
+    <p class="sub">Giriş yapın</p>
+
+    @if (notice && !error()) { <div class="notice">{{ notice }}</div> }
+
+    <label>E-posta
+      <input type="email" name="email" [(ngModel)]="email" autocomplete="username" />
+    </label>
+    <label>Parola
+      <input type="password" name="password" [(ngModel)]="password" autocomplete="current-password" />
+    </label>
+
+    @if (error()) { <div class="error" role="alert">{{ error() }}</div> }
+
+    <button type="submit" [disabled]="loading()">
+      {{ loading() ? 'Giriş yapılıyor…' : 'Giriş yap' }}
+    </button>
+  </form>
+</div>

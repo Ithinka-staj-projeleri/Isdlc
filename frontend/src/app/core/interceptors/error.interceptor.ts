@@ -1,5 +1,8 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { AuthService, LOGIN_URL } from '../auth/auth.service';
 import { problemOf, SHOWS_FIELD_ERRORS } from '../http/problem-details';
 
 /** Used when the API sends no message of its own (server down, unexpected error, ...). */
@@ -13,12 +16,29 @@ const MESSAGES: Record<number, string> = {
   500: 'Sunucuda bir hata oluştu.',
 };
 
-export const errorInterceptor: HttpInterceptorFn = (req, next) =>
-  next(req).pipe(
+export const errorInterceptor: HttpInterceptorFn = (req, next) => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  return next(req).pipe(
     catchError((err: HttpErrorResponse) => {
       const problem = problemOf(err);
       const status = problem?.status ?? err.status;
       console.error('API hatası:', err.error ?? err);
+
+      // The login page shows its own errors ("E-posta veya parola hatalı.").
+      if (req.url === LOGIN_URL) {
+        return throwError(() => err);
+      }
+
+      // The token has expired or is no longer valid: sign in again, then come back to this page.
+      // No alert: several requests can fail at once; the login page tells the user what happened.
+      if (status === 401) {
+        if (!router.url.startsWith('/login')) {
+          auth.logout(router.url);
+        }
+        return throwError(() => err);
+      }
 
       // The form shows these under its fields; an alert on top would say the same thing twice.
       const fieldErrorsShownByForm = status === 400 && !!problem?.errors && req.context.get(SHOWS_FIELD_ERRORS);
@@ -32,3 +52,4 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) =>
       return throwError(() => err);
     }),
   );
+};
