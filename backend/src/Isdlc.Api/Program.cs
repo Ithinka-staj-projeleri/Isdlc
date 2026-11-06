@@ -20,11 +20,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 // Sign-in: JWT. The signing key comes from user-secrets / environment, never from the repository.
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
-if (jwt.SigningKey.Length < 32)
-{
-    throw new InvalidOperationException(
-        "Jwt:SigningKey must be at least 32 characters. Set it with 'dotnet user-secrets set \"Jwt:SigningKey\" \"...\"'.");
-}
+
 builder.Services.AddSingleton(jwt);
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 builder.Services.AddHttpContextAccessor();
@@ -81,6 +77,14 @@ builder.Services.AddOpenApi(options =>
 });
 
 var app = builder.Build();
+
+// Fail fast when the API really starts. (Not at the top of the file: "dotnet ef" runs Program.cs
+// without secrets and would fail there.)
+if (jwt.SigningKey.Length < 32)
+{
+    throw new InvalidOperationException(
+        "Jwt:SigningKey must be at least 32 characters. Set it with 'dotnet user-secrets set \"Jwt:SigningKey\" \"...\"'.");
+}
 
 await app.Services.InitializeDatabaseAsync(app.Environment.IsDevelopment());
 
