@@ -10,6 +10,7 @@ import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
 import { MeetingListComponent } from '../../meetings/meeting-list/meeting-list.component';
 import { OpenIssueListComponent } from '../../open-issues/open-issue-list/open-issue-list.component';
 import { ProjectProcessComponent } from '../../process/project-process/project-process.component';
+import { RequirementListComponent } from '../../requirements/requirement-list/requirement-list.component';
 import {
   PROJECT_PRIORITY_LABELS,
   PROJECT_STATUS_LABELS,
@@ -20,7 +21,7 @@ import {
 } from '../project-labels';
 import { ProjectService } from '../project.service';
 
-type DetailTab = 'general' | 'process' | 'open-issues' | 'meetings';
+type DetailTab = 'general' | 'process' | 'requirements' | 'open-issues' | 'meetings';
 
 /** Stages 1–3 are the request phase ("Talepler"); 4–13 the project phase ("Projeler"). */
 const LAST_REQUEST_STAGE = 3;
@@ -41,6 +42,7 @@ const LAST_REQUEST_STAGE = 3;
     ProjectProcessComponent,
     OpenIssueListComponent,
     MeetingListComponent,
+    RequirementListComponent,
   ],
   templateUrl: './project-detail.component.html',
   styleUrl: './project-detail.component.scss',
@@ -60,6 +62,7 @@ export class ProjectDetailComponent {
   readonly tabs: { key: DetailTab; label: string }[] = [
     { key: 'general', label: 'Genel Bilgiler' },
     { key: 'process', label: 'Süreç' },
+    { key: 'requirements', label: 'Gereksinimler' },
     { key: 'open-issues', label: 'Açık Konular' },
     { key: 'meetings', label: 'Toplantı Tutanakları' },
   ];

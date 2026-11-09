@@ -1,0 +1,77 @@
+<!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
+<div class="overlay">
+  <form class="dialog" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <h3>{{ requirementId() === null ? 'Yeni gereksinim' : 'Gereksinim ' + (code() ?? '') }}</h3>
+
+    @if (loading()) {
+      <p class="muted">Yükleniyor…</p>
+    } @else {
+      <div class="grid">
+        <label class="field" [class.invalid]="errorFor('type')">
+          Tür
+          <select formControlName="type">
+            @for (t of types; track t) {
+              <option [value]="t">{{ typeLabels[t] }}</option>
+            }
+          </select>
+          @if (errorFor('type'); as error) {
+            <span class="error">{{ error }}</span>
+          }
+        </label>
+
+        <label class="field" [class.invalid]="errorFor('priority')">
+          Öncelik
+          <select formControlName="priority">
+            @for (p of priorities; track p) {
+              <option [value]="p">{{ priorityLabels[p] }}</option>
+            }
+          </select>
+          @if (errorFor('priority'); as error) {
+            <span class="error">{{ error }}</span>
+          }
+        </label>
+
+        <label class="field full" [class.invalid]="errorFor('title')">
+          Başlık
+          <input formControlName="title" [maxlength]="maxLengths.title" />
+          @if (errorFor('title'); as error) {
+            <span class="error">{{ error }}</span>
+          }
+        </label>
+
+        <label class="field full" [class.invalid]="errorFor('description')">
+          Açıklama / User Story (isteğe bağlı)
+          <textarea
+            formControlName="description"
+            rows="4"
+            [maxlength]="maxLengths.description"
+            placeholder="Depo sorumlusu olarak iş emrini sahadan kapatmak istiyorum, böylece kâğıt form doldurmam gerekmez."
+          ></textarea>
+          @if (errorFor('description'); as error) {
+            <span class="error">{{ error }}</span>
+          }
+        </label>
+
+        <label class="field full" [class.invalid]="errorFor('acceptanceCriteria')">
+          Kabul ölçütleri (isteğe bağlı)
+          <textarea
+            formControlName="acceptanceCriteria"
+            rows="4"
+            [maxlength]="maxLengths.acceptanceCriteria"
+            placeholder="- Kapatılan iş emri ERP'ye 1 dakika içinde yansır.&#10;- Fotoğraf eklenmeden kapatılamaz."
+          ></textarea>
+          @if (errorFor('acceptanceCriteria'); as error) {
+            <span class="error">{{ error }}</span>
+          }
+        </label>
+      </div>
+    }
+
+    <div class="dialog-actions">
+      <button type="button" class="button" (click)="cancelled.emit()">Vazgeç</button>
+      <button type="submit" class="button primary" [disabled]="loading() || saving()">
+        {{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}
+      </button>
+    </div>
+  </form>
+</div>
