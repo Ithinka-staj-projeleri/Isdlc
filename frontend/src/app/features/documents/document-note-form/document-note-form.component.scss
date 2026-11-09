@@ -1,0 +1,26 @@
+@use '../../../shared/styles/ui' as ui;
+
+@include ui.dialog;
+
+.fields {
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  @include ui.field;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.code {
+  @include ui.code;
+  color: var(--muted);
+}
+
+.button {
+  @include ui.button;
+}

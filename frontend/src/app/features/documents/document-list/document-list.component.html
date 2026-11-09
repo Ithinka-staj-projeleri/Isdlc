@@ -1,0 +1,91 @@
+@if (readOnly()) {
+  <p class="note">Proje aktif olmadığı için dokümanlar yalnızca görüntülenebilir.</p>
+}
+
+@if (documents.error()) {
+  <app-empty-state message="Dokümanlar yüklenemedi." />
+} @else if (documents.hasValue()) {
+  @let s = summary();
+  <div class="summary card" [class.loading]="documents.isLoading()">
+    <p>
+      Onaylanan: <b>{{ s.approved }} / {{ s.total - s.notRequired }}</b>
+      @if (s.notRequired > 0) {
+        <span class="muted">· Bu projede gerekmeyen: {{ s.notRequired }}</span>
+      }
+    </p>
+    <div
+      class="bar"
+      role="progressbar"
+      aria-label="Onaylanan dokümanlar"
+      [attr.aria-valuenow]="s.percent"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <span [style.width.%]="s.percent"></span>
+    </div>
+    <span class="percent">%{{ s.percent }}</span>
+  </div>
+
+  @for (group of groups(); track group.stageOrder) {
+    <section class="stage card" [class.loading]="documents.isLoading()">
+      <h3>
+        <span class="stage-no">{{ group.stageOrder }}</span>
+        {{ group.stageShortTitle }}
+      </h3>
+      <ul>
+        @for (doc of group.documents; track doc.documentType.id) {
+          <li [class.not-required]="doc.status === 'NotRequired'">
+            <div class="main">
+              <div class="title">
+                <span class="code">{{ doc.documentType.code }}</span>
+                <b>{{ doc.documentType.name }}</b>
+              </div>
+              @if (description(doc.documentType.id); as text) {
+                <p class="muted small">{{ text }}</p>
+              }
+              @if (doc.note) {
+                <p class="doc-note">{{ doc.note }}</p>
+              }
+              @if (doc.link) {
+                <a class="small" [href]="doc.link" target="_blank" rel="noopener noreferrer">Dokümanı aç ↗</a>
+              }
+              @if (doc.updatedBy) {
+                <p class="muted small">{{ doc.updatedBy.fullName }} · {{ doc.updatedAt | localDate }}</p>
+              }
+            </div>
+            <div class="side">
+              @if (readOnly()) {
+                <app-status-badge [label]="statusLabels[doc.status]" [tone]="statusTones[doc.status]" />
+              } @else {
+                <select
+                  class="status-select"
+                  [class]="'tone-' + statusTones[doc.status]"
+                  [attr.aria-label]="doc.documentType.name + ' durumu'"
+                  [ngModel]="doc.status"
+                  [disabled]="busyId() === doc.documentType.id"
+                  (ngModelChange)="changeStatus(doc, $event)"
+                >
+                  @for (status of statuses; track status) {
+                    <option [value]="status">{{ statusLabels[status] }}</option>
+                  }
+                </select>
+                <button type="button" class="button small" (click)="editing.set(doc)">Not / bağlantı</button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+} @else {
+  <app-empty-state message="Yükleniyor…" />
+}
+
+@if (editing(); as doc) {
+  <app-document-note-form
+    [projectId]="projectId()"
+    [document]="doc"
+    (saved)="onSaved()"
+    (cancelled)="editing.set(null)"
+  />
+}
