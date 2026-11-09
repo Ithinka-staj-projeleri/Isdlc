@@ -1,3 +1,4 @@
+using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
@@ -18,6 +19,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         await SeedProcessFlowAsync(cancellationToken);
+        await SeedDocumentTypesAsync(cancellationToken);
         await SeedUsersAsync(cancellationToken);
         if (includeSampleProjects)
         {
@@ -74,6 +76,32 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
 
         logger.LogInformation("Seeded {Stages} process stages and {Steps} steps.",
             stagesByOrder.Count, stepsByCode.Count);
+    }
+
+    /// <summary>The documents tracked on every project. Linked to stages by order, like the process flow.</summary>
+    private async Task SeedDocumentTypesAsync(CancellationToken cancellationToken)
+    {
+        if (await db.DocumentTypes.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var file = Read<DocumentTypesFile>("document-types.json");
+        var stageIds = await db.ProcessStages.ToDictionaryAsync(s => s.Order, s => s.Id, cancellationToken);
+
+        db.DocumentTypes.AddRange(file.DocumentTypes.Select(d => new DocumentType
+        {
+            Code = d.Code,
+            Name = d.Name,
+            Description = d.Description,
+            ProcessStageId = stageIds.TryGetValue(d.StageOrder, out var stageId)
+                ? stageId
+                : throw new InvalidOperationException($"Document type {d.Code}: stage {d.StageOrder} does not exist."),
+            Order = d.Order,
+        }));
+        await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Seeded {DocumentTypes} document types.", file.DocumentTypes.Count);
     }
 
     private async Task SeedUsersAsync(CancellationToken cancellationToken)

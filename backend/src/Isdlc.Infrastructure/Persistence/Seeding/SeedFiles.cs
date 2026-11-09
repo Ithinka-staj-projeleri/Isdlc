@@ -48,6 +48,10 @@ internal static class SeedFiles
 
     public record UserSeed(string FullName, string Email, UserRole Role);
 
+    public record DocumentTypesFile(List<DocumentTypeSeed> DocumentTypes);
+
+    public record DocumentTypeSeed(string Code, string Name, string? Description, int StageOrder, int Order);
+
     public record SampleProjectsFile(List<ProjectSeed> Projects);
 
     public record ProjectSeed(
