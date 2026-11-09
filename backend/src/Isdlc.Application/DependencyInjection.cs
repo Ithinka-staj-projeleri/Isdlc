@@ -1,4 +1,5 @@
 using Isdlc.Application.Agents;
+using Isdlc.Application.Documents;
 using Isdlc.Application.Identity;
 using Isdlc.Application.Meetings;
 using Isdlc.Application.Notifications;
@@ -24,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IAgentService, AgentService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IRequirementService, RequirementService>();
+        services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IUserService, UserService>();
 
         // TEMPORARY until the Notifications module: replace with the real service.

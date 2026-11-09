@@ -223,7 +223,7 @@ Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, ba
 - Tutanak sonradan düzenlenebilir (tür, tarih, katılımcılar, gündem); kararlar ve aksiyonlar artık
   açık konu olduğu için Açık Konular üzerinden yönetilir.
 
-### `Requirement` — gereksinim / User Story (öneri, ekip onayı bekliyor)
+### `Requirement` — gereksinim / User Story
 
 API ve kararlar: [requirements-documents-api.md](requirements-documents-api.md).
 
@@ -242,7 +242,7 @@ API ve kararlar: [requirements-documents-api.md](requirements-documents-api.md).
 
 - Silinmez; vazgeçilen gereksinim `Cancelled` yapılır ve yeniden `Draft` yapılabilir.
 
-### `DocumentType` — takip edilen doküman (ana veri, öneri)
+### `DocumentType` — takip edilen doküman (ana veri)
 
 | Alan | Tür | Not |
 | --- | --- | --- |
@@ -255,7 +255,7 @@ API ve kararlar: [requirements-documents-api.md](requirements-documents-api.md).
 
 - Seed ile yüklenir (`document-types.json`), kullanıcı tarafından değiştirilmez, loglanmaz.
 
-### `ProjectDocument` — projedeki doküman durumu (öneri)
+### `ProjectDocument` — projedeki doküman durumu
 
 | Alan | Tür | Not |
 | --- | --- | --- |
@@ -323,8 +323,8 @@ API ve kararlar: [requirements-documents-api.md](requirements-documents-api.md).
 10. Proje kayıtlarının kodu proje içinde artar (`AK-001`, `TT-001`).
 11. Proje kayıtları yalnızca aktif projede eklenir ve değiştirilir; silinmez.
 12. Tutanaktaki kararlar ve aksiyonlar ayrı metin olarak değil, tutanağa bağlı açık konu olarak tutulur.
-13. (Öneri) Gereksinim ve User Story tek kayıttır (`Requirement`); User Story açıklamaya yazılır.
-14. (Öneri) Takip edilen dokümanlar seviyeye bağlı değildir; projede gerekmeyen doküman `NotRequired` işaretlenir.
+13. Gereksinim ve User Story tek kayıttır (`Requirement`); User Story açıklamaya yazılır.
+14. Takip edilen dokümanlar seviyeye bağlı değildir; projede gerekmeyen doküman `NotRequired` işaretlenir.
 
 ## Seed verisi
 
@@ -341,6 +341,11 @@ tablo boşsa bir seeder sınıfı dosyayı okuyup tabloya yazar. Böylece metin 
 Sorumlu roller prototipin kuralına göre atanmıştır: Aşama 8 Yazılım Geliştirici; 9.1–9.5 Test Uzmanı,
 9.6–9.9 İş Analisti; Aşama 10–11 Proje Yöneticisi; 5.1 Satış Temsilcisi; diğer adımlar İş Analisti.
 Ekip gerekirse dosyada adım adım değiştirebilir.
+
+**`backend/src/Isdlc.Infrastructure/Seed/document-types.json`** (hazır)
+- `documentTypes`: takip edilen 18 doküman (`code`, `name`, `description`, `stageOrder`, `order`).
+- Aşamaya `stageOrder` ile bağlanır. Liste [requirements-documents-api.md](requirements-documents-api.md) → "Doküman listesi".
+- Tablo boşsa yüklenir; listeyi sonradan değiştirmek için tabloyu boşaltmak (veritabanını sıfırlamak) gerekir.
 
 **`backend/src/Isdlc.Infrastructure/Seed/users.json`** (hazır)
 - Prototipteki 7 kişi; her rolden en az bir kullanıcı (`fullName`, `email`, `role`).

@@ -1,4 +1,5 @@
 using Isdlc.Domain.Audit;
+using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
@@ -27,6 +28,8 @@ public interface IApplicationDbContext
     DbSet<OpenIssue> OpenIssues { get; }
     DbSet<Meeting> Meetings { get; }
     DbSet<Requirement> Requirements { get; }
+    DbSet<DocumentType> DocumentTypes { get; }
+    DbSet<ProjectDocument> ProjectDocuments { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

@@ -1,5 +1,6 @@
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Domain.Audit;
+using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
@@ -23,6 +24,8 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
     public DbSet<OpenIssue> OpenIssues => Set<OpenIssue>();
     public DbSet<Meeting> Meetings => Set<Meeting>();
     public DbSet<Requirement> Requirements => Set<Requirement>();
+    public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
+    public DbSet<ProjectDocument> ProjectDocuments => Set<ProjectDocument>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
