@@ -5,6 +5,7 @@ using Isdlc.Application.Notifications;
 using Isdlc.Application.OpenIssues;
 using Isdlc.Application.Process;
 using Isdlc.Application.Projects;
+using Isdlc.Application.Requirements;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Isdlc.Application;
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IMeetingService, MeetingService>();
         services.AddScoped<IAgentService, AgentService>();
         services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IRequirementService, RequirementService>();
         services.AddScoped<IUserService, UserService>();
 
         // TEMPORARY until the Notifications module: replace with the real service.

@@ -4,6 +4,7 @@ using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
+using Isdlc.Domain.Requirements;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -25,6 +26,7 @@ public interface IApplicationDbContext
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<OpenIssue> OpenIssues { get; }
     DbSet<Meeting> Meetings { get; }
+    DbSet<Requirement> Requirements { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
