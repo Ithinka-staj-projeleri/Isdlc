@@ -51,6 +51,9 @@
       @case ('requirements') {
         <app-requirement-list [projectId]="p.id" [readOnly]="readOnly()" />
       }
+      @case ('documents') {
+        <app-document-list [projectId]="p.id" [readOnly]="readOnly()" />
+      }
       @case ('open-issues') {
         <app-open-issue-list [projectId]="p.id" [readOnly]="readOnly()" />
       }

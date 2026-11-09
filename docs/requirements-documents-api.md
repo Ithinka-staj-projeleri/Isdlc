@@ -1,7 +1,7 @@
 # Requirements ve Documents Modülleri — API Sözleşmesi
 
 Gereksinim / User Story kayıtları ve proje dokümanlarının durum takibi. Veri modeli: [data-model.md](data-model.md) →
-"Proje kayıtları". Durum: **onaylandı** (9 Kasım 2026); gereksinimler (API ve ekranlar) ve doküman API'si uygulandı; Dokümanlar sekmesi sırada. Sorumlu: Dide.
+"Proje kayıtları". Durum: **onaylandı** (9 Kasım 2026); gereksinimler ve dokümanlar (API ve ekranlar) uygulandı; Doküman Kütüphanesi ekranı isteğe bağlı. Sorumlu: Dide.
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601,
 hatalar `ProblemDetails`, listeler `items` + `totalCount`, JSON alanları camelCase, doğrulama hataları `errors.<alanAdı>`

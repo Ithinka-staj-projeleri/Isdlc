@@ -1,0 +1,165 @@
+@use '../../../shared/styles/ui' as ui;
+
+:host {
+  display: block;
+}
+
+.card {
+  @include ui.card;
+
+  &.loading {
+    opacity: .6;
+  }
+}
+
+.note {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 12px;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+  padding: 12px 16px;
+
+  p {
+    margin: 0;
+
+    .muted {
+      margin-left: 6px;
+    }
+  }
+
+  .bar {
+    flex: 1 1 160px;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--bg);
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      background: var(--ok);
+    }
+  }
+
+  .percent {
+    font-weight: 600;
+  }
+}
+
+.stage {
+  margin-bottom: 12px;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+
+  .stage-no {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 16px;
+    padding: 10px 16px;
+
+    & + li {
+      border-top: 1px solid var(--line);
+    }
+
+    &.not-required .title {
+      color: var(--muted);
+    }
+  }
+}
+
+.main {
+  flex: 1 1 320px;
+  min-width: 0;
+
+  p {
+    margin: 2px 0 0;
+  }
+}
+
+.title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.code {
+  @include ui.code;
+  color: var(--muted);
+}
+
+.doc-note {
+  white-space: pre-line;
+}
+
+.side {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.status-select {
+  font: inherit;
+  font-size: 13px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--fg);
+
+  &.tone-ok {
+    border-left-color: var(--ok);
+  }
+
+  &.tone-warn {
+    border-left-color: var(--warn);
+  }
+
+  &.tone-info {
+    border-left-color: var(--info);
+  }
+}
+
+.button {
+  @include ui.button;
+}

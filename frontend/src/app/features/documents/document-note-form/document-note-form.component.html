@@ -1,0 +1,57 @@
+<!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
+<div class="overlay">
+  <form class="dialog" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <h3>
+      <span class="code">{{ document().documentType.code }}</span>
+      {{ document().documentType.name }}
+    </h3>
+
+    <div class="fields">
+      <label class="field" [class.invalid]="errorFor('status')">
+        Durum
+        <select formControlName="status">
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ statusLabels[status] }}</option>
+          }
+        </select>
+        @if (errorFor('status'); as error) {
+          <span class="error">{{ error }}</span>
+        }
+      </label>
+
+      <label class="field" [class.invalid]="errorFor('note')">
+        Not (isteğe bağlı)
+        <textarea
+          formControlName="note"
+          rows="3"
+          [maxlength]="maxLength"
+          placeholder="Ör. Müşteri yorumları bekleniyor."
+        ></textarea>
+        @if (errorFor('note'); as error) {
+          <span class="error">{{ error }}</span>
+        }
+      </label>
+
+      <label class="field" [class.invalid]="errorFor('link')">
+        Bağlantı (isteğe bağlı)
+        <input
+          formControlName="link"
+          type="url"
+          [maxlength]="maxLength"
+          placeholder="https://sirket.sharepoint.com/..."
+        />
+        @if (errorFor('link'); as error) {
+          <span class="error">{{ error }}</span>
+        }
+        <span class="hint">Dosya yüklenmez; dokümanın bulunduğu adresi yazın.</span>
+      </label>
+    </div>
+
+    <div class="dialog-actions">
+      <button type="button" class="button" (click)="cancelled.emit()">Vazgeç</button>
+      <button type="submit" class="button primary" [disabled]="saving()">
+        {{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}
+      </button>
+    </div>
+  </form>
+</div>
