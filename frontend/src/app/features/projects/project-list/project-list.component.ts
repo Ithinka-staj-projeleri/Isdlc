@@ -3,6 +3,7 @@ import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged, map, Subject } from 'rxjs';
+import { AuthService } from '../../../core/auth/auth.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -33,6 +34,7 @@ export class ProjectListComponent {
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
   private readonly _projectService = inject(ProjectService);
+  private readonly _auth = inject(AuthService);
 
   readonly statusLabels = PROJECT_STATUS_LABELS;
   readonly statusTones = PROJECT_STATUS_TONES;
@@ -52,6 +54,9 @@ export class ProjectListComponent {
     initialValue: 'projects' as ProjectListMode,
   });
   private readonly _query = toSignal(this._route.queryParamMap, { requireSync: true });
+
+  /** Only a business analyst can open a request (the API answers 403 to others). */
+  readonly canOpenRequest = computed(() => this._auth.hasRole('BusinessAnalyst'));
 
   readonly title = computed(() => (this.mode() === 'requests' ? 'Talepler' : 'Projeler'));
   readonly view = computed(() => (this._query().get('view') as ProjectView | null) ?? 'active');
