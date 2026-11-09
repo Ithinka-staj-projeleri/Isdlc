@@ -21,10 +21,13 @@ Project      1 ──── * OpenIssue
 Project      1 ──── * Meeting
 Meeting      1 ──── * OpenIssue           (SourceMeetingId: tutanaktan aktarılan karar ve aksiyonlar)
 User         1 ──── * OpenIssue           (OwnerUserId: sorumlu ekip üyesi)
+Project      1 ──── * Requirement
+Project      1 ──── * ProjectDocument * ── 1 DocumentType
+ProcessStage 1 ──── * DocumentType        (dokümanın ilk hazırlandığı aşama)
 ```
 
-- **Ana veri:** `ProcessStage`, `ProcessStep`, `ProcessStepJump`. Seed ile yüklenir, kullanıcı tarafından değiştirilmez.
-- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`. Uygulama kullanıldıkça oluşur.
+- **Ana veri:** `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `DocumentType`. Seed ile yüklenir, kullanıcı tarafından değiştirilmez.
+- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`. Uygulama kullanıldıkça oluşur.
 
 ## Ortak temel sınıf: `AuditableEntity`
 
@@ -220,6 +223,54 @@ Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, ba
 - Tutanak sonradan düzenlenebilir (tür, tarih, katılımcılar, gündem); kararlar ve aksiyonlar artık
   açık konu olduğu için Açık Konular üzerinden yönetilir.
 
+### `Requirement` — gereksinim / User Story (öneri, ekip onayı bekliyor)
+
+API ve kararlar: [requirements-documents-api.md](requirements-documents-api.md).
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `ProjectId` | int (FK → Project) | |
+| `Code` | string | `GR-001`, proje içinde artan |
+| `Type` | `RequirementType` | |
+| `Title` | string | En fazla 300 karakter |
+| `Description` | string? | User Story kalıbı buraya yazılır; en fazla 4000 karakter |
+| `AcceptanceCriteria` | string? | Kabul ölçütleri; en fazla 4000 karakter |
+| `Priority` | `RequirementPriority` | MoSCoW |
+| `Status` | `RequirementStatus` | Yeni kayıt `Draft` başlar |
+| + `AuditableEntity` alanları | | |
+
+- Silinmez; vazgeçilen gereksinim `Cancelled` yapılır ve yeniden `Draft` yapılabilir.
+
+### `DocumentType` — takip edilen doküman (ana veri, öneri)
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `Code` | string | `PKD`; benzersiz, en fazla 10 karakter |
+| `Name` | string | "Proje Kapsam Dokümanı"; en fazla 200 karakter |
+| `Description` | string? | En fazla 1000 karakter |
+| `ProcessStageId` | int (FK → ProcessStage) | Dokümanın ilk hazırlandığı aşama |
+| `Order` | int | Aşama içindeki sıra |
+
+- Seed ile yüklenir (`document-types.json`), kullanıcı tarafından değiştirilmez, loglanmaz.
+
+### `ProjectDocument` — projedeki doküman durumu (öneri)
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `ProjectId` | int (FK → Project) | |
+| `DocumentTypeId` | int (FK → DocumentType) | `(ProjectId, DocumentTypeId)` benzersiz |
+| `Status` | `DocumentStatus` | |
+| `Note` | string? | En fazla 1000 karakter |
+| `Link` | string? | Dokümanın bulunduğu adres (SharePoint vb.); en fazla 1000 karakter |
+| + `AuditableEntity` alanları | | |
+
+- Kendi `Code`'u yoktur; kullanıcı dokümanı türünün koduyla görür.
+- Kayıt, dokümanın durumu projede ilk kez kaydedildiğinde oluşur. Kaydı olmayan doküman `NotStarted` sayılır.
+- `IAudited` ve `IProjectRecord` taşır; durum değişiklikleri denetim kaydına projesiyle yazılır.
+
 ## Enum'lar
 
 | Enum | Değerler |
@@ -235,6 +286,10 @@ Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, ba
 | `OpenIssueType` | `Question` (Soru), `Action` (Aksiyon), `Decision` (Karar), `ChangeRequest` (Değişiklik Talebi), `Dependency` (Bağımlılık), `Assumption` (Varsayım) |
 | `OpenIssueStatus` | `Open` (Açık), `InProgress` (Devam ediyor), `Closed` (Kapandı) |
 | `MeetingType` | `RequestInterview` (Talep Görüşmesi), `AnalysisSession` (Analiz Oturumu), `KickOff` (Proje Başlangıç / Kick-off), `Review` (Gözden Geçirme), `Internal` (Departman İçi), `CustomerVisit` (Müşteri Ziyareti), `Handover` (Devir Görüşmesi), `ProjectEvaluation` (Proje Değerlendirme) |
+| `RequirementType` | `Business` (İş gereksinimi), `Functional` (Fonksiyonel), `NonFunctional` (Fonksiyonel olmayan) |
+| `RequirementPriority` | `MustHave` (Olmazsa olmaz), `ShouldHave` (Olmalı), `CouldHave` (Olabilir), `WontHave` (Bu sürümde yok) |
+| `RequirementStatus` | `Draft` (Taslak), `InReview` (İncelemede), `Approved` (Onaylandı), `Cancelled` (İptal edildi) |
+| `DocumentStatus` | `NotStarted` (Başlanmadı), `InProgress` (Hazırlanıyor), `InReview` (İncelemede), `Approved` (Onaylandı), `NotRequired` (Gerekmiyor) |
 
 ## Süreç ilerleme kuralları
 
@@ -268,6 +323,8 @@ Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, ba
 10. Proje kayıtlarının kodu proje içinde artar (`AK-001`, `TT-001`).
 11. Proje kayıtları yalnızca aktif projede eklenir ve değiştirilir; silinmez.
 12. Tutanaktaki kararlar ve aksiyonlar ayrı metin olarak değil, tutanağa bağlı açık konu olarak tutulur.
+13. (Öneri) Gereksinim ve User Story tek kayıttır (`Requirement`); User Story açıklamaya yazılır.
+14. (Öneri) Takip edilen dokümanlar seviyeye bağlı değildir; projede gerekmeyen doküman `NotRequired` işaretlenir.
 
 ## Seed verisi
 
