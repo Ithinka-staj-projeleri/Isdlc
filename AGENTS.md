@@ -154,8 +154,11 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | İşlem türü (Tamamlandı, Evet, Hayır, Reddedildi) | `StepAction` |
 | Oluşturan / güncelleyen bilgisi | `AuditableEntity` (`CreatedAt`, `CreatedById`, `UpdatedAt`, `UpdatedById`) |
 | Seviye | `Level` |
-| Doküman durumu | `DocumentStatus` |
-| Gereksinim | `Requirement` |
+| Doküman durumu | `DocumentStatus` (`NotStarted`, `InProgress`, `InReview`, `Approved`, `NotRequired`) |
+| Doküman türü (takip edilen doküman) / projedeki dokümanı | `DocumentType` / `ProjectDocument` |
+| Gereksinim (User Story dahil) | `Requirement` |
+| Gereksinim türü / önceliği / durumu | `RequirementType` (`Business`, `Functional`, `NonFunctional`), `RequirementPriority` (`MustHave`, `ShouldHave`, `CouldHave`, `WontHave`), `RequirementStatus` (`Draft`, `InReview`, `Approved`, `Cancelled`) |
+| Kabul ölçütleri | `AcceptanceCriteria` |
 | Risk | `Risk` (`Probability`, `Impact`, `Score`) |
 | Açık konu | `OpenIssue` |
 | Açık konu türü / durumu | `OpenIssueType` (`Question`, `Action`, `Decision`, `ChangeRequest`, `Dependency`, `Assumption`), `OpenIssueStatus` (`Open`, `InProgress`, `Closed`) |
