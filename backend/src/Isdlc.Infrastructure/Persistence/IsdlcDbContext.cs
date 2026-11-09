@@ -5,6 +5,7 @@ using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
+using Isdlc.Domain.Requirements;
 using Isdlc.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +22,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<OpenIssue> OpenIssues => Set<OpenIssue>();
     public DbSet<Meeting> Meetings => Set<Meeting>();
+    public DbSet<Requirement> Requirements => Set<Requirement>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
