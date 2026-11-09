@@ -1,1 +1,11 @@
-<p>requirements-page works!</p>
+<header class="page-head">
+  <div>
+    <h2>Gereksinimler</h2>
+    <p class="muted">Gereksinim ve User Story kayıtları · Akış 4.1, 7.1</p>
+  </div>
+  <app-project-picker #picker />
+</header>
+
+@if (picker.selected(); as project) {
+  <app-requirement-list [projectId]="project.id" [readOnly]="project.status !== 'Active'" />
+}

@@ -1,0 +1,31 @@
+@use '../../../shared/styles/ui' as ui;
+
+@include ui.dialog;
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+
+  .full {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.field {
+  @include ui.field;
+}
+
+.button {
+  @include ui.button;
+}
+
+.muted {
+  color: var(--muted);
+}

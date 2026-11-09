@@ -1,0 +1,85 @@
+@use '../../../shared/styles/ui' as ui;
+
+:host {
+  display: block;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.field {
+  @include ui.field;
+  min-width: 150px;
+
+  &.search {
+    min-width: 220px;
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+.button {
+  @include ui.button;
+}
+
+.note {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.table-wrap {
+  @include ui.card;
+  overflow-x: auto;
+
+  &.loading {
+    opacity: .6;
+  }
+}
+
+table {
+  @include ui.table;
+}
+
+tr.cancelled td {
+  color: var(--muted);
+
+  b {
+    text-decoration: line-through;
+  }
+}
+
+.code {
+  @include ui.code;
+  white-space: nowrap;
+}
+
+.status-select {
+  font: inherit;
+  font-size: 13px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--fg);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

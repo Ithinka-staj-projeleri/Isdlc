@@ -46,7 +46,7 @@ altında Türkçe. İki modül de projenin alt kaynağıdır (`/api/v1/projects/
 | `PUT /projects/{projectId}/requirements/{requirementId}` | İçeriği güncelle (tür, başlık, açıklama, kabul ölçütleri, öncelik) | `200` `RequirementDto` |
 | `PUT /projects/{projectId}/requirements/{requirementId}/status` | Durumu değiştir | `200` `RequirementDto` |
 
-İçerik ile durum ayrı uç noktalarda: listedeki "Onayla" / "İptal et" butonları bütün formu göndermeden çalışır.
+İçerik ile durum ayrı uç noktalarda: listedeki durum seçimi bütün formu göndermeden çalışır.
 
 **Liste filtreleri** (hepsi isteğe bağlı): `status`, `type`, `priority`, `search` (kod veya başlıkta geçen metin),
 sayfalama `page`, `pageSize`.
@@ -171,7 +171,7 @@ toplantı tutanakları (`Meetings`).
 ## Ekranlar
 
 - **Proje detayı → "Gereksinimler" sekmesi:** liste (kod, tür, başlık, öncelik, durum), filtreler, "Yeni gereksinim"
-  formu, satırda "Onayla" / "İptal et". Kapanmış projede salt okunur.
+  formu, satırda durum seçimi (dört durumun hepsine buradan geçilir) ve "Düzenle". Kapanmış projede salt okunur.
 - **Menü → "Gereksinimler":** üstte proje seçici, altında aynı liste (Açık Konular sayfası gibi).
 - **Proje detayı → "Dokümanlar" sekmesi:** aşamalara göre gruplanmış liste; her satırda durum seçimi, not ve bağlantı.
   Üstte özet: "18 dokümandan 5'i onaylandı, 3'ü gerekmiyor". Kapanmış projede salt okunur.

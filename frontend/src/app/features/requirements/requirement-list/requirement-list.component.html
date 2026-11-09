@@ -1,0 +1,128 @@
+<div class="toolbar">
+  <label class="field search">
+    Ara
+    <input type="search" placeholder="Kod veya başlık" (input)="onSearchInput($any($event.target).value)" />
+  </label>
+  <label class="field">
+    Tür
+    <select [ngModel]="type()" (ngModelChange)="setType($event)">
+      <option value="">Tümü</option>
+      @for (t of types; track t) {
+        <option [value]="t">{{ typeLabels[t] }}</option>
+      }
+    </select>
+  </label>
+  <label class="field">
+    Öncelik
+    <select [ngModel]="priority()" (ngModelChange)="setPriority($event)">
+      <option value="">Tümü</option>
+      @for (p of priorities; track p) {
+        <option [value]="p">{{ priorityLabels[p] }}</option>
+      }
+    </select>
+  </label>
+  <label class="field">
+    Durum
+    <select [ngModel]="status()" (ngModelChange)="setStatus($event)">
+      <option value="">Tümü</option>
+      @for (s of statuses; track s) {
+        <option [value]="s">{{ statusLabels[s] }}</option>
+      }
+    </select>
+  </label>
+  <span class="spacer"></span>
+  @if (!readOnly()) {
+    <button type="button" class="button primary" (click)="editing.set('new')">+ Gereksinim ekle</button>
+  }
+</div>
+
+@if (readOnly()) {
+  <p class="note">Proje aktif olmadığı için gereksinimler yalnızca görüntülenebilir.</p>
+}
+
+@if (requirements.error()) {
+  <app-empty-state message="Gereksinimler yüklenemedi." />
+} @else if (requirements.hasValue()) {
+  @let result = requirements.value();
+  @if (result.items.length === 0) {
+    <app-empty-state
+      [message]="hasFilter() ? 'Bu filtrede gereksinim bulunmuyor.' : 'Bu projede henüz gereksinim kaydı yok.'"
+    />
+  } @else {
+    <div class="table-wrap" [class.loading]="requirements.isLoading()">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Başlık</th>
+            <th>Tür</th>
+            <th>Öncelik</th>
+            <th>Durum</th>
+            @if (!readOnly()) {
+              <th><span class="visually-hidden">İşlemler</span></th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (requirement of result.items; track requirement.id) {
+            <tr [class.cancelled]="requirement.status === 'Cancelled'">
+              <td class="code">{{ requirement.code }}</td>
+              <td><b>{{ requirement.title }}</b></td>
+              <td>{{ typeLabels[requirement.type] }}</td>
+              <td>
+                <app-status-badge
+                  [label]="priorityLabels[requirement.priority]"
+                  [tone]="priorityTones[requirement.priority]"
+                />
+              </td>
+              <td>
+                @if (readOnly()) {
+                  <app-status-badge
+                    [label]="statusLabels[requirement.status]"
+                    [tone]="statusTones[requirement.status]"
+                  />
+                } @else {
+                  <select
+                    class="status-select"
+                    [attr.aria-label]="requirement.code + ' durumu'"
+                    [ngModel]="requirement.status"
+                    [disabled]="busyId() === requirement.id"
+                    (ngModelChange)="changeStatus(requirement, $event)"
+                  >
+                    @for (s of statuses; track s) {
+                      <option [value]="s">{{ statusLabels[s] }}</option>
+                    }
+                  </select>
+                }
+              </td>
+              @if (!readOnly()) {
+                <td class="actions">
+                  <button type="button" class="button small" (click)="editing.set(requirement.id)">Düzenle</button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (result.totalCount > pageSize) {
+      <app-pagination
+        [page]="page()"
+        [pageSize]="pageSize"
+        [totalCount]="result.totalCount"
+        (pageChange)="page.set($event)"
+      />
+    }
+  }
+} @else {
+  <app-empty-state message="Yükleniyor…" />
+}
+
+@if (editing(); as target) {
+  <app-requirement-form
+    [projectId]="projectId()"
+    [requirementId]="target === 'new' ? null : target"
+    (saved)="onSaved()"
+    (cancelled)="editing.set(null)"
+  />
+}

@@ -28,7 +28,9 @@
         background: var(--accent);
         color: #fff;
 
+        // Keep the accent color: the plain hover rule above would turn the background light under white text.
         &:hover:not(:disabled) {
+            background: var(--accent);
             filter: brightness(.95);
         }
     }
