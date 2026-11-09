@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { roleGuard } from './core/auth/role.guard';
 import { LayoutComponent } from './core/layout/layout/layout.component';
 
 export const routes: Routes = [
@@ -16,7 +17,7 @@ export const routes: Routes = [
             { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
             { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard-page.component').then(m => m.DashboardPageComponent) },
             // "Talepler" and "Projeler" are the same list with a different filter (docs/projects-api.md, decision 3).
-            { path: 'requests/new', loadComponent: () => import('./features/projects/project-form/project-form.component').then(m => m.ProjectFormComponent) },
+            { path: 'requests/new', canActivate: [roleGuard('BusinessAnalyst')], loadComponent: () => import('./features/projects/project-form/project-form.component').then(m => m.ProjectFormComponent) },
             { path: 'requests', data: { mode: 'requests' }, loadComponent: () => import('./features/projects/project-list/project-list.component').then(m => m.ProjectListComponent) },
             { path: 'projects/:projectId/edit', loadComponent: () => import('./features/projects/project-form/project-form.component').then(m => m.ProjectFormComponent) },
             { path: 'projects/:projectId', loadComponent: () => import('./features/projects/project-detail/project-detail.component').then(m => m.ProjectDetailComponent) },

@@ -10,8 +10,7 @@
       }
     </p>
   </div>
-  @if (mode() === 'requests') {
-    <!-- Only a business analyst can open a request; the button will be hidden for other roles once sign-in is in. -->
+  @if (mode() === 'requests' && canOpenRequest()) {
     <a routerLink="/requests/new" class="new-button">+ Yeni talep</a>
   }
 </header>
