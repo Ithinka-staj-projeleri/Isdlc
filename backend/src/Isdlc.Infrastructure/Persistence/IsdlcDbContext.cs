@@ -7,6 +7,7 @@ using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Isdlc.Domain.Requirements;
+using Isdlc.Domain.Risks;
 using Isdlc.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +27,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
     public DbSet<Requirement> Requirements => Set<Requirement>();
     public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
     public DbSet<ProjectDocument> ProjectDocuments => Set<ProjectDocument>();
+    public DbSet<Risk> Risks => Set<Risk>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
