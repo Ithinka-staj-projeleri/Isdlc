@@ -24,7 +24,7 @@ public record AuditLogDto(
 /// </summary>
 public record AuditFieldChangeDto(string Field, string? OldValue, string? NewValue);
 
-/// <summary>List filter: ?entityType=OpenIssue (Project, OpenIssue, Meeting, Requirement, ProjectDocument).</summary>
+/// <summary>List filter: ?entityType=OpenIssue (Project, OpenIssue, Meeting, Requirement, ProjectDocument, Risk).</summary>
 public record AuditLogFilter
 {
     public string? EntityType { get; init; }

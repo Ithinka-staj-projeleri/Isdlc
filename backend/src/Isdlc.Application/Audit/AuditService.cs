@@ -15,6 +15,7 @@ public class AuditService(IApplicationDbContext dbContext) : IAuditService
     private const string MeetingEntity = "Meeting";
     private const string RequirementEntity = "Requirement";
     private const string ProjectDocumentEntity = "ProjectDocument";
+    private const string RiskEntity = "Risk";
 
     public async Task<PagedResult<AuditLogDto>> ListProjectLogAsync(
         int projectId, AuditLogFilter filter, PageRequest pageRequest, CancellationToken cancellationToken)
@@ -133,6 +134,12 @@ public class AuditService(IApplicationDbContext dbContext) : IAuditService
         {
             Add(RequirementEntity, await dbContext.Requirements.AsNoTracking()
                 .Where(r => requirementIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.Code, cancellationToken));
+        }
+
+        if (IdsOf(RiskEntity) is { Count: > 0 } riskIds)
+        {
+            Add(RiskEntity, await dbContext.Risks.AsNoTracking()
+                .Where(r => riskIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.Code, cancellationToken));
         }
 
         if (IdsOf(ProjectDocumentEntity) is { Count: > 0 } documentIds)
