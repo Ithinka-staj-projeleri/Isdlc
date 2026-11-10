@@ -161,7 +161,7 @@ Kayıtlar değiştirilmez ve silinmez; süreç geçmişi bu tablodan okunur.
 - Loglanmayan: ana veri (`ProcessStage`, `ProcessStep`, `ProcessStepJump`), `StepRecord` (kendisi zaten geçmiş tablosu), `User`.
 - `Changes` içinde yer almayan alanlar: `Id`, `PasswordHash`, `RowVersion` ve `AuditableEntity` alanları (bilgileri log satırında var).
 - Değeri gerçekten değişmeyen alan yazılmaz; hiçbir alan değişmediyse log satırı oluşmaz.
-- Alan adları C# adlarıdır (`Status`); Türkçe karşılıklarını Audit ekranı gösterir.
+- Alan adları C# adlarıdır (`Status`); Türkçe karşılıklarını Audit ekranı gösterir ([audit-api.md](audit-api.md)).
 - Kayıt ve logu aynı transaction'da yazılır: log yazılamazsa değişiklik de geri alınır.
 
 ## Proje kayıtları (Faz 2)

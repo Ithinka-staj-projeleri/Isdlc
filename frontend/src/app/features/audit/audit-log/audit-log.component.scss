@@ -1,0 +1,117 @@
+@use '../../../shared/styles/ui' as ui;
+
+:host {
+    display: block;
+    // Sized by the tab it sits in, not by the window.
+    container-type: inline-size;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 20px;
+    margin-bottom: 14px;
+
+    p {
+        flex: 1 1 260px;
+        margin: 0 0 8px;
+    }
+}
+
+.field {
+    @include ui.field;
+    min-width: 200px;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.code {
+    @include ui.code;
+}
+
+.timeline {
+    @include ui.card;
+    margin: 0;
+    padding: 4px 16px;
+    list-style: none;
+
+    &.loading {
+        opacity: .6;
+    }
+}
+
+.entry {
+    display: grid;
+    grid-template-columns: minmax(0, 170px) minmax(0, 1fr);
+    gap: 4px 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+
+    &:first-child {
+        border-top: 0;
+    }
+}
+
+// Narrow tab: time and person above the change.
+@container (max-width: 560px) {
+    .entry {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.when {
+    display: flex;
+    flex-direction: column;
+    color: var(--muted);
+    font-size: 13px;
+
+    .who {
+        color: var(--fg);
+        font-weight: 600;
+    }
+}
+
+.title {
+    margin: 0;
+}
+
+details summary {
+    margin-top: 4px;
+    color: var(--accent);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.changes {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 4px 12px;
+    margin: 6px 0 0;
+    font-size: 13px;
+
+    dt {
+        color: var(--muted);
+    }
+
+    dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .old {
+        color: var(--muted);
+        text-decoration: line-through;
+    }
+
+    .arrow {
+        margin: 0 6px;
+        color: var(--muted);
+    }
+
+    .new {
+        font-weight: 600;
+    }
+}

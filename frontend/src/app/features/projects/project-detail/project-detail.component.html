@@ -60,6 +60,9 @@
       @case ('meetings') {
         <app-meeting-list [projectId]="p.id" [readOnly]="readOnly()" />
       }
+      @case ('history') {
+        <app-audit-log [projectId]="p.id" />
+      }
       @default {
         <div class="card">
           <h3>Talep</h3>
