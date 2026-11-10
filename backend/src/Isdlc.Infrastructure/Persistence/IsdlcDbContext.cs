@@ -4,6 +4,7 @@ using Isdlc.Domain.Audit;
 using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Meetings;
+using Isdlc.Domain.Notifications;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
@@ -30,6 +31,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
     public DbSet<ProjectDocument> ProjectDocuments => Set<ProjectDocument>();
     public DbSet<Risk> Risks => Set<Risk>();
     public DbSet<ProjectAssessment> ProjectAssessments => Set<ProjectAssessment>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

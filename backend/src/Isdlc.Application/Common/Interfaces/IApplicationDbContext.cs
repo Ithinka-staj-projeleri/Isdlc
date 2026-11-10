@@ -3,6 +3,7 @@ using Isdlc.Domain.Audit;
 using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Meetings;
+using Isdlc.Domain.Notifications;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
@@ -34,6 +35,7 @@ public interface IApplicationDbContext
     DbSet<ProjectDocument> ProjectDocuments { get; }
     DbSet<Risk> Risks { get; }
     DbSet<ProjectAssessment> ProjectAssessments { get; }
+    DbSet<Notification> Notifications { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

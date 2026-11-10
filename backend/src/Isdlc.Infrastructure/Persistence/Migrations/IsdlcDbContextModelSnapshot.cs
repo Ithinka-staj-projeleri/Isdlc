@@ -354,6 +354,42 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.ToTable("Meetings");
                 });
 
+            modelBuilder.Entity("Isdlc.Domain.Notifications.Notification", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("UserId", "ReadAt");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("Isdlc.Domain.OpenIssues.OpenIssue", b =>
                 {
                     b.Property<int>("Id")
@@ -986,6 +1022,25 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.Notifications.Notification", b =>
+                {
+                    b.HasOne("Isdlc.Domain.Projects.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.OpenIssues.OpenIssue", b =>
