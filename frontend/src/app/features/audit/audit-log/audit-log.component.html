@@ -1,0 +1,70 @@
+<div class="toolbar">
+    <label class="field">
+        Kayıt türü
+        <select [ngModel]="entityType()" (ngModelChange)="setEntityType($event)">
+            <option value="">Tümü</option>
+            @for (type of entityTypes; track type[0]) {
+            <option [value]="type[0]">{{ type[1] }}</option>
+            }
+        </select>
+    </label>
+    <p class="muted">Projede ve kayıtlarında yapılan her değişiklik otomatik kaydedilir. Kayıtlar değiştirilemez.</p>
+</div>
+
+@if (logs.error()) {
+<app-empty-state message="Kayıt geçmişi yüklenemedi." />
+} @else if (logs.hasValue()) {
+@let result = logs.value();
+@if (result.items.length === 0) {
+<app-empty-state [message]="entityType() ? 'Bu türde değişiklik kaydı yok.' : 'Henüz değişiklik kaydı yok.'" />
+} @else {
+<ol class="timeline" [class.loading]="logs.isLoading()">
+    @for (log of result.items; track log.id) {
+    <li class="entry" [class.created]="log.action === 'Created'">
+        <div class="when">
+            <time>{{ log.performedAt | localDate }}</time>
+            <span class="who">{{ log.performedBy.fullName }}</span>
+        </div>
+        <div class="what">
+            <p class="title">
+                {{ entityLabel(log.entityType) }}
+                @if (log.recordCode) { <b class="code">{{ log.recordCode }}</b> }
+                {{ actionLabels[log.action] }}
+            </p>
+
+            @if (log.changes.length) {
+            @if (log.action === 'Created') {
+            <!-- A new record lists all its fields; folded so the history stays easy to scan. -->
+            <details>
+                <summary>{{ log.changes.length }} alan</summary>
+                <dl class="changes">
+                    @for (change of log.changes; track change.field) {
+                    <dt>{{ fieldLabel(log.entityType, change.field) }}</dt>
+                    <dd [attr.title]="fullValue(log, change.field, change.newValue)">{{ value(log, change.field, change.newValue) }}</dd>
+                    }
+                </dl>
+            </details>
+            } @else {
+            <dl class="changes">
+                @for (change of log.changes; track change.field) {
+                <dt>{{ fieldLabel(log.entityType, change.field) }}</dt>
+                <dd>
+                    <span class="old" [attr.title]="fullValue(log, change.field, change.oldValue)">{{ value(log, change.field, change.oldValue) }}</span>
+                    <span class="arrow" aria-label="yeni değer">→</span>
+                    <span class="new" [attr.title]="fullValue(log, change.field, change.newValue)">{{ value(log, change.field, change.newValue) }}</span>
+                </dd>
+                }
+            </dl>
+            }
+            }
+        </div>
+    </li>
+    }
+</ol>
+@if (result.totalCount > pageSize) {
+<app-pagination [page]="page()" [pageSize]="pageSize" [totalCount]="result.totalCount" (pageChange)="page.set($event)" />
+}
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}
