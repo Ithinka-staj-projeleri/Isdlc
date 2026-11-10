@@ -1,0 +1,108 @@
+@if (readOnly()) {
+<p class="note">Proje aktif olmadığı için değerlendirme yalnızca görüntülenebilir.</p>
+}
+
+@if (assessment.error() || definition() === null) {
+<app-empty-state message="Değerlendirme yüklenemedi." />
+} @else if (assessment.value() && definition(); as def) {
+@let a = assessment.value()!;
+<div class="grid" [class.busy]="saving()">
+    <section class="card" aria-labelledby="level-title">
+        <header class="card-head">
+            <h3 id="level-title">Seviye belirleme <span class="muted">· Akış 2.4</span></h3>
+            @if (a.level.suggestedLevel; as suggested) {
+            <app-status-badge [label]="'Önerilen: Seviye ' + suggested" tone="info" />
+            } @else {
+            <app-status-badge [label]="a.level.answeredCount + '/' + levelQuestionCount() + ' soru'" />
+            }
+        </header>
+
+        @for (q of def.levelQuestions; track q.key) {
+        <div class="question" role="group" [attr.aria-label]="q.title">
+            <div class="question-title">{{ q.title }}</div>
+            <div class="options">
+                @for (o of q.options; track o.value) {
+                <button type="button" class="option" [class.on]="a.level.answers[q.key] === o.value"
+                    [attr.aria-pressed]="a.level.answers[q.key] === o.value"
+                    [disabled]="readOnly() || saving()" (click)="answerLevel(q.key, o.value)">{{ o.label }}</button>
+                }
+            </div>
+        </div>
+        }
+
+        <p class="muted small">
+            Puan: {{ a.level.score ?? '—' }} / 18. {{ def.levelRule }}
+        </p>
+
+        <div class="apply">
+            <span>
+                Projenin seviyesi:
+                <b>{{ a.level.appliedLevel ? 'Seviye ' + a.level.appliedLevel : 'Belirlenmedi' }}</b>
+            </span>
+            @if (!readOnly()) {
+            <button type="button" class="button primary" [disabled]="!canApply() || saving()" (click)="applyLevel()">
+                Seviyeyi projeye uygula
+            </button>
+            }
+        </div>
+        @if (!readOnly() && a.level.suggestedLevel && a.level.suggestedLevel === a.level.appliedLevel) {
+        <p class="muted small">Önerilen seviye projeye uygulanmış.</p>
+        } @else if (!readOnly() && a.level.suggestedLevel && a.level.appliedLevel) {
+        <p class="muted small">Cevaplar değişti: önerilen seviye projenin seviyesinden farklı. Uygulamadıkça seviye değişmez.</p>
+        }
+    </section>
+
+    <section class="card" aria-labelledby="acceptance-title">
+        <header class="card-head">
+            <h3 id="acceptance-title">Proje kabul puanlaması <span class="muted">· Akış 3.1</span></h3>
+            @if (a.acceptance.recommendation; as rec) {
+            <app-status-badge [label]="formatScore(a.acceptance.weightedScore!) + ' · ' + recommendationLabels[rec]"
+                [tone]="recommendationTones[rec]" />
+            } @else {
+            <app-status-badge [label]="a.acceptance.answeredCount + '/' + criterionCount() + ' ölçüt'" />
+            }
+        </header>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ölçüt</th>
+                        <th class="num">Ağırlık</th>
+                        <th>Puan (1–5)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (c of def.acceptanceCriteria; track c.key) {
+                    <tr>
+                        <td>{{ c.title }}</td>
+                        <td class="num">%{{ c.weight }}</td>
+                        <td>
+                            <div class="scores" role="group" [attr.aria-label]="c.title">
+                                @for (n of acceptanceLevels; track n) {
+                                <button type="button" class="option score" [class.on]="a.acceptance.scores[c.key] === n"
+                                    [attr.aria-pressed]="a.acceptance.scores[c.key] === n"
+                                    [attr.aria-label]="c.title + ': ' + n"
+                                    [disabled]="readOnly() || saving()" (click)="scoreCriterion(c.key, n)">{{ n }}</button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <p class="muted small">
+            {{ def.acceptanceRule }} Bu yalnızca bir öneridir; nihai karar Yazılım Departman Yöneticisi tarafından
+            verilir (Akış 3.2).
+        </p>
+    </section>
+</div>
+
+@if (a.updatedBy) {
+<p class="muted small updated">Son değişiklik: {{ a.updatedBy.fullName }} · {{ a.updatedAt | localDate }}</p>
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}

@@ -7,6 +7,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { DateOnlyPipe } from '../../../shared/pipes/date-only.pipe';
 import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
+import { ProjectAssessmentComponent } from '../../assessment/project-assessment/project-assessment.component';
 import { AuditLogComponent } from '../../audit/audit-log/audit-log.component';
 import { DocumentListComponent } from '../../documents/document-list/document-list.component';
 import { MeetingListComponent } from '../../meetings/meeting-list/meeting-list.component';
@@ -24,7 +25,7 @@ import {
 } from '../project-labels';
 import { ProjectService } from '../project.service';
 
-type DetailTab = 'general' | 'process' | 'requirements' | 'documents' | 'risks' | 'open-issues' | 'meetings' | 'history';
+type DetailTab = 'general' | 'process' | 'assessment' | 'requirements' | 'documents' | 'risks' | 'open-issues' | 'meetings' | 'history';
 
 /** Stages 1–3 are the request phase ("Talepler"); 4–13 the project phase ("Projeler"). */
 const LAST_REQUEST_STAGE = 3;
@@ -47,6 +48,7 @@ const LAST_REQUEST_STAGE = 3;
     MeetingListComponent,
     RequirementListComponent,
     RiskListComponent,
+    ProjectAssessmentComponent,
     DocumentListComponent,
     AuditLogComponent,
   ],
@@ -68,6 +70,7 @@ export class ProjectDetailComponent {
   readonly tabs: { key: DetailTab; label: string }[] = [
     { key: 'general', label: 'Genel Bilgiler' },
     { key: 'process', label: 'Süreç' },
+    { key: 'assessment', label: 'Seviye & Kabul' },
     { key: 'requirements', label: 'Gereksinimler' },
     { key: 'documents', label: 'Dokümanlar' },
     { key: 'risks', label: 'Riskler' },

@@ -1,1 +1,11 @@
-<p>assessment-page works!</p>
+<header class="page-head">
+    <div>
+        <h2>Seviye Belirleme & Proje Kabul</h2>
+        <p class="muted">Akış 2.4 ve 3.1 · Proje Seviye Belirleme Formu, Proje Kabul Değerlendirme Formu</p>
+    </div>
+    <app-project-picker #picker />
+</header>
+
+@if (picker.selected(); as project) {
+<app-project-assessment [projectId]="project.id" [readOnly]="project.status !== 'Active'" />
+}
