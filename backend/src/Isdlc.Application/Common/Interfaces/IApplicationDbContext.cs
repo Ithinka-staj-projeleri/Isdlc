@@ -1,3 +1,4 @@
+using Isdlc.Domain.Assessment;
 using Isdlc.Domain.Audit;
 using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
@@ -32,6 +33,7 @@ public interface IApplicationDbContext
     DbSet<DocumentType> DocumentTypes { get; }
     DbSet<ProjectDocument> ProjectDocuments { get; }
     DbSet<Risk> Risks { get; }
+    DbSet<ProjectAssessment> ProjectAssessments { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

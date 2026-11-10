@@ -1,4 +1,5 @@
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Domain.Assessment;
 using Isdlc.Domain.Audit;
 using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
@@ -28,6 +29,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
     public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
     public DbSet<ProjectDocument> ProjectDocuments => Set<ProjectDocument>();
     public DbSet<Risk> Risks => Set<Risk>();
+    public DbSet<ProjectAssessment> ProjectAssessments => Set<ProjectAssessment>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
