@@ -180,6 +180,16 @@ public class AuditLogInterceptor(TimeProvider timeProvider) : SaveChangesInterce
             var entity = change.Entry.Entity;
             var entityId = (int)change.Entry.Property("Id").CurrentValue!;
 
+            // New values are read again now: a foreign key to a record added in the same save (e.g. an open issue's
+            // SourceMeetingId when the minutes are saved with it) held a temporary negative id before the save.
+            if (change.Action != AuditAction.Deleted)
+            {
+                foreach (var name in change.Fields.Keys.ToList())
+                {
+                    change.Fields[name] = change.Fields[name] with { New = change.Entry.Property(name).CurrentValue };
+                }
+            }
+
             context.Set<AuditLog>().Add(new AuditLog
             {
                 EntityName = entity.GetType().Name,
