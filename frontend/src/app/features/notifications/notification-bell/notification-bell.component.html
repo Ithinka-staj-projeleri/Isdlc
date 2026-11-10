@@ -1,0 +1,44 @@
+@let count = notifications.unreadCount();
+<button type="button" class="bell" [class.has-unread]="count > 0" [attr.aria-expanded]="open()"
+    aria-haspopup="true" [attr.aria-label]="count > 0 ? 'Bildirimler, ' + count + ' okunmamış' : 'Bildirimler'"
+    (click)="toggle()">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </svg>
+    @if (count > 0) { <span class="count">{{ count > 99 ? '99+' : count }}</span> }
+</button>
+
+@if (open()) {
+<div class="popup" role="dialog" aria-label="Bildirimler">
+    <header>
+        <b>Bildirimler</b>
+        @if (count > 0) {
+        <button type="button" class="link" (click)="markAllRead()">Tümünü okundu say</button>
+        }
+    </header>
+
+    @if (loading()) {
+    <p class="empty">Yükleniyor…</p>
+    } @else if (items().length === 0) {
+    <p class="empty">Bildiriminiz yok.</p>
+    } @else {
+    <ul>
+        @for (n of items(); track n.id) {
+        <li>
+            <button type="button" class="item" [class.unread]="!n.readAt" (click)="openNotification(n)">
+                @if (!n.readAt) { <span class="dot" aria-hidden="true"></span> }
+                <span class="message">
+                    @if (!n.readAt) { <span class="visually-hidden">Okunmamış: </span> }
+                    {{ n.message }}
+                </span>
+                <span class="time">{{ n.createdAt | localDate }}</span>
+            </button>
+        </li>
+        }
+    </ul>
+    }
+
+    <footer><a routerLink="/notifications">Tümünü gör</a></footer>
+</div>
+}

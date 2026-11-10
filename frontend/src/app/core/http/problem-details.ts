@@ -22,6 +22,17 @@ export function showsFieldErrors(): HttpContext {
     return new HttpContext().set(SHOWS_FIELD_ERRORS, true);
 }
 
+/**
+ * Set on a background request that the user did not ask for (e.g. the bell's unread count every minute):
+ * a failure is only logged, no alert. A 401 still signs the user out.
+ * `http.get(url, { context: silentErrors() })`
+ */
+export const SILENT_ERRORS = new HttpContextToken<boolean>(() => false);
+
+export function silentErrors(): HttpContext {
+    return new HttpContext().set(SILENT_ERRORS, true);
+}
+
 export function problemOf(error: unknown): ProblemDetails | undefined {
     return error instanceof HttpErrorResponse && error.error && typeof error.error === 'object'
         ? (error.error as ProblemDetails)
