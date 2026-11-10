@@ -48,6 +48,10 @@
         <!-- After a step is completed, answered or rejected, reload so the summary shows the new step and status. -->
         <app-project-process [projectId]="p.id" (processChanged)="project.reload()" />
       }
+      @case ('assessment') {
+        <!-- After the level is applied, reload so "Genel Bilgiler" shows the new level. -->
+        <app-project-assessment [projectId]="p.id" [readOnly]="readOnly()" (levelChanged)="project.reload()" />
+      }
       @case ('requirements') {
         <app-requirement-list [projectId]="p.id" [readOnly]="readOnly()" />
       }

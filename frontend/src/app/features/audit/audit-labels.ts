@@ -21,6 +21,7 @@ export const AUDIT_ENTITY_LABELS: Record<AuditEntityType, string> = {
     Requirement: 'Gereksinim',
     ProjectDocument: 'Doküman',
     Risk: 'Risk',
+    ProjectAssessment: 'Seviye & Kabul',
 };
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
@@ -94,6 +95,20 @@ const FIELD_LABELS: Record<AuditEntityType, Record<string, string>> = {
         OwnerUserId: 'Sorumlu',
         IsSharedWithRequester: 'Talep Sahibi ile paylaşılır',
         Status: 'Durum',
+    },
+    ProjectAssessment: {
+        Effort: 'Tahmini efor',
+        ScreensAndModules: 'Modül / ekran sayısı',
+        Integrations: 'Dış sistem entegrasyonu',
+        UserRoles: 'Kullanıcı rolü ve kitlesi',
+        DataSensitivity: 'Veri hassasiyeti (KVKK)',
+        HardwareDependency: 'Donanım / cihaz bağımlılığı',
+        StrategicFit: 'Stratejik uyum',
+        CommercialValue: 'Ticari değer',
+        TechnicalFeasibility: 'Teknik uygulanabilirlik',
+        ResourceAndSchedule: 'Kaynak ve takvim uygunluğu',
+        CustomerFit: 'Müşteri uygunluğu',
+        RiskLevel: 'Risk düzeyi',
     },
 };
 
