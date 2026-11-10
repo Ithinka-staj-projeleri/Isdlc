@@ -1,9 +1,9 @@
 # Veri Modeli
 
 Faz 0'ın temel entity'leri (`ProcessStage`, `ProcessStep`, `User`, `Project`, `StepRecord`), denetim kaydı
-ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
+ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
 Kaynak: "ISDLC Analiz Merkezi" prototipi.
-Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor.**
+Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **taslak, ekip onayı bekliyor.**
 
 İsimlendirme AGENTS.md'ye uyar: entity tekil, tablo çoğul; `?` alanın boş bırakılabileceğini (nullable) gösterir.
 
@@ -24,10 +24,12 @@ User         1 ──── * OpenIssue           (OwnerUserId: sorumlu ekip üy
 Project      1 ──── * Requirement
 Project      1 ──── * ProjectDocument * ── 1 DocumentType
 ProcessStage 1 ──── * DocumentType        (dokümanın ilk hazırlandığı aşama)
+Project      1 ──── * Risk
+User         1 ──── * Risk                (OwnerUserId: sorumlu ekip üyesi)
 ```
 
 - **Ana veri:** `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `DocumentType`. Seed ile yüklenir, kullanıcı tarafından değiştirilmez.
-- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`. Uygulama kullanıldıkça oluşur.
+- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`. Uygulama kullanıldıkça oluşur.
 
 ## Ortak temel sınıf: `AuditableEntity`
 
@@ -166,7 +168,7 @@ Kayıtlar değiştirilmez ve silinmez; süreç geçmişi bu tablodan okunur.
 
 ## Proje kayıtları (Faz 2)
 
-Bir projeye bağlı kayıtlar (`OpenIssue`, `Meeting`; ileride `Risk`, `Requirement`…) şu ortak kurallara uyar:
+Bir projeye bağlı kayıtlar (`OpenIssue`, `Meeting`, `Requirement`, `Risk`…) şu ortak kurallara uyar:
 
 - `AuditableEntity`'den türer, `IAudited` ve `IProjectRecord` taşır: her değişiklik `AuditLogs`'a projesiyle birlikte yazılır.
 - **Kod:** Kullanıcıya gösterilen `Code`, proje içinde artan 3 haneli numaradır (`AK-001`, `TT-001`).
@@ -271,6 +273,31 @@ API ve kararlar: [requirements-documents-api.md](requirements-documents-api.md).
 - Kayıt, dokümanın durumu projede ilk kez kaydedildiğinde oluşur. Kaydı olmayan doküman `NotStarted` sayılır.
 - `IAudited` ve `IProjectRecord` taşır; durum değişiklikleri denetim kaydına projesiyle yazılır.
 
+### `Risk` — proje riski (Risk Analiz Formu, akış 4.8)
+
+API sözleşmesi: [risks-api.md](risks-api.md).
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `ProjectId` | int (FK → Project) | |
+| `Code` | string | `RSK-001`, proje içinde artan |
+| `Title` | string | Risk tanımı; en fazla 300 karakter |
+| `Description` | string? | En fazla 2000 karakter |
+| `Category` | `RiskCategory` | |
+| `Probability` | int | Olasılık, 1–5 |
+| `Impact` | int | Etki, 1–5 |
+| `Mitigation` | string? | Önleyici aksiyon; en fazla 2000 karakter |
+| `OwnerUserId` | int (FK → User) | Sorumlu ekip üyesi; aktif bir kullanıcı olmalı |
+| `IsSharedWithRequester` | bool | Talep Sahibi ile paylaşılır mı (listede "Paylaşılır / Dahili") |
+| `Status` | `RiskStatus` | |
+| + `AuditableEntity` alanları | | |
+
+- **Skor** saklanmaz, hesaplanır: `Probability × Impact` (1–25).
+- **Seviye** (`RiskSeverity`) skordan türetilir: 1–7 `Low`, 8–14 `Medium`, 15–25 `High`. Saklanmaz.
+- Veritabanında `Probability` ve `Impact` için 1–5 kontrolü (check constraint) bulunur.
+- Kapatılan risk yeniden açılabilir (`Open`).
+
 ## Enum'lar
 
 | Enum | Değerler |
@@ -285,6 +312,9 @@ API ve kararlar: [requirements-documents-api.md](requirements-documents-api.md).
 | `AuditAction` | `Created` (Oluşturuldu), `Updated` (Güncellendi), `Deleted` (Silindi) |
 | `OpenIssueType` | `Question` (Soru), `Action` (Aksiyon), `Decision` (Karar), `ChangeRequest` (Değişiklik Talebi), `Dependency` (Bağımlılık), `Assumption` (Varsayım) |
 | `OpenIssueStatus` | `Open` (Açık), `InProgress` (Devam ediyor), `Closed` (Kapandı) |
+| `RiskCategory` | `Technical` (Teknik), `Scope` (Kapsam), `Stakeholder` (Paydaş), `Schedule` (Takvim), `Cost` (Maliyet), `Data` (Veri), `SecurityPrivacy` (Güvenlik / KVKK), `Supplier` (Tedarikçi) |
+| `RiskStatus` | `Open` (Açık), `Monitoring` (İzleniyor), `Closed` (Kapandı) |
+| `RiskSeverity` | `Low` (Düşük, skor 1–7), `Medium` (Orta, 8–14), `High` (Yüksek, 15–25). Saklanmaz, yalnızca DTO'da ve filtrede |
 | `MeetingType` | `RequestInterview` (Talep Görüşmesi), `AnalysisSession` (Analiz Oturumu), `KickOff` (Proje Başlangıç / Kick-off), `Review` (Gözden Geçirme), `Internal` (Departman İçi), `CustomerVisit` (Müşteri Ziyareti), `Handover` (Devir Görüşmesi), `ProjectEvaluation` (Proje Değerlendirme) |
 | `RequirementType` | `Business` (İş gereksinimi), `Functional` (Fonksiyonel), `NonFunctional` (Fonksiyonel olmayan) |
 | `RequirementPriority` | `MustHave` (Olmazsa olmaz), `ShouldHave` (Olmalı), `CouldHave` (Olabilir), `WontHave` (Bu sürümde yok) |
@@ -325,6 +355,8 @@ API ve kararlar: [requirements-documents-api.md](requirements-documents-api.md).
 12. Tutanaktaki kararlar ve aksiyonlar ayrı metin olarak değil, tutanağa bağlı açık konu olarak tutulur.
 13. Gereksinim ve User Story tek kayıttır (`Requirement`); User Story açıklamaya yazılır.
 14. Takip edilen dokümanlar seviyeye bağlı değildir; projede gerekmeyen doküman `NotRequired` işaretlenir.
+15. *(Taslak)* Risk skoru ve seviyesi saklanmaz, olasılık ve etkiden hesaplanır; riskin sorumlusu yalnızca ekip üyesidir.
+    Ayrıntılar ve onay bekleyen diğer kararlar: [risks-api.md](risks-api.md) → "Ekip onayı bekleyen kararlar".
 
 ## Seed verisi
 

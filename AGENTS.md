@@ -103,7 +103,7 @@ Frontend'de `features/` altındaki klasörler aynı modüllerin kebab-case halid
 | Kolon | PascalCase | `ProjectId`, `CreatedAt` |
 | Birincil anahtar | `Id` | `Id` |
 | Yabancı anahtar | `<Entity>Id` | `ProjectId` |
-| Kullanıcıya gösterilen kod | `Code` kolonu | `ISDLC-2026-014`, `RSK-01` |
+| Kullanıcıya gösterilen kod | `Code` kolonu | `ISDLC-2026-014`, `RSK-001` |
 | Migration | Ne yaptığını anlatan PascalCase | `AddRisksTable` |
 
 **API**
@@ -159,7 +159,10 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Gereksinim (User Story dahil) | `Requirement` |
 | Gereksinim türü / önceliği / durumu | `RequirementType` (`Business`, `Functional`, `NonFunctional`), `RequirementPriority` (`MustHave`, `ShouldHave`, `CouldHave`, `WontHave`), `RequirementStatus` (`Draft`, `InReview`, `Approved`, `Cancelled`) |
 | Kabul ölçütleri | `AcceptanceCriteria` |
-| Risk | `Risk` (`Probability`, `Impact`, `Score`) |
+| Risk | `Risk` (`Probability`, `Impact`, `Score`; skor saklanmaz, hesaplanır) |
+| Risk kategorisi / durumu / seviyesi | `RiskCategory`, `RiskStatus` (`Open`, `Monitoring`, `Closed`), `RiskSeverity` (`Low`, `Medium`, `High`) |
+| Önleyici aksiyon | `Risk.Mitigation` |
+| Talep Sahibi ile paylaşılır | `Risk.IsSharedWithRequester` |
 | Açık konu | `OpenIssue` |
 | Açık konu türü / durumu | `OpenIssueType` (`Question`, `Action`, `Decision`, `ChangeRequest`, `Dependency`, `Assumption`), `OpenIssueStatus` (`Open`, `InProgress`, `Closed`) |
 | Sorumlu (açık konu) | `OwnerUserId` (ekip üyesi) ya da `OwnerName` (sistem dışı kişi) |
