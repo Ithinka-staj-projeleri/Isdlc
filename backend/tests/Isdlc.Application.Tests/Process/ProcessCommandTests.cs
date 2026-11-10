@@ -313,8 +313,7 @@ public class ProcessCommandTests(DatabaseFixture database)
     }
 
     [Theory]
-    [InlineData("4.1")]
-    [InlineData("4.9")]
+    [InlineData("4.9")] // the only return option since the ISDLC v12.0 flow (Oct 2026); 4.1 was removed
     public async Task AnswerNo_Step54_GoesBackToTheChosenOption(string target)
     {
         var projectId = await TestProjects.CreateAsync(database, "5.4");
@@ -330,6 +329,7 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Theory]
     [InlineData(null)]  // no option chosen
     [InlineData("4.5")] // a step that is not one of the options
+    [InlineData("4.1")] // an option in the earlier flow, no longer one
     public async Task AnswerNo_Step54_WithoutAValidOption_IsRejected(string? target)
     {
         var projectId = await TestProjects.CreateAsync(database, "5.4");

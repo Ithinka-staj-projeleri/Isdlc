@@ -43,13 +43,12 @@ JSON alan adları camelCase'dir.
   "order": 27,
   "text": "Teklif revizyon istenmeden onaylandı mı?",
   "isDecision": true,
-  "noBranchText": "Revizyon talepleri tutanağa ... Akış 4.1'e, ... Akış 4.9'a dönülür.",
+  "noBranchText": "Revizyon talepleri tutanağa veya e-postaya yazılır; ... Akış 4.9’a dönülür.",
   "responsibleRole": "BusinessAnalyst",
   "approverRole": null,
   "noOutcome": null,
   "noJumps": [
-    { "targetStepId": 9,  "targetStepCode": "4.1", "label": "Kapsam değişiyor" },
-    { "targetStepId": 17, "targetStepCode": "4.9", "label": "Yalnızca fiyat veya takvim değişiyor" }
+    { "targetStepId": 17, "targetStepCode": "4.9", "label": "Akış 4.9 adımına dön" }
   ]
 }
 

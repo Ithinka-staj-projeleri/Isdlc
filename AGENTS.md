@@ -248,6 +248,8 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
   Yalnızca sahte veriyle çalışılır (şirketin veri gönderme kararı bekleniyor).
 - **Eşzamanlılık:** `Project.RowVersion` aynı kaydın aynı anda güncellenmesini yakalar ve 409 döner.
 - **Seed:** `Isdlc.Infrastructure/Seed/*.json` dosyaları, tablo boşsa uygulama açılırken yüklenir. Örnek projeler yalnızca geliştirme ortamında yüklenir.
+  Süreç akışı (`process-flow.json`) ayrıca her açılışta mevcut veritabanıyla eşitlenir: metin, rol ve dönüş değişiklikleri için
+  yalnızca dosya değiştirilir; adım eklemek, çıkarmak veya sıralamak migration ister (bkz. data-model.md → Seed verisi).
 - **Migration:** Geliştirme ortamında API açılırken otomatik uygulanır. Üretmek için (repo kökünde):
   `dotnet ef migrations add <Ad> --project backend/src/Isdlc.Infrastructure --startup-project backend/src/Isdlc.Api --output-dir Persistence/Migrations`
 
