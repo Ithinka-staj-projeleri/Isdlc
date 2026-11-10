@@ -6,6 +6,7 @@ using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Isdlc.Domain.Requirements;
+using Isdlc.Domain.Risks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -30,6 +31,7 @@ public interface IApplicationDbContext
     DbSet<Requirement> Requirements { get; }
     DbSet<DocumentType> DocumentTypes { get; }
     DbSet<ProjectDocument> ProjectDocuments { get; }
+    DbSet<Risk> Risks { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
