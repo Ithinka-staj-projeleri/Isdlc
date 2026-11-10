@@ -153,7 +153,9 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Adımda yapılan işlem | `StepRecord` |
 | İşlem türü (Tamamlandı, Evet, Hayır, Reddedildi) | `StepAction` |
 | Oluşturan / güncelleyen bilgisi | `AuditableEntity` (`CreatedAt`, `CreatedById`, `UpdatedAt`, `UpdatedById`) |
-| Seviye | `Level` |
+| Seviye | `Level` (`Project.Level`, 1–3; yalnızca `Assessment` uygular) |
+| Seviye belirleme ve kabul puanlaması | `ProjectAssessment` (seviye cevapları 1–3, kabul puanları 1–5) |
+| Kabul önerisi | `AcceptanceRecommendation` (`Accept`, `Conditional`, `RejectOrPostpone`; saklanmaz, hesaplanır) |
 | Doküman durumu | `DocumentStatus` (`NotStarted`, `InProgress`, `InReview`, `Approved`, `NotRequired`) |
 | Doküman türü (takip edilen doküman) / projedeki dokümanı | `DocumentType` / `ProjectDocument` |
 | Gereksinim (User Story dahil) | `Requirement` |

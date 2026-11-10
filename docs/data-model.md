@@ -1,9 +1,9 @@
 # Veri Modeli
 
 Faz 0'ın temel entity'leri (`ProcessStage`, `ProcessStep`, `User`, `Project`, `StepRecord`), denetim kaydı
-ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
+ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
 Kaynak: "ISDLC Analiz Merkezi" prototipi.
-Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **taslak, ekip onayı bekliyor.**
+Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **taslak, ekip onayı bekliyor.**
 
 İsimlendirme AGENTS.md'ye uyar: entity tekil, tablo çoğul; `?` alanın boş bırakılabileceğini (nullable) gösterir.
 
@@ -25,11 +25,12 @@ Project      1 ──── * Requirement
 Project      1 ──── * ProjectDocument * ── 1 DocumentType
 ProcessStage 1 ──── * DocumentType        (dokümanın ilk hazırlandığı aşama)
 Project      1 ──── * Risk
+Project      1 ──── 0..1 ProjectAssessment (seviye cevapları ve kabul puanları)
 User         1 ──── * Risk                (OwnerUserId: sorumlu ekip üyesi)
 ```
 
 - **Ana veri:** `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `DocumentType`. Seed ile yüklenir, kullanıcı tarafından değiştirilmez.
-- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`. Uygulama kullanıldıkça oluşur.
+- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`. Uygulama kullanıldıkça oluşur.
 
 ## Ortak temel sınıf: `AuditableEntity`
 
@@ -118,7 +119,7 @@ yalnızca fiyat veya takvim değişiyorsa 4.9'a dönülür. "Hayır" cevabı ver
 | `RequiresNda` | bool | Görüşme öncesi gizlilik sözleşmesi gerekiyor mu |
 | `BusinessAnalystId` | int? (FK → User) | |
 | `ProjectManagerId` | int? (FK → User) | |
-| `Level` | int? | 1–3; seviye belirlenene kadar boş |
+| `Level` | int? | 1–3; seviye belirlenene kadar boş. Yalnızca `Assessment` değiştirir ("Seviyeyi uygula") |
 | `Priority` | `ProjectPriority`? | 3.2'de proje kabul edilirken verilir |
 | `Status` | `ProjectStatus` | |
 | `CurrentStepId` | int? (FK → ProcessStep) | Proje aktif değilse boş |
@@ -298,6 +299,34 @@ API sözleşmesi: [risks-api.md](risks-api.md).
 - Veritabanında `Probability` ve `Impact` için 1–5 kontrolü (check constraint) bulunur.
 - Kapatılan risk yeniden açılabilir (`Open`).
 
+### `ProjectAssessment` — seviye belirleme ve proje kabul puanlaması (akış 2.4 ve 3.1)
+
+API sözleşmesi, sorular ve ağırlıklar: [assessment-api.md](assessment-api.md).
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `ProjectId` | int (FK → Project) | Benzersiz: projenin tek değerlendirmesi |
+| `Effort` | int? | Seviye sorusu, 1–3; boş = cevaplanmadı |
+| `ScreensAndModules` | int? | Seviye sorusu, 1–3 |
+| `Integrations` | int? | Seviye sorusu, 1–3 |
+| `UserRoles` | int? | Seviye sorusu, 1–3 |
+| `DataSensitivity` | int? | Seviye sorusu, 1–3 |
+| `HardwareDependency` | int? | Seviye sorusu, 1–3 |
+| `StrategicFit` | int? | Kabul ölçütü, 1–5 (%20) |
+| `CommercialValue` | int? | Kabul ölçütü, 1–5 (%20) |
+| `TechnicalFeasibility` | int? | Kabul ölçütü, 1–5 (%20) |
+| `ResourceAndSchedule` | int? | Kabul ölçütü, 1–5 (%15) |
+| `CustomerFit` | int? | Kabul ölçütü, 1–5 (%15) |
+| `RiskLevel` | int? | Kabul ölçütü, 1–5 (%10); yüksek puan = düşük risk |
+| + `AuditableEntity` alanları | | |
+
+- Kendi `Code`'u yoktur; projenin bir parçası olarak görünür. İlk cevap kaydedilince oluşur, silinmez.
+- **Puan, önerilen seviye, ağırlıklı ortalama ve öneri saklanmaz**, cevaplardan hesaplanır.
+- Uygulanan seviye `Project.Level`'de tutulur; cevaplar değişince kendiliğinden değişmez.
+- Veritabanında her seviye sorusu için 1–3, her kabul ölçütü için 1–5 kontrolü (check constraint) bulunur.
+- `IAudited` ve `IProjectRecord` taşır; cevap değişiklikleri denetim kaydına projesiyle yazılır.
+
 ## Enum'lar
 
 | Enum | Değerler |
@@ -315,6 +344,7 @@ API sözleşmesi: [risks-api.md](risks-api.md).
 | `RiskCategory` | `Technical` (Teknik), `Scope` (Kapsam), `Stakeholder` (Paydaş), `Schedule` (Takvim), `Cost` (Maliyet), `Data` (Veri), `SecurityPrivacy` (Güvenlik / KVKK), `Supplier` (Tedarikçi) |
 | `RiskStatus` | `Open` (Açık), `Monitoring` (İzleniyor), `Closed` (Kapandı) |
 | `RiskSeverity` | `Low` (Düşük, skor 1–7), `Medium` (Orta, 8–14), `High` (Yüksek, 15–25). Saklanmaz, yalnızca DTO'da ve filtrede |
+| `AcceptanceRecommendation` | `Accept` (Kabul önerilir, ≥ 3,50), `Conditional` (Koşullu kabul, 2,50–3,49), `RejectOrPostpone` (Ret / erteleme önerilir, < 2,50). Saklanmaz, yalnızca DTO'da |
 | `MeetingType` | `RequestInterview` (Talep Görüşmesi), `AnalysisSession` (Analiz Oturumu), `KickOff` (Proje Başlangıç / Kick-off), `Review` (Gözden Geçirme), `Internal` (Departman İçi), `CustomerVisit` (Müşteri Ziyareti), `Handover` (Devir Görüşmesi), `ProjectEvaluation` (Proje Değerlendirme) |
 | `RequirementType` | `Business` (İş gereksinimi), `Functional` (Fonksiyonel), `NonFunctional` (Fonksiyonel olmayan) |
 | `RequirementPriority` | `MustHave` (Olmazsa olmaz), `ShouldHave` (Olmalı), `CouldHave` (Olabilir), `WontHave` (Bu sürümde yok) |
@@ -357,6 +387,8 @@ API sözleşmesi: [risks-api.md](risks-api.md).
 14. Takip edilen dokümanlar seviyeye bağlı değildir; projede gerekmeyen doküman `NotRequired` işaretlenir.
 15. *(Taslak)* Risk skoru ve seviyesi saklanmaz, olasılık ve etkiden hesaplanır; riskin sorumlusu yalnızca ekip üyesidir.
     Ayrıntılar ve onay bekleyen diğer kararlar: [risks-api.md](risks-api.md) → "Ekip onayı bekleyen kararlar".
+16. *(Taslak)* Seviye cevapları ve kabul puanları projenin tek `ProjectAssessment` satırında sütun olarak tutulur;
+    seviye yalnızca "Seviyeyi uygula" ile `Project.Level`'e yazılır. Ayrıntılar: [assessment-api.md](assessment-api.md) → "Ekip onayı bekleyen kararlar".
 
 ## Seed verisi
 

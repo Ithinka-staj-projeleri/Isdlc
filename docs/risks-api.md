@@ -1,7 +1,7 @@
 # Risks Modülü — API Sözleşmesi
 
 Projenin risk kayıtları (Risk Analiz Formu, akış 4.8): olasılık × etki skoru, önleyici aksiyon ve sorumlu.
-Veri modeli: [data-model.md](data-model.md) → "Proje kayıtları" → `Risk`. Durum: **taslak, ekip onayı bekliyor.** Sorumlu: Baran.
+Veri modeli: [data-model.md](data-model.md) → "Proje kayıtları" → `Risk`. Durum: **uygulandı** (#91 entity, #92 API, #93 ekran). Sorumlu: Baran.
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601,
 hatalar `ProblemDetails`, listeler `items` + `totalCount`, JSON alanları camelCase.
