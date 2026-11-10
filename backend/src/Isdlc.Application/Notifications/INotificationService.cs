@@ -4,7 +4,7 @@ namespace Isdlc.Application.Notifications;
 
 /// <summary>
 /// In-app notifications. Other modules send notifications only through this interface.
-/// Until the Notifications module is built, NullNotificationService is registered.
+/// NotificationService writes them for the users (docs/notifications-api.md); a failure there never fails the caller.
 /// </summary>
 public interface INotificationService
 {
