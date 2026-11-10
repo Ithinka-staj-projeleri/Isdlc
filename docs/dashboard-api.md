@@ -2,7 +2,7 @@
 
 Gösterge paneli: giriş yapan kullanıcıya bekleyen işlerini ve projelerin genel durumunu gösteren ana sayfa.
 Yeni tablo yoktur; mevcut kayıtlardan (`Project`, `StepRecord`, `OpenIssue`) hesaplanır.
-Durum: **öneri, ekip onayı bekliyor.** Sorumlu: Dide.
+Durum: **onaylandı** (10 Kasım 2026); API uygulanıyor. Sorumlu: Dide.
 
 Uç nokta AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601
 (`DateOnly` alanları `2026-11-10` biçiminde), hatalar `ProblemDetails`, JSON alanları camelCase.
@@ -80,6 +80,7 @@ Uç nokta AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin
       {
         "project": { "id": 1, "code": "ISDLC-2026-014", "name": "Saha Servis Mobil Uygulaması" },
         "id": 12, "code": "AK-003", "type": "Action", "title": "İş emri ekran taslakları",
+        "owner": { "userId": 4, "name": "Can Öztürk" },
         "dueDate": "2026-11-12", "status": "Open", "isOverdue": false
       }
     ]
@@ -88,7 +89,7 @@ Uç nokta AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin
   // ---- Geciken açık konular (aktif projeler; en eski termin önce) ----
   "overdueOpenIssues": {
     "totalCount": 5,
-    "items": [ /* myOpenIssues ile aynı satır + "owner": { "userId": null, "name": "Müşteri BT" } */ ]
+    "items": [ /* myOpenIssues ile aynı satır */ ]
   },
 
   // ---- Son hareketler (son 10 süreç kaydı, en yeni önce) ----
