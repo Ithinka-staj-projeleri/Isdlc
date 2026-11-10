@@ -1,6 +1,7 @@
 <h1>ISDLC</h1>
 <span class="spacer"></span>
 @if (auth.user(); as user) {
+<app-notification-bell />
 <span class="user">{{ user.fullName }} · {{ roleLabels[user.role] }}</span>
 <button type="button" (click)="auth.logout()">Çıkış</button>
 }

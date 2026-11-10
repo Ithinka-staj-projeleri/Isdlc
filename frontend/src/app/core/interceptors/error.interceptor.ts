@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService, LOGIN_URL } from '../auth/auth.service';
-import { problemOf, SHOWS_FIELD_ERRORS } from '../http/problem-details';
+import { problemOf, SHOWS_FIELD_ERRORS, SILENT_ERRORS } from '../http/problem-details';
 
 /** Used when the API sends no message of its own (server down, unexpected error, ...). */
 const MESSAGES: Record<number, string> = {
@@ -37,6 +37,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         if (!router.url.startsWith('/login')) {
           auth.logout(router.url);
         }
+        return throwError(() => err);
+      }
+
+      // Background requests (the bell asking every minute) must not open an alert every time the server is down.
+      if (req.context.get(SILENT_ERRORS)) {
         return throwError(() => err);
       }
 

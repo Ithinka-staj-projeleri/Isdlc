@@ -1,0 +1,43 @@
+<header class="page-head">
+    <div>
+        <h2>Bildirimler</h2>
+        <p class="muted">Size atanan işler, onayınızı bekleyen adımlar ve projelerinizdeki gelişmeler.</p>
+    </div>
+    @if (notifications.unreadCount() > 0) {
+    <button type="button" class="button" (click)="markAllRead()">Tümünü okundu say</button>
+    }
+</header>
+
+<label class="check">
+    <input type="checkbox" [ngModel]="unreadOnly()" (ngModelChange)="setUnreadOnly($event)" />
+    Yalnızca okunmamışlar
+</label>
+
+@if (list.error()) {
+<app-empty-state message="Bildirimler yüklenemedi." />
+} @else if (list.hasValue()) {
+@let result = list.value();
+@if (result.items.length === 0) {
+<app-empty-state [message]="unreadOnly() ? 'Okunmamış bildiriminiz yok.' : 'Henüz bildiriminiz yok.'" />
+} @else {
+<ul class="list" [class.loading]="list.isLoading()">
+    @for (n of result.items; track n.id) {
+    <li>
+        <button type="button" class="item" [class.unread]="!n.readAt" (click)="openNotification(n)">
+            @if (!n.readAt) { <span class="dot" aria-hidden="true"></span> }
+            <span class="message">
+                @if (!n.readAt) { <span class="visually-hidden">Okunmamış: </span> }
+                {{ n.message }}
+            </span>
+            <span class="meta">{{ n.project.code }} · {{ n.project.name }} · {{ n.createdAt | localDate }}</span>
+        </button>
+    </li>
+    }
+</ul>
+@if (result.totalCount > pageSize) {
+<app-pagination [page]="page()" [pageSize]="pageSize" [totalCount]="result.totalCount" (pageChange)="page.set($event)" />
+}
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}
