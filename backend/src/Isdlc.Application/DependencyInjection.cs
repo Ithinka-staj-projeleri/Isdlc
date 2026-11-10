@@ -9,6 +9,7 @@ using Isdlc.Application.OpenIssues;
 using Isdlc.Application.Process;
 using Isdlc.Application.Projects;
 using Isdlc.Application.Requirements;
+using Isdlc.Application.Risks;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Isdlc.Application;
@@ -31,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IRiskService, RiskService>();
 
         // TEMPORARY until the Notifications module: replace with the real service.
         services.AddScoped<INotificationService, NullNotificationService>();
