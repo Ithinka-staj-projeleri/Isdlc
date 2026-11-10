@@ -173,7 +173,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Toplantı türü | `MeetingType` |
 | Katılımcılar / gündem | `Participants`, `Agenda` |
 | Tutanaktan aktarılan kayıt | `OpenIssue.SourceMeetingId` |
-| Bildirim | `Notification` |
+| Bildirim | `Notification` (alıcı başına bir satır; `ReadAt` okunma zamanı). Modüller yalnızca `INotificationService` ile gönderir |
 | Denetim kaydı | `AuditLog` |
 | Yapay zekâ yardımcısı / önerisi | `Agents` modülü; tutanak önerileri `MeetingSuggestionsDto` (kaydedilmez, formu doldurur) |
 
