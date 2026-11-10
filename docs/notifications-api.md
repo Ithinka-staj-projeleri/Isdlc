@@ -1,7 +1,7 @@
 # Notifications Modülü — API Sözleşmesi
 
 Uygulama içi bildirimler: üst bardaki zil, okunmamış sayısı ve bildirim listesi. Veri modeli: [data-model.md](data-model.md) →
-`Notification`. Durum: **taslak, ekip onayı bekliyor.** Sorumlu: Baran.
+`Notification`. Durum: **onaylandı** (#99); entity #101, servis ve API bu PR. Sorumlu: Baran.
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, tarihler UTC / ISO 8601, hatalar `ProblemDetails`,
 listeler `items` + `totalCount`, JSON alanları camelCase. Herkes **yalnızca kendi** bildirimlerini görür.

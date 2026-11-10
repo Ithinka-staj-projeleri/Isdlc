@@ -185,7 +185,8 @@ Lokal denemede (aynı anda iki istek) ikinci isteğin `RowVersion` ile 409 aldı
 
 `Process`, `Notifications` modülüne yalnızca aşağıdaki arayüz üzerinden bağlanır.
 Arayüz `Isdlc.Application` katmanında tanımlanır. `Notifications` modülü (Baran) hazır olana kadar
-hiçbir şey yapmayan bir uygulama (`NullNotificationService`) kaydedilir.
+hiçbir şey yapmayan bir uygulama kaydediliyordu; artık `NotificationService` bildirimleri kullanıcılara yazar
+([notifications-api.md](notifications-api.md)).
 
 ```csharp
 public interface INotificationService
@@ -201,8 +202,8 @@ public interface INotificationService
 | "Hayır" ile önceki bir adıma dönüldü | Projenin iş analisti | "ISDLC-2026-016 · 4.7 adımından 4.1 adımına dönüldü." |
 | Proje kapandı (`Closed`, `Rejected`, `Lost`, `Redirected`) | Projenin iş analisti ve proje yöneticisi (atanmışsa) | "ISDLC-2026-011 kapandı: Kaybedildi." |
 
-Bildirimler kayıt başarıyla kaydedildikten sonra gönderilir. `NullNotificationService` şimdilik yalnızca loga yazar
-("Notification not sent ..."); lokal denemede bildirimin doğru anda tetiklendiği buradan görülebilir.
+Bildirimler kayıt başarıyla kaydedildikten sonra gönderilir. Kullanıcı bildirimi üst bardaki zilde görür;
+kendi yaptığı işlem için bildirim almaz.
 
 ## Kod yerleşimi
 
@@ -210,7 +211,7 @@ Bildirimler kayıt başarıyla kaydedildikten sonra gönderilir. `NullNotificati
 | --- | --- |
 | `Isdlc.Domain/Process/` | `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `StepRecord`, enum'lar |
 | `Isdlc.Application/Process/` | `IProcessService`, `ProcessService`, DTO'lar; veritabanısız kurallar: `ProcessProgress` (ilerleme, aşama durumu, yetki), `ProcessTransitions` (işlemden sonraki durum ve adım), `ProcessMappings` (adım → DTO ifadesi) |
-| `Isdlc.Application/Notifications/` | `INotificationService`, `NullNotificationService` |
+| `Isdlc.Application/Notifications/` | `INotificationService`, `NotificationService` (Notifications modülü) |
 | `Isdlc.Infrastructure/Process/` | EF yapılandırmaları, seeder |
 | `Isdlc.Api/Controllers/` | `ProcessStagesController` (`/process-stages`), `ProjectProcessController` (`/projects/{projectId}/process`, `.../process/complete`, `.../process/answer`, `.../process/reject`, `/projects/{projectId}/step-records`) |
 

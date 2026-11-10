@@ -36,8 +36,9 @@ public static class DependencyInjection
         services.AddScoped<IRiskService, RiskService>();
         services.AddScoped<IAssessmentService, AssessmentService>();
 
-        // TEMPORARY until the Notifications module: replace with the real service.
-        services.AddScoped<INotificationService, NullNotificationService>();
+        // Modules send through INotificationService; the inbox reads and marks the signed-in user's own notifications.
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<INotificationInboxService, NotificationInboxService>();
 
         return services;
     }

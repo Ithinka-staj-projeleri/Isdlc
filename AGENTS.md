@@ -241,7 +241,8 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
   (`Identity:TestPassword`, `Jwt:SigningKey`; bkz. README); repoya yazılmaz. Servis testlerinde kullanıcı
   `TestUser` ile verilir (Bölüm 9).
 - **Bildirimler:** Modüller bildirimi yalnızca `INotificationService` ile gönderir (`Isdlc.Application/Notifications/`).
-  `Notifications` modülü bitene kadar `NullNotificationService` bildirimi yalnızca loga yazar.
+  `NotificationService` bildirimi alıcıya yazar (zil ve `/notifications`); kimse kendi işlemi için bildirim almaz ve bildirim
+  kaydedilemezse asıl işlem bozulmaz (bkz. [docs/notifications-api.md](docs/notifications-api.md)).
 - **Yapay zekâ servisi:** Backend, `ai/` servisini `Agents:ServiceUrl` adresinden `Agents:ServiceKey` anahtarıyla çağırır
   (`Isdlc.Infrastructure/Agents/`). Adres boşsa ya da servis cevap vermiyorsa `GET /api/v1/agents/status` kapalı döner ve
   ekranlar yapay zekâ butonlarını göstermez. Ajan kayıt oluşturmaz; önerileri kişi inceleyip normal ekrandan kaydeder.
