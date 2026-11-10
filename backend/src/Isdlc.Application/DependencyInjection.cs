@@ -1,4 +1,5 @@
 using Isdlc.Application.Agents;
+using Isdlc.Application.Assessment;
 using Isdlc.Application.Dashboard;
 using Isdlc.Application.Audit;
 using Isdlc.Application.Documents;
@@ -33,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRiskService, RiskService>();
+        services.AddScoped<IAssessmentService, AssessmentService>();
 
         // TEMPORARY until the Notifications module: replace with the real service.
         services.AddScoped<INotificationService, NullNotificationService>();
