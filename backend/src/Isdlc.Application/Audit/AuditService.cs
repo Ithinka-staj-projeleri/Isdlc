@@ -137,9 +137,11 @@ public class AuditService(IApplicationDbContext dbContext) : IAuditService
 
         if (IdsOf(ProjectDocumentEntity) is { Count: > 0 } documentIds)
         {
+            // Projected first: ToDictionaryAsync's selectors run in memory, where DocumentType is not loaded.
             Add(ProjectDocumentEntity, await dbContext.ProjectDocuments.AsNoTracking()
                 .Where(d => documentIds.Contains(d.Id))
-                .ToDictionaryAsync(d => d.Id, d => d.DocumentType.Name, cancellationToken));
+                .Select(d => new { d.Id, d.DocumentType.Name })
+                .ToDictionaryAsync(d => d.Id, d => d.Name, cancellationToken));
         }
 
         return codes;
