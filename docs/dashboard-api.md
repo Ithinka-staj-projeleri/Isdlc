@@ -2,7 +2,7 @@
 
 Gösterge paneli: giriş yapan kullanıcıya bekleyen işlerini ve projelerin genel durumunu gösteren ana sayfa.
 Yeni tablo yoktur; mevcut kayıtlardan (`Project`, `StepRecord`, `OpenIssue`) hesaplanır.
-Durum: **onaylandı** (10 Kasım 2026); API ve ekran uygulandı. Risk ve seviye göstergeleri **öneri, ekip onayı bekliyor**
+Durum: **onaylandı** (10 Kasım 2026); API ve ekran uygulandı. Risk ve seviye göstergeleri **onaylandı**
 (aşağıda "Ek: risk ve seviye göstergeleri"). Sorumlu: Dide.
 
 Uç nokta AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601
@@ -135,7 +135,7 @@ Liste boşsa kısa bir mesaj gösterilir ("Bekleyen adımınız yok."). Mobilde 
 
 ## Ek: risk ve seviye göstergeleri
 
-Risks (#91–#93) ve Assessment (#96–#98) gelince eklenen göstergeler. Durum: **öneri, ekip onayı bekliyor.**
+Risks (#91–#93) ve Assessment (#96–#98) gelince eklenen göstergeler. Durum: **onaylandı** (#104).
 Mevcut alanlar değişmez; `DashboardDto`'ya yeni alanlar eklenir (ekran ve testler bozulmaz).
 
 ### Kararlar
@@ -225,6 +225,6 @@ toplamı, kabul kuyruğunda yalnızca 3.1 / 3.2, eksik puanlamada öneri boş, t
 1. Bu doküman (ekip onayı) ✅
 2. `DashboardService` ve `GET /dashboard`; testler (bekleyen adım kuralı, kapsam filtresi, sayılar, sıralama) ✅
 3. Gösterge paneli ekranı ✅
-4. Ek: risk ve seviye göstergeleri — bu bölüm (ekip onayı)
+4. Ek: risk ve seviye göstergeleri — bu bölüm (ekip onayı) ✅
 5. Ek göstergelerin API'si ve testleri
 6. Ek göstergelerin ekranı

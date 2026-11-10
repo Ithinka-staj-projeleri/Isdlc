@@ -1,7 +1,9 @@
 using Isdlc.Application.Common.Models;
 using Isdlc.Application.OpenIssues.Dtos;
+using Isdlc.Domain.Assessment;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
+using Isdlc.Domain.Risks;
 
 namespace Isdlc.Application.Dashboard.Dtos;
 
@@ -20,7 +22,10 @@ public record DashboardDto(
     DashboardListDto<WaitingStepDto> MyWaitingSteps,
     DashboardListDto<DashboardOpenIssueDto> MyOpenIssues,
     DashboardListDto<DashboardOpenIssueDto> OverdueOpenIssues,
-    IReadOnlyList<RecentActivityDto> RecentActivity);
+    IReadOnlyList<RecentActivityDto> RecentActivity,
+    DashboardListDto<HighRiskDto> HighRisks,
+    LevelCountsDto Levels,
+    DashboardListDto<AcceptanceQueueItemDto> AcceptanceQueue);
 
 public record DashboardSummaryDto(
     int WaitingRequests,
@@ -28,7 +33,8 @@ public record DashboardSummaryDto(
     int MyWaitingSteps,
     int OverdueOpenIssues,
     int OverdueProjects,
-    FinishedThisYearDto FinishedThisYear);
+    FinishedThisYearDto FinishedThisYear,
+    int HighRisks);
 
 /// <summary>Records that finished this year, by their final status.</summary>
 public record FinishedThisYearDto(int Closed, int Lost, int Rejected, int Redirected);
@@ -62,6 +68,33 @@ public record DashboardOpenIssueDto(
     DateOnly? DueDate,
     OpenIssueStatus Status,
     bool IsOverdue);
+
+/// <summary>A risk that is not closed and whose score is high (15 or more, RiskRules).</summary>
+public record HighRiskDto(
+    DashboardProjectDto Project,
+    int Id,
+    string Code,
+    string Title,
+    int Probability,
+    int Impact,
+    int Score,
+    RiskStatus Status,
+    UserSummaryDto Owner);
+
+/// <summary>Active records by applied level (Project.Level); NotSet: no level applied yet (step 2.4).</summary>
+public record LevelCountsDto(int Level1, int Level2, int Level3, int NotSet);
+
+/// <summary>
+/// An active request at step 3.1 or 3.2 and its acceptance scoring. WeightedScore and Recommendation are null
+/// until all six criteria are scored (AssessmentRules).
+/// </summary>
+public record AcceptanceQueueItemDto(
+    DashboardProjectDto Project,
+    string StepCode,
+    decimal? WeightedScore,
+    AcceptanceRecommendation? Recommendation,
+    int AnsweredCount,
+    DateTime WaitingSince);
 
 public record RecentActivityDto(
     DashboardProjectDto Project,

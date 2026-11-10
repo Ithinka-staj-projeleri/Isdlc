@@ -1,11 +1,15 @@
+using Isdlc.Application.Assessment;
+using Isdlc.Application.Assessment.Dtos;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Common.Models;
 using Isdlc.Application.Dashboard.Dtos;
 using Isdlc.Application.OpenIssues.Dtos;
+using Isdlc.Application.Risks;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Projects;
+using Isdlc.Domain.Risks;
 using Microsoft.EntityFrameworkCore;
 
 namespace Isdlc.Application.Dashboard;
@@ -20,6 +24,9 @@ public class DashboardService(
 
     /// <summary>Stages 1–3 are the request phase ("Talepler"), the same rule as the Projects list.</summary>
     private const int LastRequestStageOrder = 3;
+
+    /// <summary>Acceptance: scoring at 3.1, the department manager's decision at 3.2 (docs/dashboard-api.md, decision 13).</summary>
+    private static readonly string[] AcceptanceStepCodes = ["3.1", "3.2"];
 
     public async Task<DashboardDto> GetAsync(DashboardScope scope, CancellationToken cancellationToken)
     {
@@ -47,6 +54,7 @@ public class DashboardService(
                 projects.Any(p => p.Id == x.ProjectId && p.Status == ProjectStatus.Active)
                 && x.Status != OpenIssueStatus.Closed && x.DueDate != null && x.DueDate < today),
             today, cancellationToken);
+        var highRisks = await HighRisksAsync(projects, cancellationToken);
 
         var summary = new DashboardSummaryDto(
             WaitingRequests: await projects.CountAsync(p => p.Status == ProjectStatus.Active
@@ -57,7 +65,8 @@ public class DashboardService(
             OverdueOpenIssues: overdueOpenIssues.TotalCount,
             OverdueProjects: await projects.CountAsync(p => p.Status == ProjectStatus.Active
                 && p.DueDate != null && p.DueDate < today, cancellationToken),
-            FinishedThisYear: await FinishedThisYearAsync(projects, now, cancellationToken));
+            FinishedThisYear: await FinishedThisYearAsync(projects, now, cancellationToken),
+            HighRisks: highRisks.TotalCount);
 
         return new DashboardDto(
             scope,
@@ -69,7 +78,121 @@ public class DashboardService(
                     && x.Project.Status == ProjectStatus.Active),
                 today, cancellationToken),
             overdueOpenIssues,
-            await RecentActivityAsync(projects, cancellationToken));
+            await RecentActivityAsync(projects, cancellationToken),
+            highRisks,
+            await LevelsAsync(projects, cancellationToken),
+            await AcceptanceQueueAsync(projects, cancellationToken));
+    }
+
+    /// <summary>
+    /// Risks that are not closed and whose score is high, on active projects (docs/dashboard-api.md, decisions 10–11).
+    /// The threshold comes from RiskRules, so the dashboard and the Risks tab always agree. Highest score first.
+    /// </summary>
+    private async Task<DashboardListDto<HighRiskDto>> HighRisksAsync(
+        IQueryable<Project> projects, CancellationToken cancellationToken)
+    {
+        var highMin = RiskRules.ScoreRange(RiskSeverity.High).Min;
+
+        var risks = dbContext.Risks
+            .AsNoTracking()
+            .Where(r => projects.Any(p => p.Id == r.ProjectId && p.Status == ProjectStatus.Active)
+                && r.Status != RiskStatus.Closed
+                && r.Probability * r.Impact >= highMin);
+
+        var totalCount = await risks.CountAsync(cancellationToken);
+        var items = await risks
+            .OrderByDescending(r => r.Probability * r.Impact)
+            .ThenBy(r => r.Project.Code)
+            .ThenBy(r => r.Code.Length)
+            .ThenBy(r => r.Code)
+            .Take(ListSize)
+            .Select(r => new HighRiskDto(
+                new DashboardProjectDto(r.Project.Id, r.Project.Code, r.Project.Name),
+                r.Id,
+                r.Code,
+                r.Title,
+                r.Probability,
+                r.Impact,
+                r.Probability * r.Impact,
+                r.Status,
+                new UserSummaryDto(r.OwnerUser.Id, r.OwnerUser.FullName)))
+            .ToListAsync(cancellationToken);
+
+        return new DashboardListDto<HighRiskDto>(totalCount, items);
+    }
+
+    /// <summary>Active records by applied level; a record without a level is "not set" (decision 12).</summary>
+    private static async Task<LevelCountsDto> LevelsAsync(IQueryable<Project> projects, CancellationToken cancellationToken)
+    {
+        var counts = await projects
+            .Where(p => p.Status == ProjectStatus.Active && p.CurrentStep != null)
+            .GroupBy(p => p.Level)
+            .Select(g => new { Level = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        int CountOf(int? level) => counts.SingleOrDefault(c => c.Level == level)?.Count ?? 0;
+
+        // A level outside 1–3 cannot be applied (Assessment); if one ever appears it is not counted as "not set".
+        return new LevelCountsDto(CountOf(1), CountOf(2), CountOf(3), CountOf(null));
+    }
+
+    /// <summary>
+    /// Active requests at step 3.1 or 3.2 with their acceptance scoring (decision 13). The weighted score and the
+    /// recommendation come from AssessmentRules, so they match the Seviye &amp; Kabul tab. Longest waiting first.
+    /// </summary>
+    private async Task<DashboardListDto<AcceptanceQueueItemDto>> AcceptanceQueueAsync(
+        IQueryable<Project> projects, CancellationToken cancellationToken)
+    {
+        var requests = projects.Where(p => p.Status == ProjectStatus.Active
+            && p.CurrentStep != null && AcceptanceStepCodes.Contains(p.CurrentStep.Code));
+
+        var totalCount = await requests.CountAsync(cancellationToken);
+
+        // Sorted before Select: EF cannot sort on the projected DTOs.
+        var rows = await requests
+            .Select(p => new
+            {
+                Project = p,
+                WaitingSince = p.StepRecords.Max(r => (DateTime?)r.PerformedAt) ?? p.CreatedAt,
+            })
+            .OrderBy(x => x.WaitingSince)
+            .ThenBy(x => x.Project.Code)
+            .Take(ListSize)
+            .Select(x => new
+            {
+                Project = new DashboardProjectDto(x.Project.Id, x.Project.Code, x.Project.Name),
+                StepCode = x.Project.CurrentStep!.Code,
+                x.WaitingSince,
+                Scores = dbContext.ProjectAssessments
+                    .Where(a => a.ProjectId == x.Project.Id)
+                    .Select(a => new AcceptanceScoresDto
+                    {
+                        StrategicFit = a.StrategicFit,
+                        CommercialValue = a.CommercialValue,
+                        TechnicalFeasibility = a.TechnicalFeasibility,
+                        ResourceAndSchedule = a.ResourceAndSchedule,
+                        CustomerFit = a.CustomerFit,
+                        RiskLevel = a.RiskLevel,
+                    })
+                    .FirstOrDefault(),
+            })
+            .ToListAsync(cancellationToken);
+
+        var items = rows.Select(x =>
+        {
+            // No assessment yet: nothing is scored.
+            var scores = x.Scores ?? new AcceptanceScoresDto();
+            var weighted = AssessmentRules.WeightedScore(scores);
+            return new AcceptanceQueueItemDto(
+                x.Project,
+                x.StepCode,
+                weighted,
+                weighted is { } score ? AssessmentRules.RecommendationOf(score) : null,
+                AssessmentRules.AnsweredCount(scores),
+                x.WaitingSince);
+        }).ToList();
+
+        return new DashboardListDto<AcceptanceQueueItemDto>(totalCount, items);
     }
 
     /// <summary>

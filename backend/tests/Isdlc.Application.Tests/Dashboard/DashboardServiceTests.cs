@@ -1,8 +1,13 @@
+using Isdlc.Application.Assessment;
+using Isdlc.Application.Assessment.Dtos;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Dashboard;
 using Isdlc.Application.Dashboard.Dtos;
 using Isdlc.Application.Process;
+using Isdlc.Application.Risks;
+using Isdlc.Domain.Assessment;
+using Isdlc.Domain.Risks;
 using Isdlc.Application.Tests.Common;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.OpenIssues;
@@ -315,7 +320,160 @@ public class DashboardServiceTests(DatabaseFixture database)
         Assert.Equal("Test BusinessAnalyst", dashboard.RecentActivity[0].PerformedBy.FullName);
     }
 
+    // ---- High risks (decisions 10 and 11) ----
+
+    [Fact]
+    public async Task HighRisks_Mine_OnlyOpenHighRisksOnActiveProjects_HighestScoreFirst()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var owner = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var projectId = await NewProjectAsync("4.8", analystId: analyst);
+        var closedProjectId = await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Closed);
+        await AddRiskAsync(projectId, "RSK-001", 3, 5, owner, RiskStatus.Monitoring);  // 15: high (lowest high score)
+        await AddRiskAsync(projectId, "RSK-002", 4, 4, owner);                         // 16: high
+        await AddRiskAsync(projectId, "RSK-003", 3, 4, owner);                         // 12: medium
+        await AddRiskAsync(projectId, "RSK-004", 5, 5, owner, RiskStatus.Closed);      // closed
+        await AddRiskAsync(closedProjectId, "RSK-001", 5, 5, owner);                   // project not active
+
+        var dashboard = await AsAsync(analyst);
+
+        Assert.Equal(2, dashboard.Summary.HighRisks);
+        Assert.Equal(2, dashboard.HighRisks.TotalCount);
+        Assert.Equal(["RSK-002", "RSK-001"], dashboard.HighRisks.Items.Select(x => x.Code));
+        var first = dashboard.HighRisks.Items[0];
+        Assert.Equal(16, first.Score);
+        Assert.Equal(RiskSeverity.High, RiskRules.SeverityOf(first.Score));
+        Assert.Equal(projectId, first.Project.Id);
+        Assert.Equal("Test SoftwareDeveloper", first.Owner.FullName);
+        Assert.Equal(RiskStatus.Monitoring, dashboard.HighRisks.Items[1].Status);
+    }
+
+    // ---- Levels (decision 12) ----
+
+    [Fact]
+    public async Task Levels_Mine_CountsActiveRecordsByAppliedLevel()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        await SetLevelAsync(await NewProjectAsync("4.1", analystId: analyst), 1);
+        await SetLevelAsync(await NewProjectAsync("4.1", analystId: analyst), 2);
+        await SetLevelAsync(await NewProjectAsync("7.1", analystId: analyst), 2);
+        await NewProjectAsync("1.1", analystId: analyst);                                                  // not set yet
+        await SetLevelAsync(await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Closed), 3); // not active
+
+        var dashboard = await AsAsync(analyst);
+
+        Assert.Equal(new LevelCountsDto(1, 2, 0, 1), dashboard.Levels);
+        var levels = dashboard.Levels;
+        Assert.Equal(
+            dashboard.Summary.WaitingRequests + dashboard.Summary.ActiveProjects,
+            levels.Level1 + levels.Level2 + levels.Level3 + levels.NotSet);
+    }
+
+    // ---- Acceptance queue (decision 13) ----
+
+    [Fact]
+    public async Task AcceptanceQueue_Mine_OnlyStage3_WithRecommendationOnceFullyScored()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var notScored = await NewProjectAsync("3.1", analystId: analyst);
+        var accept = await NewProjectAsync("3.2", analystId: analyst);
+        var conditional = await NewProjectAsync("3.2", analystId: analyst);
+        var partly = await NewProjectAsync("3.1", analystId: analyst);
+        var notInQueue = await NewProjectAsync("2.4", analystId: analyst);
+        await AddAssessmentAsync(accept, 4, 4, 4, 4, 4, 4);
+        await AddAssessmentAsync(conditional, 3, 3, 3, 3, 3, 3);
+        await AddAssessmentAsync(partly, 5, 5, 5, 5, null, null);
+        await AddAssessmentAsync(notInQueue, 5, 5, 5, 5, 5, 5);
+        // Longest waiting first: give each a different last process record.
+        await AddStepRecordAsync(notScored, "3.1", new DateTime(2000, 1, 1, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(accept, "3.1", new DateTime(2000, 1, 2, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(conditional, "3.1", new DateTime(2000, 1, 3, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(partly, "2.4", new DateTime(2000, 1, 4, 9, 0, 0, DateTimeKind.Utc), analyst);
+
+        var dashboard = await AsAsync(analyst);
+
+        Assert.Equal(4, dashboard.AcceptanceQueue.TotalCount);
+        Assert.Equal([notScored, accept, conditional, partly], dashboard.AcceptanceQueue.Items.Select(x => x.Project.Id));
+        var items = dashboard.AcceptanceQueue.Items;
+
+        Assert.Equal(("3.1", 0, (decimal?)null, (AcceptanceRecommendation?)null),
+            (items[0].StepCode, items[0].AnsweredCount, items[0].WeightedScore, items[0].Recommendation));
+        Assert.Equal(("3.2", 6, (decimal?)4.00m, (AcceptanceRecommendation?)AcceptanceRecommendation.Accept),
+            (items[1].StepCode, items[1].AnsweredCount, items[1].WeightedScore, items[1].Recommendation));
+        Assert.Equal((decimal?)3.00m, items[2].WeightedScore);
+        Assert.Equal(AcceptanceRecommendation.Conditional, items[2].Recommendation);
+        Assert.Equal((4, (decimal?)null, (AcceptanceRecommendation?)null),
+            (items[3].AnsweredCount, items[3].WeightedScore, items[3].Recommendation));
+    }
+
+    [Fact]
+    public async Task AcceptanceQueue_MatchesTheAssessmentRules()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var projectId = await NewProjectAsync("3.2", analystId: analyst);
+        var scores = new AcceptanceScoresDto
+        {
+            StrategicFit = 5, CommercialValue = 2, TechnicalFeasibility = 4,
+            ResourceAndSchedule = 1, CustomerFit = 3, RiskLevel = 5,
+        };
+        await AddAssessmentAsync(projectId, 5, 2, 4, 1, 3, 5);
+
+        var dashboard = await AsAsync(analyst);
+
+        // The dashboard and the Seviye & Kabul tab use the same rules, so they always show the same result.
+        var item = Assert.Single(dashboard.AcceptanceQueue.Items, x => x.Project.Id == projectId);
+        Assert.Equal(AssessmentRules.WeightedScore(scores), item.WeightedScore);
+        Assert.Equal(AssessmentRules.RecommendationOf(item.WeightedScore!.Value), item.Recommendation);
+    }
+
     // ---- Helpers ----
+
+    private async Task SetLevelAsync(int projectId, int level)
+    {
+        await using var scope = database.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var project = await db.Projects.SingleAsync(p => p.Id == projectId);
+        project.Level = level;
+        await db.SaveChangesAsync();
+    }
+
+    private async Task AddRiskAsync(
+        int projectId, string code, int probability, int impact, int ownerUserId, RiskStatus status = RiskStatus.Open)
+    {
+        await using var scope = database.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        db.Risks.Add(new Risk
+        {
+            ProjectId = projectId,
+            Code = code,
+            Title = $"Risk {code}",
+            Category = RiskCategory.Technical,
+            Probability = probability,
+            Impact = impact,
+            OwnerUserId = ownerUserId,
+            Status = status,
+        });
+        await db.SaveChangesAsync();
+    }
+
+    private async Task AddAssessmentAsync(
+        int projectId, int? strategicFit, int? commercialValue, int? technicalFeasibility,
+        int? resourceAndSchedule, int? customerFit, int? riskLevel)
+    {
+        await using var scope = database.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        db.ProjectAssessments.Add(new ProjectAssessment
+        {
+            ProjectId = projectId,
+            StrategicFit = strategicFit,
+            CommercialValue = commercialValue,
+            TechnicalFeasibility = technicalFeasibility,
+            ResourceAndSchedule = resourceAndSchedule,
+            CustomerFit = customerFit,
+            RiskLevel = riskLevel,
+        });
+        await db.SaveChangesAsync();
+    }
 
     /// <summary>
     /// The list shows the 10 longest waiting rows, and other tests leave projects at the same steps.
