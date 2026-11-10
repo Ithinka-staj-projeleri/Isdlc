@@ -59,7 +59,7 @@ Adım kodları `process-flow.json` ile aynıdır.
 
 | Adım | Ajan | Çıktı |
 | --- | --- | --- |
-| 1.1 | Talep ajanı | Talep Kayıt Formu taslağı |
+| 1.1 | Talep ajanı | Talep Başlangıç Şablonu taslağı |
 | 2.1 | Talep ajanı | Talep Analizi taslağı (görüşme notundan) |
 | 4.1 | Doküman ajanı | Proje Kapsam Dokümanı taslağı |
 | 4.2 | Doküman ajanı | Kavramsal Tasarım Raporu taslağı |

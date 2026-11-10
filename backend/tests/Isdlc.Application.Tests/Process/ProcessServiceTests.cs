@@ -60,23 +60,16 @@ public class ProcessServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task GetStages_Step54_HasTwoJumpOptionsInFlowOrder()
+    public async Task GetStages_Step54_GoesBackOnlyTo49()
     {
+        // ISDLC v12.0 flow (Oct 2026): "No" on 5.4 always returns to 4.9; the earlier 4.1 option was removed.
         var steps = AllSteps(await GetStagesAsync());
         var step = steps.Single(s => s.Code == "5.4");
 
         Assert.True(step.IsDecision);
-        Assert.Collection(step.NoJumps,
-            jump =>
-            {
-                Assert.Equal("4.1", jump.TargetStepCode);
-                Assert.Equal("Kapsam değişiyor", jump.Label);
-            },
-            jump =>
-            {
-                Assert.Equal("4.9", jump.TargetStepCode);
-                Assert.Equal("Yalnızca fiyat veya takvim değişiyor", jump.Label);
-            });
+        var jump = Assert.Single(step.NoJumps);
+        Assert.Equal("4.9", jump.TargetStepCode);
+        Assert.Equal("Akış 4.9 adımına dön", jump.Label);
     }
 
     [Fact]
@@ -86,7 +79,7 @@ public class ProcessServiceTests(DatabaseFixture database)
         var idsByCode = steps.ToDictionary(s => s.Code, s => s.Id);
         var jumps = steps.SelectMany(s => s.NoJumps).ToList();
 
-        Assert.Equal(11, jumps.Count);
+        Assert.Equal(10, jumps.Count);
         Assert.All(jumps, jump => Assert.Equal(idsByCode[jump.TargetStepCode], jump.TargetStepId));
     }
 

@@ -31,12 +31,14 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
 
     private async Task SeedProcessFlowAsync(CancellationToken cancellationToken)
     {
+        var file = Read<ProcessFlowFile>("process-flow.json");
+
+        // The flow is reference data that the company revises; an existing database follows the file.
         if (await db.ProcessStages.AnyAsync(cancellationToken))
         {
+            await SyncProcessFlowAsync(file, cancellationToken);
             return;
         }
-
-        var file = Read<ProcessFlowFile>("process-flow.json");
 
         var stagesByOrder = file.Stages.ToDictionary(
             s => s.Order,
@@ -76,6 +78,108 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
 
         logger.LogInformation("Seeded {Stages} process stages and {Steps} steps.",
             stagesByOrder.Count, stepsByCode.Count);
+    }
+
+    /// <summary>
+    /// Brings an existing flow in line with process-flow.json, matching stages by order and steps by code:
+    /// titles, texts, "No" explanations, roles, outcomes and return options. Ids stay the same, so projects
+    /// and their process history are untouched. Adding, removing or reordering steps is not done here
+    /// (it would move projects between steps); such a difference is only logged and needs its own migration.
+    /// </summary>
+    private async Task SyncProcessFlowAsync(ProcessFlowFile file, CancellationToken cancellationToken)
+    {
+        var stages = await db.ProcessStages.ToListAsync(cancellationToken);
+        var steps = await db.ProcessSteps.Include(s => s.NoJumps).ToListAsync(cancellationToken);
+        var stepsByCode = steps.ToDictionary(s => s.Code);
+
+        var fileCodes = file.Steps.Select(s => s.Code).ToHashSet();
+        if (stages.Count != file.Stages.Count || !fileCodes.SetEquals(stepsByCode.Keys)
+            || file.Steps.Any(s => stepsByCode[s.Code].Order != s.Order))
+        {
+            logger.LogWarning(
+                "process-flow.json adds, removes or reorders stages or steps; that needs a migration. " +
+                "Only texts, roles and return options of matching steps are updated.");
+        }
+
+        var changed = 0;
+        foreach (var stageSeed in file.Stages)
+        {
+            if (stages.FirstOrDefault(s => s.Order == stageSeed.Order) is not { } stage)
+            {
+                continue;
+            }
+
+            changed += Set(stage.Title, stageSeed.Title, v => stage.Title = v);
+            changed += Set(stage.ShortTitle, stageSeed.ShortTitle, v => stage.ShortTitle = v);
+        }
+
+        foreach (var stepSeed in file.Steps)
+        {
+            if (!stepsByCode.TryGetValue(stepSeed.Code, out var step))
+            {
+                continue;
+            }
+
+            changed += Set(step.Text, stepSeed.Text, v => step.Text = v);
+            changed += Set(step.NoBranchText, stepSeed.NoBranchText, v => step.NoBranchText = v);
+            changed += Set(step.IsDecision, stepSeed.IsDecision, v => step.IsDecision = v);
+            changed += Set(step.ResponsibleRole, stepSeed.ResponsibleRole, v => step.ResponsibleRole = v);
+            changed += Set(step.ApproverRole, stepSeed.ApproverRole, v => step.ApproverRole = v);
+            changed += Set(step.NoOutcome, stepSeed.NoOutcome, v => step.NoOutcome = v);
+            changed += SyncJumps(step, stepSeed, stepsByCode);
+        }
+
+        if (changed > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Updated {Changes} process flow values from process-flow.json.", changed);
+        }
+    }
+
+    /// <summary>Return options follow the file: missing ones are added, extra ones removed, labels updated.</summary>
+    private int SyncJumps(ProcessStep step, StepSeed stepSeed, Dictionary<string, ProcessStep> stepsByCode)
+    {
+        var changed = 0;
+        var wanted = stepSeed.NoJumps
+            .Where(j => stepsByCode.ContainsKey(j.TargetStepCode))
+            .ToDictionary(j => stepsByCode[j.TargetStepCode].Id, j => j.Label);
+
+        foreach (var jump in step.NoJumps.ToList())
+        {
+            if (!wanted.TryGetValue(jump.TargetStepId, out var label))
+            {
+                // A return option is reference data; no record points to it (a "No" answer stores the target step).
+                db.ProcessStepJumps.Remove(jump);
+                changed++;
+            }
+            else
+            {
+                changed += Set(jump.Label, label, v => jump.Label = v);
+            }
+        }
+
+        foreach (var (targetId, label) in wanted)
+        {
+            if (step.NoJumps.All(j => j.TargetStepId != targetId))
+            {
+                step.NoJumps.Add(new ProcessStepJump { TargetStepId = targetId, Label = label });
+                changed++;
+            }
+        }
+
+        return changed;
+    }
+
+    /// <summary>Sets a value only when it differs, so an unchanged database is not written to. Returns 1 if changed.</summary>
+    private static int Set<T>(T current, T wanted, Action<T> set)
+    {
+        if (EqualityComparer<T>.Default.Equals(current, wanted))
+        {
+            return 0;
+        }
+
+        set(wanted);
+        return 1;
     }
 
     /// <summary>The documents tracked on every project. Linked to stages by order, like the process flow.</summary>

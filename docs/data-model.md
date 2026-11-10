@@ -81,15 +81,16 @@ Kurallar:
 
 ### `ProcessStepJump` — "Hayır" cevabında dönülebilecek adımlar
 
-Bir karar adımının birden fazla dönüş seçeneği olabilir. Örnek 5.4: kapsam değişiyorsa 4.1'e,
-yalnızca fiyat veya takvim değişiyorsa 4.9'a dönülür. "Hayır" cevabı veren kullanıcı seçeneklerden birini seçer.
+Bir karar adımının birden fazla dönüş seçeneği olabilir; "Hayır" cevabı veren kullanıcı seçeneklerden birini seçer.
+Güncel akışta (ISDLC v12.0, Ekim 2026) her karar adımının tek dönüş seçeneği var (ör. 4.7 → 4.1, 5.4 → 4.9);
+yapı birden fazlasına izin verir.
 
 | Alan | Tür | Not |
 | --- | --- | --- |
 | `Id` | int | |
 | `ProcessStepId` | int (FK → ProcessStep) | Karar adımı |
 | `TargetStepId` | int (FK → ProcessStep) | Dönülecek adım |
-| `Label` | string | Seçenek metni: "Kapsam değişiyor" |
+| `Label` | string | Seçenek metni: "Akış 4.9 adımına dön" |
 
 ## İşlem verisi
 
@@ -416,14 +417,24 @@ API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-a
 ## Seed verisi
 
 Seed, EF Core'un `HasData` yöntemiyle değil JSON dosyalarıyla yapılır. Uygulama açılırken
-tablo boşsa bir seeder sınıfı dosyayı okuyup tabloya yazar. Böylece metin düzeltmeleri migration gerektirmez.
+tablo boşsa bir seeder sınıfı dosyayı okuyup tabloya yazar.
 
-**`backend/src/Isdlc.Infrastructure/Seed/process-flow.json`** (hazır)
+**Süreç akışı her açılışta dosyayla eşitlenir.** Tablo doluysa seeder aşamaları sırasına, adımları koduna göre eşleştirir;
+başlık, adım metni, "Hayır" açıklaması, roller, kapanış sonucu ve dönüş seçenekleri dosyadaki gibi yapılır. `Id`'ler
+değişmez; projeler ve süreç geçmişi etkilenmez. Böylece şirket akışı güncellediğinde yalnızca `process-flow.json`
+değiştirilir. Adım eklemek, çıkarmak veya sırasını değiştirmek bu yolla yapılmaz (projelerin bulunduğu adımı
+kaydırır); böyle bir fark logda uyarı olarak görünür ve ayrı bir migration gerektirir.
+
+**`backend/src/Isdlc.Infrastructure/Seed/process-flow.json`** (hazır; kaynak: şirketin ISDLC v12.0 akış şeması,
+"1 - Yeni Yazılım Projesi" sayfası, 27.10.2026)
 - `stages`: 13 aşama (`order`, `title`, `shortTitle`).
 - `steps`: 75 adım (`code`, `stageOrder`, `order`, `text`, `isDecision`, `noBranchText`,
   `responsibleRole`, `approverRole`, `noOutcome`, `noJumps`).
 - Adımlar birbirine ve aşamalara `Id` ile değil `code` ve `stageOrder` ile bağlanır;
   seeder bunları kaydederken `Id`'lere çevirir. Enum değerleri metin olarak yazılır.
+
+Şemadaki 2.3 ("Talep Sahibi'nden bir aydır cevap alınamıyor mu?") ayrı adım değildir; 2.2'nin "Hayır" açıklamasında
+yer alır ve yöneticinin "Talebi reddet" işlemiyle karşılanır (karar 6).
 
 Sorumlu roller prototipin kuralına göre atanmıştır: Aşama 8 Yazılım Geliştirici; 9.1–9.5 Test Uzmanı,
 9.6–9.9 İş Analisti; Aşama 10–11 Proje Yöneticisi; 5.1 Satış Temsilcisi; diğer adımlar İş Analisti.
