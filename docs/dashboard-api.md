@@ -2,7 +2,7 @@
 
 Gösterge paneli: giriş yapan kullanıcıya bekleyen işlerini ve projelerin genel durumunu gösteren ana sayfa.
 Yeni tablo yoktur; mevcut kayıtlardan (`Project`, `StepRecord`, `OpenIssue`) hesaplanır.
-Durum: **onaylandı** (10 Kasım 2026); API uygulanıyor. Sorumlu: Dide.
+Durum: **onaylandı** (10 Kasım 2026); API ve ekran uygulandı. Sorumlu: Dide.
 
 Uç nokta AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601
 (`DateOnly` alanları `2026-11-10` biçiminde), hatalar `ProblemDetails`, JSON alanları camelCase.
