@@ -1,6 +1,8 @@
 import { UserSummary } from '../../../shared/models/user-summary';
+import { AcceptanceRecommendation } from '../../assessment/models/assessment';
 import { OpenIssueStatus, OpenIssueType, Owner } from '../../open-issues/models/open-issue';
 import { StepAction } from '../../process/models/project-process';
+import { RiskStatus } from '../../risks/models/risk';
 
 // Shapes of the Dashboard API. Contract: docs/dashboard-api.md
 
@@ -27,6 +29,8 @@ export interface DashboardSummary {
   overdueOpenIssues: number;
   overdueProjects: number;
   finishedThisYear: FinishedThisYear;
+  /** Open high risks (score 15+) on active projects. */
+  highRisks: number;
 }
 
 export interface StageCount {
@@ -73,6 +77,38 @@ export interface RecentActivity {
   performedAt: string;
 }
 
+/** A risk that is not closed and whose score is high (15 or more). */
+export interface HighRisk {
+  project: DashboardProject;
+  id: number;
+  code: string;
+  title: string;
+  probability: number;
+  impact: number;
+  score: number;
+  status: RiskStatus;
+  owner: UserSummary;
+}
+
+/** Active records by applied level; notSet: no level applied yet (step 2.4). */
+export interface LevelCounts {
+  level1: number;
+  level2: number;
+  level3: number;
+  notSet: number;
+}
+
+/** An active request at 3.1 or 3.2; weightedScore and recommendation stay null until all six criteria are scored. */
+export interface AcceptanceQueueItem {
+  project: DashboardProject;
+  stepCode: string;
+  weightedScore: number | null;
+  recommendation: AcceptanceRecommendation | null;
+  answeredCount: number;
+  /** UTC date and time. */
+  waitingSince: string;
+}
+
 /** GET /api/v1/dashboard */
 export interface Dashboard {
   scope: DashboardScope;
@@ -82,4 +118,7 @@ export interface Dashboard {
   myOpenIssues: DashboardList<DashboardOpenIssue>;
   overdueOpenIssues: DashboardList<DashboardOpenIssue>;
   recentActivity: RecentActivity[];
+  highRisks: DashboardList<HighRisk>;
+  levels: LevelCounts;
+  acceptanceQueue: DashboardList<AcceptanceQueueItem>;
 }
