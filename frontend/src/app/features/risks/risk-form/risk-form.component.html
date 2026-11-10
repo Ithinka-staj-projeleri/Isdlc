@@ -1,0 +1,95 @@
+<!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
+<div class="overlay">
+    <form class="dialog" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <h3>{{ riskId() === null ? 'Yeni risk' : 'Risk ' + (code() ?? '') }}</h3>
+
+        @if (loading()) {
+        <p class="muted">Yükleniyor…</p>
+        } @else {
+        <div class="grid">
+            <label class="field full" [class.invalid]="errorFor('title')">
+                Risk tanımı
+                <input formControlName="title" maxlength="300" />
+                @if (errorFor('title'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('category')">
+                Kategori
+                <select formControlName="category">
+                    @for (c of categories; track c) {
+                    <option [value]="c">{{ categoryLabels[c] }}</option>
+                    }
+                </select>
+                @if (errorFor('category'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('ownerUserId')">
+                Sorumlu
+                <select formControlName="ownerUserId">
+                    <option [ngValue]="null">Seçin…</option>
+                    @for (user of users(); track user.id) {
+                    <option [ngValue]="user.id">{{ user.fullName }}</option>
+                    }
+                </select>
+                @if (errorFor('ownerUserId'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('probability')">
+                Olasılık (1–5)
+                <select formControlName="probability">
+                    @for (l of levels; track l) { <option [ngValue]="l">{{ l }}</option> }
+                </select>
+                @if (errorFor('probability'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('impact')">
+                Etki (1–5)
+                <select formControlName="impact">
+                    @for (l of levels; track l) { <option [ngValue]="l">{{ l }}</option> }
+                </select>
+                @if (errorFor('impact'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <p class="score full" aria-live="polite">
+                Skor: <app-status-badge [label]="score() + ' · ' + severityLabels[severity()]" [tone]="severityTones[severity()]" />
+            </p>
+
+            <label class="field full" [class.invalid]="errorFor('mitigation')">
+                Önleyici aksiyon (isteğe bağlı)
+                <textarea formControlName="mitigation" maxlength="2000"></textarea>
+                @if (errorFor('mitigation'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field full" [class.invalid]="errorFor('description')">
+                Açıklama (isteğe bağlı)
+                <textarea formControlName="description" maxlength="2000"></textarea>
+                @if (errorFor('description'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            @if (riskId() !== null) {
+            <label class="field" [class.invalid]="errorFor('status')">
+                Durum
+                <select formControlName="status">
+                    @for (s of statuses; track s) {
+                    <option [value]="s">{{ statusLabels[s] }}</option>
+                    }
+                </select>
+                @if (errorFor('status'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+            }
+
+            <label class="check full">
+                <input type="checkbox" formControlName="isSharedWithRequester" />
+                Talep Sahibi ile paylaşılır
+            </label>
+        </div>
+        }
+
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="cancelled.emit()">Vazgeç</button>
+            <button type="submit" class="button primary" [disabled]="loading() || saving()">
+                {{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}
+            </button>
+        </div>
+    </form>
+</div>

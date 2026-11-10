@@ -1,7 +1,7 @@
 import { UserSummary } from '../../../shared/models/user-summary';
 
 /** Entity names written by the backend's AuditLogInterceptor. */
-export type AuditEntityType = 'Project' | 'OpenIssue' | 'Meeting' | 'Requirement' | 'ProjectDocument';
+export type AuditEntityType = 'Project' | 'OpenIssue' | 'Meeting' | 'Requirement' | 'ProjectDocument' | 'Risk';
 export type AuditAction = 'Created' | 'Updated' | 'Deleted';
 
 /** A row of GET /api/v1/projects/{projectId}/audit-logs (newest first). */

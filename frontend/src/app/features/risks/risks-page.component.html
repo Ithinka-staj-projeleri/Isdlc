@@ -1,1 +1,11 @@
-<p>risks-page works!</p>
+<header class="page-head">
+    <div>
+        <h2>Risk Yönetimi</h2>
+        <p class="muted">Risk Analiz Formu · olasılık × etki · Akış 4.8</p>
+    </div>
+    <app-project-picker #picker />
+</header>
+
+@if (picker.selected(); as project) {
+<app-risk-list [projectId]="project.id" [readOnly]="project.status !== 'Active'" />
+}

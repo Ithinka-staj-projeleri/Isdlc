@@ -8,6 +8,7 @@ import {
 import {
     REQUIREMENT_PRIORITY_LABELS, REQUIREMENT_STATUS_LABELS, REQUIREMENT_TYPE_LABELS,
 } from '../requirements/models/requirement';
+import { RISK_CATEGORY_LABELS, RISK_STATUS_LABELS } from '../risks/models/risk';
 import { AuditAction, AuditEntityType } from './models/audit-log';
 
 // Turkish text for the audit log. The API sends C# names (entity, field, enum value); the screen shows these.
@@ -19,6 +20,7 @@ export const AUDIT_ENTITY_LABELS: Record<AuditEntityType, string> = {
     Meeting: 'Toplantı tutanağı',
     Requirement: 'Gereksinim',
     ProjectDocument: 'Doküman',
+    Risk: 'Risk',
 };
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
@@ -81,6 +83,18 @@ const FIELD_LABELS: Record<AuditEntityType, Record<string, string>> = {
         Note: 'Not',
         Link: 'Bağlantı',
     },
+    Risk: {
+        Code: 'Kod',
+        Title: 'Risk tanımı',
+        Description: 'Açıklama',
+        Category: 'Kategori',
+        Probability: 'Olasılık',
+        Impact: 'Etki',
+        Mitigation: 'Önleyici aksiyon',
+        OwnerUserId: 'Sorumlu',
+        IsSharedWithRequester: 'Talep Sahibi ile paylaşılır',
+        Status: 'Durum',
+    },
 };
 
 /** Enum fields and their Turkish value names, per entity. */
@@ -96,6 +110,7 @@ const VALUE_LABELS: Partial<Record<AuditEntityType, Record<string, Record<string
     Meeting: { Type: MEETING_TYPE_LABELS },
     Requirement: { Type: REQUIREMENT_TYPE_LABELS, Priority: REQUIREMENT_PRIORITY_LABELS, Status: REQUIREMENT_STATUS_LABELS },
     ProjectDocument: { Status: DOCUMENT_STATUS_LABELS },
+    Risk: { Category: RISK_CATEGORY_LABELS, Status: RISK_STATUS_LABELS },
 };
 
 export function entityLabel(entityType: string): string {
