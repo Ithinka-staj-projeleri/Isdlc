@@ -1,0 +1,309 @@
+@use '../../shared/styles/ui' as ui;
+
+:host {
+  display: block;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 12px;
+}
+
+.code {
+  @include ui.code;
+  color: var(--muted);
+}
+
+.card {
+  @include ui.card;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  p {
+    margin: 4px 0 0;
+  }
+}
+
+.scope {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+
+  button {
+    padding: 6px 14px;
+    border: 0;
+    background: var(--panel);
+    color: var(--fg);
+    font: inherit;
+    cursor: pointer;
+
+    & + button {
+      border-left: 1px solid var(--line);
+    }
+
+    &.on {
+      background: var(--accent);
+      color: #fff;
+    }
+  }
+}
+
+.content {
+  display: grid;
+  gap: 16px;
+
+  &.loading {
+    opacity: .6;
+  }
+}
+
+// ---- Summary cards ----
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 12px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-top: 3px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+
+  b {
+    font-size: 28px;
+    line-height: 1.1;
+  }
+
+  .label {
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .hint {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  &.accent {
+    border-top-color: var(--accent);
+  }
+
+  &.alert {
+    border-top-color: var(--bad);
+
+    b {
+      color: var(--bad);
+    }
+  }
+}
+
+a.stat:hover {
+  background: var(--bg);
+}
+
+// ---- Panels and rows ----
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.panel {
+  padding: 0 0 4px;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+
+  .count {
+    padding: 0 8px;
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .empty {
+    margin: 0;
+    padding: 16px;
+    color: var(--muted);
+  }
+
+  .more {
+    margin: 0;
+    padding: 8px 16px;
+  }
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li + li {
+    border-top: 1px solid var(--line);
+  }
+
+  a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+      background: var(--bg);
+    }
+  }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    b {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .side {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  .late {
+    color: var(--bad);
+    font-weight: 600;
+  }
+}
+
+// ---- Stages ----
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 16px 0;
+
+  .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-left: 8px;
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    &.request {
+      background: var(--accent);
+    }
+
+    &.project {
+      background: var(--info);
+    }
+  }
+}
+
+.stages {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 12px 16px;
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(150px, 220px) 1fr 32px;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+
+    &.zero {
+      color: var(--muted);
+    }
+  }
+
+  .stage-no {
+    display: inline-block;
+    width: 18px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .bar {
+    height: 12px;
+    border-radius: 3px;
+    background: var(--bg);
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      background: var(--info);
+    }
+  }
+
+  li.request .bar span {
+    background: var(--accent);
+  }
+
+  .stage-count {
+    text-align: right;
+  }
+}
+
+@media (max-width: 560px) {
+  .stages li {
+    grid-template-columns: 1fr 28px;
+
+    .bar {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+}

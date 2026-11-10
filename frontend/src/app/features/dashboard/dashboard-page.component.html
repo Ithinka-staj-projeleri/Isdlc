@@ -1,1 +1,201 @@
-<p>Gösterge Paneli</p>
+<header class="page-head">
+  <div>
+    <h2>Merhaba{{ firstName() ? ', ' + firstName() : '' }}</h2>
+    <p class="muted">Size bekleyen işler ve projelerin genel durumu.</p>
+  </div>
+  <div class="scope" role="group" aria-label="Kapsam">
+    <button type="button" [class.on]="scope() === 'All'" [attr.aria-pressed]="scope() === 'All'" (click)="setScope('All')">
+      Tüm projeler
+    </button>
+    <button type="button" [class.on]="scope() === 'Mine'" [attr.aria-pressed]="scope() === 'Mine'" (click)="setScope('Mine')">
+      Benim projelerim
+    </button>
+  </div>
+</header>
+
+@if (dashboard.error()) {
+  <app-empty-state message="Gösterge paneli yüklenemedi." />
+} @else if (dashboard.hasValue()) {
+  @let d = dashboard.value();
+  <div class="content" [class.loading]="dashboard.isLoading()">
+    <!-- ---- Summary cards ---- -->
+    <section class="cards" aria-label="Özet">
+      <a class="card stat" routerLink="/requests">
+        <span class="label">Onay bekleyen talepler</span>
+        <b>{{ d.summary.waitingRequests }}</b>
+        <span class="hint">Aşama 1–3</span>
+      </a>
+      <a class="card stat" routerLink="/projects">
+        <span class="label">Aktif projeler</span>
+        <b>{{ d.summary.activeProjects }}</b>
+        <span class="hint">Aşama 4–13</span>
+      </a>
+      <div class="card stat" [class.accent]="d.summary.myWaitingSteps > 0">
+        <span class="label">Bana bekleyen adımlar</span>
+        <b>{{ d.summary.myWaitingSteps }}</b>
+        <span class="hint">Şu an sizin yapabileceğiniz</span>
+      </div>
+      <a class="card stat" routerLink="/open-issues" [class.alert]="d.summary.overdueOpenIssues > 0">
+        <span class="label">Geciken açık konular</span>
+        <b>{{ d.summary.overdueOpenIssues }}</b>
+        <span class="hint">Aktif projelerde</span>
+      </a>
+      <div class="card stat" [class.alert]="d.summary.overdueProjects > 0">
+        <span class="label">Takvimi geçen projeler</span>
+        <b>{{ d.summary.overdueProjects }}</b>
+        <span class="hint">Bitiş tarihi geçmiş</span>
+      </div>
+      <a class="card stat" routerLink="/projects" [queryParams]="{ view: 'all' }">
+        <span class="label">Bu yıl sonuçlanan</span>
+        <b>{{ finishedTotal() }}</b>
+        <span class="hint">
+          Kapandı {{ d.summary.finishedThisYear.closed }} · Kaybedildi {{ d.summary.finishedThisYear.lost }} ·
+          Reddedildi {{ d.summary.finishedThisYear.rejected }} · Yönlendirildi {{ d.summary.finishedThisYear.redirected }}
+        </span>
+      </a>
+    </section>
+
+    <!-- ---- Personal lists ---- -->
+    <div class="columns">
+      <section class="card panel">
+        <h3>Bana bekleyen adımlar <span class="count">{{ d.myWaitingSteps.totalCount }}</span></h3>
+        @if (d.myWaitingSteps.items.length === 0) {
+          <p class="empty">Bekleyen adımınız yok.</p>
+        } @else {
+          <ul class="rows">
+            @for (item of d.myWaitingSteps.items; track item.project.id) {
+              <li>
+                <a [routerLink]="['/projects', item.project.id]" [queryParams]="{ tab: 'process' }">
+                  <span class="main">
+                    <span class="code">{{ item.project.code }}</span>
+                    <b>{{ item.project.name }}</b>
+                    <span class="muted small">
+                      Adım {{ item.step.code }} · {{ item.step.stageShortTitle }}
+                    </span>
+                  </span>
+                  <span class="side">
+                    @if (item.isApproval) {
+                      <app-status-badge label="Onay" tone="warn" />
+                    }
+                    <span class="small" [class.late]="item.waitingDays >= 7">{{ waitingText(item.waitingDays) }}</span>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (d.myWaitingSteps.totalCount > d.myWaitingSteps.items.length) {
+            <p class="more muted small">
+              İlk {{ d.myWaitingSteps.items.length }} adım gösteriliyor (toplam {{ d.myWaitingSteps.totalCount }}).
+            </p>
+          }
+        }
+      </section>
+
+      <section class="card panel">
+        <h3>Bana atanan açık konular <span class="count">{{ d.myOpenIssues.totalCount }}</span></h3>
+        @if (d.myOpenIssues.items.length === 0) {
+          <p class="empty">Size atanmış açık konu yok.</p>
+        } @else {
+          <ul class="rows">
+            @for (issue of d.myOpenIssues.items; track issue.id) {
+              <li>
+                <a [routerLink]="['/projects', issue.project.id]" [queryParams]="{ tab: 'open-issues' }">
+                  <span class="main">
+                    <span class="code">{{ issue.project.code }} · {{ issue.code }}</span>
+                    <b>{{ issue.title }}</b>
+                    <span class="muted small">{{ issueTypeLabels[issue.type] }}</span>
+                  </span>
+                  <span class="side">
+                    @if (issue.isOverdue) {
+                      <app-status-badge [label]="(issue.dueDate | dateOnly) + ' · gecikti'" tone="bad" />
+                    } @else if (issue.dueDate) {
+                      <span class="small">{{ issue.dueDate | dateOnly }}</span>
+                    } @else {
+                      <span class="small muted">Termin yok</span>
+                    }
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (d.myOpenIssues.totalCount > d.myOpenIssues.items.length) {
+            <p class="more muted small">
+              İlk {{ d.myOpenIssues.items.length }} kayıt gösteriliyor (toplam {{ d.myOpenIssues.totalCount }}).
+            </p>
+          }
+        }
+      </section>
+    </div>
+
+    <!-- ---- Stages ---- -->
+    <section class="card panel">
+      <h3>Aşamalara göre aktif kayıtlar</h3>
+      <p class="legend small muted">
+        <span class="dot request"></span> Talep (aşama 1–3)
+        <span class="dot project"></span> Proje (aşama 4–13)
+      </p>
+      <ol class="stages">
+        @for (stage of d.stages; track stage.stageOrder) {
+          <li [class.request]="stage.stageOrder <= lastRequestStage" [class.zero]="stage.count === 0">
+            <span class="stage-name"><span class="stage-no">{{ stage.stageOrder }}</span> {{ stage.shortTitle }}</span>
+            <span class="bar"><span [style.width.%]="(stage.count / maxStageCount()) * 100"></span></span>
+            <b class="stage-count">{{ stage.count }}</b>
+          </li>
+        }
+      </ol>
+    </section>
+
+    <!-- ---- Overdue issues and recent activity ---- -->
+    <div class="columns">
+      <section class="card panel">
+        <h3>Geciken açık konular <span class="count">{{ d.overdueOpenIssues.totalCount }}</span></h3>
+        @if (d.overdueOpenIssues.items.length === 0) {
+          <p class="empty">Geciken açık konu yok.</p>
+        } @else {
+          <ul class="rows">
+            @for (issue of d.overdueOpenIssues.items; track issue.id) {
+              <li>
+                <a [routerLink]="['/projects', issue.project.id]" [queryParams]="{ tab: 'open-issues' }">
+                  <span class="main">
+                    <span class="code">{{ issue.project.code }} · {{ issue.code }}</span>
+                    <b>{{ issue.title }}</b>
+                    <span class="muted small">Sorumlu: {{ issue.owner.name }}</span>
+                  </span>
+                  <span class="side">
+                    <app-status-badge [label]="(issue.dueDate | dateOnly) + ' · gecikti'" tone="bad" />
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <section class="card panel">
+        <h3>Son hareketler</h3>
+        @if (d.recentActivity.length === 0) {
+          <p class="empty">Henüz süreç kaydı yok.</p>
+        } @else {
+          <ul class="rows">
+            @for (activity of d.recentActivity; track $index) {
+              <li>
+                <a [routerLink]="['/projects', activity.project.id]" [queryParams]="{ tab: 'process' }">
+                  <span class="main">
+                    <span class="code">{{ activity.project.code }}</span>
+                    <b>{{ activity.project.name }}</b>
+                    <span class="muted small">
+                      Adım {{ activity.stepCode }} · {{ actionLabels[activity.action] }} · {{ activity.performedBy.fullName }}
+                    </span>
+                  </span>
+                  <span class="side small muted">{{ activity.performedAt | localDate }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  </div>
+} @else {
+  <app-empty-state message="Yükleniyor…" />
+}
