@@ -20,7 +20,8 @@ public class Pbkdf2PasswordHasher : IPasswordHasher
     public bool Verify(string hash, string password)
     {
         var parts = hash.Split('.');
-        if (parts.Length != 4 || parts[0] != "v1" || !int.TryParse(parts[1], out var iterations))
+        // 0 or a negative count would make Pbkdf2 throw, turning a broken row into a 500 instead of a failed sign-in.
+        if (parts.Length != 4 || parts[0] != "v1" || !int.TryParse(parts[1], out var iterations) || iterations <= 0)
         {
             return false;
         }
@@ -29,7 +30,9 @@ public class Pbkdf2PasswordHasher : IPasswordHasher
         {
             var salt = FromBase64Safe(parts[2]);
             var expected = FromBase64Safe(parts[3]);
-            if (salt == null || expected == null) return false;
+            // The key must have the length Hash writes: an empty key would compare equal to an empty result
+            // and accept any password.
+            if (salt == null || expected == null || expected.Length != KeySize) return false;
 
             var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expected.Length);
             return CryptographicOperations.FixedTimeEquals(actual, expected);
