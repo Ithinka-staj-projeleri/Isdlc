@@ -13,7 +13,7 @@ Değiştirilmez, silinmez, elle eklenmez.
 | `GET /projects/{projectId}/audit-logs` | Projenin ve kayıtlarının değişiklikleri, en yeni önce (sayfalı) | `200` `PagedResult<AuditLogDto>` |
 
 - **Okuma:** giriş yapmış her kullanıcı. Proje yoksa `404`.
-- **Filtre** (isteğe bağlı): `entityType` = `Project`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`.
+- **Filtre** (isteğe bağlı): `entityType` = `Project`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`.
 - **Sayfalama:** `page`, `pageSize` (en fazla 100). Sıralama: `performedAt` azalan, eşitlikte `id` azalan.
 
 ## DTO
@@ -24,7 +24,8 @@ Değiştirilmez, silinmez, elle eklenmez.
   "id": 412,
   "entityType": "OpenIssue",          // C# entity adı; ekran Türkçesini gösterir
   "entityId": 12,
-  "recordCode": "AK-003",              // proje kodu, AK-003, TT-002, gereksinim kodu ya da doküman adı; kayıt bulunamazsa null
+  "recordCode": "AK-003",              // proje kodu, AK-003, TT-002, gereksinim kodu, RSK-01 ya da doküman adı;
+                                       // kayıt bulunamazsa ve Seviye & Kabul için (projede tek, kodu yok) null
   "action": "Updated",                 // Created | Updated | Deleted
   "changes": [
     { "field": "Status", "oldValue": "Open", "newValue": "Closed" },
@@ -54,6 +55,7 @@ Süreç adımları (`StepRecord`) loglanmaz; ama adım değişince proje güncel
 | `Isdlc.Api/Controllers/` | `AuditLogsController` (yol tam yazılır: `/api/v1/projects/{projectId:int}/audit-logs`) |
 | `frontend/.../features/audit/` | `app-audit-log` (`projectId` alır), `audit-labels.ts` (alan ve değer adları), `audit.service.ts` |
 
-Yeni bir proje kaydı (ör. `Risk`) `IAudited` + `IProjectRecord` taşıdığında geçmişe kendiliğinden düşer.
+Yeni bir proje kaydı `IAudited` + `IProjectRecord` taşıdığında geçmişe kendiliğinden düşer (`Risk` ve
+`ProjectAssessment` böyle eklendi).
 Ekranda Türkçe görünmesi için `audit-labels.ts`'e alan adları ve enum etiketleri, kodunun görünmesi için
 `AuditService.LoadRecordCodesAsync`'e bir satır eklenir.
