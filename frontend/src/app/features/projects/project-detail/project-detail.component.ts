@@ -13,6 +13,7 @@ import { MeetingListComponent } from '../../meetings/meeting-list/meeting-list.c
 import { OpenIssueListComponent } from '../../open-issues/open-issue-list/open-issue-list.component';
 import { ProjectProcessComponent } from '../../process/project-process/project-process.component';
 import { RequirementListComponent } from '../../requirements/requirement-list/requirement-list.component';
+import { RiskListComponent } from '../../risks/risk-list/risk-list.component';
 import {
   PROJECT_PRIORITY_LABELS,
   PROJECT_STATUS_LABELS,
@@ -23,7 +24,7 @@ import {
 } from '../project-labels';
 import { ProjectService } from '../project.service';
 
-type DetailTab = 'general' | 'process' | 'requirements' | 'documents' | 'open-issues' | 'meetings' | 'history';
+type DetailTab = 'general' | 'process' | 'requirements' | 'documents' | 'risks' | 'open-issues' | 'meetings' | 'history';
 
 /** Stages 1–3 are the request phase ("Talepler"); 4–13 the project phase ("Projeler"). */
 const LAST_REQUEST_STAGE = 3;
@@ -45,6 +46,7 @@ const LAST_REQUEST_STAGE = 3;
     OpenIssueListComponent,
     MeetingListComponent,
     RequirementListComponent,
+    RiskListComponent,
     DocumentListComponent,
     AuditLogComponent,
   ],
@@ -68,6 +70,7 @@ export class ProjectDetailComponent {
     { key: 'process', label: 'Süreç' },
     { key: 'requirements', label: 'Gereksinimler' },
     { key: 'documents', label: 'Dokümanlar' },
+    { key: 'risks', label: 'Riskler' },
     { key: 'open-issues', label: 'Açık Konular' },
     { key: 'meetings', label: 'Toplantı Tutanakları' },
     { key: 'history', label: 'Kayıt Geçmişi' },

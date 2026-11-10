@@ -1,0 +1,142 @@
+<div class="toolbar">
+    <label class="field">
+        Kategori
+        <select [ngModel]="category()" (ngModelChange)="setCategory($event)">
+            <option value="">Tümü</option>
+            @for (c of categories; track c) {
+            <option [value]="c">{{ categoryLabels[c] }}</option>
+            }
+        </select>
+    </label>
+    <label class="field">
+        Seviye
+        <select [ngModel]="severity()" (ngModelChange)="setSeverity($event)">
+            <option value="">Tümü</option>
+            @for (s of severities; track s) {
+            <option [value]="s">{{ severityLabels[s] }}</option>
+            }
+        </select>
+    </label>
+    <label class="field">
+        Durum
+        <select [ngModel]="status()" (ngModelChange)="setStatus($event)">
+            <option value="">Tümü</option>
+            @for (s of statuses; track s) {
+            <option [value]="s">{{ statusLabels[s] }}</option>
+            }
+        </select>
+    </label>
+    @if (cell(); as selected) {
+    <button type="button" class="button small" (click)="cell.set(null); page.set(1)">
+        Hücre filtresini kaldır (O{{ selected.probability }} × E{{ selected.impact }})
+    </button>
+    }
+    <span class="spacer"></span>
+    @if (!readOnly()) {
+    <button type="button" class="button primary" (click)="editing.set('new')">+ Risk ekle</button>
+    }
+</div>
+
+@if (readOnly()) {
+<p class="note">Proje aktif olmadığı için riskler yalnızca görüntülenebilir.</p>
+}
+
+<div class="layout">
+    <section class="heat-card" aria-labelledby="heat-title">
+        <h3 id="heat-title">Isı haritası</h3>
+        <p class="muted small">Kapanmamış riskler. Bir hücreye tıklayarak listeyi süzebilirsiniz.</p>
+
+        @if (matrix.error()) {
+        <p class="muted">Isı haritası yüklenemedi.</p>
+        } @else {
+        <div class="heat" role="group" aria-label="Olasılık ve etkiye göre risk sayıları">
+            @for (row of heatRows(); track row.probability) {
+            <span class="axis">{{ row.probability }}</span>
+            @for (c of row.cells; track c.impact) {
+            <button type="button" class="heat-cell" [class.low]="c.severity === 'Low'"
+                [class.medium]="c.severity === 'Medium'" [class.high]="c.severity === 'High'"
+                [class.selected]="isSelected(c)" [attr.aria-pressed]="isSelected(c)"
+                [attr.aria-label]="'Olasılık ' + c.probability + ', etki ' + c.impact + ': ' + c.count + ' risk'"
+                (click)="toggleCell(c)">{{ c.count || '' }}</button>
+            }
+            }
+            <span></span>
+            @for (impact of impacts; track impact) {
+            <span class="axis">{{ impact }}</span>
+            }
+        </div>
+        <div class="axis-names muted small"><span>↑ Olasılık</span><span>Etki →</span></div>
+
+        @if (matrix.value(); as m) {
+        <ul class="legend small">
+            <li><i class="low"></i>1–7 Düşük · {{ m.countBySeverity.low }}</li>
+            <li><i class="medium"></i>8–14 Orta · {{ m.countBySeverity.medium }}</li>
+            <li><i class="high"></i>15–25 Yüksek · {{ m.countBySeverity.high }}</li>
+        </ul>
+        }
+        }
+    </section>
+
+    <div class="list">
+        @if (risks.error()) {
+        <app-empty-state message="Riskler yüklenemedi." />
+        } @else if (risks.hasValue()) {
+        @let result = risks.value();
+        @if (result.items.length === 0) {
+        <app-empty-state [message]="hasFilter() ? 'Bu filtrede risk bulunmuyor.' : 'Bu projede henüz risk kaydı yok.'" />
+        } @else {
+        <div class="table-wrap" [class.loading]="risks.isLoading()">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Risk</th>
+                        <th>Kategori</th>
+                        <th class="num" title="Olasılık × Etki">O × E</th>
+                        <th>Skor</th>
+                        <th>Önleyici aksiyon</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (risk of result.items; track risk.id) {
+                    <tr [class.closed]="risk.status === 'Closed'">
+                        <td class="code">{{ risk.code }}</td>
+                        <td>
+                            @if (readOnly()) {
+                            <b>{{ risk.title }}</b>
+                            } @else {
+                            <!-- The title opens the form, like a row of the paper form. -->
+                            <button type="button" class="title-link" (click)="editing.set(risk.id)">{{ risk.title }}</button>
+                            }
+                            <div class="muted small">
+                                {{ risk.owner.fullName }} · {{ risk.isSharedWithRequester ? 'Paylaşılır' : 'Dahili' }}
+                            </div>
+                        </td>
+                        <td>{{ categoryLabels[risk.category] }}</td>
+                        <td class="num">{{ risk.probability }} × {{ risk.impact }}</td>
+                        <td class="nowrap">
+                            <app-status-badge [label]="risk.score + ' · ' + severityLabels[risk.severity]"
+                                [tone]="severityTones[risk.severity]" />
+                        </td>
+                        <td class="small mitigation">{{ risk.mitigation }}</td>
+                        <td><app-status-badge [label]="statusLabels[risk.status]" [tone]="statusTones[risk.status]" /></td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (result.totalCount > pageSize) {
+        <app-pagination [page]="page()" [pageSize]="pageSize" [totalCount]="result.totalCount" (pageChange)="page.set($event)" />
+        }
+        }
+        } @else {
+        <app-empty-state message="Yükleniyor…" />
+        }
+    </div>
+</div>
+
+@if (editing(); as target) {
+<app-risk-form [projectId]="projectId()" [riskId]="target === 'new' ? null : target"
+    (saved)="onSaved()" (cancelled)="editing.set(null)" />
+}
