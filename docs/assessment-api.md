@@ -1,7 +1,7 @@
 # Assessment Modülü — API Sözleşmesi
 
 Seviye belirleme (akış 2.4, Proje Seviye Belirleme Formu) ve proje kabul puanlaması (akış 3.1, Proje Kabul Değerlendirme
-Formu Bölüm 2/3). Veri modeli: [data-model.md](data-model.md) → `ProjectAssessment`. Durum: **taslak, ekip onayı bekliyor.**
+Formu Bölüm 2/3). Veri modeli: [data-model.md](data-model.md) → `ProjectAssessment`. Durum: **uygulandı** (#96 entity, #97 API, #98 ekran).
 Sorumlu: Baran.
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, hatalar `ProblemDetails`,

@@ -3,7 +3,7 @@
 Faz 0'ın temel entity'leri (`ProcessStage`, `ProcessStep`, `User`, `Project`, `StepRecord`), denetim kaydı
 ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
 Kaynak: "ISDLC Analiz Merkezi" prototipi.
-Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **taslak, ekip onayı bekliyor.**
+Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **uygulandı**; `Notification` (Faz 3) **taslak, ekip onayı bekliyor.**
 
 İsimlendirme AGENTS.md'ye uyar: entity tekil, tablo çoğul; `?` alanın boş bırakılabileceğini (nullable) gösterir.
 
@@ -26,11 +26,13 @@ Project      1 ──── * ProjectDocument * ── 1 DocumentType
 ProcessStage 1 ──── * DocumentType        (dokümanın ilk hazırlandığı aşama)
 Project      1 ──── * Risk
 Project      1 ──── 0..1 ProjectAssessment (seviye cevapları ve kabul puanları)
+User         1 ──── * Notification        (UserId: alıcı)
+Project      1 ──── * Notification        (bildirimin ilgili olduğu proje)
 User         1 ──── * Risk                (OwnerUserId: sorumlu ekip üyesi)
 ```
 
 - **Ana veri:** `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `DocumentType`. Seed ile yüklenir, kullanıcı tarafından değiştirilmez.
-- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`. Uygulama kullanıldıkça oluşur.
+- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`, `Notification`. Uygulama kullanıldıkça oluşur.
 
 ## Ortak temel sınıf: `AuditableEntity`
 
@@ -161,7 +163,7 @@ Kayıtlar değiştirilmez ve silinmez; süreç geçmişi bu tablodan okunur.
 | `CreatedAt` | DateTime (UTC) | Kaydın `CreatedAt` / `UpdatedAt` alanından |
 
 - Loglanan: `Project` ve ileride eklenecek proje kayıtları (Risk, Requirement, OpenIssue…).
-- Loglanmayan: ana veri (`ProcessStage`, `ProcessStep`, `ProcessStepJump`), `StepRecord` (kendisi zaten geçmiş tablosu), `User`.
+- Loglanmayan: ana veri (`ProcessStage`, `ProcessStep`, `ProcessStepJump`), `StepRecord` (kendisi zaten geçmiş tablosu), `User`, `Notification`.
 - `Changes` içinde yer almayan alanlar: `Id`, `PasswordHash`, `RowVersion` ve `AuditableEntity` alanları (bilgileri log satırında var).
 - Değeri gerçekten değişmeyen alan yazılmaz; hiçbir alan değişmediyse log satırı oluşmaz.
 - Alan adları C# adlarıdır (`Status`); Türkçe karşılıklarını Audit ekranı gösterir ([audit-api.md](audit-api.md)).
@@ -327,6 +329,25 @@ API sözleşmesi, sorular ve ağırlıklar: [assessment-api.md](assessment-api.m
 - Veritabanında her seviye sorusu için 1–3, her kabul ölçütü için 1–5 kontrolü (check constraint) bulunur.
 - `IAudited` ve `IProjectRecord` taşır; cevap değişiklikleri denetim kaydına projesiyle yazılır.
 
+## Bildirimler (Faz 3)
+
+### `Notification` — uygulama içi bildirim
+
+API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-api.md).
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | long | |
+| `UserId` | int (FK → User) | Alıcı |
+| `ProjectId` | int (FK → Project) | Bildirimin ilgili olduğu proje (tıklayınca açılır) |
+| `Message` | string | Gönderen modülün Türkçe metni; en fazla 500 karakter |
+| `CreatedAt` | DateTime (UTC) | |
+| `ReadAt` | DateTime? (UTC) | Okunduysa; ilk okunma zamanı değişmez |
+
+- Proje verisi değildir: `AuditableEntity`'den türemez, denetim kaydına yazılmaz.
+- Rol bildirimi gönderildiği andaki her aktif kullanıcı için ayrı bir satırdır.
+- Silinmez. `(UserId, ReadAt)` ve `(UserId, CreatedAt)` üzerinde indeks bulunur (okunmamış sayısı ve liste için).
+
 ## Enum'lar
 
 | Enum | Değerler |
@@ -389,6 +410,8 @@ API sözleşmesi, sorular ve ağırlıklar: [assessment-api.md](assessment-api.m
     Ayrıntılar ve onay bekleyen diğer kararlar: [risks-api.md](risks-api.md) → "Ekip onayı bekleyen kararlar".
 16. *(Taslak)* Seviye cevapları ve kabul puanları projenin tek `ProjectAssessment` satırında sütun olarak tutulur;
     seviye yalnızca "Seviyeyi uygula" ile `Project.Level`'e yazılır. Ayrıntılar: [assessment-api.md](assessment-api.md) → "Ekip onayı bekleyen kararlar".
+17. *(Taslak)* Bildirimler kişi başına satırdır; gönderen modüller `INotificationService`'i değiştirmeden kullanır.
+    Ayrıntılar: [notifications-api.md](notifications-api.md) → "Ekip onayı bekleyen kararlar".
 
 ## Seed verisi
 
