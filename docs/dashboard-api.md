@@ -2,7 +2,8 @@
 
 Gösterge paneli: giriş yapan kullanıcıya bekleyen işlerini ve projelerin genel durumunu gösteren ana sayfa.
 Yeni tablo yoktur; mevcut kayıtlardan (`Project`, `StepRecord`, `OpenIssue`) hesaplanır.
-Durum: **onaylandı** (10 Kasım 2026); API ve ekran uygulandı. Sorumlu: Dide.
+Durum: **onaylandı** (10 Kasım 2026); API ve ekran uygulandı. Risk ve seviye göstergeleri **öneri, ekip onayı bekliyor**
+(aşağıda "Ek: risk ve seviye göstergeleri"). Sorumlu: Dide.
 
 Uç nokta AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601
 (`DateOnly` alanları `2026-11-10` biçiminde), hatalar `ProblemDetails`, JSON alanları camelCase.
@@ -19,7 +20,7 @@ Uç nokta AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin
 | 6 | "Ne kadar süredir bekliyor" nasıl hesaplanır? | Son süreç kaydından bu yana geçen gün; hiç kaydı yoksa talebin açıldığı tarihten (`CreatedAt`) |
 | 7 | Liste uzunlukları | Her liste en fazla 10 satır ve toplam sayı döner (`totalCount`). Tamamı için ilgili sayfaya bağlantı verilir. Bu yüzden panel sayfalanmaz |
 | 8 | Grafik kütüphanesi | **Eklenmez.** Aşama dağılımı ve ilerleme çubukları CSS ile çizilir (yığına yeni paket eklememek için) |
-| 9 | Risk, seviye ve denetim göstergeleri | Risks, Assessment ve Audit modülleri gelince eklenir (aşağıda "Sonra eklenecekler") |
+| 9 | Risk, seviye ve denetim göstergeleri | Modüller gelince eklenir. Risk ve seviye: "Ek: risk ve seviye göstergeleri"; diğerleri: "Sonra eklenecekler" |
 
 ## Uç nokta
 
@@ -132,18 +133,98 @@ Menüdeki **Gösterge Paneli** (`/dashboard`, girişten sonra açılan ilk sayfa
 
 Liste boşsa kısa bir mesaj gösterilir ("Bekleyen adımınız yok."). Mobilde sütunlar alt alta gelir.
 
+## Ek: risk ve seviye göstergeleri
+
+Risks (#91–#93) ve Assessment (#96–#98) gelince eklenen göstergeler. Durum: **öneri, ekip onayı bekliyor.**
+Mevcut alanlar değişmez; `DashboardDto`'ya yeni alanlar eklenir (ekran ve testler bozulmaz).
+
+### Kararlar
+
+| # | Soru | Öneri |
+| --- | --- | --- |
+| 10 | "Yüksek risk" nedir? | Kapanmamış (`Open`, `Monitoring`) ve seviyesi **Yüksek** olan risk: skor (olasılık × etki) 15 ve üstü. Eşik ve hesap Risks'teki `RiskRules`'tan alınır, panelde ayrıca yazılmaz; böylece Riskler sekmesiyle hep aynı sonucu verir |
+| 11 | Hangi projelerin riskleri sayılır? | Yalnızca **aktif** projeler (kapanmış projenin riski panelde uyarı vermez); `scope=mine` iken kullanıcının projeleri |
+| 12 | Seviye dağılımı neyi sayar? | Aktif kayıtları (talep + proje) `Project.Level`'e göre: Seviye 1 / 2 / 3 / **Belirlenmedi**. "Belirlenmedi" sayısı 2.4'te seviyesi uygulanmamış işleri gösterir |
+| 13 | "Kabul kararı bekleyen talepler" nedir? | Mevcut adımı **3.1 veya 3.2** olan aktif talepler (aşama 3: Proje Kabul). Her satırda kabul puanlamasının sonucu (ağırlıklı ortalama ve öneri) ya da "Puanlama eksik" yazar. Öneri Assessment'taki `AssessmentRules`'tan hesaplanır. İş analisti eksik puanlamayı, yönetici 3.2 kararını buradan görür |
+| 14 | Kişiye özel mi? | Hayır; ikisi de genel bölümdür ve `scope`'a uyar. Kişiye özel karşılıkları zaten "Bana bekleyen adımlar"dadır (3.1 analistin, 3.2 yöneticinin listesinde) |
+
+### DTO'ya eklenenler
+
+```jsonc
+// DashboardDto'ya eklenen alanlar
+{
+  "summary": {
+    // ... mevcut alanlar
+    "highRisks": 3                      // aktif projelerde kapanmamış yüksek riskler (karar 10, 11)
+  },
+
+  // ---- Yüksek riskler (en yüksek skor önce, sonra proje kodu, sonra risk kodu) ----
+  "highRisks": {
+    "totalCount": 3,
+    "items": [
+      {
+        "project": { "id": 1, "code": "ISDLC-2026-014", "name": "Saha Servis Mobil Uygulaması" },
+        "id": 5, "code": "RSK-002", "title": "ERP entegrasyonu gecikebilir",
+        "probability": 4, "impact": 5, "score": 20,
+        "status": "Open",                 // RiskStatus
+        "owner": { "id": 3, "fullName": "Ayşe Demir" }
+      }
+    ]
+  },
+
+  // ---- Seviyeye göre aktif kayıtlar (karar 12) ----
+  "levels": { "level1": 2, "level2": 3, "level3": 1, "notSet": 4 },
+
+  // ---- Kabul kararı bekleyen talepler (karar 13; en uzun bekleyen önce) ----
+  "acceptanceQueue": {
+    "totalCount": 2,
+    "items": [
+      {
+        "project": { "id": 7, "code": "ISDLC-2026-021", "name": "Saha Ekibi Stok Takibi" },
+        "stepCode": "3.2",
+        "weightedScore": 3.85,            // bütün ölçütler puanlanmadıysa null
+        "recommendation": "Accept",       // AcceptanceRecommendation; puanlama eksikse null
+        "answeredCount": 6,               // puanlanan ölçüt sayısı (0–6)
+        "waitingSince": "2026-11-08T09:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+| Alan | Kural |
+| --- | --- |
+| `summary.highRisks`, `highRisks` | Karar 10 ve 11. Liste en fazla 10 satır |
+| `levels` | Karar 12. Toplamı, aktif kayıtların toplamına (`waitingRequests + activeProjects`) eşittir |
+| `acceptanceQueue` | Karar 13. `waitingSince`: "Bana bekleyen adımlar"daki ile aynı (son süreç kaydı, yoksa talebin açılışı). En fazla 10 satır |
+
+### Ekrana eklenenler
+
+- **Özet kartları:** yedinci kart **"Yüksek riskler"**; sayı 0'dan büyükse kırmızı kenarlı.
+- **Yeni iki sütun** (aşama çubuklarının altında):
+  - Sol: **Yüksek riskler**: proje, risk kodu ve tanımı, skor rozeti (ör. "20 · Yüksek"), sorumlu → satır projenin **Riskler** sekmesini açar.
+  - Sağ: **Kabul kararı bekleyen talepler**: proje, adım (3.1 / 3.2), öneri rozeti (Kabul önerilir · Koşullu kabul · Ret / erteleme önerilir)
+    ya da "Puanlama eksik (4/6)" → satır projenin **Seviye & Kabul** sekmesini açar.
+- **Seviye dağılımı:** aşama çubuklarının yanında küçük bir özet: "Seviye 1: 2 · Seviye 2: 3 · Seviye 3: 1 · Belirlenmedi: 4".
+
+### Testler
+
+Yüksek risk eşiği (14 sayılmaz, 15 sayılır), kapanmış risk ve kapanmış proje sayılmaz, `scope=mine`, seviye dağılımının
+toplamı, kabul kuyruğunda yalnızca 3.1 / 3.2, eksik puanlamada öneri boş, tam puanlamada öneri `AssessmentRules` ile aynı.
+
 ## Sonra eklenecekler
 
-| Gösterge | Bekleyen modül | Sorumlu |
+| Gösterge | Bekleyen | Sorumlu |
 | --- | --- | --- |
-| Yüksek skorlu riskler (olasılık × etki) | `Risks` | Baran |
-| Seviyeye göre proje dağılımı, kabul puanı bekleyen talepler | `Assessment` | Baran |
-| Son değişiklikler (alan bazında) | `Audit` API'si | Erva |
-| Okunmamış bildirimler | `Notifications` | Baran |
+| Okunmamış bildirimler | `Notifications` API'si | Baran |
+| Son değişiklikler (alan bazında) | — (Audit hazır; Son hareketler ile çakışmaması için ayrıca konuşulacak) | Dide |
 | Gereksinim ve doküman ilerlemesi (proje bazında) | — (veri hazır; ilk sürümü kalabalıklaştırmamak için sonraya) | Dide |
 
 ## Uygulama sırası (her biri ayrı PR)
 
-1. Bu doküman (ekip onayı)
-2. `DashboardService` ve `GET /dashboard`; testler (bekleyen adım kuralı, kapsam filtresi, sayılar, sıralama)
-3. Gösterge paneli ekranı
+1. Bu doküman (ekip onayı) ✅
+2. `DashboardService` ve `GET /dashboard`; testler (bekleyen adım kuralı, kapsam filtresi, sayılar, sıralama) ✅
+3. Gösterge paneli ekranı ✅
+4. Ek: risk ve seviye göstergeleri — bu bölüm (ekip onayı)
+5. Ek göstergelerin API'si ve testleri
+6. Ek göstergelerin ekranı
