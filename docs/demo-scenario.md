@@ -19,6 +19,7 @@ içinde tutuluyor; her değişiklik kayıt altında."*
 | 5 | **İki tarayıcı penceresi** | Biri normal, biri gizli pencere. Normal pencerede **Elif Yılmaz** (İş Analisti), gizli pencerede **Mert Kaya** (Yazılım Departman Yöneticisi) giriş yapmış olsun |
 | 6 | Toplantı notu | Aşağıdaki "Sahte toplantı notu" panoya kopyalanmış olsun |
 | 7 | Prova | Senaryoyu bir kez baştan sona dene; sonra 1. adımı tekrarla (veritabanını sıfırla) |
+| 8 | Sürüm | Kayıt Geçmişi düzeltmesi (#89) main'de olmalı; yoksa projede doküman değişikliği olunca Kayıt Geçmişi açılmaz |
 
 **Yalnızca sahte veri kullanılır.** Toplantı notları yapay zekâ servisine gönderilir; gerçek müşteri bilgisi girme.
 
@@ -42,10 +43,10 @@ Her adımda: **Ekran** → **Yapılacak** → **Görülmesi gereken** → *Anlat
 | # | Ekran | Yapılacak | Görülmesi gereken |
 | --- | --- | --- | --- |
 | 1.1 | Giriş | Elif olarak giriş yap | Sağ üstte "Elif Yılmaz · İş Analisti" |
-| 1.2 | Gösterge Paneli | Göster | **Bekliyor** (ekranı Dide yazıyor): bana bekleyen işler, projelerin genel durumu |
+| 1.2 | Gösterge Paneli | Göster | "Merhaba, Elif"; özet kartları (onay bekleyen talepler, aktif projeler, bana bekleyen adımlar, geciken açık konular…), **Bana bekleyen adımlar** listesi (her satır projenin Süreç sekmesine gider), aşamalara göre aktif kayıtlar, son hareketler. "Tüm projeler / Benim projelerim" seçimi |
 | 1.3 | Menü → Süreç Kütüphanesi | 5. aşamayı seç | 13 aşama, 75 adım, 21 karar noktası, 3 onay adımı. 5.1'de "Onay: Yazılım Departman Yöneticisi", 5.3'te "Hayır ise: Talep kapanır — Kaybedildi" |
 
-*Anlatım: "Şirketin ISDLC süreci sisteme veri olarak girildi: her adımın sorumlusu, onaycısı ve 'Hayır' cevabında ne
+*Anlatım: "Herkes giriş yapınca önce kendisini bekleyen işleri görür. Şirketin ISDLC süreci sisteme veri olarak girildi: her adımın sorumlusu, onaycısı ve 'Hayır' cevabında ne
 olacağı tanımlı. Ekranlar bu tanıma göre çalışıyor."*
 
 ### 2. Talebin açılması (2 dk)
@@ -78,11 +79,11 @@ Gizli pencere → **Mert Kaya**.
 
 | # | Yapılacak | Görülmesi gereken |
 | --- | --- | --- |
-| 4.1 | Talepler → *Saha Ekibi Stok Takibi* → Süreç | Mert'te "+ Yeni talep" butonu yok (yalnızca İş Analisti). 3.2'de "Evet → sonraki adım", "Hayır → talep kapanır (Reddedildi)" ve "Talebi reddet…" |
+| 4.1 | Gösterge Paneli → **Bana bekleyen adımlar**'da *Saha Ekibi Stok Takibi — Adım 3.2* → tıkla (Süreç sekmesi açılır) | Mert'te "+ Yeni talep" butonu yok (yalnızca İş Analisti). 3.2'de "Evet → sonraki adım", "Hayır → talep kapanır (Reddedildi)" ve "Talebi reddet…" |
 | 4.2 | "Evet → sonraki adım" (isteğe bağlı not: *"Bütçe onaylandı, öncelik yüksek."*) | 3. aşama tamamlandı, mevcut adım **4.1**. Kayıt artık **Projeler** listesinde |
 | 4.3 | — | **Bekliyor** (Baran): Elif'e "talep kabul edildi" bildirimi (`Notifications`) |
 
-*Anlatım: "Yönetici yalnızca kendisini bekleyen adımı görür ve onaylar; reddetmek isterse gerekçe zorunludur."*
+*Anlatım: "Yönetici, onayını bekleyen talebi kendi panelinde görür ve onaylar; reddetmek isterse gerekçe zorunludur."*
 
 *Yedek gösterim (zaman varsa):* Mert, bir örnek projede "Talebi reddet…" ile gerekçe yazarak reddeder → aşama
 "durduruldu", "Süreç sona erdi: Reddedildi".
@@ -132,7 +133,7 @@ gizlenir."*
 
 ### Kapanış (1 dk)
 
-Talepler ve Projeler listeleri, gösterge paneli (hazır olduğunda). Sonraki adımlar: seviye ve kabul puanlaması, risk
+Gösterge Paneli: **Son hareketler**'de demoda yapılanlar, **Aşamalara göre aktif kayıtlar**'da projenin 4. aşamada görünmesi. Sonraki adımlar: seviye ve kabul puanlaması, risk
 yönetimi, bildirimler; yapay zekâ tarafında form doldurma ve belge yükleme (bkz. [ai-vision.md](ai-vision.md)).
 
 ## Sahte toplantı notu
@@ -152,7 +153,6 @@ Barkod okuyucu olarak telefon kamerasının yeterli olacağı varsayılıyor.
 
 | Adım | Eksik | Modül | Sorumlu |
 | --- | --- | --- | --- |
-| 1.2, Kapanış | Gösterge paneli ekranı (API hazır) | `Dashboard` | Dide |
 | 3.4 | Seviye belirleme ve kabul puanlaması (2.4, 3.1) | `Assessment` | Baran |
 | 4.3 | Uygulama içi bildirimler | `Notifications` | Baran |
 | 7.4 | Risk kaydı ve puanlama (4.8) | `Risks` | Baran |
