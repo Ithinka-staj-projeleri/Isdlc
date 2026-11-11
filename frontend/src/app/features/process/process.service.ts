@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, shareReplay } from 'rxjs';
+import { Observable, shareReplay, tap } from 'rxjs';
 import { PagedResult } from '../../shared/models/paged-result';
-import { ProcessStage } from './models/process-stage';
+import { ProcessFlow, ProcessFlowListItem } from './models/process-stage';
 import { AnswerStep, ProjectProcess, StepRecord } from './models/project-process';
 
 /**
@@ -13,13 +13,26 @@ import { AnswerStep, ProjectProcess, StepRecord } from './models/project-process
 export class ProcessService {
     private readonly http = inject(HttpClient);
 
-    /** The 13 stages and their steps, in flow order. Seed data, so it is loaded once per session. */
-    readonly stages$: Observable<ProcessStage[]> = this.http
-        .get<ProcessStage[]>('/api/v1/process-stages')
+    /** Flows are seed data, so each is loaded once per session. */
+    private readonly flowCache = new Map<string, Observable<ProcessFlow>>();
+
+    /** All flows without their steps. */
+    readonly flows$: Observable<ProcessFlowListItem[]> = this.http
+        .get<ProcessFlowListItem[]>('/api/v1/process-flows')
         .pipe(shareReplay(1));
 
-    getStages(): Observable<ProcessStage[]> {
-        return this.stages$;
+    /** A flow with its stages and steps, in flow order. */
+    getFlow(code: string): Observable<ProcessFlow> {
+        let flow = this.flowCache.get(code);
+        if (!flow) {
+            flow = this.http.get<ProcessFlow>(`/api/v1/process-flows/${encodeURIComponent(code)}`).pipe(
+                // A failed load is not kept, so the next screen tries again.
+                tap({ error: () => this.flowCache.delete(code) }),
+                shareReplay(1),
+            );
+            this.flowCache.set(code, flow);
+        }
+        return flow;
     }
 
     getProjectProcess(projectId: number): Observable<ProjectProcess> {

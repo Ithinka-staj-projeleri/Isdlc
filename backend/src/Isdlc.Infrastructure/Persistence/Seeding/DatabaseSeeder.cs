@@ -29,27 +29,62 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         await transaction.CommitAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// One flow per file in Seed/flows. A flow that is not in the database yet is added with its stages and
+    /// steps (no record uses it, so no migration is needed). An existing flow follows its file (SyncFlowAsync).
+    /// </summary>
     private async Task SeedProcessFlowAsync(CancellationToken cancellationToken)
     {
-        var file = Read<ProcessFlowFile>("process-flow.json");
+        var files = ReadFlows();
+        var flows = await db.ProcessFlows.ToListAsync(cancellationToken);
 
-        // The flow is reference data that the company revises; an existing database follows the file.
-        if (await db.ProcessStages.AnyAsync(cancellationToken))
+        foreach (var file in files)
         {
-            await SyncProcessFlowAsync(file, cancellationToken);
-            return;
+            var flow = flows.SingleOrDefault(f => f.Code == file.Code);
+            if (flow is null)
+            {
+                flow = new ProcessFlow { Code = file.Code };
+                db.ProcessFlows.Add(flow);
+            }
+
+            flow.Name = file.Name;
+            flow.Kind = file.Kind;
+            flow.ProjectStageOrder = file.ProjectStageOrder;
+
+            // A migration may have created the flow row before its stages (moving data into the new structure).
+            if (flow.Id != 0 && await db.ProcessStages.AnyAsync(s => s.ProcessFlowId == flow.Id, cancellationToken))
+            {
+                await SyncFlowAsync(flow, file, cancellationToken);
+            }
+            else
+            {
+                AddFlowContent(flow, file);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
         }
 
+        var fileCodes = files.Select(f => f.Code).ToHashSet();
+        foreach (var orphan in flows.Where(f => !fileCodes.Contains(f.Code)))
+        {
+            logger.LogWarning("Flow {Code} is in the database but has no seed file; it is left as it is.", orphan.Code);
+        }
+    }
+
+    private void AddFlowContent(ProcessFlow flow, ProcessFlowFile file)
+    {
         var stagesByOrder = file.Stages.ToDictionary(
             s => s.Order,
-            s => new ProcessStage { Order = s.Order, Title = s.Title, ShortTitle = s.ShortTitle });
+            s => new ProcessStage { ProcessFlow = flow, Order = s.Order, Title = s.Title, ShortTitle = s.ShortTitle });
 
         var stepsByCode = file.Steps.ToDictionary(
             s => s.Code,
             s => new ProcessStep
             {
+                ProcessFlow = flow,
                 ProcessStage = stagesByOrder.GetValueOrDefault(s.StageOrder)
-                    ?? throw new InvalidOperationException($"Step {s.Code}: stage {s.StageOrder} does not exist."),
+                    ?? throw new InvalidOperationException(
+                        $"Flow {file.Code}, step {s.Code}: stage {s.StageOrder} does not exist."),
                 Code = s.Code,
                 Order = s.Order,
                 Text = s.Text,
@@ -58,6 +93,9 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 ResponsibleRole = s.ResponsibleRole,
                 ApproverRole = s.ApproverRole,
                 NoOutcome = s.NoOutcome,
+                RequiresExternalRequest = s.RequiresExternalRequest,
+                RequiresOffer = s.RequiresOffer,
+                MinLevel = s.MinLevel,
             });
 
         foreach (var stepSeed in file.Steps)
@@ -66,7 +104,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             {
                 stepsByCode[stepSeed.Code].NoJumps.Add(new ProcessStepJump
                 {
-                    TargetStep = FindStep(stepsByCode, jump.TargetStepCode, $"jump from {stepSeed.Code}"),
+                    TargetStep = FindStep(stepsByCode, jump.TargetStepCode, $"flow {file.Code}, jump from {stepSeed.Code}"),
                     Label = jump.Label,
                 });
             }
@@ -74,22 +112,24 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
 
         db.ProcessStages.AddRange(stagesByOrder.Values);
         db.ProcessSteps.AddRange(stepsByCode.Values);
-        await db.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("Seeded {Stages} process stages and {Steps} steps.",
-            stagesByOrder.Count, stepsByCode.Count);
+        logger.LogInformation("Seeded flow {Flow}: {Stages} stages and {Steps} steps.",
+            file.Code, stagesByOrder.Count, stepsByCode.Count);
     }
 
     /// <summary>
-    /// Brings an existing flow in line with process-flow.json, matching stages by order and steps by code:
-    /// titles, texts, "No" explanations, roles, outcomes and return options. Ids stay the same, so projects
-    /// and their process history are untouched. Adding, removing or reordering steps is not done here
+    /// Brings an existing flow in line with its file, matching stages by order and steps by code:
+    /// titles, texts, "No" explanations, roles, outcomes, conditions and return options. Ids stay the same, so
+    /// projects and their process history are untouched. Adding, removing or reordering steps is not done here
     /// (it would move projects between steps); such a difference is only logged and needs its own migration.
     /// </summary>
-    private async Task SyncProcessFlowAsync(ProcessFlowFile file, CancellationToken cancellationToken)
+    private async Task SyncFlowAsync(ProcessFlow flow, ProcessFlowFile file, CancellationToken cancellationToken)
     {
-        var stages = await db.ProcessStages.ToListAsync(cancellationToken);
-        var steps = await db.ProcessSteps.Include(s => s.NoJumps).ToListAsync(cancellationToken);
+        var stages = await db.ProcessStages.Where(s => s.ProcessFlowId == flow.Id).ToListAsync(cancellationToken);
+        var steps = await db.ProcessSteps
+            .Include(s => s.NoJumps)
+            .Where(s => s.ProcessFlowId == flow.Id)
+            .ToListAsync(cancellationToken);
         var stepsByCode = steps.ToDictionary(s => s.Code);
 
         var fileCodes = file.Steps.Select(s => s.Code).ToHashSet();
@@ -97,8 +137,8 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             || file.Steps.Any(s => stepsByCode[s.Code].Order != s.Order))
         {
             logger.LogWarning(
-                "process-flow.json adds, removes or reorders stages or steps; that needs a migration. " +
-                "Only texts, roles and return options of matching steps are updated.");
+                "Flow {Flow}: the seed file adds, removes or reorders stages or steps; that needs a migration. " +
+                "Only texts, roles, conditions and return options of matching steps are updated.", file.Code);
         }
 
         var changed = 0;
@@ -126,13 +166,15 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             changed += Set(step.ResponsibleRole, stepSeed.ResponsibleRole, v => step.ResponsibleRole = v);
             changed += Set(step.ApproverRole, stepSeed.ApproverRole, v => step.ApproverRole = v);
             changed += Set(step.NoOutcome, stepSeed.NoOutcome, v => step.NoOutcome = v);
+            changed += Set(step.RequiresExternalRequest, stepSeed.RequiresExternalRequest, v => step.RequiresExternalRequest = v);
+            changed += Set(step.RequiresOffer, stepSeed.RequiresOffer, v => step.RequiresOffer = v);
+            changed += Set(step.MinLevel, stepSeed.MinLevel, v => step.MinLevel = v);
             changed += SyncJumps(step, stepSeed, stepsByCode);
         }
 
         if (changed > 0)
         {
-            await db.SaveChangesAsync(cancellationToken);
-            logger.LogInformation("Updated {Changes} process flow values from process-flow.json.", changed);
+            logger.LogInformation("Flow {Flow}: updated {Changes} values from its seed file.", file.Code, changed);
         }
     }
 
@@ -191,7 +233,10 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         }
 
         var file = Read<DocumentTypesFile>("document-types.json");
-        var stageIds = await db.ProcessStages.ToDictionaryAsync(s => s.Order, s => s.Id, cancellationToken);
+        // Document types belong to the stages of the request flow (redone with the company's document list in D4).
+        var stageIds = await db.ProcessStages
+            .Where(s => s.ProcessFlow.Code == ProcessFlowCodes.NewRequest)
+            .ToDictionaryAsync(s => s.Order, s => s.Id, cancellationToken);
 
         db.DocumentTypes.AddRange(file.DocumentTypes.Select(d => new DocumentType
         {
@@ -235,7 +280,11 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         }
 
         var file = Read<SampleProjectsFile>("sample-projects.json");
-        var steps = await db.ProcessSteps.OrderBy(s => s.Order).ToListAsync(cancellationToken);
+        var flow = await db.ProcessFlows.SingleAsync(f => f.Code == ProcessFlowCodes.NewRequest, cancellationToken);
+        var steps = await db.ProcessSteps
+            .Where(s => s.ProcessFlowId == flow.Id)
+            .OrderBy(s => s.Order)
+            .ToListAsync(cancellationToken);
         var stepsByCode = steps.ToDictionary(s => s.Code);
         var users = await db.Users.OrderBy(u => u.Id).ToListAsync(cancellationToken);
         var now = timeProvider.GetUtcNow().UtcDateTime;
@@ -268,6 +317,8 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 Level = seed.Level,
                 Priority = seed.Priority,
                 Status = seed.Status,
+                ProcessFlowId = flow.Id,
+                RequiresOffer = true,
                 CurrentStepId = isActive ? markerStep.Id : null,
                 StartDate = seed.StartDate,
                 DueDate = seed.DueDate,

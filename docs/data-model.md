@@ -50,7 +50,7 @@ Alanları denetim kaydı altyapısı `SaveChanges` sırasında otomatik doldurur
 
 ## Ana veri
 
-### `ProcessFlow` — iş akışı (Faz 4, önerildi)
+### `ProcessFlow` — iş akışı (Faz 4)
 
 Kurallar ve akış listesi: [process-api.md → Akışlar](process-api.md#akışlar-faz-4).
 
@@ -473,10 +473,10 @@ QuestionAnswer * ──── 0..1 QuestionOption
     seviye yalnızca "Seviyeyi uygula" ile `Project.Level`'e yazılır. Ayrıntılar: [assessment-api.md](assessment-api.md) → "Ekip onayı bekleyen kararlar".
 17. *(Taslak)* Bildirimler kişi başına satırdır; gönderen modüller `INotificationService`'i değiştirmeden kullanır.
     Ayrıntılar: [notifications-api.md](notifications-api.md) → "Ekip onayı bekleyen kararlar".
-18. *(Faz 4, önerildi)* Akışlar veri olarak tutulur (`ProcessFlow`); her kayıt tek bir akışı izler. Akışlar şirketin beş akışıdır;
+18. *(Faz 4)* Akışlar veri olarak tutulur (`ProcessFlow`); her kayıt tek bir akışı izler. Akışlar şirketin beş akışıdır;
     eski 13 aşamalı akış geçersizdir ve kaldırılır (uygulama canlıda olmadığı için veritabanı yeni akışlarla baştan kurulur).
-19. *(Faz 4, önerildi)* Adımın yapılıp yapılmayacağı üç koşulla belirlenir (dış talep, teklif, en düşük seviye); koşulu sağlanmayan adım atlanır ve kaydı tutulmaz.
-20. *(Faz 4, önerildi)* Süreç iyileştirme önerisi, kaynak planlama haftası ve faturalama ayı ayrı tablo değil, kendi akışını izleyen
+19. *(Faz 4)* Adımın yapılıp yapılmayacağı üç koşulla belirlenir (dış talep, teklif, en düşük seviye); koşulu sağlanmayan adım atlanır ve kaydı tutulmaz.
+20. *(Faz 4)* Süreç iyileştirme önerisi, kaynak planlama haftası ve faturalama ayı ayrı tablo değil, kendi akışını izleyen
     birer `Project` kaydıdır; akışın türü (`ProcessFlowKind`) kaydın hangi menüde listeleneceğini belirler.
 21. *(Faz 4, taslak)* Dört şirket formu tek bir soru bankası yapısında tutulur; alt kategori talep kaynağıdır, iş tipi akışın
     anahtarıdır (`ProcessFlow.Code`). Ayrıntılar: [question-bank-api.md](question-bank-api.md) → "Ekip onayı bekleyen kararlar".
@@ -492,8 +492,9 @@ değişmez; projeler ve süreç geçmişi etkilenmez. Böylece şirket akışı 
 değiştirilir. Adım eklemek, çıkarmak veya sırasını değiştirmek bu yolla yapılmaz (projelerin bulunduğu adımı
 kaydırır); böyle bir fark logda uyarı olarak görünür ve ayrı bir migration gerektirir.
 
-**Faz 4 (önerildi):** her akış ayrı bir dosyadır: `Seed/flows/<code>.json` (beş dosya). `process-flow.json` ve eski akışa
-göre yazılmış `sample-projects.json` kaldırılır; örnek projeler yeni akışlara göre yeniden yazılır (E2).
+**Faz 4:** her akış ayrı bir dosyadır: `Seed/flows/<code>.json`. E1 ile **uygulandı**; şimdilik tek dosya var
+(`flows/isdlc-v12.json`, eski `process-flow.json`). E2'de beş akışın dosyaları gelir, `isdlc-v12` ve eski akışa göre yazılmış
+`sample-projects.json` kaldırılır; örnek projeler yeni akışlara göre yeniden yazılır.
 Dosyada akışın `code`, `name`, `kind`, `projectStageOrder` alanları ve `stages` / `steps` bulunur; adımlarda
 ayrıca `requiresExternalRequest`, `requiresOffer`, `minLevel`. Eşitleme akış bazında yapılır: veritabanında olmayan bir akış
 dosyası **eklenir** (içinde henüz kayıt olmadığı için migration gerekmez); var olan akışta adım eklemek, çıkarmak veya

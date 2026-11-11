@@ -13,11 +13,26 @@ public class ProcessStep
     public int ProcessStageId { get; set; }
     public ProcessStage ProcessStage { get; set; } = null!;
 
-    /// <summary>e.g. "4.7", unique.</summary>
+    /// <summary>The stage's flow, also kept on the step for the unique indexes and the "next step" query.</summary>
+    public int ProcessFlowId { get; set; }
+    public ProcessFlow ProcessFlow { get; set; } = null!;
+
+    /// <summary>e.g. "4.7" or "12"; unique within the flow.</summary>
     public string Code { get; set; } = string.Empty;
 
-    /// <summary>Position in the whole flow. The next step has Order + 1.</summary>
+    /// <summary>Position in the flow; unique within the flow. The next step is the first later one whose conditions hold.</summary>
     public int Order { get; set; }
+
+    // Conditions: the step is skipped unless all of them hold for the record (StepConditions).
+
+    /// <summary>Done only for external requests.</summary>
+    public bool RequiresExternalRequest { get; set; }
+
+    /// <summary>Done only when an offer will be prepared (Project.RequiresOffer).</summary>
+    public bool RequiresOffer { get; set; }
+
+    /// <summary>Done only when Project.Level is at least this, or not decided yet.</summary>
+    public int? MinLevel { get; set; }
 
     public string Text { get; set; } = string.Empty;
 

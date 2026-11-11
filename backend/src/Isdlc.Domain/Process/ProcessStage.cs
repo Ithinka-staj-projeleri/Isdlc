@@ -1,13 +1,16 @@
 namespace Isdlc.Domain.Process;
 
 /// <summary>
-/// One of the 13 ISDLC stages. Master data loaded from the seed; not edited by users.
+/// A stage ("bölüm") of a flow. Master data loaded from the seed; not edited by users.
 /// </summary>
 public class ProcessStage
 {
     public int Id { get; set; }
 
-    /// <summary>1–13, unique.</summary>
+    public int ProcessFlowId { get; set; }
+    public ProcessFlow ProcessFlow { get; set; } = null!;
+
+    /// <summary>Starts at 1 in each flow; unique within the flow.</summary>
     public int Order { get; set; }
 
     public string Title { get; set; } = string.Empty;

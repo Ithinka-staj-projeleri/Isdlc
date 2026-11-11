@@ -8,6 +8,7 @@ using Isdlc.Application.OpenIssues.Dtos;
 using Isdlc.Application.Risks;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.OpenIssues;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Isdlc.Domain.Risks;
 using Microsoft.EntityFrameworkCore;
@@ -21,9 +22,6 @@ public class DashboardService(
 {
     /// <summary>Each list shows its first rows; the rest is on the module's own page.</summary>
     public const int ListSize = 10;
-
-    /// <summary>Stages 1–3 are the request phase ("Talepler"), the same rule as the Projects list.</summary>
-    private const int LastRequestStageOrder = 3;
 
     /// <summary>Acceptance: scoring at 3.1, the department manager's decision at 3.2 (docs/dashboard-api.md, decision 13).</summary>
     private static readonly string[] AcceptanceStepCodes = ["3.1", "3.2"];
@@ -41,8 +39,8 @@ public class DashboardService(
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var today = DateOnly.FromDateTime(now);
 
-        // The general sections count these projects.
-        var projects = dbContext.Projects.AsNoTracking();
+        // The general sections count these projects: requests and projects only (not improvement, planning or billing).
+        var projects = dbContext.Projects.AsNoTracking().Where(p => p.ProcessFlow.Kind == ProcessFlowKind.Request);
         if (scope == DashboardScope.Mine)
         {
             projects = projects.Where(p => p.BusinessAnalystId == userId || p.ProjectManagerId == userId);
@@ -57,10 +55,15 @@ public class DashboardService(
         var highRisks = await HighRisksAsync(projects, cancellationToken);
 
         var summary = new DashboardSummaryDto(
+            // The same request / project rule as the Projects list (docs/process-api.md → "Talep mi, proje mi").
             WaitingRequests: await projects.CountAsync(p => p.Status == ProjectStatus.Active
-                && p.CurrentStep != null && p.CurrentStep.ProcessStage.Order <= LastRequestStageOrder, cancellationToken),
+                && p.CurrentStep != null
+                && (p.ProcessFlow.ProjectStageOrder == null
+                    || p.CurrentStep.ProcessStage.Order < p.ProcessFlow.ProjectStageOrder), cancellationToken),
             ActiveProjects: await projects.CountAsync(p => p.Status == ProjectStatus.Active
-                && p.CurrentStep != null && p.CurrentStep.ProcessStage.Order > LastRequestStageOrder, cancellationToken),
+                && p.CurrentStep != null
+                && p.ProcessFlow.ProjectStageOrder != null
+                && p.CurrentStep.ProcessStage.Order >= p.ProcessFlow.ProjectStageOrder, cancellationToken),
             MyWaitingSteps: myWaitingSteps.TotalCount,
             OverdueOpenIssues: overdueOpenIssues.TotalCount,
             OverdueProjects: await projects.CountAsync(p => p.Status == ProjectStatus.Active
@@ -312,18 +315,23 @@ public class DashboardService(
             counts.GetValueOrDefault(ProjectStatus.Redirected));
     }
 
-    /// <summary>Active records by the stage of their current step; all 13 stages, empty ones too.</summary>
+    /// <summary>
+    /// Active records of the new-request flow by the stage of their current step; all its stages, empty ones too.
+    /// Stage orders repeat across flows, so only one flow is counted (Faz 4, D9 decides how other flows are shown).
+    /// </summary>
     private async Task<IReadOnlyList<StageCountDto>> StagesAsync(
         IQueryable<Project> projects, CancellationToken cancellationToken)
     {
         var counts = await projects
-            .Where(p => p.Status == ProjectStatus.Active && p.CurrentStep != null)
+            .Where(p => p.Status == ProjectStatus.Active && p.CurrentStep != null
+                && p.ProcessFlow.Code == ProcessFlowCodes.NewRequest)
             .GroupBy(p => p.CurrentStep!.ProcessStage.Order)
             .Select(g => new { Order = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Order, x => x.Count, cancellationToken);
 
         var stages = await dbContext.ProcessStages
             .AsNoTracking()
+            .Where(s => s.ProcessFlow.Code == ProcessFlowCodes.NewRequest)
             .OrderBy(s => s.Order)
             .Select(s => new { s.Order, s.ShortTitle })
             .ToListAsync(cancellationToken);

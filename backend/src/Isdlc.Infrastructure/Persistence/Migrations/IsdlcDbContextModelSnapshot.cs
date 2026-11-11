@@ -474,6 +474,40 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Isdlc.Domain.Process.ProcessFlow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("ProjectStageOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("ProcessFlows");
+                });
+
             modelBuilder.Entity("Isdlc.Domain.Process.ProcessStage", b =>
                 {
                     b.Property<int>("Id")
@@ -483,6 +517,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProcessFlowId")
                         .HasColumnType("int");
 
                     b.Property<string>("ShortTitle")
@@ -497,7 +534,7 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Order")
+                    b.HasIndex("ProcessFlowId", "Order")
                         .IsUnique();
 
                     b.ToTable("ProcessStages");
@@ -523,6 +560,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDecision")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("MinLevel")
+                        .HasColumnType("int");
+
                     b.Property<string>("NoBranchText")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -534,8 +574,17 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
+                    b.Property<int>("ProcessFlowId")
+                        .HasColumnType("int");
+
                     b.Property<int>("ProcessStageId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("RequiresExternalRequest")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("RequiresOffer")
+                        .HasColumnType("bit");
 
                     b.Property<string>("ResponsibleRole")
                         .IsRequired()
@@ -549,13 +598,13 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("Order")
-                        .IsUnique();
-
                     b.HasIndex("ProcessStageId");
+
+                    b.HasIndex("ProcessFlowId", "Code")
+                        .IsUnique();
+
+                    b.HasIndex("ProcessFlowId", "Order")
+                        .IsUnique();
 
                     b.ToTable("ProcessSteps");
                 });
@@ -700,6 +749,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("ProcessFlowId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("ProjectManagerId")
                         .HasColumnType("int");
 
@@ -719,6 +771,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<bool>("RequiresNda")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("RequiresOffer")
                         .HasColumnType("bit");
 
                     b.Property<byte[]>("RowVersion")
@@ -756,6 +811,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("CurrentStepId");
+
+                    b.HasIndex("ProcessFlowId");
 
                     b.HasIndex("ProjectManagerId");
 
@@ -1391,13 +1448,32 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("SourceMeeting");
                 });
 
+            modelBuilder.Entity("Isdlc.Domain.Process.ProcessStage", b =>
+                {
+                    b.HasOne("Isdlc.Domain.Process.ProcessFlow", "ProcessFlow")
+                        .WithMany("Stages")
+                        .HasForeignKey("ProcessFlowId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ProcessFlow");
+                });
+
             modelBuilder.Entity("Isdlc.Domain.Process.ProcessStep", b =>
                 {
+                    b.HasOne("Isdlc.Domain.Process.ProcessFlow", "ProcessFlow")
+                        .WithMany()
+                        .HasForeignKey("ProcessFlowId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Process.ProcessStage", "ProcessStage")
                         .WithMany("Steps")
                         .HasForeignKey("ProcessStageId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ProcessFlow");
 
                     b.Navigation("ProcessStage");
                 });
@@ -1484,6 +1560,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CurrentStepId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Isdlc.Domain.Process.ProcessFlow", "ProcessFlow")
+                        .WithMany("Projects")
+                        .HasForeignKey("ProcessFlowId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Identity.User", "ProjectManager")
                         .WithMany()
                         .HasForeignKey("ProjectManagerId")
@@ -1497,6 +1579,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("BusinessAnalyst");
 
                     b.Navigation("CurrentStep");
+
+                    b.Navigation("ProcessFlow");
 
                     b.Navigation("ProjectManager");
                 });
@@ -1662,6 +1746,13 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("OwnerUser");
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.Process.ProcessFlow", b =>
+                {
+                    b.Navigation("Projects");
+
+                    b.Navigation("Stages");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Process.ProcessStage", b =>

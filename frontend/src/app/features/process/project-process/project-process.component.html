@@ -10,6 +10,7 @@
     </div>
     <span class="percent">%{{ p.progressPercent }}</span>
     <app-status-badge [label]="statusLabels[p.status]" [tone]="statusTone(p)" />
+    <span class="muted">Akış: <b>{{ p.flow.name }}</b></span>
     @if (p.currentStep) {
     <span class="muted">Mevcut adım: <b class="code">{{ p.currentStep.code }}</b></span>
     }
@@ -59,6 +60,10 @@
                         <app-status-badge [label]="badge.label" [tone]="badge.tone" />
                         }
                         @if (state === 'current') { <app-status-badge label="Mevcut adım" tone="info" /> }
+                        @if (state === 'skipped') {
+                        <app-status-badge label="Atlanır" tone="neutral" />
+                        <span class="muted small">{{ conditionLabels(step.condition).join(' · ') }}</span>
+                        }
                     </div>
 
                     @if (state === 'current') {

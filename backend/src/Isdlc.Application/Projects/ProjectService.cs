@@ -3,8 +3,10 @@ using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Common.Models;
 using Isdlc.Application.Notifications;
+using Isdlc.Application.Process;
 using Isdlc.Application.Projects.Dtos;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,33 +21,35 @@ public class ProjectService(
     /// <summary>The first try plus 3 retries when another request took the same code at the same moment.</summary>
     private const int MaxCodeAttempts = 4;
 
-    /// <summary>Stages 1–3 are the request phase (up to project acceptance at 3.2); 4–13 is the project phase.</summary>
-    private const int LastRequestStageOrder = 3;
-
     public async Task<PagedResult<ProjectListItemDto>> ListAsync(
         ProjectFilter filter, PageRequest pageRequest, CancellationToken cancellationToken)
     {
-        var query = dbContext.Projects.AsNoTracking();
+        // Talepler and Projeler list only request flows; improvement, planning and billing records have their own menus.
+        var query = dbContext.Projects.AsNoTracking().Where(p => p.ProcessFlow.Kind == ProcessFlowKind.Request);
 
         if (filter.Status is { } status)
         {
             query = query.Where(p => p.Status == status);
         }
 
-        // The two phases split every record in two: a waiting request (active, stages 1–3) or not.
-        // A closed record is never a waiting request, even if it was closed in stage 1–3 (e.g. redirected at 1.2).
+        // The two phases split every record in two: a waiting request (active, before the flow's project stage) or not.
+        // A closed record is never a waiting request, even if it was closed early (e.g. redirected at 1.2).
+        // A flow without a project stage never turns its records into projects (docs/process-api.md → "Talep mi, proje mi").
         if (filter.Phase == ProjectPhase.Request)
         {
             query = query.Where(p =>
                 p.Status == ProjectStatus.Active
                 && p.CurrentStep != null
-                && p.CurrentStep.ProcessStage.Order <= LastRequestStageOrder);
+                && (p.ProcessFlow.ProjectStageOrder == null
+                    || p.CurrentStep.ProcessStage.Order < p.ProcessFlow.ProjectStageOrder));
         }
         else if (filter.Phase == ProjectPhase.Project)
         {
             query = query.Where(p =>
                 p.Status != ProjectStatus.Active
-                || (p.CurrentStep != null && p.CurrentStep.ProcessStage.Order > LastRequestStageOrder));
+                || (p.CurrentStep != null
+                    && p.ProcessFlow.ProjectStageOrder != null
+                    && p.CurrentStep.ProcessStage.Order >= p.ProcessFlow.ProjectStageOrder));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
@@ -112,18 +116,28 @@ public class ProjectService(
 
         await ValidatePeopleAsync(request.BusinessAnalystId, request.ProjectManagerId, cancellationToken);
 
-        // Agreed with Process: a new request starts Active at the first step of the flow (1.1).
-        var firstStepId = await dbContext.ProcessSteps
-            .OrderBy(s => s.Order)
-            .Select(s => s.Id)
-            .FirstAsync(cancellationToken);
+        // Agreed with Process: a new request starts Active at the first step of its flow whose conditions hold.
+        var flowId = await dbContext.ProcessFlows
+            .Where(f => f.Code == ProcessFlowCodes.NewRequest)
+            .Select(f => f.Id)
+            .SingleAsync(cancellationToken);
+        var flowSteps = await dbContext.ProcessSteps
+            .Where(s => s.ProcessFlowId == flowId)
+            .Select(s => new ConditionalStep(
+                s.Id, s.Order, new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel)))
+            .ToListAsync(cancellationToken);
 
         var project = new Project
         {
             Status = ProjectStatus.Active,
-            CurrentStepId = firstStepId,
+            ProcessFlowId = flowId,
+            // The request form gets "teklif hazırlanacak mı" in Faz 4 (D1); until then every request may get an offer.
+            RequiresOffer = true,
         };
         ApplyContent(project, request);
+        project.CurrentStepId = StepConditions.FirstStepId(
+                flowSteps, new ConditionContext(project.Source, project.RequiresOffer, project.Level))
+            ?? throw new InvalidOperationException($"Flow {ProcessFlowCodes.NewRequest} has no step for this request.");
         dbContext.Projects.Add(project);
 
         await SaveWithNewCodeAsync(project, cancellationToken);

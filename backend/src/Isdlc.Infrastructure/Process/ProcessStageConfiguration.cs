@@ -11,6 +11,8 @@ public class ProcessStageConfiguration : IEntityTypeConfiguration<ProcessStage>
         builder.Property(x => x.Title).HasMaxLength(100);
         builder.Property(x => x.ShortTitle).HasMaxLength(50);
 
-        builder.HasIndex(x => x.Order).IsUnique();
+        builder.HasIndex(x => new { x.ProcessFlowId, x.Order }).IsUnique();
+
+        builder.HasOne(x => x.ProcessFlow).WithMany(x => x.Stages).HasForeignKey(x => x.ProcessFlowId);
     }
 }

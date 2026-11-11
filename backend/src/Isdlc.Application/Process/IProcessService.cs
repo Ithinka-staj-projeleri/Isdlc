@@ -4,13 +4,19 @@ using Isdlc.Application.Process.Dtos;
 namespace Isdlc.Application.Process;
 
 /// <summary>
-/// ISDLC process flow and the progress of projects through it.
+/// The company's work flows and the progress of records through them.
 /// Contract: docs/process-api.md
 /// </summary>
 public interface IProcessService
 {
-    /// <summary>All 13 stages with their steps, both in flow order.</summary>
-    Task<IReadOnlyList<ProcessStageDto>> GetStagesAsync(CancellationToken cancellationToken);
+    /// <summary>All flows without their steps, ordered by id (seed order).</summary>
+    Task<IReadOnlyList<ProcessFlowListItemDto>> GetFlowsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// A flow with its stages and steps, both in flow order.
+    /// Throws NotFoundException when no flow has this code.
+    /// </summary>
+    Task<ProcessFlowDto> GetFlowAsync(string code, CancellationToken cancellationToken);
 
     /// <summary>
     /// The project's place in the flow and what the signed-in user can do on the current step.

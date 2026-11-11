@@ -42,7 +42,14 @@ public class Project : AuditableEntity, IAudited
 
     public ProjectStatus Status { get; set; } = ProjectStatus.Active;
 
-    /// <summary>Empty when the project is not active.</summary>
+    /// <summary>The flow the record follows. Set when the record is opened; never changes.</summary>
+    public int ProcessFlowId { get; set; }
+    public ProcessFlow ProcessFlow { get; set; } = null!;
+
+    /// <summary>Whether an offer will be prepared. Steps with RequiresOffer are skipped when false.</summary>
+    public bool RequiresOffer { get; set; }
+
+    /// <summary>Empty when the project is not active. Always a step of the record's own flow.</summary>
     public int? CurrentStepId { get; set; }
     public ProcessStep? CurrentStep { get; set; }
 

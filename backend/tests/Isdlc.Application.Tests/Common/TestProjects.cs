@@ -1,4 +1,5 @@
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +42,8 @@ public static class TestProjects
             BusinessAnalystId = await UserIdAsync(database, Analyst),
             ProjectManagerId = await UserIdAsync(database, ProjectManager),
             Status = status,
+            ProcessFlowId = await FlowIdAsync(database),
+            RequiresOffer = true,
             CurrentStepId = stepCode is null ? null : await StepIdAsync(database, stepCode),
             StartDate = new DateOnly(2026, 11, 1),
         };
@@ -57,11 +60,23 @@ public static class TestProjects
         return await db.Projects.AsNoTracking().Include(p => p.CurrentStep).SingleAsync(p => p.Id == projectId);
     }
 
+    /// <summary>The flow new requests follow; test projects are on it.</summary>
+    public static async Task<int> FlowIdAsync(DatabaseFixture database)
+    {
+        await using var scope = database.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        return await db.ProcessFlows.Where(f => f.Code == ProcessFlowCodes.NewRequest).Select(f => f.Id).SingleAsync();
+    }
+
+    /// <summary>A step of the flow new requests follow (step codes repeat across flows).</summary>
     public static async Task<int> StepIdAsync(DatabaseFixture database, string stepCode)
     {
         await using var scope = database.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        return await db.ProcessSteps.Where(s => s.Code == stepCode).Select(s => s.Id).SingleAsync();
+        return await db.ProcessSteps
+            .Where(s => s.Code == stepCode && s.ProcessFlow.Code == ProcessFlowCodes.NewRequest)
+            .Select(s => s.Id)
+            .SingleAsync();
     }
 
     public static async Task<int> UserIdAsync(DatabaseFixture database, string email)

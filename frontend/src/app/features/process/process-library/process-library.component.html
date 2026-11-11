@@ -1,9 +1,9 @@
 <header class="page-head">
     <div>
         <h2>Süreç Kütüphanesi</h2>
-        <p class="muted">Yeni Yazılım Projesi (ISDLC) akışı. Her projenin Süreç sekmesinde bu adımlarla yürütülür.</p>
+        <p class="muted">Şirketin iş akışları. Her kayıt kendi akışının adımlarıyla, Süreç sekmesinde yürütülür.</p>
     </div>
-    @if (stages()) {
+    @if (flow.hasValue()) {
     <div class="summary">
         <span><b>{{ summary().stageCount }}</b> aşama</span>
         <span><b>{{ summary().stepCount }}</b> adım</span>
@@ -13,9 +13,20 @@
     }
 </header>
 
-@if (loadFailed()) {
+@if (flows.hasValue() && flows.value().length > 1) {
+<div class="flows" role="tablist" aria-label="Akışlar">
+    @for (item of flows.value(); track item.id) {
+    <button type="button" role="tab" class="flow" [class.on]="item.code === selectedFlow()?.code"
+        [attr.aria-selected]="item.code === selectedFlow()?.code" (click)="selectFlow(item)">
+        {{ item.name }} <span class="count">{{ item.stepCount }}</span>
+    </button>
+    }
+</div>
+}
+
+@if (flows.error() || flow.error()) {
 <app-empty-state message="Süreç akışı yüklenemedi." />
-} @else if (!stages()) {
+} @else if (!flow.hasValue()) {
 <app-empty-state message="Yükleniyor…" />
 } @else if (selected(); as stage) {
 <div class="library">
@@ -46,6 +57,9 @@
                         }
                         @if (step.approverRole) {
                         <app-status-badge [label]="'Onay: ' + roleLabels[step.approverRole]" tone="warn" />
+                        }
+                        @for (label of conditionLabels(step.condition); track label) {
+                        <app-status-badge [label]="label" tone="neutral" />
                         }
                     </div>
 
