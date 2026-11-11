@@ -53,7 +53,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [Fact]
     public async Task SuggestRisks_NotSignedIn_ThrowsForbiddenAndDoesNotCallTheService()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var agent = Answering();
 
         await Assert.ThrowsAsync<ForbiddenException>(() =>
@@ -86,7 +86,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [Fact]
     public async Task SuggestRisks_ServiceNotConfigured_ThrowsServiceUnavailable()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var agent = new FakeAgentClient { IsConfigured = false };
 
         var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() => SuggestAsync(agent, projectId));
@@ -98,7 +98,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [Fact]
     public async Task SuggestRisks_ServiceFails_PassesTheErrorOn()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var agent = new FakeAgentClient { Failure = new ServiceUnavailableException("Kota doldu.") };
 
         var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() => SuggestAsync(agent, projectId));
@@ -111,7 +111,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [Fact]
     public async Task SuggestRisks_SendsOnlyProjectCodeTrimmedTextAndCurrentStep()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var project = await TestProjects.GetAsync(database, projectId);
         var agent = Answering();
 
@@ -120,7 +120,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
         var sent = Assert.IsType<RiskAgentRequest>(agent.LastRiskRequest);
         Assert.Equal(project.Code, sent.ProjectCode);
         Assert.Equal("Notlar.", sent.SourceText);
-        Assert.StartsWith("4.8 ", sent.CurrentStep);
+        Assert.StartsWith("8 ", sent.CurrentStep);
     }
 
     // ---- How the answer is checked ----
@@ -128,7 +128,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [Fact]
     public async Task SuggestRisks_ValidRisk_GetsScoreSeverityAndCategory()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         var result = await SuggestAsync(Answering(0, Risk()), projectId);
 
@@ -146,7 +146,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [Fact]
     public async Task SuggestRisks_UnknownCategory_KeepsTheRiskWithoutCategory()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         var result = await SuggestAsync(Answering(0, Risk(category: "Weather"), Risk(category: null)), projectId);
 
@@ -159,7 +159,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [InlineData(3, null)]
     public async Task SuggestRisks_InvalidOrHalfScore_DropsTheScoreAndWarns(int? probability, int? impact)
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         var result = await SuggestAsync(Answering(0, Risk(probability: probability, impact: impact)), projectId);
 
@@ -174,7 +174,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [Fact]
     public async Task SuggestRisks_UnscoredRisk_KeepsTheAgentsWarningOnly()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         var result = await SuggestAsync(
             Answering(0, Risk(probability: null, impact: null, warnings: "Model bu riski puanlamadı.")), projectId);
@@ -187,7 +187,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [Fact]
     public async Task SuggestRisks_BlankOrTooLongTitle_IsSkippedAndCounted()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         var result = await SuggestAsync(
             Answering(1, Risk(title: "  "), Risk(title: new string('a', 301)), Risk(title: "  Geçerli risk  ")),
@@ -202,7 +202,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [Fact]
     public async Task SuggestRiskAssessment_SendsTitleDescriptionAndCurrentStep()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var project = await TestProjects.GetAsync(database, projectId);
         var agent = new FakeAgentClient();
 
@@ -213,13 +213,13 @@ public class RiskSuggestionTests(DatabaseFixture database)
         Assert.Equal(project.Code, sent.ProjectCode);
         Assert.Equal("Lisans gecikebilir", sent.Title);
         Assert.Null(sent.Description);
-        Assert.StartsWith("4.8 ", sent.CurrentStep);
+        Assert.StartsWith("8 ", sent.CurrentStep);
     }
 
     [Fact]
     public async Task SuggestRiskAssessment_ReturnsScoreSeverityAndMitigation()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         var result = await AssessAsync(new FakeAgentClient(), projectId);
 
@@ -233,7 +233,7 @@ public class RiskSuggestionTests(DatabaseFixture database)
     [Fact]
     public async Task SuggestRiskAssessment_InvalidScore_DropsItAndWarns()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var agent = new FakeAgentClient
         {
             RiskAssessmentResult = new RiskAssessmentAgentResult(9, 2, null, "Aksiyon.", [], "test-model"),

@@ -21,9 +21,13 @@ public static class TestProjects
     /// <summary>
     /// A new project. Active and waiting at the given step, or closed with the given status (no current step).
     /// The analyst is Elif Yılmaz and the project manager Ayşe Demir.
+    /// By default an internal request with an offer in the new software project flow; the other values are
+    /// for tests of conditional steps (docs/process-api.md → "Adım koşulları") and of the other flows.
     /// </summary>
     public static async Task<int> CreateAsync(
-        DatabaseFixture database, string? stepCode, ProjectStatus status = ProjectStatus.Active)
+        DatabaseFixture database, string? stepCode, ProjectStatus status = ProjectStatus.Active,
+        RequestSource source = RequestSource.Internal, bool requiresOffer = true, int? level = null,
+        string flowCode = ProcessFlowCodes.NewRequest)
     {
         await using var scope = database.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
@@ -34,17 +38,18 @@ public static class TestProjects
             Code = $"T-{Guid.NewGuid():N}"[..14],
             Name = $"Test projesi ({stepCode ?? status.ToString()})",
             Description = "Test için oluşturuldu.",
-            Source = RequestSource.Internal,
+            Source = source,
             RequestChannel = RequestChannel.Written,
             RequestType = RequestType.NewProject,
             CustomerName = "Test",
             RequesterName = "Test",
             BusinessAnalystId = await UserIdAsync(database, Analyst),
             ProjectManagerId = await UserIdAsync(database, ProjectManager),
+            Level = level,
             Status = status,
-            ProcessFlowId = await FlowIdAsync(database),
-            RequiresOffer = true,
-            CurrentStepId = stepCode is null ? null : await StepIdAsync(database, stepCode),
+            ProcessFlowId = await FlowIdAsync(database, flowCode),
+            RequiresOffer = requiresOffer,
+            CurrentStepId = stepCode is null ? null : await StepIdAsync(database, stepCode, flowCode),
             StartDate = new DateOnly(2026, 11, 1),
         };
 
@@ -60,21 +65,22 @@ public static class TestProjects
         return await db.Projects.AsNoTracking().Include(p => p.CurrentStep).SingleAsync(p => p.Id == projectId);
     }
 
-    /// <summary>The flow new requests follow; test projects are on it.</summary>
-    public static async Task<int> FlowIdAsync(DatabaseFixture database)
+    /// <summary>A flow by its code; by default the one new requests follow.</summary>
+    public static async Task<int> FlowIdAsync(DatabaseFixture database, string flowCode = ProcessFlowCodes.NewRequest)
     {
         await using var scope = database.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        return await db.ProcessFlows.Where(f => f.Code == ProcessFlowCodes.NewRequest).Select(f => f.Id).SingleAsync();
+        return await db.ProcessFlows.Where(f => f.Code == flowCode).Select(f => f.Id).SingleAsync();
     }
 
-    /// <summary>A step of the flow new requests follow (step codes repeat across flows).</summary>
-    public static async Task<int> StepIdAsync(DatabaseFixture database, string stepCode)
+    /// <summary>A step of a flow (step codes repeat across flows); by default of the flow new requests follow.</summary>
+    public static async Task<int> StepIdAsync(
+        DatabaseFixture database, string stepCode, string flowCode = ProcessFlowCodes.NewRequest)
     {
         await using var scope = database.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         return await db.ProcessSteps
-            .Where(s => s.Code == stepCode && s.ProcessFlow.Code == ProcessFlowCodes.NewRequest)
+            .Where(s => s.Code == stepCode && s.ProcessFlow.Code == flowCode)
             .Select(s => s.Id)
             .SingleAsync();
     }

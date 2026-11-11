@@ -88,7 +88,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_FirstRecord_StartsOpenWithFirstCode()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
 
         var created = await CreateAsync(projectId, NewIssue(ownerName: "  Müşteri BT  "));
 
@@ -102,8 +102,8 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_NextRecords_GetIncreasingCodesPerProject()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
-        var otherProjectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
+        var otherProjectId = await TestProjects.CreateAsync(database, "12");
 
         await CreateAsync(projectId, NewIssue());
         var second = await CreateAsync(projectId, NewIssue());
@@ -116,7 +116,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_OwnerUser_ShowsUserNameAndIgnoresOwnerName()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
 
         var created = await CreateAsync(projectId, NewIssue(ownerUserId: developerId, ownerName: null));
@@ -130,7 +130,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [InlineData(false, "   ")]       // blank name counts as none
     public async Task Create_NotExactlyOneOwner_ThrowsBusinessRule(bool withUser, string? ownerName)
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         int? ownerUserId = withUser ? await TestProjects.UserIdAsync(database, TestProjects.Developer) : null;
 
         await Assert.ThrowsAsync<BusinessRuleException>(() =>
@@ -140,7 +140,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_InactiveOwner_ThrowsBusinessRule()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var inactiveUserId = await CreateInactiveUserAsync();
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(() =>
@@ -160,7 +160,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_NotSignedIn_ThrowsForbidden()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
 
         await Assert.ThrowsAsync<ForbiddenException>(() =>
             AsAsync(null, s => s.CreateAsync(projectId, NewIssue(), CancellationToken.None)));
@@ -169,7 +169,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_WritesAuditLogWithProject()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
 
         var created = await CreateAsync(projectId, NewIssue());
 
@@ -186,7 +186,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_AssignedToSomeoneElse_NotifiesOwner()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
 
         var (created, notifications) = await AsAsync(TestProjects.Analyst, s => s.CreateAsync(
@@ -201,7 +201,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_AssignedToSelfOrOutsider_SendsNothing()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var analystId = await TestProjects.UserIdAsync(database, TestProjects.Analyst);
 
         var (_, toSelf) = await AsAsync(TestProjects.Analyst, s => s.CreateAsync(
@@ -216,7 +216,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_OwnerChanged_NotifiesOnlyTheNewOwner()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
         var managerId = await TestProjects.UserIdAsync(database, TestProjects.ProjectManager);
         var created = await CreateAsync(projectId, NewIssue(ownerUserId: developerId, ownerName: null));
@@ -237,7 +237,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_ChangesContent_KeepsCodeAndStatus()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var created = await CreateAsync(projectId, NewIssue());
         await SetStatusAsync(projectId, created.Id, OpenIssueStatus.InProgress);
 
@@ -263,8 +263,8 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_RecordOfAnotherProject_ThrowsNotFound()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
-        var otherProjectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
+        var otherProjectId = await TestProjects.CreateAsync(database, "12");
         var created = await CreateAsync(projectId, NewIssue());
 
         await Assert.ThrowsAsync<NotFoundException>(() => AsAsync(TestProjects.Analyst, s => s.UpdateAsync(
@@ -276,8 +276,8 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_RecordOfAnotherProject_ThrowsNotFound()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
-        var otherProjectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
+        var otherProjectId = await TestProjects.CreateAsync(database, "12");
         var created = await CreateAsync(projectId, NewIssue());
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
@@ -289,7 +289,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task UpdateStatus_CloseThenReopen_SetsAndClearsClosedAt()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var created = await CreateAsync(projectId, NewIssue());
 
         var closed = await SetStatusAsync(projectId, created.Id, OpenIssueStatus.Closed);
@@ -304,7 +304,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task UpdateStatus_ProjectClosedLater_ThrowsConflict()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var created = await CreateAsync(projectId, NewIssue());
         await using (var scope = database.CreateScope())
         {
@@ -327,7 +327,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task IsOverdue_PastDueAndNotClosed_IsTrue()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var late = await CreateAsync(projectId, NewIssue("Gecikmiş", dueDate: Today.AddDays(-1)));
         var dueToday = await CreateAsync(projectId, NewIssue("Bugün", dueDate: Today));
         var closedLate = await CreateAsync(projectId, NewIssue("Kapanmış", dueDate: Today.AddDays(-3)));
@@ -343,7 +343,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_NotClosedFirst_ThenDueDateWithEmptyLast_ThenCode()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var noDue = await CreateAsync(projectId, NewIssue("Termini yok"));                       // AK-001
         var later = await CreateAsync(projectId, NewIssue("Sonra", dueDate: Today.AddDays(10)));  // AK-002
         var closed = await CreateAsync(projectId, NewIssue("Kapalı", dueDate: Today.AddDays(1))); // AK-003
@@ -358,7 +358,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_Filters_ReturnOnlyMatchingRecords()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var question = await CreateAsync(projectId, NewIssue("Soru", type: OpenIssueType.Question));
         var late = await CreateAsync(projectId, NewIssue("Gecikmiş", dueDate: Today.AddDays(-2)));
         var closed = await CreateAsync(projectId, NewIssue("Kapalı", dueDate: Today.AddDays(-2)));

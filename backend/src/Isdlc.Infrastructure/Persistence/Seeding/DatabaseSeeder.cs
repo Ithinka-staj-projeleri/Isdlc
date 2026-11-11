@@ -1,3 +1,4 @@
+using Isdlc.Application.Process;
 using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Process;
@@ -48,6 +49,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             }
 
             flow.Name = file.Name;
+            flow.Order = file.Order;
             flow.Kind = file.Kind;
             flow.ProjectStageOrder = file.ProjectStageOrder;
 
@@ -318,7 +320,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 Priority = seed.Priority,
                 Status = seed.Status,
                 ProcessFlowId = flow.Id,
-                RequiresOffer = true,
+                RequiresOffer = seed.RequiresOffer,
                 CurrentStepId = isActive ? markerStep.Id : null,
                 StartDate = seed.StartDate,
                 DueDate = seed.DueDate,
@@ -327,8 +329,12 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             };
 
             // History: one record per step before the marker step; closed projects also get the closing step.
+            // Steps whose conditions do not hold for the project are skipped, as the flow itself does.
+            var context = new ConditionContext(seed.Source, seed.RequiresOffer, seed.Level);
             var history = steps
                 .Where(s => s.Order < markerStep.Order)
+                .Where(s => StepConditions.Applies(
+                    new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel), context))
                 .Select(s => (Step: s, Action: s.IsDecision ? StepAction.Yes : StepAction.Completed))
                 .ToList();
             if (!isActive)

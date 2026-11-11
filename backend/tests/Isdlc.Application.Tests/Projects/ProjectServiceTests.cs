@@ -113,7 +113,7 @@ public class ProjectServiceTests(DatabaseFixture database)
 
         Assert.Equal(ProjectStatus.Active, project.Status);
         Assert.NotNull(project.CurrentStep);
-        Assert.Equal("1.1", project.CurrentStep.Code);
+        Assert.Equal("1", project.CurrentStep.Code);
         Assert.Equal(1, project.CurrentStep.StageOrder);
         Assert.Null(project.Priority);
         Assert.Null(project.Level);
@@ -175,8 +175,8 @@ public class ProjectServiceTests(DatabaseFixture database)
     {
         // Ordering by text alone would take "-999" as the highest code and give the taken "-1000" again.
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        await InsertProjectAsync(analyst, "1.1", code: "ISDLC-2091-999");
-        await InsertProjectAsync(analyst, "1.1", code: "ISDLC-2091-1000");
+        await InsertProjectAsync(analyst, "1", code: "ISDLC-2091-999");
+        await InsertProjectAsync(analyst, "1", code: "ISDLC-2091-1000");
 
         var project = await CreateAsync(analyst, Request(analyst), new FixedYear(2091));
 
@@ -451,9 +451,9 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task List_Phases_SplitEveryRecordInTwo()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var stage1 = await InsertProjectAsync(analyst, "1.1");
-        var stage3 = await InsertProjectAsync(analyst, "3.2");
-        var stage4 = await InsertProjectAsync(analyst, "4.1");
+        var stage1 = await InsertProjectAsync(analyst, "1");
+        var stage3 = await InsertProjectAsync(analyst, "4");
+        var stage4 = await InsertProjectAsync(analyst, "12");
         var redirectedEarly = await InsertProjectAsync(analyst, stepCode: null, ProjectStatus.Redirected);
         var closed = await InsertProjectAsync(analyst, stepCode: null, ProjectStatus.Closed);
 
@@ -475,8 +475,8 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task List_NoPhase_ShowsEverything()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        await InsertProjectAsync(analyst, "1.1");
-        await InsertProjectAsync(analyst, "4.1");
+        await InsertProjectAsync(analyst, "1");
+        await InsertProjectAsync(analyst, "12");
         await InsertProjectAsync(analyst, stepCode: null, ProjectStatus.Rejected);
 
         Assert.Equal(3, (await ListAsync(new ProjectFilter { BusinessAnalystId = analyst })).TotalCount);
@@ -486,7 +486,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task List_Status_KeepsOnlyThatStatus()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        await InsertProjectAsync(analyst, "4.1");
+        await InsertProjectAsync(analyst, "12");
         var lost = await InsertProjectAsync(analyst, stepCode: null, ProjectStatus.Lost);
 
         var result = await ListAsync(new ProjectFilter { BusinessAnalystId = analyst, Status = ProjectStatus.Lost });
@@ -530,9 +530,9 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task List_NewestRequestFirst_EvenAfterCode999()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var code998 = await InsertProjectAsync(analyst, "1.1", code: "ISDLC-2094-998");
-        var code1000 = await InsertProjectAsync(analyst, "1.1", code: "ISDLC-2094-1000");
-        var code999 = await InsertProjectAsync(analyst, "1.1", code: "ISDLC-2094-999");
+        var code998 = await InsertProjectAsync(analyst, "1", code: "ISDLC-2094-998");
+        var code1000 = await InsertProjectAsync(analyst, "1", code: "ISDLC-2094-1000");
+        var code999 = await InsertProjectAsync(analyst, "1", code: "ISDLC-2094-999");
 
         var result = await ListAsync(new ProjectFilter { BusinessAnalystId = analyst });
 
@@ -545,7 +545,7 @@ public class ProjectServiceTests(DatabaseFixture database)
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
         for (var i = 1; i <= 5; i++)
         {
-            await InsertProjectAsync(analyst, "1.1", code: $"ISDLC-2095-{i:D3}");
+            await InsertProjectAsync(analyst, "1", code: $"ISDLC-2095-{i:D3}");
         }
 
         var page2 = (await AsAsync(null, s => s.ListAsync(
@@ -560,12 +560,12 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task List_Row_ShowsCurrentStepAndAnalyst()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst, fullName: "Liste Analisti");
-        await InsertProjectAsync(analyst, "4.1");
+        await InsertProjectAsync(analyst, "12");
 
         var row = Assert.Single((await ListAsync(new ProjectFilter { BusinessAnalystId = analyst })).Items);
 
-        Assert.Equal("4.1", row.CurrentStep?.Code);
-        Assert.Equal(4, row.CurrentStep?.StageOrder);
+        Assert.Equal("12", row.CurrentStep?.Code);
+        Assert.Equal(3, row.CurrentStep?.StageOrder);
         Assert.Equal(new UserSummaryDto(analyst, "Liste Analisti"), row.BusinessAnalyst);
     }
 }

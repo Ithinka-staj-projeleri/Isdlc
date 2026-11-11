@@ -62,7 +62,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_NotSignedIn_ThrowsForbiddenAndDoesNotCallTheService()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var agent = Answering();
 
         await Assert.ThrowsAsync<ForbiddenException>(() =>
@@ -95,7 +95,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_ServiceNotConfigured_ThrowsServiceUnavailable()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var agent = new FakeAgentClient { IsConfigured = false };
 
         var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() => SuggestAsync(agent, projectId));
@@ -107,7 +107,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_ServiceFails_PassesTheErrorOn()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var agent = new FakeAgentClient { Failure = new ServiceUnavailableException("Yapay zekâ servisi cevap vermedi.") };
 
         var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() => SuggestAsync(agent, projectId));
@@ -120,7 +120,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_SendsOnlyProjectCodeDateTrimmedNotesAndCurrentStep()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var project = await TestProjects.GetAsync(database, projectId);
         var agent = Answering();
 
@@ -130,7 +130,7 @@ public class AgentServiceTests(DatabaseFixture database)
         Assert.Equal(project.Code, sent.ProjectCode);
         Assert.Equal(MeetingDate, sent.MeetingDate);
         Assert.Equal("Toplantı notları.", sent.Notes);
-        Assert.StartsWith("7.1 ", sent.CurrentStep);
+        Assert.StartsWith("14 ", sent.CurrentStep);
     }
 
     // ---- How the answer is split ----
@@ -138,7 +138,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_SplitsDecisionsActionsAndOthers()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var agent = Answering(
             Item("Decision", "  Raporlar PDF olarak da alınacak  ", ownerName: "Mert Kaya"),
             Item("Action", "Ekran taslakları", ownerName: "Müşteri BT", dueDate: MeetingDate.AddDays(7), "Termin belirsiz"),
@@ -168,7 +168,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_UnknownTypeOrBlankTitle_IsSkippedAndCounted()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var agent = new FakeAgentClient
         {
             // The service already dropped 2 items it could not read.
@@ -195,7 +195,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [InlineData("  Can Öztürk  ")]
     public async Task Suggest_OwnerIsAnActiveUser_SetsOwnerUserId(string ownerName)
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
 
         var result = await SuggestAsync(Answering(Item("Action", "Ekran taslakları", ownerName)), projectId);
@@ -208,7 +208,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_OwnerNameWithTurkishDottedCapitalI_FindsTheUser()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var analystId = await TestProjects.UserIdAsync(database, TestProjects.Analyst);
 
         // "ELİF" is the Turkish capital of "elif" (İ, not I).
@@ -224,7 +224,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [InlineData("   ", null)]
     public async Task Suggest_OwnerIsNotAUser_KeepsTheName(string? ownerName, string? expected)
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         var result = await SuggestAsync(Answering(Item("Action", "Aksiyon", ownerName)), projectId);
 
@@ -236,7 +236,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_OwnerIsAnInactiveUser_IsNotMatched()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var name = $"Pasif Kişi {Guid.NewGuid():N}"[..20];
         await TestUsers.CreateAsync(database, password: null, isActive: false, fullName: name);
 
@@ -250,7 +250,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_TwoActiveUsersWithTheSameName_LeavesTheChoiceToThePerson()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var name = $"Aynı Ad {Guid.NewGuid():N}"[..18];
         await TestUsers.CreateAsync(database, password: null, fullName: name);
         await TestUsers.CreateAsync(database, password: null, fullName: name);
@@ -274,7 +274,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_MinutesDraft_IsPassedOnWithTheMeetingType()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         var result = await SuggestAsync(WithMinutes(Minutes(participants: "  Elif Yılmaz, Can Öztürk  ")), projectId);
 
@@ -289,7 +289,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_NoMinutesDraft_ReturnsNull()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         var result = await SuggestAsync(WithMinutes(null), projectId);
 
@@ -303,7 +303,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [InlineData("Review", "Elif Yılmaz", "")]
     public async Task Suggest_MinutesDraftTheFormWouldReject_IsDropped(string type, string participants, string agenda)
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         var result = await SuggestAsync(WithMinutes(Minutes(type, participants, agenda)), projectId);
 
@@ -313,7 +313,7 @@ public class AgentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Suggest_MinutesDraftLongerThanTheFormAllows_IsDropped()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         var tooManyPeople = await SuggestAsync(WithMinutes(Minutes(participants: new string('a', 1001))), projectId);
         var tooLongAgenda = await SuggestAsync(WithMinutes(Minutes(agenda: new string('a', 4001))), projectId);

@@ -1,0 +1,165 @@
+{
+  "code": "process-improvement",
+  "order": 3,
+  "name": "Süreç İyileştirme",
+  "kind": "Improvement",
+  "projectStageOrder": null,
+  "stages": [
+    {
+      "order": 1,
+      "title": "Planla — Öneri ve Analiz",
+      "shortTitle": "Planla"
+    },
+    {
+      "order": 2,
+      "title": "Uygula — Pilot",
+      "shortTitle": "Uygula"
+    },
+    {
+      "order": 3,
+      "title": "Kontrol Et — Değerlendirme",
+      "shortTitle": "Kontrol Et"
+    },
+    {
+      "order": 4,
+      "title": "Önlem Al — Standartlaştırma ve İzleme",
+      "shortTitle": "Önlem Al"
+    }
+  ],
+  "steps": [
+    {
+      "code": "1",
+      "stageOrder": 1,
+      "order": 1,
+      "text": "İyileştirme önerisi kayda alınır. Süreçle ilgili bir sorun veya iyileştirme fikri olan her çalışan öneride bulunabilir (proje kapanışı / retrospektif, hata, sapma, müşteri şikâyeti, çalışan önerisi, yönetim hedefi). Öneri; sorunun kısa tanımı, etkilediği süreç ve varsa çözüm fikriyle Süreç İyileştirme Kayıt Listesi’ne eklenir ve sıradaki No verilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "2",
+      "stageOrder": 1,
+      "order": 2,
+      "text": "Öneri değerlendirilir ve önceliklendirilir. Yazılım Departman Yöneticisi öneriyi etki, uygulama sıklığı ve uygulama kolaylığına göre değerlendirir ve önceliklendirir. Öneri çalışmaya alındı mı?",
+      "isDecision": true,
+      "noBranchText": "Öneri reddedilir ve kayıt kapanır. Bekletilecek öneri cevaplanmadan bu adımda kalır.",
+      "responsibleRole": "SoftwareDepartmentManager",
+      "approverRole": null,
+      "noOutcome": "Rejected",
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "3",
+      "stageOrder": 1,
+      "order": 3,
+      "text": "İyileştirme çalışması hazırlanır. Mevcut süreç, süreci uygulayan kişilerle birlikte incelenir; problemler kök neden analiziyle tespit edilir. Mevcut durum, kök neden, çözüm ve pilot planıyla Süreç İyileştirme Çalışma Dokümanı hazırlanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "4",
+      "stageOrder": 1,
+      "order": 4,
+      "text": "Yönetim onayı alınır. Çalışma dokümanı Yazılım Departman Yöneticisine sunulur; fayda / maliyet ve etki analizi yapılır. Pilot için onay verildi mi?",
+      "isDecision": true,
+      "noBranchText": "Revizyon istenirse 3. adıma dönülür; reddedilirse gerekçe Kayıt Listesi’ne yazılır ve öneri kapatılır.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": "SoftwareDepartmentManager",
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "3",
+          "label": "Revizyon: 3. adıma dön"
+        }
+      ],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "5",
+      "stageOrder": 2,
+      "order": 5,
+      "text": "Pilot hazırlanır. Yeni veya değişen sürecin akışı ve dokümanları hazırlanır; EB Move › 00. Standart Dokümanlar › ISDLC › Çalışmalar klasörüne kaydedilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "6",
+      "stageOrder": 2,
+      "order": 6,
+      "text": "Pilot uygulanır. Değişiklik, planda belirlenen proje veya ekipte belirlenen süre boyunca gerçek iş üzerinde uygulanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "7",
+      "stageOrder": 3,
+      "order": 7,
+      "text": "Pilot sonuçları değerlendirilir. Ölçüm sonuçları hedefle karşılaştırılır ve pilot ekibinin geri bildirimi alınır; sonuç ve karar Pilot Değerlendirme Raporu’na yazılır. Hedef karşılandı mı?",
+      "isDecision": true,
+      "noBranchText": "Kısmen karşılandıysa doküman ve akışlar düzeltilerek pilot tekrarlanır; karşılanmadıysa 3. adıma dönülür.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "5",
+          "label": "Kısmen karşılandı: pilotu tekrarla"
+        },
+        {
+          "targetStepCode": "3",
+          "label": "Karşılanmadı: 3. adıma dön"
+        }
+      ],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "8",
+      "stageOrder": 4,
+      "order": 8,
+      "text": "Süreç standart hâle getirilir ve periyodik olarak izlenir. Sürecin akış ve dokümanlarının son hâli hazırlanır; dokümana sürüm numarası verilir, EB Move › 00. Standart Dokümanlar › ISDLC klasörüne konur, eski sürüm Arşiv’e taşınır ve Dokümanlar Excel’i güncellenir. Yazılım Departman Yöneticisi onayıyla yürürlüğe alınır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": "SoftwareDepartmentManager",
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    }
+  ]
+}

@@ -14,8 +14,8 @@ import { RISK_SEVERITY_LABELS, RISK_SEVERITY_TONES, RISK_STATUS_LABELS, severity
 import { DashboardService } from './dashboard.service';
 import { DashboardScope } from './models/dashboard';
 
-/** Stages 1–3 are requests ("Talepler"), 4–13 projects; the bars use a different color for each. */
-const LAST_REQUEST_STAGE = 3;
+/** In the new software project flow stages 1–2 are requests ("Talepler"), 3–4 projects; the bars use a different color for each. */
+const LAST_REQUEST_STAGE = 2;
 
 /**
  * The dashboard: what waits for the signed-in user and how the projects stand. Contract: docs/dashboard-api.md

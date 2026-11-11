@@ -55,7 +55,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_ProjectWithoutAssessment_ReturnsEmptySections()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
 
         var result = await GetAsync(projectId);
 
@@ -92,7 +92,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveLevel_HalfAnswered_IsKeptWithoutScoreOrSuggestion()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
 
         var result = await SaveLevelAsync(projectId, new SaveLevelAnswersDto { Effort = 2, Integrations = 3, UserRoles = 1 });
 
@@ -106,7 +106,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveLevel_AllAnswered_ReturnsScoreAndSuggestedLevel()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
 
         var result = await SaveLevelAsync(projectId, ContractLevelAnswers);
 
@@ -119,7 +119,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     public async Task SaveLevel_DoesNotChangeTheProjectLevel()
     {
         // The level changes only with "Seviyeyi uygula".
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
 
         var result = await SaveLevelAsync(projectId, ContractLevelAnswers);
 
@@ -131,7 +131,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     public async Task SaveLevel_SecondSave_ReplacesTheAnswers()
     {
         // PUT: a question sent empty becomes unanswered again.
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         await SaveLevelAsync(projectId, ContractLevelAnswers);
 
         var result = await SaveLevelAsync(projectId, ContractLevelAnswers with { Effort = 3, HardwareDependency = null });
@@ -145,7 +145,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveLevel_KeepsTheAcceptanceScores()
     {
-        var projectId = await TestProjects.CreateAsync(database, "3.1");
+        var projectId = await TestProjects.CreateAsync(database, "4");
         await SaveScoresAsync(projectId, ContractScores);
 
         var result = await SaveLevelAsync(projectId, ContractLevelAnswers);
@@ -159,7 +159,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveScores_AllScored_ReturnsWeightedScoreAndRecommendation()
     {
-        var projectId = await TestProjects.CreateAsync(database, "3.1");
+        var projectId = await TestProjects.CreateAsync(database, "4");
 
         var result = await SaveScoresAsync(projectId, ContractScores);
 
@@ -171,7 +171,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveScores_LowScores_RecommendRejectOrPostpone()
     {
-        var projectId = await TestProjects.CreateAsync(database, "3.1");
+        var projectId = await TestProjects.CreateAsync(database, "4");
 
         var result = await SaveScoresAsync(projectId, new SaveAcceptanceScoresDto
         {
@@ -185,7 +185,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveScores_HalfScored_IsKeptWithoutRecommendation()
     {
-        var projectId = await TestProjects.CreateAsync(database, "3.1");
+        var projectId = await TestProjects.CreateAsync(database, "4");
 
         var result = await SaveScoresAsync(projectId, new SaveAcceptanceScoresDto { StrategicFit = 5, RiskLevel = 1 });
 
@@ -197,7 +197,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveScores_KeepsTheLevelAnswers()
     {
-        var projectId = await TestProjects.CreateAsync(database, "3.1");
+        var projectId = await TestProjects.CreateAsync(database, "4");
         await SaveLevelAsync(projectId, ContractLevelAnswers);
 
         var result = await SaveScoresAsync(projectId, ContractScores);
@@ -211,7 +211,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Save_SeveralTimes_KeepsOneAssessmentPerProject()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
 
         await SaveLevelAsync(projectId, ContractLevelAnswers);
         await SaveScoresAsync(projectId, ContractScores);
@@ -227,7 +227,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     {
         // Who saved comes from the audit fields, which the interceptor fills from the DI user. In the fixture that
         // user is always Elif Yılmaz (the API uses the signed-in user for both), so the person is checked as Elif.
-        var projectId = await TestProjects.CreateAsync(database, "3.1");
+        var projectId = await TestProjects.CreateAsync(database, "4");
         var first = await SaveLevelAsync(projectId, ContractLevelAnswers);
 
         var second = await SaveScoresAsync(projectId, ContractScores);
@@ -241,7 +241,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Save_WritesTheChangesToTheProjectsAuditLog()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         await SaveLevelAsync(projectId, ContractLevelAnswers);
 
         await SaveLevelAsync(projectId, ContractLevelAnswers with { Effort = 3 });
@@ -273,7 +273,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Save_NotSignedIn_Returns403()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
 
         await Assert.ThrowsAsync<ForbiddenException>(() =>
             AsAsync(null, s => s.SaveLevelAnswersAsync(projectId, ContractLevelAnswers, default)));
@@ -289,7 +289,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     public async Task Save_OtherRole_IsAllowed()
     {
         // Decision 4: like project records, any active user may fill it in, not only the business analyst.
-        var projectId = await TestProjects.CreateAsync(database, "3.1");
+        var projectId = await TestProjects.CreateAsync(database, "4");
 
         var result = await SaveScoresAsync(projectId, ContractScores, TestProjects.Developer);
 
@@ -301,7 +301,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task ApplyLevel_NothingAnswered_Returns400()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(() => ApplyLevelAsync(projectId));
 
@@ -311,7 +311,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task ApplyLevel_HalfAnswered_Returns400AndKeepsTheLevel()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         await SaveLevelAsync(projectId, ContractLevelAnswers with { DataSensitivity = null });
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => ApplyLevelAsync(projectId));
@@ -322,7 +322,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task ApplyLevel_AllAnswered_SetsTheProjectLevel()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         await SaveLevelAsync(projectId, ContractLevelAnswers);
 
         var result = await ApplyLevelAsync(projectId);
@@ -334,7 +334,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task ApplyLevel_AnswersChangedLater_LevelStaysUntilAppliedAgain()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         await SaveLevelAsync(projectId, ContractLevelAnswers);
         await ApplyLevelAsync(projectId);
 
@@ -352,7 +352,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task ApplyLevel_WritesTheLevelToTheProjectsAuditLog()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         await SaveLevelAsync(projectId, ContractLevelAnswers);
 
         await ApplyLevelAsync(projectId);
@@ -372,7 +372,7 @@ public class AssessmentServiceTests(DatabaseFixture database)
     public async Task Save_FirstAnswersAtTheSameMoment_NeverFailsWithAnUnexpectedError()
     {
         // Two people opening the empty form and saving together: one wins, the other gets a 409 (never a 500).
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
 
         var attempts = Enumerable.Range(0, 6).Select(async _ =>
         {

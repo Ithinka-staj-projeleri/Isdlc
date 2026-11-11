@@ -9,7 +9,7 @@ namespace Isdlc.Application.Process;
 /// </summary>
 public interface IProcessService
 {
-    /// <summary>All flows without their steps, ordered by id (seed order).</summary>
+    /// <summary>All flows without their steps, in their display order.</summary>
     Task<IReadOnlyList<ProcessFlowListItemDto>> GetFlowsAsync(CancellationToken cancellationToken);
 
     /// <summary>

@@ -23,12 +23,12 @@
       <a class="card stat" routerLink="/requests">
         <span class="label">Onay bekleyen talepler</span>
         <b>{{ d.summary.waitingRequests }}</b>
-        <span class="hint">Aşama 1–3</span>
+        <span class="hint">Bölüm 1–2: talep ve teklif</span>
       </a>
       <a class="card stat" routerLink="/projects">
         <span class="label">Aktif projeler</span>
         <b>{{ d.summary.activeProjects }}</b>
-        <span class="hint">Aşama 4–13</span>
+        <span class="hint">Bölüm 3–4: geliştirme ve kapanış</span>
       </a>
       <div class="card stat" [class.accent]="d.summary.myWaitingSteps > 0">
         <span class="label">Bana bekleyen adımlar</span>
@@ -136,8 +136,8 @@
     <section class="card panel">
       <h3>Aşamalara göre aktif kayıtlar</h3>
       <p class="legend small muted">
-        <span class="dot request"></span> Talep (aşama 1–3)
-        <span class="dot project"></span> Proje (aşama 4–13)
+        <span class="dot request"></span> Talep (bölüm 1–2)
+        <span class="dot project"></span> Proje (bölüm 3–4)
       </p>
       <p class="levels small" aria-label="Seviyeye göre aktif kayıtlar">
         <b>Seviye 1:</b> {{ d.levels.level1 }} · <b>Seviye 2:</b> {{ d.levels.level2 }} ·
@@ -203,7 +203,7 @@
                     <span class="code">{{ item.project.code }}</span>
                     <b>{{ item.project.name }}</b>
                     <span class="muted small">
-                      Adım {{ item.stepCode }} · {{ item.stepCode === '3.2' ? 'Yönetici kararı' : 'Kabul puanlaması' }}
+                      Adım {{ item.stepCode }} · Müşteri uygunluğu
                     </span>
                   </span>
                   <span class="side">

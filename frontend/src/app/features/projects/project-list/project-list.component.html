@@ -3,9 +3,9 @@
     <h2>{{ title() }}</h2>
     <p class="hint">
       @if (mode() === 'requests') {
-        Henüz proje olarak kabul edilmemiş talepler (aşama 1–3).
+        Henüz projeye dönüşmemiş talepler (talep ve teklif aşamasındakiler).
       } @else {
-        Kabul edilmiş projeler (aşama 4–13) ve kapanmış kayıtlar. Onay bekleyen talepler
+        Başlatılmış projeler (geliştirme ve kapanış aşamasındakiler) ve kapanmış kayıtlar. Bekleyen talepler
         <a routerLink="/requests">Talepler</a> sayfasındadır.
       }
     </p>

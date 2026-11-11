@@ -40,6 +40,7 @@ internal static class SeedFiles
 
     public record ProcessFlowFile(
         string Code,
+        int Order,
         string Name,
         ProcessFlowKind Kind,
         int? ProjectStageOrder,
@@ -85,6 +86,7 @@ internal static class SeedFiles
         string CustomerName,
         string RequesterName,
         bool RequiresNda,
+        bool RequiresOffer,
         string? BusinessAnalystEmail,
         string? ProjectManagerEmail,
         int? Level,
