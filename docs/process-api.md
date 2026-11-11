@@ -2,18 +2,90 @@
 
 `Process` modülünün uç noktaları, DTO'ları, iş kuralları ve hata durumları.
 Veri modeli ve süreç ilerleme kuralları için: [data-model.md](data-model.md).
-Durum: **uygulandı.** Okuma uç noktaları ve `complete` main'de; `answer` (#27) ve `reject` (#29) PR'da.
-Yetki kuralı ekip kararı bekliyor (aşağıda). Sorumlu: Erva.
+Durum: 13 aşamalı tek akış **uygulandı**; Faz 4'te geçersiz olur ve yerini şirketin beş akışı alır (iş E1, **önerildi**),
+bkz. [Akışlar](#akışlar-faz-4). Aşağıdaki "13 aşama", "4.7" gibi örnekler eski akıştandır.
+Yetki kuralı ekip kararı bekliyor (aşağıda). Sorumlu: Erva; Faz 4'te Dide ([phase-4-plan.md](phase-4-plan.md)).
 
 Bütün uç noktalar AGENTS.md'deki ve Faz 0'daki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin,
 tarihler UTC / ISO 8601, hatalar `ProblemDetails`, listeler `items` + `totalCount`.
 JSON alan adları camelCase'dir.
 
+## Akışlar (Faz 4)
+
+Şirketin her iş türü için ayrı bir akışı var ve sonradan yenileri gelecek (BT destek, Ar-Ge destek…). Bu yüzden akış
+koda gömülmez, **veri** olarak tutulur: aşamalar ve adımlar bir akışa (`ProcessFlow`) bağlanır, her kayıt hangi akışı
+izlediğini bilir (`Project.ProcessFlowId`). Yeni bir akış eklemek = yeni bir seed dosyası; migration gerekmez.
+
+Uygulamadaki akışlar, şirketin paylaştığı **beş akıştan** ibarettir (kaynak: `Ithinka Proje Dokümanları/Akışlar`):
+
+| Akış (`Code`) | Ad | Tür (`Kind`) | Bölüm / adım | Projeye dönüştüğü bölüm |
+| --- | --- | --- | --- | --- |
+| `new-software-project` | Yeni Yazılım Projesi | `Request` | 4 / 19 | 3 (Proje başlatma ve geliştirme) |
+| `add-on` | Devam Eden Proje Ek Modül veya Geliştirme | `Request` | 4 / 17 | — (ana projenin altında görünür, bkz. D3) |
+| `process-improvement` | Süreç İyileştirme | `Improvement` | 4 / 8 | — |
+| `resource-planning` | Haftalık Kaynak Planlama | `ResourcePlanning` | 4 / 8 | — |
+| `billing` | Aylık Faturalama | `Billing` | 4 / 6 | — |
+
+- **Eski 13 aşamalı akış (ISDLC v12) geçersizdir ve kaldırılır.** Uygulama henüz canlıda olmadığı için eski akıştaki
+  kayıtlar taşınmaz: E2'deki migration ile veritabanı yeni akışlarla baştan kurulur, örnek projeler yeni akışlara göre
+  seed'den gelir. Herkes lokal veritabanını bir kez sıfırlar (PR açıklamasında komut verilir).
+- **Bütün kayıtlar `Project` tablosundadır** (ekip kararı, 11.11.2026). Akışın türü kaydın hangi menüde listeleneceğini belirler:
+  `Request` → Talepler / Projeler, `Improvement` → Süreç İyileştirme (E5), `ResourcePlanning` → Kaynak Planlama (B6),
+  `Billing` → Faturalama (B7). Müşteri ve talep sahibi gibi alanlar `Request` dışındaki akışlarda boş kalabilir. Böylece süreç
+  geçmişi, bildirimler ve denetim kaydı her akışta değişmeden çalışır.
+- **Kaynak planlama ve faturalama dönemseldir:** her hafta / her ay için yeni bir kayıt açılır ("2026 · 46. hafta",
+  "2026 · Kasım"); kayıt akışın sonunda kapanır. Dönemin görev ve ticket satırları B6 / B7'nin kendi tablolarındadır.
+
+**Hangi kayıt hangi akışa girer**
+
+| Kayıt nereden açılır | Akış |
+| --- | --- |
+| Talepler → Yeni talep (`POST /projects`) | `new-software-project` |
+| Proje detayı → Ek Geliştirmeler → Yeni (D3) | `add-on` |
+| Süreç İyileştirme → Yeni öneri (E5) | `process-improvement` |
+| Kaynak Planlama → Yeni hafta (B6) | `resource-planning` |
+| Faturalama → Yeni ay (B7) | `billing` |
+
+İleride gelen akışlar için talep formuna "iş tipi" seçimi eklenir; seçilen tip akışı belirler. `RequestType` alanı
+bilgi amaçlı kalır, akışı seçmez.
+
+### Adım koşulları (atlanan adımlar)
+
+Bazı adımlar her kayıtta yapılmaz. Adımda en fazla üç koşul tutulur; hepsi sağlanmıyorsa adım **atlanır**:
+akış o adıma hiç uğramaz ve `StepRecord` yazılmaz.
+
+| Koşul (`ProcessStep`) | Adım yapılır, eğer… | Örnek |
+| --- | --- | --- |
+| `RequiresExternalRequest` | `Project.Source = External` | Yeni proje 4: Müşteri uygunluğu (iç talepte "doğrudan proje", 3 → 5) |
+| `RequiresOffer` | `Project.RequiresOffer = true` (talep kaydında "teklif var / yok") | Yeni proje 10–11: Teklif ve anlaşma (teklifsizde 9 → 12) |
+| `MinLevel` | `Project.Level ≥ MinLevel` | Ek geliştirme 8: Kapsam ve efor (Seviye 2–3); 9: Teklif (Seviye 3, 8 → 10) |
+
+- `Project.Level` henüz belirlenmediyse `MinLevel` koşulu **sağlanmış sayılır** (adım atlanmaz). Seviye, koşullu adımlardan
+  önceki bir adımda belirlendiği için normal akışta bu durum olmaz.
+- Koşullar her geçişte projenin o anki değerleriyle değerlendirilir. Talep sırasında "teklif yok" "teklif var"a dönerse
+  teklif adımları artık atlanmaz.
+- Geri dönüşlerde (`ProcessStepJump`) hedef adımın koşulu kontrol edilmez; seed yalnızca anlamlı dönüşleri tanımlar.
+
+**Sonraki adım:** aynı akışta, `Order`'ı mevcut adımdan büyük ve koşulları sağlanan **ilk** adım. Yoksa kayıt `Closed` olur.
+**İlk adım:** talep açılırken akışın koşulları sağlanan ilk adımı.
+
+### Talep mi, proje mi
+
+Talepler ve Projeler menüleri aynı `Project` tablosunu gösterir. Hangisinde görüneceğini akış belirler
+(`ProcessFlow.ProjectStageOrder`): kaydın mevcut adımının bölümü bu değere ulaştıysa kayıt **proje**, ulaşmadıysa **talep**dir.
+Değer boşsa kayıt hiçbir zaman projeye dönüşmez. Kapanmış kayıtlar Projeler listesinin "tümü" görünümündedir (bugünkü gibi).
+Türü `Request` olmayan akışların kayıtları iki listede de görünmez.
+
+Bugün `ProjectService` ve `DashboardService` içindeki "aşama 1–3 taleptir" sabiti (`LastRequestStageOrder = 3`) bu kurala
+çevrilir.
+
 ## Uç noktalar
 
 | İstek | Açıklama | Başarılı cevap |
 | --- | --- | --- |
-| `GET /api/v1/process-stages` | 13 aşama ve adımları | `200` `ProcessStageDto[]` |
+| `GET /api/v1/process-flows` | Beş akış (adımsız) | `200` `ProcessFlowListItemDto[]` |
+| `GET /api/v1/process-flows/{code}` | Akışın bölümleri ve adımları (Süreç Kütüphanesi) | `200` `ProcessFlowDto` |
+| ~~`GET /api/v1/process-stages`~~ | **Kalkar** (Faz 4): aşamalar artık bir akışa ait; yerine `process-flows/{code}` | — |
 | `GET /api/v1/projects/{projectId}/process` | Projenin süreç durumu | `200` `ProjectProcessDto` |
 | `GET /api/v1/projects/{projectId}/step-records` | Süreç geçmişi (sayfalı) | `200` `PagedResult<StepRecordDto>` |
 | `POST /api/v1/projects/{projectId}/process/complete` | Karar olmayan mevcut adımı tamamlar | `200` `ProjectProcessDto` |
@@ -27,7 +99,27 @@ JSON alan adları camelCase'dir.
 ### Okuma
 
 ```jsonc
-// ProcessStageDto
+// ProcessFlowListItemDto — GET /process-flows (Faz 4)
+{
+  "id": 2,
+  "code": "new-software-project",
+  "name": "Yeni Yazılım Projesi",
+  "kind": "Request",            // ProcessFlowKind: Request, Improvement, ResourcePlanning, Billing
+  "projectStageOrder": 3,       // null: kayıt hiç projeye dönüşmez
+  "stepCount": 19
+}
+
+// ProcessFlowDto — GET /process-flows/{code} (Faz 4)
+{
+  "id": 2,
+  "code": "new-software-project",
+  "name": "Yeni Yazılım Projesi",
+  "kind": "Request",
+  "projectStageOrder": 3,
+  "stages": [ /* ProcessStageDto[] */ ]
+}
+
+// ProcessStageDto — Faz 4'te "bölüm"; order akış içinde 1'den başlar
 {
   "id": 4,
   "order": 4,
@@ -49,13 +141,17 @@ JSON alan adları camelCase'dir.
   "noOutcome": null,
   "noJumps": [
     { "targetStepId": 17, "targetStepCode": "4.9", "label": "Akış 4.9 adımına dön" }
-  ]
+  ],
+  // Faz 4: hepsi false / null ise adım her kayıtta yapılır
+  "condition": { "requiresExternalRequest": false, "requiresOffer": false, "minLevel": null }
 }
 
 // ProjectProcessDto
 {
   "projectId": 3,
-  "projectCode": "ISDLC-2026-016",
+  "projectCode": "ISDLC-2026-016",   // Faz 4'te Proje No sayıya döner (D1); alan adı o PR'da değişir
+  "flow": { "code": "new-software-project", "name": "Yeni Yazılım Projesi" },   // Faz 4
+  "skippedStepIds": [104, 110, 111], // Faz 4: koşulu sağlanmayan adımlar; ekran "atlanır" diye gösterir
   "status": "Active",
   "currentStep": { /* ProcessStepDto, proje aktif değilse null */ },
   "progressPercent": 20,
@@ -88,6 +184,9 @@ JSON alan adları camelCase'dir.
 **Hesaplanan alanlar**
 - `progressPercent`: `Closed` ise 100. Aktifse `(currentStep.order - 1) / adım sayısı × 100`, aşağı yuvarlanır.
   Aktif değilse son `StepRecord`'un adımına göre aynı formül.
+  Faz 4: yalnızca kaydın akışındaki ve **atlanmayan** adımlar sayılır (mevcut adımdan önceki atlanmayan adım sayısı / atlanmayan adım sayısı).
+- `skippedStepIds` (Faz 4): kaydın akışında, projenin o anki değerlerine göre koşulu sağlanmayan adımlar
+  (bkz. [Adım koşulları](#adım-koşulları-atlanan-adımlar)).
 - `stages[].state` (`ProcessStageState`):
   - Aktif proje: mevcut adımın aşamasından öncekiler `Completed`, mevcut aşama `Current`, sonrakiler `Pending`.
   - `Closed` proje: hepsi `Completed`.
@@ -209,8 +308,8 @@ kendi yaptığı işlem için bildirim almaz.
 
 | Katman | Dosyalar |
 | --- | --- |
-| `Isdlc.Domain/Process/` | `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `StepRecord`, enum'lar |
-| `Isdlc.Application/Process/` | `IProcessService`, `ProcessService`, DTO'lar; veritabanısız kurallar: `ProcessProgress` (ilerleme, aşama durumu, yetki), `ProcessTransitions` (işlemden sonraki durum ve adım), `ProcessMappings` (adım → DTO ifadesi) |
+| `Isdlc.Domain/Process/` | `ProcessFlow` (Faz 4), `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `StepRecord`, enum'lar |
+| `Isdlc.Application/Process/` | `IProcessService`, `ProcessService`, DTO'lar; veritabanısız kurallar: `ProcessProgress` (ilerleme, aşama durumu, yetki), `ProcessTransitions` (işlemden sonraki durum ve adım), `StepConditions` (Faz 4: adım koşulları, sonraki / ilk adım), `ProcessMappings` (adım → DTO ifadesi) |
 | `Isdlc.Application/Notifications/` | `INotificationService`, `NotificationService` (Notifications modülü) |
 | `Isdlc.Infrastructure/Process/` | EF yapılandırmaları, seeder |
 | `Isdlc.Api/Controllers/` | `ProcessStagesController` (`/process-stages`), `ProjectProcessController` (`/projects/{projectId}/process`, `.../process/complete`, `.../process/answer`, `.../process/reject`, `/projects/{projectId}/step-records`) |
@@ -221,8 +320,8 @@ kendi yaptığı işlem için bildirim almaz.
 
 | Ekran | Yer | Not |
 | --- | --- | --- |
-| Süreç Kütüphanesi | `features/process/process-library` | 13 aşama ve adımlar; `GET /process-stages` |
-| Proje detayı → Süreç sekmesi | `features/process/project-process` (`app-project-process`) | Aşama listesi, adımlar, mevcut adımdaki işlem butonları |
+| Süreç Kütüphanesi | `features/process/process-library` | Faz 4: üstte akış seçimi (`GET /process-flows`), altta seçilen akışın bölümleri ve adımları (`GET /process-flows/{code}`). Koşullu adımlarda etiket: "Yalnızca dış talepte", "Teklif hazırlanacaksa", "Seviye 2 ve üstü" |
+| Proje detayı → Süreç sekmesi | `features/process/project-process` (`app-project-process`) | Aşama listesi, adımlar, mevcut adımdaki işlem butonları. Faz 4: akışın adı başlıkta; `skippedStepIds`'teki adımlar soluk ve "Atlanır" etiketiyle |
 | Süreç geçmişi | `features/process/step-history` (`app-step-history`) | Süreç sekmesinin içinde |
 
 Proje detay sayfası `Projects` modülüne (Dide) aittir. Süreç sekmesi bu sayfaya `projectId` girdisi alan

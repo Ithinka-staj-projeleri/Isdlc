@@ -37,8 +37,9 @@ Dört formun "Sorular" ve "Parametreler" sayfaları incelendi (`Arşiv` klasör�
 
 Ortak iskelet: **soru seti → (iş tipi, alt kategori) → bölüm → grup → soru → seçenek**; cevap ise **proje → doldurulan form → soru başına cevap.**
 
-- **İş tipi:** formlarda şimdilik yalnızca *Yeni Yazılım Projesi* var. Kodda akışın anahtarıyla aynı tutulur
-  (`new-software-project`); Dide'nin akış altyapısı (E1) akışlara verdiği anahtarı kullanır. Yeni bir iş tipi yeni soru satırı demektir, kod değişmez.
+- **İş tipi:** formlarda şimdilik yalnızca *Yeni Yazılım Projesi* var. Kodda akışın anahtarıyla (`ProcessFlow.Code`) aynı tutulur:
+  `new-software-project` ([process-api.md](process-api.md) → Akışlar). Ek geliştirme akışının anahtarı `add-on`'dur ama formlarda ona ait soru yok
+  (karar 4). Yeni bir iş tipi yeni soru satırı demektir, kod değişmez.
 - **Alt kategori:** projenin talep kaynağıdır (`RequestSource`: `Internal` kurum içi, `External` dış / müşteri, `Affiliated` ilişkili şirket;
   `Affiliated` D1 ile eklenir). Formlardaki "TÜM ALT KATEGORİLER" satırları `null` alt kategoriyle tutulur ve her alt kategoride listelenir.
 
@@ -238,9 +239,10 @@ kombinasyonda veritabanısız test edilir (AGENTS.md Bölüm 9). Eşikler seed'd
 
 1. **Dört form tek yapıda** tutulur; formların farkları seçenek anlamı (`OptionMeaning`), cevap biçimi (`answerMode`) ve formlara özgü sonuç hesabıyla karşılanır.
 2. **Alt kategori = talep kaynağı** (`RequestSource`). D1'de `Affiliated` (İlişkili şirket) eklenince üç alt kategori de çalışır. *(Dide)*
-3. **İş tipi = akışın anahtarı** (`new-software-project`). E1 akış anahtarlarını bu biçimde verirse soru setleri akışla doğrudan eşleşir. *(Dide)*
-4. **Ek geliştirme akışının soru seti yok:** formlarda yalnızca Yeni Yazılım Projesi var. Analistlere sorulana kadar ek geliştirme kayıtları
-   ana projenin iş tipinin (`new-software-project`) sorularını kullanır. *(phase-4-plan.md → Açık konular'a eklenmeli)*
+3. **İş tipi = akışın anahtarı** (`ProcessFlow.Code`). Süreç sözleşmesi (#116) anahtarları bu biçimde verdi: `new-software-project`, `add-on`;
+   soru setleri akışla doğrudan eşleşir. Soru bankası yalnızca `Request` türündeki akışlarda kullanılır (süreç iyileştirme, kaynak planlama ve faturalama akışlarında form yok).
+4. **Ek geliştirme akışının (`add-on`) soru seti yok:** formlarda yalnızca Yeni Yazılım Projesi var. Analistlere sorulana kadar ek geliştirme kayıtları
+   `new-software-project` sorularını kullanır ([phase-4-plan.md](phase-4-plan.md) → Açık konular, 6. madde).
 5. **Cevaplar tek tek kaydedilir** ve her kayıt bütün formu (özetiyle) döndürür.
 6. **Dosyadan çıkan soru silinmez, pasif olur;** cevabı ve geçmişi korunur.
 7. **Not ve açıklama uyarıdır, engel değildir** (formlarda da öyle): eksikleri özet sayar, kaydı durdurmaz.
