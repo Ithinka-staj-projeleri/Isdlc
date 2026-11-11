@@ -4,7 +4,7 @@
 
 Endpoints:
     GET  /health                    is the service up, is a model configured
-    POST /v1/meeting/suggestions    open issue suggestions from meeting notes (nothing is saved)
+    POST /v1/meeting/suggestions    open issues and a minutes draft (type, participants, agenda) from meeting notes
     POST /v1/risk/suggestions       risks found in a text, scored and with a preventive action (nothing is saved)
     POST /v1/risk/assessment        probability, impact and preventive action for one risk a person typed
 
@@ -67,12 +67,23 @@ class RunDto(CamelModel):
     output_tokens: int | None
 
 
+class MinutesDraft(CamelModel):
+    type: str  # MeetingType value
+    type_reason: str | None
+    participants: str  # comma separated, as the minutes form takes it
+    agenda: str  # one "- " line per topic
+    warnings: list[str]
+
+
 class MeetingSuggestionsResponse(CamelModel):
     summary: str
     items: list[SuggestedItem]
     # Items the model returned that did not pass validation; not shown, only counted.
     invalid_count: int
     run: RunDto
+    # Type, participants and agenda for the minutes form; null when that task failed (the items above still count).
+    minutes: MinutesDraft | None = None
+    minutes_run: RunDto | None = None
 
 
 class RiskSuggestionsRequest(CamelModel):
@@ -154,7 +165,27 @@ def create_app(settings: Settings | None = None, llm_factory: Callable[[], LlmCl
         )
         result = _run(lambda: agent.suggest_open_issues(meeting))
 
+        # The minutes draft is a help on top: when it fails, the decisions and actions are still returned.
+        minutes, minutes_run = None, None
+        try:
+            draft = agent.draft_minutes(meeting)
+            minutes_run = _run_dto(draft.run)
+            if draft.minutes is not None:
+                minutes = MinutesDraft(
+                    type=draft.minutes.type.value,
+                    type_reason=draft.minutes.type_reason,
+                    participants=draft.minutes.participants,
+                    agenda=draft.minutes.agenda,
+                    warnings=draft.warnings,
+                )
+            else:
+                logger.info("Minutes draft not usable: %s", draft.invalid_reason)
+        except (LlmError, AgentOutputError) as error:
+            logger.warning("Minutes draft failed, returning the open issues only: %s", error)
+
         return MeetingSuggestionsResponse(
+            minutes=minutes,
+            minutes_run=minutes_run,
             summary=result.summary,
             items=[
                 SuggestedItem(

@@ -4,6 +4,7 @@ using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Tests.Common;
 using Isdlc.Application.Tests.Identity;
+using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Projects;
 using Microsoft.Extensions.DependencyInjection;
@@ -259,5 +260,65 @@ public class AgentServiceTests(DatabaseFixture database)
         var action = Assert.Single(result.Actions);
         Assert.Null(action.OwnerUserId);
         Assert.Equal(name, action.OwnerName);
+    }
+
+    // ---- Minutes draft (type, participants, agenda) ----
+
+    private static FakeAgentClient WithMinutes(MeetingAgentMinutes? minutes) =>
+        new() { Result = new MeetingAgentResult("Özet", [], 0, "gemini-test", minutes) };
+
+    private static MeetingAgentMinutes Minutes(
+        string type = "AnalysisSession", string participants = "Elif Yılmaz, Can Öztürk", string agenda = "- Ekranlar") =>
+        new(type, " Ekranlar konuşulmuş. ", participants, agenda, ["Katılımcı notlarda geçmiyor: Müşteri BT"]);
+
+    [Fact]
+    public async Task Suggest_MinutesDraft_IsPassedOnWithTheMeetingType()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "7.1");
+
+        var result = await SuggestAsync(WithMinutes(Minutes(participants: "  Elif Yılmaz, Can Öztürk  ")), projectId);
+
+        var minutes = Assert.IsType<MinutesDraftDto>(result.Minutes);
+        Assert.Equal(MeetingType.AnalysisSession, minutes.Type);
+        Assert.Equal("Ekranlar konuşulmuş.", minutes.TypeReason);
+        Assert.Equal("Elif Yılmaz, Can Öztürk", minutes.Participants);
+        Assert.Equal("- Ekranlar", minutes.Agenda);
+        Assert.Equal(["Katılımcı notlarda geçmiyor: Müşteri BT"], minutes.Warnings);
+    }
+
+    [Fact]
+    public async Task Suggest_NoMinutesDraft_ReturnsNull()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "7.1");
+
+        var result = await SuggestAsync(WithMinutes(null), projectId);
+
+        Assert.Null(result.Minutes);
+    }
+
+    [Theory]
+    [InlineData("Party", "Elif Yılmaz", "- Konu")]
+    [InlineData("42", "Elif Yılmaz", "- Konu")]
+    [InlineData("Review", "  ", "- Konu")]
+    [InlineData("Review", "Elif Yılmaz", "")]
+    public async Task Suggest_MinutesDraftTheFormWouldReject_IsDropped(string type, string participants, string agenda)
+    {
+        var projectId = await TestProjects.CreateAsync(database, "7.1");
+
+        var result = await SuggestAsync(WithMinutes(Minutes(type, participants, agenda)), projectId);
+
+        Assert.Null(result.Minutes);
+    }
+
+    [Fact]
+    public async Task Suggest_MinutesDraftLongerThanTheFormAllows_IsDropped()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "7.1");
+
+        var tooManyPeople = await SuggestAsync(WithMinutes(Minutes(participants: new string('a', 1001))), projectId);
+        var tooLongAgenda = await SuggestAsync(WithMinutes(Minutes(agenda: new string('a', 4001))), projectId);
+
+        Assert.Null(tooManyPeople.Minutes);
+        Assert.Null(tooLongAgenda.Minutes);
     }
 }

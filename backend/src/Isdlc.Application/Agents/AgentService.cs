@@ -5,6 +5,7 @@ using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.OpenIssues;
 using Isdlc.Application.Risks;
+using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Risks;
 using Microsoft.EntityFrameworkCore;
@@ -76,7 +77,30 @@ public class AgentService(
             }
         }
 
-        return new MeetingSuggestionsDto(result.Summary, decisions, actions, others, skipped, result.ModelName);
+        return new MeetingSuggestionsDto(
+            result.Summary, decisions, actions, others, skipped, result.ModelName, MinutesDraftOf(result.Minutes));
+    }
+
+    /// <summary>
+    /// The minutes' info only when it would pass the minutes form's own rules (known type, required fields,
+    /// 1000 / 4000 characters); otherwise the person fills it in as before.
+    /// </summary>
+    private static MinutesDraftDto? MinutesDraftOf(MeetingAgentMinutes? minutes)
+    {
+        if (minutes is null || !Enum.TryParse<MeetingType>(minutes.Type, out var type) || !Enum.IsDefined(type))
+        {
+            return null;
+        }
+
+        var participants = minutes.Participants.Trim();
+        var agenda = minutes.Agenda.Trim();
+        if (participants.Length is 0 or > MeetingSuggestionLimits.MaxParticipants
+            || agenda.Length is 0 or > MeetingSuggestionLimits.MaxAgenda)
+        {
+            return null;
+        }
+
+        return new MinutesDraftDto(type, OpenIssueRules.Clean(minutes.TypeReason), participants, agenda, minutes.Warnings);
     }
 
     public async Task<RiskSuggestionsDto> SuggestRisksAsync(

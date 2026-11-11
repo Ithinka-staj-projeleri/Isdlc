@@ -21,6 +21,15 @@
         </p>
         @if (r.summary) { <p class="muted">{{ r.summary }}</p> }
 
+        @if (r.minutes; as m) {
+        <p>
+            <b>Tür ({{ meetingTypeLabels[m.type] }}), katılımcılar ve gündem de önerildi.</b>
+            Yalnızca sizin doldurmadığınız alanlar dolduruldu.
+        </p>
+        @if (m.typeReason) { <p class="muted">{{ m.typeReason }}</p> }
+        @for (w of m.warnings; track $index) { <p class="warning">{{ w }}</p> }
+        }
+
         @if (r.others.length) {
         <h5>Formda yeri olmayan öneriler</h5>
         <ul>

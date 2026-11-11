@@ -5,6 +5,7 @@ import { DateOnlyPipe } from '../../../shared/pipes/date-only.pipe';
 import { AgentService } from '../../agents/agent.service';
 import { MeetingSuggestions } from '../../agents/models/meeting-suggestions';
 import { OPEN_ISSUE_TYPE_LABELS } from '../../open-issues/models/open-issue';
+import { MEETING_TYPE_LABELS } from '../models/meeting';
 
 const MAX_NOTES = 20_000;
 
@@ -30,6 +31,7 @@ export class MeetingAssistantComponent {
 
     protected readonly enabled = toSignal(this.agentService.meetingAssistantEnabled(), { initialValue: false });
     protected readonly typeLabels = OPEN_ISSUE_TYPE_LABELS;
+    protected readonly meetingTypeLabels = MEETING_TYPE_LABELS;
     protected readonly maxNotes = MAX_NOTES;
 
     protected readonly notes = signal('');

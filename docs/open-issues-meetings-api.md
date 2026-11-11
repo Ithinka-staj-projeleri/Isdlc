@@ -188,7 +188,15 @@ formu doldurur, kişi düzenleyip tutanağı yukarıdaki `POST /meetings` ile ka
   ],
   "others": [ { "type": "Question", "title": "Fotoğraflar kaç gün saklanacak?", "ownerName": "Saha Operasyon Müdürü", "dueDate": null, "evidence": "..." } ],
   "skippedCount": 0,
-  "modelName": "gemini-..."
+  "modelName": "gemini-...",
+  // Tutanağın üst bilgileri; ajan hazırlayamadıysa null (kararlar ve aksiyonlar yine gelir)
+  "minutes": {
+    "type": "AnalysisSession",
+    "typeReason": "Gereksinimler ayrıntılı konuşulmuş.",
+    "participants": "Elif Yılmaz, Can Öztürk, Hakan Yıldız (Demo Lojistik)",
+    "agenda": "- Mobil stok sayımı\n- Depo listesi",
+    "warnings": []
+  }
 }
 ```
 
@@ -200,6 +208,7 @@ formu doldurur, kişi düzenleyip tutanağı yukarıdaki `POST /meetings` ile ka
 | `decisions` | Sorumlu yoktur: karar, tutanağı kaydeden kişi adına kapalı kaydedilir |
 | `others` | Soru, bağımlılık, varsayım, değişiklik talebi. Tutanak formunda yerleri yok; Açık Konular'dan elle eklenir |
 | `warnings` | Ajanın uyarıları: dayanak notlarda bulunamadı, termin toplantıdan önce, sorumlu yok |
+| `minutes` | Toplantı türü, katılımcılar (virgülle) ve gündem (her konu "- " ile bir satır). Tür bilinmiyorsa, alan boşsa ya da formun sınırını (1000 / 4000) aşıyorsa `null`. Form yalnızca kişinin doldurmadığı alanları doldurur; tür, kişi değiştirmediyse değişir. `warnings`: notlarda geçmeyen katılımcı, katılımcı bulunamadı |
 
 Hatalar: proje yok `404`, proje aktif değil `409` ("Proje aktif değil; kayıt eklenemez veya değiştirilemez."),
 servis ayarlı değil, çalışmıyor ya da model hata verdi `503` (Türkçe `detail`, ör. "Yapay zekâ servisine şu an ulaşılamıyor.").

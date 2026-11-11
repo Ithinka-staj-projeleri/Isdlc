@@ -127,10 +127,9 @@ Ekip, komut satırındaki denemenin ardından toplantı ajanını MVP'ye almayı
 
 - **Mimari:** Ajanlar ayrı bir Python servisidir (`ai/`, FastAPI). Yalnızca backend çağırır; servis veritabanına erişmez.
   Servis çalışmıyorsa yapay zekâ butonları görünmez, uygulamanın geri kalanı etkilenmez.
-- **MVP kapsamı:** Yeni tutanak formunda "Yapay zekâ ile karar ve aksiyonları çıkar". Öneriler formu doldurur; kişi
-  düzenleyip tutanağı normal şekilde kaydeder. Ajan kendisi kayıt oluşturmaz.
+- **MVP kapsamı:** Yeni tutanak formunda "Yapay zekâ ile karar ve aksiyonları çıkar". Öneriler formu doldurur (kararlar,
+  aksiyonlar; boşsa toplantı türü, katılımcılar ve gündem); kişi düzenleyip tutanağı normal şekilde kaydeder. Ajan kendisi kayıt oluşturmaz.
 - **Risk ajanı:** Risks modülü gelince bağlandı. Riskler sekmesinde "Yapay zekâ ile risk öner" (metinden riskler) ve
   risk formunda "Yapay zekâ ile puan ve aksiyon öner". Öneriler risk formunu doldurur; kaydeden yine kişidir.
-- **Sonraya kalanlar:** `AgentRun` / `AgentSuggestion` tabloları ve öneri paneli, toplantı ajanının tutanak taslağı
-  görevi (tür, katılımcılar, gündem), diğer ajan tipleri.
+- **Sonraya kalanlar:** `AgentRun` / `AgentSuggestion` tabloları ve öneri paneli, diğer ajan tipleri.
 - **Yalnızca sahte veriyle** çalışılır; model sağlayıcısı ve şirketin veri gönderme izni ayrıca kararlaştırılacak.
