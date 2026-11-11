@@ -175,6 +175,11 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Tutanaktan aktarılan kayıt | `OpenIssue.SourceMeetingId` |
 | Bildirim | `Notification` (alıcı başına bir satır; `ReadAt` okunma zamanı). Modüller yalnızca `INotificationService` ile gönderir |
 | Denetim kaydı | `AuditLog` |
+| Soru bankası: soru seti / soru / seçenek | `QuestionSet` (`level`, `request-analysis`, `risk-analysis`, `internal-approval`) / `Question` / `QuestionOption` |
+| İş tipi / alt kategori (soru listesi seçimi) | `WorkType` (akış anahtarı, ör. `new-software-project`) / `Subcategory` (= `RequestSource`) |
+| Projede doldurulan form / cevap | `Questionnaire` / `QuestionAnswer` |
+| Zorunlu / duruma bağlı soru | `QuestionRequirement` (`Required`, `Conditional`) |
+| Seçeneğin anlamı | `OptionMeaning` (`Complete`, `Partial`, `Open`, `Negative`, `NotApplicable`) |
 | Yapay zekâ yardımcısı / önerisi | `Agents` modülü; tutanak önerileri `MeetingSuggestionsDto`, risk önerileri `RiskSuggestionsDto` ve `RiskAssessmentSuggestionDto` (kaydedilmez, formu doldurur) |
 
 Yeni bir kavram gerektiğinde önce bu tabloya eklenir.

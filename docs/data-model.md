@@ -3,7 +3,7 @@
 Faz 0'ın temel entity'leri (`ProcessStage`, `ProcessStep`, `User`, `Project`, `StepRecord`), denetim kaydı
 ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
 Kaynak: "ISDLC Analiz Merkezi" prototipi.
-Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **uygulandı**; `Notification` (Faz 3) **taslak, ekip onayı bekliyor.**
+Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **uygulandı**; `Notification` (Faz 3) **uygulandı**; soru bankası (Faz 4 · B1) **taslak, ekip onayı bekliyor.**
 
 İsimlendirme AGENTS.md'ye uyar: entity tekil, tablo çoğul; `?` alanın boş bırakılabileceğini (nullable) gösterir.
 
@@ -349,6 +349,38 @@ API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-a
 - Rol bildirimi gönderildiği andaki her aktif kullanıcı için ayrı bir satırdır.
 - Silinmez. `(UserId, ReadAt)` ve `(UserId, CreatedAt)` üzerinde indeks bulunur (okunmamış sayısı ve liste için).
 
+## Soru bankası (Faz 4 · B1)
+
+Dört şirket formunun (Seviye, Talep Analizi, Risk Analizi, İç Onay) ortak yapısı. API sözleşmesi, formlardan çıkan yapı ve
+seed biçimi: [question-bank-api.md](question-bank-api.md).
+
+```
+QuestionSet  1 ──── * Question ──── * QuestionOption   (soruya özgü seçenek: seviye)
+QuestionSet  1 ──── * QuestionOption                   (sete ait ortak seçenek: diğer üç form)
+Project      1 ──── * Questionnaire * ──── 1 QuestionSet   (projede bir set bir kez doldurulur)
+Questionnaire 1 ──── * QuestionAnswer * ──── 1 Question
+QuestionAnswer * ──── 0..1 QuestionOption
+```
+
+**Ana veri** (seed: `Seed/question-sets/*.json`; kullanıcı değiştirmez, denetim kaydına yazılmaz):
+
+| Entity | Alanlar |
+| --- | --- |
+| `QuestionSet` | `Id`, `Code` (`level`, `request-analysis`, `risk-analysis`, `internal-approval`; benzersiz), `Name`, `SourceDocument`, `Version`, `AnswerMode` (`SharedOptions` / `QuestionOptions`), `Bands` (formlara özgü eşikler, JSON) |
+| `Question` | `Id`, `QuestionSetId`, `Key` (kalıcı anahtar, benzersiz), `WorkType` (akış anahtarı), `Subcategory` (`RequestSource?`; boş = bütün alt kategoriler), `No`, `Order`, `Section?`, `Group?`, `Topic?`, `Text` (2000), `Requirement` (`QuestionRequirement?`), `ExpectedInfo?`, `RiskDescription?`, `SuggestedAction?`, `Reference?` (1000), `IsActive` |
+| `QuestionOption` | `Id`, `QuestionSetId`, `QuestionId?` (doluysa soruya özgü), `Code`, `Label` (500), `Points?`, `Meaning?` (`OptionMeaning`), `IsScored`, `Order` |
+
+**İşlem verisi** (`AuditableEntity`, `IAudited`, `IProjectRecord`):
+
+| Entity | Alanlar |
+| --- | --- |
+| `Questionnaire` | `Id`, `ProjectId`, `QuestionSetId` (`(ProjectId, QuestionSetId)` benzersiz), `WorkType`, `Subcategory` (`RequestSource`), `Participants?` (1000), `AssessedOn?` (DateOnly), `ApprovedById?` (FK → User), `ApprovedOn?` |
+| `QuestionAnswer` | `Id`, `QuestionnaireId`, `QuestionId` (`(QuestionnaireId, QuestionId)` benzersiz), `OptionId?`, `Text?` (4000), `Note?` (2000), `Probability?` (1–3), `Severity?` (1–3) |
+
+- Formun sonucu (seviye, uygunluk oranı, risk derecesi) ve özet **saklanmaz**, cevaplardan hesaplanır.
+- Dosyadan çıkan soru silinmez, `IsActive = false` olur; cevabı korunur.
+- Veritabanında `Probability` ve `Severity` için 1–3 kontrolü (check constraint) bulunur.
+
 ## Enum'lar
 
 | Enum | Değerler |
@@ -366,6 +398,9 @@ API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-a
 | `RiskCategory` | `Technical` (Teknik), `Scope` (Kapsam), `Stakeholder` (Paydaş), `Schedule` (Takvim), `Cost` (Maliyet), `Data` (Veri), `SecurityPrivacy` (Güvenlik / KVKK), `Supplier` (Tedarikçi) |
 | `RiskStatus` | `Open` (Açık), `Monitoring` (İzleniyor), `Closed` (Kapandı) |
 | `RiskSeverity` | `Low` (Düşük, skor 1–7), `Medium` (Orta, 8–14), `High` (Yüksek, 15–25). Saklanmaz, yalnızca DTO'da ve filtrede |
+| `QuestionRequirement` | `Required` (Zorunlu), `Conditional` (Duruma bağlı) |
+| `OptionMeaning` | `Complete`, `Partial`, `Open`, `Negative`, `NotApplicable`; formlardaki karşılıkları: [question-bank-api.md](question-bank-api.md) → Kavramlar |
+| `AnswerMode` | `SharedOptions` (seçenekler setin), `QuestionOptions` (her sorunun kendi seçenekleri) |
 | `AcceptanceRecommendation` | `Accept` (Kabul önerilir, ≥ 3,50), `Conditional` (Koşullu kabul, 2,50–3,49), `RejectOrPostpone` (Ret / erteleme önerilir, < 2,50). Saklanmaz, yalnızca DTO'da |
 | `MeetingType` | `RequestInterview` (Talep Görüşmesi), `AnalysisSession` (Analiz Oturumu), `KickOff` (Proje Başlangıç / Kick-off), `Review` (Gözden Geçirme), `Internal` (Departman İçi), `CustomerVisit` (Müşteri Ziyareti), `Handover` (Devir Görüşmesi), `ProjectEvaluation` (Proje Değerlendirme) |
 | `RequirementType` | `Business` (İş gereksinimi), `Functional` (Fonksiyonel), `NonFunctional` (Fonksiyonel olmayan) |
@@ -413,6 +448,8 @@ API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-a
     seviye yalnızca "Seviyeyi uygula" ile `Project.Level`'e yazılır. Ayrıntılar: [assessment-api.md](assessment-api.md) → "Ekip onayı bekleyen kararlar".
 17. *(Taslak)* Bildirimler kişi başına satırdır; gönderen modüller `INotificationService`'i değiştirmeden kullanır.
     Ayrıntılar: [notifications-api.md](notifications-api.md) → "Ekip onayı bekleyen kararlar".
+18. *(Taslak)* Dört şirket formu tek bir soru bankası yapısında tutulur; alt kategori talep kaynağıdır, iş tipi akışın anahtarıdır.
+    Ayrıntılar: [question-bank-api.md](question-bank-api.md) → "Ekip onayı bekleyen kararlar".
 
 ## Seed verisi
 
