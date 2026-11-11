@@ -22,6 +22,7 @@ entity, API ve ekranını uçtan uca yazar.
 | **1 — Çekirdek** | `Process` | `Projects` | `Identity` |
 | **2 — Proje kayıtları** | `OpenIssues` + `Meetings` | `Requirements` + `Documents` | `Assessment` + `Risks` |
 | **3 — Bitiriş** | `Audit` ekranı + uçtan uca demo senaryosu | `Dashboard` | `Notifications` |
+| **4 — Şirket akışları** | — (başka işleri var) | Akış altyapısı, akış seed'leri, talep analizi, tutanaklar, süreç iyileştirme, demo; talepler, ek geliştirme, dokümanlar, gereksinimler, kapsam ve efor, gösterge paneli | Soru bankası, seviye ve uygunluk, risk, ekip, kaynak planlama, faturalama |
 
 ### Faz 0 — Ortak temel
 
@@ -73,6 +74,14 @@ Bu tek bir noktada tanımlanır; giriş sistemi gelince yalnızca orası değiş
 - **Baran:** `Notifications`.
 
 **Bitiş koşulu:** MVP demosu baştan sona sorunsuz çalışıyor.
+
+### Faz 4 — Şirket akışları ve formlarına uyum
+
+Uygulama, iş analistlerinin paylaştığı akışların son hâline (yeni yazılım projesi, ek geliştirme, süreç iyileştirme,
+haftalık kaynak planlama, aylık faturalama) ve formlarına göre güncellenir. İşler, sıra ve açık konular:
+[docs/phase-4-plan.md](docs/phase-4-plan.md).
+
+**Bitiş koşulu:** Beş akış uygulamada uçtan uca yürütülebiliyor; menüler şirket formlarındaki alanları karşılıyor.
 
 ## 3. Birlikte çalışma kuralları
 
