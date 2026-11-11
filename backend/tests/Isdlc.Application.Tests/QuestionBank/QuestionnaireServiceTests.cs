@@ -90,7 +90,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_NothingSaved_ListsTheProjectsSubcategoryWithEmptyAnswers()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
 
         var form = await GetAsync(projectId);
 
@@ -113,7 +113,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveAnswer_ScoredRisk_IsSavedWithWhoAndWhen_AndCountedInTheSummary()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         var question = (await GetAsync(projectId)).Questions[0].Question;
 
         var form = await AnswerAsync(projectId, question.Id, new SaveAnswerDto
@@ -133,7 +133,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveAnswer_Changed_UpdatesTheSameRow_AndWritesTheAuditLog()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         var question = (await GetAsync(projectId)).Questions[0].Question;
 
         await AnswerAsync(projectId, question.Id, new SaveAnswerDto { OptionId = OptionOf(question, "uncertain").Id });
@@ -150,7 +150,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveAnswer_AllEmpty_EmptiesTheAnswerWithoutDeletingIt()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         var question = (await GetAsync(projectId)).Questions[0].Question;
         await AnswerAsync(projectId, question.Id, new SaveAnswerDto { OptionId = OptionOf(question, "no-risk").Id });
 
@@ -164,7 +164,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveAnswer_EmptyOnANewForm_DoesNotCreateTheForm()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         var question = (await GetAsync(projectId)).Questions[0].Question;
 
         await AnswerAsync(projectId, question.Id, new SaveAnswerDto());
@@ -177,7 +177,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveAnswer_ProbabilityOnUnscoredOption_Throws400()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         var question = (await GetAsync(projectId)).Questions[0].Question;
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => AnswerAsync(projectId, question.Id,
@@ -187,7 +187,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveAnswer_OptionOfAnotherSet_Throws400()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         var question = (await GetAsync(projectId)).Questions[0].Question;
         var levelOptionId = (await GetAsync(projectId, Level)).Questions[0].Question.Options[0].Id;
 
@@ -199,7 +199,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveAnswer_QuestionNotOnThisForm_Throws404()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         var externalOnly = (await BankAsync(s => s.ListQuestionsAsync(Level, new QuestionFilter { Subcategory = RequestSource.External }, default)))[0];
         var riskQuestion = (await GetAsync(projectId)).Questions[0].Question;
 
@@ -221,7 +221,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task SaveAnswer_NotSignedIn_Throws403()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         var question = (await GetAsync(projectId)).Questions[0].Question;
 
         await Assert.ThrowsAsync<ForbiddenException>(() =>
@@ -233,7 +233,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Save_Header_IsKeptWithTheApprover()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         var managerId = await TestProjects.UserIdAsync(database, TestProjects.Manager);
 
         var form = await SaveHeaderAsync(projectId, new SaveQuestionnaireDto
@@ -251,7 +251,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Save_UnknownApprover_Throws400()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
 
         var ex = await Assert.ThrowsAsync<BusinessRuleException>(() => SaveHeaderAsync(projectId,
             new SaveQuestionnaireDto { Subcategory = RequestSource.Internal, ApprovedByUserId = int.MaxValue }));
@@ -261,7 +261,7 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Save_OtherSubcategory_ChangesTheList_AndHiddenAnswersComeBack()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.4");
+        var projectId = await TestProjects.CreateAsync(database, "5");
         var internalQuestion = (await GetAsync(projectId, Level)).Questions[0].Question;
         await AnswerAsync(projectId, internalQuestion.Id, new SaveAnswerDto { OptionId = internalQuestion.Options[0].Id }, Level);
 

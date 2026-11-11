@@ -23,8 +23,11 @@ public class DashboardService(
     /// <summary>Each list shows its first rows; the rest is on the module's own page.</summary>
     public const int ListSize = 10;
 
-    /// <summary>Acceptance: scoring at 3.1, the department manager's decision at 3.2 (docs/dashboard-api.md, decision 13).</summary>
-    private static readonly string[] AcceptanceStepCodes = ["3.1", "3.2"];
+    /// <summary>
+    /// Acceptance: the customer suitability decision, step 4 of the new software project flow.
+    /// (The scoring itself is redone with the company's survey in Faz 4, B2.)
+    /// </summary>
+    private const string AcceptanceStepCode = "4";
 
     public async Task<DashboardDto> GetAsync(DashboardScope scope, CancellationToken cancellationToken)
     {
@@ -140,14 +143,15 @@ public class DashboardService(
     }
 
     /// <summary>
-    /// Active requests at step 3.1 or 3.2 with their acceptance scoring (decision 13). The weighted score and the
+    /// Active requests at the acceptance step (AcceptanceStepCode) with their acceptance scoring (decision 13). The weighted score and the
     /// recommendation come from AssessmentRules, so they match the Seviye &amp; Kabul tab. Longest waiting first.
     /// </summary>
     private async Task<DashboardListDto<AcceptanceQueueItemDto>> AcceptanceQueueAsync(
         IQueryable<Project> projects, CancellationToken cancellationToken)
     {
         var requests = projects.Where(p => p.Status == ProjectStatus.Active
-            && p.CurrentStep != null && AcceptanceStepCodes.Contains(p.CurrentStep.Code));
+            && p.CurrentStep != null && p.CurrentStep.Code == AcceptanceStepCode
+            && p.ProcessFlow.Code == ProcessFlowCodes.NewRequest);
 
         var totalCount = await requests.CountAsync(cancellationToken);
 

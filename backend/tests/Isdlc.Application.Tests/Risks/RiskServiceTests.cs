@@ -126,7 +126,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_FirstRisk_StartsOpenWithFirstCodeAndScore()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var analystId = await AnalystIdAsync();
 
         var risk = await CreateAsync(projectId, probability: 4, impact: 4);
@@ -146,7 +146,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_SecondRisk_GetsNextCode()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         await CreateAsync(projectId);
         var second = await CreateAsync(projectId);
@@ -157,8 +157,8 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_CodesAreCountedPerProject()
     {
-        var firstProjectId = await TestProjects.CreateAsync(database, "4.8");
-        var secondProjectId = await TestProjects.CreateAsync(database, "4.8");
+        var firstProjectId = await TestProjects.CreateAsync(database, "8");
+        var secondProjectId = await TestProjects.CreateAsync(database, "8");
         await CreateAsync(firstProjectId);
         await CreateAsync(firstProjectId);
 
@@ -170,7 +170,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_TrimsTitleAndTreatsBlankTextAsEmpty()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var analystId = await AnalystIdAsync();
         var request = NewRisk(analystId, title: "  Kilit kullanıcı ayrılabilir  ") with
         {
@@ -188,7 +188,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_InactiveOwner_ThrowsBusinessRule()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var inactiveUserId = await CreateInactiveUserAsync();
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(() => AsAsync(TestProjects.Analyst,
@@ -200,7 +200,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_UnknownOwner_ThrowsBusinessRule()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => AsAsync(TestProjects.Analyst,
             s => s.CreateAsync(projectId, NewRisk(ownerUserId: int.MaxValue), CancellationToken.None)));
@@ -232,7 +232,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_NobodySignedIn_ThrowsForbidden()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var analystId = await AnalystIdAsync();
 
         await Assert.ThrowsAsync<ForbiddenException>(() => AsAsync(null,
@@ -242,7 +242,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_WritesAnAuditLogForTheProject()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         var risk = await CreateAsync(projectId);
 
@@ -259,8 +259,8 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_RiskOfAnotherProject_ThrowsNotFound()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
-        var otherProjectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
+        var otherProjectId = await TestProjects.CreateAsync(database, "8");
         var risk = await CreateAsync(projectId);
 
         await Assert.ThrowsAsync<NotFoundException>(() => AsAsync(TestProjects.Sales,
@@ -270,7 +270,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_ClosedProject_CanStillBeRead()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var risk = await CreateAsync(projectId);
         await using (var scope = database.CreateScope())
         {
@@ -291,7 +291,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_ChangesFieldsAndStatus()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
         var risk = await CreateAsync(projectId, probability: 2, impact: 2);
 
@@ -310,7 +310,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_ClosedRisk_CanBeReopened()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var risk = await CreateAsync(projectId);
         var closed = await UpdateAsync(projectId, risk, Edit(risk, status: RiskStatus.Closed));
 
@@ -322,8 +322,8 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_RiskOfAnotherProject_ThrowsNotFound()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
-        var otherProjectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
+        var otherProjectId = await TestProjects.CreateAsync(database, "8");
         var risk = await CreateAsync(projectId);
 
         await Assert.ThrowsAsync<NotFoundException>(() => AsAsync(TestProjects.Analyst,
@@ -333,7 +333,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_InactiveOwner_ThrowsBusinessRuleAndKeepsTheRisk()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var risk = await CreateAsync(projectId);
         var inactiveUserId = await CreateInactiveUserAsync();
 
@@ -349,7 +349,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_ProjectNoLongerActive_ThrowsConflict()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var risk = await CreateAsync(projectId);
         await using (var scope = database.CreateScope())
         {
@@ -367,7 +367,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_NobodySignedIn_ThrowsForbidden()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var risk = await CreateAsync(projectId);
 
         await Assert.ThrowsAsync<ForbiddenException>(() => AsAsync(null,
@@ -379,7 +379,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_OpenRisksFirstThenHighestScoreThenCode()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var low = await CreateAsync(projectId, 1, 2);           // RSK-001, 2
         var high = await CreateAsync(projectId, 4, 5);          // RSK-002, 20
         var closed = await CreateAsync(projectId, 5, 5);        // RSK-003, 25, closed below
@@ -398,7 +398,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_FilterByStatusAndCategory_ReturnsOnlyMatches()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var technical = await CreateAsync(projectId, category: RiskCategory.Technical);
         var schedule = await CreateAsync(projectId, category: RiskCategory.Schedule);
         await UpdateAsync(projectId, schedule, Edit(schedule, status: RiskStatus.Monitoring));
@@ -416,7 +416,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [InlineData(RiskSeverity.High, "RSK-003")]    // 3 × 5 = 15
     public async Task List_FilterBySeverity_UsesTheScoreThresholds(RiskSeverity severity, string expectedCode)
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         await CreateAsync(projectId, 2, 3);
         await CreateAsync(projectId, 2, 4);
         await CreateAsync(projectId, 3, 5);
@@ -431,7 +431,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_FilterByCell_ReturnsRisksWithThatProbabilityAndImpact()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         await CreateAsync(projectId, 4, 2);
         var cell = await CreateAsync(projectId, 2, 4);
 
@@ -443,7 +443,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_OnlyProbabilityOrOnlyImpact_ThrowsBusinessRule()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(
             () => ListAsync(projectId, new RiskFilter { Probability = 3 }));
@@ -455,7 +455,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_Paging_ReturnsPageAndTotalCount()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         for (var i = 0; i < 3; i++)
         {
             await CreateAsync(projectId);
@@ -479,7 +479,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task GetMatrix_CountsNotClosedRisksPerCellAndSeverity()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         await CreateAsync(projectId, 4, 4);   // 16 High
         await CreateAsync(projectId, 3, 3);   // 9 Medium
         var monitored = await CreateAsync(projectId, 3, 3);
@@ -499,7 +499,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task GetMatrix_NoRisks_ReturnsEmptyCellsAndZeroCounts()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
 
         var matrix = await MatrixAsync(projectId);
 
@@ -518,7 +518,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_AssignedToSomeoneElse_NotifiesOwner()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
 
         var (risk, notifications) = await AsAsync(TestProjects.Analyst, s => s.CreateAsync(
@@ -533,7 +533,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_LowRiskOwnedBySelf_SendsNothing()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var analystId = await AnalystIdAsync();
 
         var (_, notifications) = await AsAsync(TestProjects.Analyst, s => s.CreateAsync(
@@ -545,7 +545,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_HighRisk_NotifiesProjectManagerWithScore()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var analystId = await AnalystIdAsync();
         var projectManagerId = await TestProjects.UserIdAsync(database, TestProjects.ProjectManager);
 
@@ -560,7 +560,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_HighRiskByTheProjectManager_DoesNotNotifyThemselves()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var projectManagerId = await TestProjects.UserIdAsync(database, TestProjects.ProjectManager);
 
         var (_, notifications) = await AsAsync(TestProjects.ProjectManager, s => s.CreateAsync(
@@ -572,7 +572,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_HighRiskOnProjectWithoutManager_SendsNothing()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         await RemoveProjectManagerAsync(projectId);
         var analystId = await AnalystIdAsync();
 
@@ -585,7 +585,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_RaisedToHigh_NotifiesProjectManager()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var projectManagerId = await TestProjects.UserIdAsync(database, TestProjects.ProjectManager);
         var risk = await CreateAsync(projectId, 3, 4);  // 12 Medium
 
@@ -600,7 +600,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_AlreadyHighAndRaisedAgain_SendsNothing()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var risk = await CreateAsync(projectId, 4, 4);  // 16 High
 
         var (_, notifications) = await AsAsync(TestProjects.Analyst, s => s.UpdateAsync(
@@ -612,7 +612,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_ClosedHighRiskReopened_NotifiesProjectManager()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var projectManagerId = await TestProjects.UserIdAsync(database, TestProjects.ProjectManager);
         var risk = await CreateAsync(projectId, 4, 4);
         var closed = await UpdateAsync(projectId, risk, Edit(risk, status: RiskStatus.Closed));
@@ -626,7 +626,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_OwnerChanged_NotifiesNewOwnerOnly()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
         var risk = await CreateAsync(projectId, 2, 2);
 
@@ -641,7 +641,7 @@ public class RiskServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_SameOwner_SendsNothing()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
         var (risk, _) = await AsAsync(TestProjects.Analyst, s => s.CreateAsync(
             projectId, NewRisk(developerId, probability: 2, impact: 2), CancellationToken.None));

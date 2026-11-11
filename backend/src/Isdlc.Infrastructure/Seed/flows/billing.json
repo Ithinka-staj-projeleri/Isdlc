@@ -1,0 +1,126 @@
+{
+  "code": "billing",
+  "order": 5,
+  "name": "Aylık Faturalama",
+  "kind": "Billing",
+  "projectStageOrder": null,
+  "stages": [
+    {
+      "order": 1,
+      "title": "Jira Kaydı",
+      "shortTitle": "Jira Kaydı"
+    },
+    {
+      "order": 2,
+      "title": "Ay Sonu Hazırlık",
+      "shortTitle": "Ay Sonu Hazırlık"
+    },
+    {
+      "order": 3,
+      "title": "Kontrol ve Fatura Talebi",
+      "shortTitle": "Kontrol ve Fatura Talebi"
+    },
+    {
+      "order": 4,
+      "title": "Fatura ve Ay Kapanışı",
+      "shortTitle": "Fatura ve Ay Kapanışı"
+    }
+  ],
+  "steps": [
+    {
+      "code": "1",
+      "stageOrder": 1,
+      "order": 1,
+      "text": "Müşteri talebi Jira’da ticket olarak açılır. Müşteri her destek veya geliştirme talebi için Jira’da proje, konu, açıklama ve öncelik bilgisiyle ticket açar; e-posta veya telefonla gelen talepler müşteriden Jira’da ticket açması istenerek kayda alınır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "2",
+      "stageOrder": 2,
+      "order": 2,
+      "text": "Aylık ticket ve efor listesi çıkarılır. Ay sonunda Jira’dan o aya ait ticket’lar indirilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "3",
+      "stageOrder": 2,
+      "order": 3,
+      "text": "Faturalanacak işler belirlenir ve müşteri bazında tablolanır. Her ticket’ın faturalanıp faturalanmayacağı müşterinin sözleşme veya bakım anlaşması kapsamına göre belirlenir; faturalanacak ticket’ların efor saati adam/güne çevrilir, adam/gün × birim fiyat ile tutar hesaplanır ve müşteri bazında tablolanır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "4",
+      "stageOrder": 3,
+      "order": 4,
+      "text": "Proje Yöneticisi ile gözden geçirilir. Tablo, Proje Yöneticisi ile ticket bazında gözden geçirilir ve Ortak Proje Yönetimi › Proje Gözden Geçirme Toplantı Takip › Ticket Listeleri dizininden ilgili müşteri klasörüne eklenir. Tablo onaylandı mı?",
+      "isDecision": true,
+      "noBranchText": "Düzeltme gerekirse tablo yeniden hazırlanır (3. adım).",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": "ProjectManager",
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "3",
+          "label": "Düzeltme: 3. adıma dön"
+        }
+      ],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "5",
+      "stageOrder": 3,
+      "order": 5,
+      "text": "Fatura kesimi talep edilir. Fatura kesimi için hem müşteriye, hem ilgili projenin satış temsilcisine ve fatura kesiminin onaylanması için Satış Departmanı’na e-posta iletilerek fatura kesimi talep edilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "6",
+      "stageOrder": 4,
+      "order": 6,
+      "text": "Fatura takip edilir ve ay kapatılır. Fatura kesimi takip edilir; fatura kesildiyse klasörüne eklenir ve ay kapatılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    }
+  ]
+}

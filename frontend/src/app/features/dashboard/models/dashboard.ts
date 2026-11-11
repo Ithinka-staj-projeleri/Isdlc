@@ -98,7 +98,7 @@ export interface LevelCounts {
   notSet: number;
 }
 
-/** An active request at 3.1 or 3.2; weightedScore and recommendation stay null until all six criteria are scored. */
+/** An active request at the customer suitability step (4); weightedScore and recommendation stay null until all six criteria are scored. */
 export interface AcceptanceQueueItem {
   project: DashboardProject;
   stepCode: string;

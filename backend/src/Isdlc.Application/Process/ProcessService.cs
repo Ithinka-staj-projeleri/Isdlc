@@ -21,7 +21,7 @@ public class ProcessService(
     {
         return await dbContext.ProcessFlows
             .AsNoTracking()
-            .OrderBy(flow => flow.Id)
+            .OrderBy(flow => flow.Order)
             .Select(flow => new ProcessFlowListItemDto(
                 flow.Id,
                 flow.Code,

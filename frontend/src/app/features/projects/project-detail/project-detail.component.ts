@@ -27,8 +27,8 @@ import { ProjectService } from '../project.service';
 
 type DetailTab = 'general' | 'process' | 'assessment' | 'requirements' | 'documents' | 'risks' | 'open-issues' | 'meetings' | 'history';
 
-/** Stages 1–3 are the request phase ("Talepler"); 4–13 the project phase ("Projeler"). */
-const LAST_REQUEST_STAGE = 3;
+/** In the new software project flow stages 1–2 are the request phase ("Talepler"); 3–4 the project phase ("Projeler"). */
+const LAST_REQUEST_STAGE = 2;
 
 /**
  * Project detail: a summary on top and one tab per module.

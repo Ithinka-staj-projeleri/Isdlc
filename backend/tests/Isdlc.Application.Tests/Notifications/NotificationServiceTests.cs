@@ -117,7 +117,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task NotifyUsers_WritesOneUnreadRowPerUser()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await UserIdAsync(TestProjects.Developer);
         var projectManagerId = await UserIdAsync(TestProjects.ProjectManager);
 
@@ -137,7 +137,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task NotifyUsers_SkipsActingInactiveUnknownAndRepeatedUsers()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var analystId = await UserIdAsync(TestProjects.Analyst);
         var developerId = await UserIdAsync(TestProjects.Developer);
         var inactiveUserId = await CreateInactiveUserAsync(UserRole.SoftwareDeveloper);
@@ -152,7 +152,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task NotifyUsers_OnlyTheActingUser_WritesNothing()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var analystId = await UserIdAsync(TestProjects.Analyst);
 
         await SendAsync(TestProjects.Analyst, s => s.NotifyUsersAsync(
@@ -166,7 +166,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task NotifyUsers_LongMessage_IsCutToTheColumnLength()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await UserIdAsync(TestProjects.Developer);
 
         await SendAsync(TestProjects.Analyst, s => s.NotifyUsersAsync(
@@ -182,7 +182,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     {
         // A project that does not exist breaks the foreign key. The module's own work was already saved,
         // so sending must not throw; and the failed rows must not be tried again by the next save.
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await UserIdAsync(TestProjects.Developer);
 
         var logger = await SendAsync(TestProjects.Analyst, async s =>
@@ -200,7 +200,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task NotifyRole_WritesARowForEveryActiveUserOfTheRole()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var inactiveDeveloperId = await CreateInactiveUserAsync(UserRole.SoftwareDeveloper);
         List<int> activeDeveloperIds;
         await using (var scope = database.CreateScope())
@@ -223,7 +223,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task NotifyRole_ActingUserHasTheRole_IsLeftOut()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await UserIdAsync(TestProjects.Developer);
 
         await SendAsync(TestProjects.Developer, s => s.NotifyRoleAsync(
@@ -239,7 +239,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_ShowsOnlyMyNotificationsNewestFirstWithTheProject()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var project = await TestProjects.GetAsync(database, projectId);
         var developerId = await UserIdAsync(TestProjects.Developer);
         var projectManagerId = await UserIdAsync(TestProjects.ProjectManager);
@@ -262,7 +262,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_UnreadOnly_LeavesReadOnesOut()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await UserIdAsync(TestProjects.Developer);
         await SendAsync(TestProjects.Analyst, async s =>
         {
@@ -289,7 +289,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task UnreadCount_GoesUpWithEachNewNotificationAndDownWhenRead()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await UserIdAsync(TestProjects.Developer);
         var before = (await InboxAsync(TestProjects.Developer, s => s.GetUnreadCountAsync(CancellationToken.None))).Count;
 
@@ -311,7 +311,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MarkRead_SetsReadAtOnceAndKeepsTheFirstTime()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await UserIdAsync(TestProjects.Developer);
         await SendAsync(TestProjects.Analyst, s => s.NotifyUsersAsync(
             [developerId], projectId, "Mesaj", CancellationToken.None));
@@ -334,7 +334,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MarkRead_AnotherUsersNotification_ThrowsNotFoundAndStaysUnread()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await UserIdAsync(TestProjects.Developer);
         await SendAsync(TestProjects.Analyst, s => s.NotifyUsersAsync(
             [developerId], projectId, "Mesaj", CancellationToken.None));
@@ -363,7 +363,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MarkAllRead_MarksOnlyMyUnreadNotifications()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await UserIdAsync(TestProjects.Developer);
         var projectManagerId = await UserIdAsync(TestProjects.ProjectManager);
         await SendAsync(TestProjects.Analyst, async s =>

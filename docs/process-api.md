@@ -2,10 +2,9 @@
 
 `Process` modülünün uç noktaları, DTO'ları, iş kuralları ve hata durumları.
 Veri modeli ve süreç ilerleme kuralları için: [data-model.md](data-model.md).
-Durum: Akış altyapısı (iş E1) **uygulandı**: akışlar, adım koşulları, `GET /process-flows`, talep / proje ayrımı.
-Şirketin beş akışı E2 ile gelene kadar seed'de tek akış vardır: eski 13 aşamalı akış, geçici olarak `isdlc-v12` koduyla
-(`Seed/flows/isdlc-v12.json`; yeni talep bu akışa açılır, `ProcessFlowCodes.NewRequest`). E2'de bu akış kalkar,
-bkz. [Akışlar](#akışlar-faz-4). Aşağıdaki "13 aşama", "4.7" gibi örnekler eski akıştandır.
+Durum: Akış altyapısı (iş E1) ve şirketin beş akışı (iş E2) **uygulandı**, bkz. [Akışlar](#akışlar-faz-4).
+Eski 13 aşamalı akış kaldırıldı. Aşağıdaki JSON örneklerindeki "4.7", "ISDLC-2026-016" gibi değerler o akıştan kalmadır;
+alanların biçimi aynıdır.
 Yetki kuralı ekip kararı bekliyor (aşağıda). Sorumlu: Erva; Faz 4'te Dide ([phase-4-plan.md](phase-4-plan.md)).
 
 Bütün uç noktalar AGENTS.md'deki ve Faz 0'daki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin,
@@ -28,9 +27,11 @@ Uygulamadaki akışlar, şirketin paylaştığı **beş akıştan** ibarettir (k
 | `resource-planning` | Haftalık Kaynak Planlama | `ResourcePlanning` | 4 / 8 | — |
 | `billing` | Aylık Faturalama | `Billing` | 4 / 6 | — |
 
-- **Eski 13 aşamalı akış (ISDLC v12) geçersizdir ve kaldırılır.** Uygulama henüz canlıda olmadığı için eski akıştaki
-  kayıtlar taşınmaz: E2'deki migration ile veritabanı yeni akışlarla baştan kurulur, örnek projeler yeni akışlara göre
-  seed'den gelir. Herkes lokal veritabanını bir kez sıfırlar (PR açıklamasında komut verilir).
+- **Eski 13 aşamalı akış (ISDLC v12) geçersizdir ve kaldırıldı.** Uygulama henüz canlıda olmadığı için eski akıştaki
+  kayıtlar taşınmaz: veritabanı yeni akışlarla baştan kurulur, örnek projeler yeni akışlara göre seed'den gelir.
+  E2'den önce kurulmuş lokal veritabanları bir kez silinir (`dotnet ef database drop`); API açılırken yeniden kurulur.
+- **Sıra:** akışlar `ProcessFlow.Order`'a göre listelenir; Süreç Kütüphanesi ilk akışı (yeni yazılım projesi) açar.
+- **Adım kodları** akış içindeki numaradır ("1"–"19"); bölüm, adımın `stageOrder`'ıdır.
 - **Bütün kayıtlar `Project` tablosundadır** (ekip kararı, 11.11.2026). Akışın türü kaydın hangi menüde listeleneceğini belirler:
   `Request` → Talepler / Projeler, `Improvement` → Süreç İyileştirme (E5), `ResourcePlanning` → Kaynak Planlama (B6),
   `Billing` → Faturalama (B7). Müşteri ve talep sahibi gibi alanlar `Request` dışındaki akışlarda boş kalabilir. Böylece süreç
@@ -58,8 +59,8 @@ akış o adıma hiç uğramaz ve `StepRecord` yazılmaz.
 
 | Koşul (`ProcessStep`) | Adım yapılır, eğer… | Örnek |
 | --- | --- | --- |
-| `RequiresExternalRequest` | `Project.Source = External` | Yeni proje 4: Müşteri uygunluğu (iç talepte "doğrudan proje", 3 → 5) |
-| `RequiresOffer` | `Project.RequiresOffer = true` (talep kaydında "teklif var / yok") | Yeni proje 10–11: Teklif ve anlaşma (teklifsizde 9 → 12) |
+| `RequiresExternalRequest` | `Project.Source = External` | Yeni proje 4: Müşteri uygunluğu (yalnızca dış müşteri) |
+| `RequiresOffer` | `Project.RequiresOffer = true` (talep kaydında "teklif var / yok") | Yeni proje 4 ("doğrudan proje" 3 → 5) ve 10–11: Teklif ve anlaşma (teklifsizde 9 → 12) |
 | `MinLevel` | `Project.Level ≥ MinLevel` | Ek geliştirme 8: Kapsam ve efor (Seviye 2–3); 9: Teklif (Seviye 3, 8 → 10) |
 
 - `Project.Level` henüz belirlenmediyse `MinLevel` koşulu **sağlanmış sayılır** (adım atlanmaz). Seviye, koşullu adımlardan

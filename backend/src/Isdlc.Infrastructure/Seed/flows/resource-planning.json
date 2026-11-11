@@ -1,0 +1,156 @@
+{
+  "code": "resource-planning",
+  "order": 4,
+  "name": "Haftalık Kaynak Planlama",
+  "kind": "ResourcePlanning",
+  "projectStageOrder": null,
+  "stages": [
+    {
+      "order": 1,
+      "title": "Kaynak Planlama Toplantısı",
+      "shortTitle": "Planlama Toplantısı"
+    },
+    {
+      "order": 2,
+      "title": "Azure DevOps’ta Task Açılışı",
+      "shortTitle": "Task Açılışı"
+    },
+    {
+      "order": 3,
+      "title": "Task Takibi ve Kapatma",
+      "shortTitle": "Takip ve Kapatma"
+    },
+    {
+      "order": 4,
+      "title": "Kontrol ve Efor Raporlama",
+      "shortTitle": "Kontrol ve Raporlama"
+    }
+  ],
+  "steps": [
+    {
+      "code": "1",
+      "stageOrder": 1,
+      "order": 1,
+      "text": "Kaynak planlama toplantısı yapılır. Bu hafta ne yapıldığı ve gelecek hafta ne yapılacağı konuşulur; gelecek haftanın görevleri sorumlu, proje, efor ve hedef tarihle Haftalık Kaynak Planlama Takip Tablosu’nun Görev Planı sayfasına, toplantı kararları Toplantı Aksiyonları sayfasına yazılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "2",
+      "stageOrder": 2,
+      "order": 2,
+      "text": "Proje ve User Story belirlenir. Görevleri açmak için doğru proje ve User Story seçilir; uygun User Story yoksa kapsamı anlatan bir adla yenisi açılır, yeni bir proje gerekiyorsa önce proje açılır.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "3",
+      "stageOrder": 2,
+      "order": 3,
+      "text": "Task açılır ve alanlar doldurulur. Task’lar açılır; Title, Assigned To, Description, Activity, Original Estimate, Remaining, Plan Type, Plan Date ve Tags alanları doldurulup Save and Close ile kaydedilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "4",
+      "stageOrder": 2,
+      "order": 4,
+      "text": "Plansız iş ve ticket bilgileri girilir. Hafta içinde gelen acil / planlanmamış işler ve Jira ticket’ları Unplanned olarak açılır; Is Ticket, Ticket No, Tarih, Is Billable ve Is Maintenance alanları doldurulur.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "5",
+      "stageOrder": 3,
+      "order": 5,
+      "text": "Task’lar takip edilir. Haftalık task’lar Yazılım Geliştirme Departmanı › Dashboards › Kişisel Takip ekranından izlenir ve çalışmalar yürütülür.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "SoftwareDeveloper",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "6",
+      "stageOrder": 3,
+      "order": 6,
+      "text": "Task’lar kapatılır. Fiili süre (Completed) ve kalan süre (Remaining) girilir, yapılan çalışmalar Description’a eklenir; State alanı Closed yapılıp Save and Close ile kaydedilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "SoftwareDeveloper",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "7",
+      "stageOrder": 4,
+      "order": 7,
+      "text": "Kapanışlar kontrol edilir. Overview › Dashboards panellerinden kapatılan ve açık task’lar ile eforlar incelenir. Kapanışlar eksiksiz mi?",
+      "isDecision": true,
+      "noBranchText": "Completed veya Description eksikse ekip üyesine bildirilir ve tamamlatılır.",
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [
+        {
+          "targetStepCode": "6",
+          "label": "Eksik: ekip üyesine bildir, 6. adıma dön"
+        }
+      ],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    },
+    {
+      "code": "8",
+      "stageOrder": 4,
+      "order": 8,
+      "text": "Efor raporu hazırlanır. Boards › Queries › All › Haftalık Çalışılan İşler sorgusu CSV olarak indirilir; veriler Eforlar 2026 dosyasına eklenir, Proje Tipi ve Ticket Özeti alanları doldurulur ve dosya ortak klasöre kaydedilir.",
+      "isDecision": false,
+      "noBranchText": null,
+      "responsibleRole": "BusinessAnalyst",
+      "approverRole": null,
+      "noOutcome": null,
+      "noJumps": [],
+      "requiresExternalRequest": false,
+      "requiresOffer": false,
+      "minLevel": null
+    }
+  ]
+}
