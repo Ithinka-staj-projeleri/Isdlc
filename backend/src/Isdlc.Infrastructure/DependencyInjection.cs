@@ -65,8 +65,8 @@ public static class DependencyInjection
             http.BaseAddress = new Uri(options.ServiceUrl.TrimEnd('/') + "/");
         }
 
-        services.AddSingleton<IMeetingAgentClient>(sp =>
-            new HttpMeetingAgentClient(
-                http, options, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<HttpMeetingAgentClient>>()));
+        services.AddSingleton<IAgentClient>(sp =>
+            new HttpAgentClient(
+                http, options, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<HttpAgentClient>>()));
     }
 }

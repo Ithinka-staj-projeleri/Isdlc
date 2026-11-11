@@ -6,6 +6,13 @@
         @if (loading()) {
         <p class="muted">Yükleniyor…</p>
         } @else {
+        @if (suggestion(); as s) {
+        <div class="ai-note">
+            <b>Yapay zekâ önerisi.</b> Alanları kontrol edin, sorumluyu seçin ve kaydedin.
+            @if (s.evidence) { <blockquote>"{{ s.evidence }}"</blockquote> }
+            @if (s.assessmentReason) { <p>{{ s.assessmentReason }}</p> }
+        </div>
+        }
         <div class="grid">
             <label class="field full" [class.invalid]="errorFor('title')">
                 Risk tanımı
@@ -50,9 +57,29 @@
                 @if (errorFor('impact'); as error) { <span class="error">{{ error }}</span> }
             </label>
 
-            <p class="score full" aria-live="polite">
+            <div class="score full" aria-live="polite">
                 Skor: <app-status-badge [label]="score() + ' · ' + severityLabels[severity()]" [tone]="severityTones[severity()]" />
-            </p>
+                @if (assistantEnabled()) {
+                <button type="button" class="button small ai" [disabled]="assessing() || !form.controls.title.value.trim()"
+                    (click)="suggestAssessment()">
+                    {{ assessing() ? 'Puanlanıyor…' : 'Yapay zekâ ile puan ve aksiyon öner' }}
+                </button>
+                }
+            </div>
+
+            @if (assessment(); as a) {
+            <div class="ai-note full" role="status">
+                @if (a.score !== null) {
+                <b>Önerilen: olasılık {{ a.probability }} × etki {{ a.impact }}.</b> Forma işlendi; değiştirebilirsiniz.
+                }
+                @if (a.assessmentReason) { <p>{{ a.assessmentReason }}</p> }
+                @for (w of a.warnings; track $index) { <p class="warning">{{ w }}</p> }
+                @if (otherMitigation(); as m) {
+                <p class="lines"><b>Önerilen önleyici aksiyon:</b><br>{{ m }}</p>
+                <button type="button" class="button small" (click)="useOtherMitigation()">Bunu kullan</button>
+                }
+            </div>
+            }
 
             <label class="field full" [class.invalid]="errorFor('mitigation')">
                 Önleyici aksiyon (isteğe bağlı)

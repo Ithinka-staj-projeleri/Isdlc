@@ -4,7 +4,9 @@ using Isdlc.Application.Common;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.OpenIssues;
+using Isdlc.Application.Risks;
 using Isdlc.Domain.OpenIssues;
+using Isdlc.Domain.Risks;
 using Microsoft.EntityFrameworkCore;
 
 namespace Isdlc.Application.Agents;
@@ -12,38 +14,24 @@ namespace Isdlc.Application.Agents;
 public class AgentService(
     IApplicationDbContext dbContext,
     ICurrentUserService currentUser,
-    IMeetingAgentClient meetingAgent) : IAgentService
+    IAgentClient agents) : IAgentService
 {
     private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
 
-    public async Task<AgentStatusDto> GetStatusAsync(CancellationToken cancellationToken) =>
-        new(await meetingAgent.IsAvailableAsync(cancellationToken));
+    public async Task<AgentStatusDto> GetStatusAsync(CancellationToken cancellationToken)
+    {
+        var available = await agents.IsAvailableAsync(cancellationToken);
+        return new AgentStatusDto(available, available);
+    }
 
     public async Task<MeetingSuggestionsDto> SuggestMeetingItemsAsync(
         int projectId, SuggestMeetingItemsDto request, CancellationToken cancellationToken)
     {
-        if (currentUser.UserId is null)
-        {
-            throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
-        }
-
-        // Same rule as saving the minutes: suggestions are only useful where the minutes can be saved.
-        var project = await dbContext.GetWritableProjectAsync(projectId, cancellationToken);
-
-        if (!meetingAgent.IsConfigured)
-        {
-            throw new ServiceUnavailableException("Yapay zekâ servisi bu ortamda açık değil.");
-        }
-
         // The current step tells the agent what kind of meeting this probably was (e.g. 7.1 analysis meetings).
-        var currentStep = await dbContext.Projects
-            .AsNoTracking()
-            .Where(p => p.Id == projectId && p.CurrentStep != null)
-            .Select(p => p.CurrentStep!.Code + " " + p.CurrentStep.Text)
-            .SingleOrDefaultAsync(cancellationToken);
+        var (project, currentStep) = await PrepareAsync(projectId, cancellationToken);
 
         // [Required] on the DTO guarantees these values.
-        var result = await meetingAgent.SuggestOpenIssuesAsync(
+        var result = await agents.SuggestOpenIssuesAsync(
             new MeetingAgentRequest(project.Code, request.MeetingDate!.Value, request.Notes!.Trim(), currentStep),
             cancellationToken);
 
@@ -90,6 +78,121 @@ public class AgentService(
 
         return new MeetingSuggestionsDto(result.Summary, decisions, actions, others, skipped, result.ModelName);
     }
+
+    public async Task<RiskSuggestionsDto> SuggestRisksAsync(
+        int projectId, SuggestRisksDto request, CancellationToken cancellationToken)
+    {
+        var (project, currentStep) = await PrepareAsync(projectId, cancellationToken);
+
+        // [Required] on the DTO guarantees the value.
+        var result = await agents.SuggestRisksAsync(
+            new RiskAgentRequest(project.Code, request.SourceText!.Trim(), currentStep), cancellationToken);
+
+        var items = new List<SuggestedRiskDto>();
+        var skipped = result.InvalidCount;
+        foreach (var item in result.Items)
+        {
+            var title = item.Title.Trim();
+            if (title.Length is 0 or > 300)
+            {
+                skipped++;
+                continue;
+            }
+
+            var warnings = item.Warnings.ToList();
+            var (probability, impact) = CheckScore(item.Probability, item.Impact, warnings);
+            items.Add(new SuggestedRiskDto(
+                title,
+                OpenIssueRules.Clean(item.Description),
+                Enum.TryParse<RiskCategory>(item.Category, out var category) ? category : null,
+                probability,
+                impact,
+                ScoreOf(probability, impact),
+                SeverityOf(probability, impact),
+                OpenIssueRules.Clean(item.AssessmentReason),
+                OpenIssueRules.Clean(item.Mitigation),
+                OpenIssueRules.Clean(item.Evidence),
+                warnings));
+        }
+
+        return new RiskSuggestionsDto(items, skipped, result.ModelName);
+    }
+
+    public async Task<RiskAssessmentSuggestionDto> SuggestRiskAssessmentAsync(
+        int projectId, SuggestRiskAssessmentDto request, CancellationToken cancellationToken)
+    {
+        var (project, currentStep) = await PrepareAsync(projectId, cancellationToken);
+
+        // [Required] on the DTO guarantees the title.
+        var result = await agents.AssessRiskAsync(
+            new RiskAssessmentAgentRequest(
+                project.Code, request.Title!.Trim(), OpenIssueRules.Clean(request.Description), currentStep),
+            cancellationToken);
+
+        var warnings = result.Warnings.ToList();
+        var (probability, impact) = CheckScore(result.Probability, result.Impact, warnings);
+        return new RiskAssessmentSuggestionDto(
+            probability,
+            impact,
+            ScoreOf(probability, impact),
+            SeverityOf(probability, impact),
+            OpenIssueRules.Clean(result.AssessmentReason),
+            OpenIssueRules.Clean(result.Mitigation),
+            warnings,
+            result.ModelName);
+    }
+
+    /// <summary>
+    /// Checks shared by every suggestion: signed in, the project exists and is active (suggestions are only useful
+    /// where the records can be saved), the service is configured. Returns the project and its current step.
+    /// </summary>
+    private async Task<(ProjectRef Project, string? CurrentStep)> PrepareAsync(
+        int projectId, CancellationToken cancellationToken)
+    {
+        if (currentUser.UserId is null)
+        {
+            throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
+        }
+
+        var project = await dbContext.GetWritableProjectAsync(projectId, cancellationToken);
+
+        if (!agents.IsConfigured)
+        {
+            throw new ServiceUnavailableException("Yapay zekâ servisi bu ortamda açık değil.");
+        }
+
+        var currentStep = await dbContext.Projects
+            .AsNoTracking()
+            .Where(p => p.Id == projectId && p.CurrentStep != null)
+            .Select(p => p.CurrentStep!.Code + " " + p.CurrentStep.Text)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return (project, currentStep);
+    }
+
+    /// <summary>Both values 1–5, or neither: a half or out-of-range score is dropped and the person scores it.</summary>
+    private static (int? Probability, int? Impact) CheckScore(int? probability, int? impact, List<string> warnings)
+    {
+        if (probability is null && impact is null)
+        {
+            return (null, null);
+        }
+
+        if (probability is >= RiskRules.MinLevel and <= RiskRules.MaxLevel
+            && impact is >= RiskRules.MinLevel and <= RiskRules.MaxLevel)
+        {
+            return (probability, impact);
+        }
+
+        warnings.Add("Önerilen puan geçersizdi; olasılık ve etkiyi siz seçin.");
+        return (null, null);
+    }
+
+    private static int? ScoreOf(int? probability, int? impact) =>
+        probability is { } p && impact is { } i ? RiskRules.Score(p, i) : null;
+
+    private static RiskSeverity? SeverityOf(int? probability, int? impact) =>
+        ScoreOf(probability, impact) is { } score ? RiskRules.SeverityOf(score) : null;
 
     /// <summary>Active users by full name, compared the Turkish way ("İ" / "i"), so "can öztürk" finds "Can Öztürk".</summary>
     private async Task<Dictionary<string, int>> ActiveUsersByNameAsync(CancellationToken cancellationToken)

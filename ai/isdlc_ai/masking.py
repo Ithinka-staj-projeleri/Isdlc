@@ -16,6 +16,10 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 ]
 
 
+# What mask() writes in place of personal data. One left in an answer after unmask() was made up by the model.
+PLACEHOLDER = re.compile(r"\[(?:EPOSTA|IBAN|TELEFON|TCKN)_\d+\]")
+
+
 @dataclass
 class MaskedText:
     text: str

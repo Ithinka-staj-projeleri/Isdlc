@@ -1,8 +1,8 @@
 # ai/ — Yapay zekâ ajanları
 
-ISDLC'nin yapay zekâ ajanları (Python). Toplantı ajanı, ekip onayıyla uygulamaya alındı: yeni tutanak formundaki
-"Yapay zekâ ile karar ve aksiyonları çıkar" butonu, backend üzerinden bu klasördeki HTTP servisini çağırır.
-Komut satırı ve risk ajanı deneme olarak duruyor. Tasarım ve yol haritası: [docs/ai-vision.md](../docs/ai-vision.md). Sorumlu: Erva.
+ISDLC'nin yapay zekâ ajanları (Python). İki ajan da uygulamada: yeni tutanak formundaki "Yapay zekâ ile karar ve
+aksiyonları çıkar" butonu ve Riskler sekmesindeki "Yapay zekâ ile risk öner" / risk formundaki "Yapay zekâ ile puan ve
+aksiyon öner" butonları, backend üzerinden bu klasördeki HTTP servisini çağırır. Komut satırı deneme ve eval için duruyor. Tasarım ve yol haritası: [docs/ai-vision.md](../docs/ai-vision.md). Sorumlu: Erva.
 
 Şu an iki ajan var. Her ajan birkaç **görevden** oluşur; her görev kendi prompt dosyası ve cevap şemasıyla
 ayrı bir model çağrısıdır.
@@ -80,6 +80,8 @@ docker compose --profile ai up -d --build
 | --- | --- |
 | `GET /health` | Servis ayakta mı, model ayarlı mı (`modelConfigured`) |
 | `POST /v1/meeting/suggestions` | Notlardan açık konu önerileri (`X-Agent-Key` gerekir). Sözleşme: [open-issues-meetings-api.md](../docs/open-issues-meetings-api.md) → "Yapay zekâ önerileri" |
+| `POST /v1/risk/suggestions` | Metinden riskler: bul, puanla, önleyici aksiyon öner (üç model çağrısı). Sözleşme: [risks-api.md](../docs/risks-api.md) → "Yapay zekâ önerileri" |
+| `POST /v1/risk/assessment` | Kişinin yazdığı tek risk için olasılık, etki ve önleyici aksiyon (iki model çağrısı) |
 
 Servis yalnızca backend tarafından çağrılır; ISDLC API'sine ve veritabanına bu akışta dokunmaz.
 Model hata verirse Türkçe bir mesajla `503` döner; backend bu mesajı kullanıcıya iletir.
@@ -166,7 +168,7 @@ ai/
 │  │  └─ risk_agent.py       # risk ajanı: identify, assess, mitigate (run = üçü sırayla)
 │  └─ prompts/
 │     ├─ meeting/            # open_issues.v1.md, minutes.v1.md
-│     └─ risk/               # identify.v1.md, assess.v1.md, mitigate.v1.md
+│     └─ risk/               # identify.v2.md (kategori eklendi; v1 iz için duruyor), assess.v1.md, mitigate.v2.md (uydurma yer tutucu yasağı)
 ├─ tests/
 └─ evals/
    ├─ meeting/               # örnek vakalar ve değerlendirme betiği
@@ -191,5 +193,4 @@ Görev başka türde bir kayıt üretiyorsa (ör. gereksinim) mevcut ajana deği
 
 - Uygulamada öneriler tutanak formunda inceleniyor; kabul / ret oranlarını ölçmek için `AgentSuggestion` tablosu ve öneri paneli sonra gelecek (bkz. ai-vision.md).
 - Tutanak taslağı görevi (`--minutes`) henüz uygulamaya bağlı değil; yalnızca komut satırında.
-- Risk alanları ve 1-5 ölçeği varsayım; Risks sözleşmesi yazılınca `RiskSuggestion` ona göre düzeltilecek.
 - Komut satırında sorumlu her zaman `ownerName` olarak gönderiliyor. Uygulamada backend, adı aktif bir kullanıcıyla eşleşen sorumluyu `ownerUserId` yapıyor.

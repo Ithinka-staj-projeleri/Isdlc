@@ -16,12 +16,14 @@ from pydantic import BaseModel, Field, ValidationError
 
 from isdlc_ai.agents.base import InvalidItem, RunInfo, Task, blank_to_none, found_in, run_task, short_reason
 from isdlc_ai.llm import LlmClient
-from isdlc_ai.schemas import RiskSuggestion
+from isdlc_ai.masking import PLACEHOLDER
+from isdlc_ai.schemas import RiskCategory, RiskSuggestion
 
 
 class LlmRisk(BaseModel):
     title: str
     description: str | None = None
+    category: str | None = Field(default=None, description="One of: " + ", ".join(c.value for c in RiskCategory))
     evidence: str
 
 
@@ -49,9 +51,9 @@ class MitigateLlmOutput(BaseModel):
     items: list[LlmMitigation]
 
 
-IDENTIFY = Task("risk.identify", "risk/identify.v1", IdentifyLlmOutput)
+IDENTIFY = Task("risk.identify", "risk/identify.v2", IdentifyLlmOutput)
 ASSESS = Task("risk.assess", "risk/assess.v1", AssessLlmOutput)
-MITIGATE = Task("risk.mitigate", "risk/mitigate.v1", MitigateLlmOutput)
+MITIGATE = Task("risk.mitigate", "risk/mitigate.v2", MitigateLlmOutput)
 
 
 @dataclass
@@ -99,13 +101,17 @@ class RiskAgent:
 
         result = RiskResult(source.project_code, source.current_step, source.source_text, [], runs=[task_run.info])
         for raw in task_run.output.items:
-            data = blank_to_none(raw.model_dump(), "description")
+            data = blank_to_none(raw.model_dump(), "description", "category")
+            warnings = []
+            if data["category"] is not None and data["category"] not in {c.value for c in RiskCategory}:
+                # A wrong category does not make the risk useless; the person picks one in the form.
+                warnings.append("Model geçerli bir kategori vermedi; kategoriyi seçin.")
+                data["category"] = None
             try:
                 risk = RiskSuggestion.model_validate(data)
             except ValidationError as error:
                 result.invalid.append(InvalidItem(raw=data, reason=short_reason(error)))
                 continue
-            warnings = []
             if not risk.evidence or not found_in(risk.evidence, source.source_text):
                 warnings.append("Dayanak cümle metinde birebir bulunamadı; riski metinle karşılaştırın.")
             result.items.append(RiskItem(risk, warnings))
@@ -116,6 +122,13 @@ class RiskAgent:
         """Risks a person typed, ready for assess and mitigate. No model call."""
         items = [RiskItem(RiskSuggestion(title=title.strip())) for title in titles if title.strip()]
         return RiskResult(project_code, current_step, None, items)
+
+    @staticmethod
+    def from_risk(project_code: str, title: str, description: str | None = None,
+                  current_step: str | None = None) -> RiskResult:
+        """One risk a person is typing in the form, ready for assess and mitigate. No model call."""
+        risk = RiskSuggestion(title=title.strip(), description=(description or "").strip() or None)
+        return RiskResult(project_code, current_step, None, [RiskItem(risk)])
 
     def assess(self, result: RiskResult) -> RiskResult:
         task_run = run_task(self._llm, ASSESS, _risk_list_message(result, with_scores=False))
@@ -150,6 +163,11 @@ class RiskAgent:
                 item.risk = _with(item.risk, mitigation=answer.mitigation.strip())
             except ValidationError as error:
                 item.warnings.append(f"Önleyici aksiyon kullanılamadı: {short_reason(error)}")
+                continue
+            # Real placeholders were restored by run_task; one still there was made up by the model.
+            if PLACEHOLDER.search(item.risk.mitigation or ""):
+                item.warnings.append(
+                    "Önleyici aksiyonda metinde olmayan bir yer tutucu var ([EPOSTA_1] gibi); kaydetmeden önce düzeltin.")
         return result
 
 

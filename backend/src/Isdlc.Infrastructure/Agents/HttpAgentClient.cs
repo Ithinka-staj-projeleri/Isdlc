@@ -16,10 +16,10 @@ public class AgentOptions
     public string? ServiceKey { get; init; }
 }
 
-/// <summary>Calls POST /v1/meeting/suggestions of the AI service. Any failure becomes a 503 with a Turkish message.</summary>
-public class HttpMeetingAgentClient(
-    HttpClient http, AgentOptions options, TimeProvider timeProvider, ILogger<HttpMeetingAgentClient> logger)
-    : IMeetingAgentClient
+/// <summary>Calls the agents of the AI service (ai/isdlc_ai/server.py). Any failure becomes a 503 with a Turkish message.</summary>
+public class HttpAgentClient(
+    HttpClient http, AgentOptions options, TimeProvider timeProvider, ILogger<HttpAgentClient> logger)
+    : IAgentClient
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan HealthCacheTime = TimeSpan.FromSeconds(30);
@@ -64,17 +64,83 @@ public class HttpMeetingAgentClient(
     public async Task<MeetingAgentResult> SuggestOpenIssuesAsync(
         MeetingAgentRequest request, CancellationToken cancellationToken)
     {
-        using var message = new HttpRequestMessage(HttpMethod.Post, "v1/meeting/suggestions")
+        var body = await PostAsync<ServiceResponse>(
+            "v1/meeting/suggestions",
+            new
+            {
+                projectCode = request.ProjectCode,
+                meetingDate = request.MeetingDate,
+                notes = request.Notes,
+                currentStep = request.CurrentStep,
+            },
+            cancellationToken);
+
+        return new MeetingAgentResult(
+            body.Summary ?? string.Empty,
+            (body.Items ?? []).Select(i => new MeetingAgentItem(
+                i.Type ?? string.Empty,
+                i.Title ?? string.Empty,
+                i.Description,
+                i.OwnerName,
+                i.DueDate,
+                i.Evidence ?? string.Empty,
+                i.Warnings ?? [])).ToList(),
+            body.InvalidCount,
+            body.Run?.ModelName ?? string.Empty);
+    }
+
+    public async Task<RiskAgentResult> SuggestRisksAsync(RiskAgentRequest request, CancellationToken cancellationToken)
+    {
+        var body = await PostAsync<RiskServiceResponse>(
+            "v1/risk/suggestions",
+            new { projectCode = request.ProjectCode, sourceText = request.SourceText, currentStep = request.CurrentStep },
+            cancellationToken);
+
+        return new RiskAgentResult(
+            (body.Items ?? []).Select(i => new RiskAgentItem(
+                i.Title ?? string.Empty,
+                i.Description,
+                i.Category,
+                i.Probability,
+                i.Impact,
+                i.AssessmentReason,
+                i.Mitigation,
+                i.Evidence,
+                i.Warnings ?? [])).ToList(),
+            body.InvalidCount,
+            ModelNameOf(body.Runs));
+    }
+
+    public async Task<RiskAssessmentAgentResult> AssessRiskAsync(
+        RiskAssessmentAgentRequest request, CancellationToken cancellationToken)
+    {
+        var body = await PostAsync<RiskAssessmentServiceResponse>(
+            "v1/risk/assessment",
+            new
+            {
+                projectCode = request.ProjectCode,
+                title = request.Title,
+                description = request.Description,
+                currentStep = request.CurrentStep,
+            },
+            cancellationToken);
+
+        return new RiskAssessmentAgentResult(
+            body.Probability,
+            body.Impact,
+            body.AssessmentReason,
+            body.Mitigation,
+            body.Warnings ?? [],
+            ModelNameOf(body.Runs));
+    }
+
+    /// <summary>Sends the request with the service key; any failure becomes a 503 with a Turkish message.</summary>
+    private async Task<TResponse> PostAsync<TResponse>(string path, object payload, CancellationToken cancellationToken)
+        where TResponse : class
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Post, path)
         {
-            Content = JsonContent.Create(
-                new
-                {
-                    projectCode = request.ProjectCode,
-                    meetingDate = request.MeetingDate,
-                    notes = request.Notes,
-                    currentStep = request.CurrentStep,
-                },
-                options: Json),
+            Content = JsonContent.Create(payload, options: Json),
         };
         if (!string.IsNullOrWhiteSpace(options.ServiceKey))
         {
@@ -105,23 +171,13 @@ public class HttpMeetingAgentClient(
                         : "Yapay zekâ servisi isteği işleyemedi. Biraz sonra tekrar deneyin.");
             }
 
-            var body = await response.Content.ReadFromJsonAsync<ServiceResponse>(Json, cancellationToken)
+            return await response.Content.ReadFromJsonAsync<TResponse>(Json, cancellationToken)
                 ?? throw new ServiceUnavailableException("Yapay zekâ servisinden boş cevap geldi.");
-
-            return new MeetingAgentResult(
-                body.Summary ?? string.Empty,
-                (body.Items ?? []).Select(i => new MeetingAgentItem(
-                    i.Type ?? string.Empty,
-                    i.Title ?? string.Empty,
-                    i.Description,
-                    i.OwnerName,
-                    i.DueDate,
-                    i.Evidence ?? string.Empty,
-                    i.Warnings ?? [])).ToList(),
-                body.InvalidCount,
-                body.Run?.ModelName ?? string.Empty);
         }
     }
+
+    /// <summary>The model of the last call; every task of one request uses the same model.</summary>
+    private static string ModelNameOf(List<ServiceRun>? runs) => runs?.LastOrDefault()?.ModelName ?? string.Empty;
 
     private static async Task<string?> ReadDetailAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
@@ -144,6 +200,23 @@ public class HttpMeetingAgentClient(
         string? Type, string? Title, string? Description, string? OwnerName, DateOnly? DueDate, string? Evidence, List<string>? Warnings);
 
     private record ServiceRun(string? ModelName);
+
+    private record RiskServiceResponse(List<RiskServiceItem>? Items, int InvalidCount, List<ServiceRun>? Runs);
+
+    private record RiskServiceItem(
+        string? Title,
+        string? Description,
+        string? Category,
+        int? Probability,
+        int? Impact,
+        string? AssessmentReason,
+        string? Mitigation,
+        string? Evidence,
+        List<string>? Warnings);
+
+    private record RiskAssessmentServiceResponse(
+        int? Probability, int? Impact, string? AssessmentReason, string? Mitigation, List<string>? Warnings,
+        List<ServiceRun>? Runs);
 
     private record ServiceError(JsonElement? Detail);
 

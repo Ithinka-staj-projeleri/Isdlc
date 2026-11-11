@@ -5,9 +5,11 @@
 Endpoints:
     GET  /health                    is the service up, is a model configured
     POST /v1/meeting/suggestions    open issue suggestions from meeting notes (nothing is saved)
+    POST /v1/risk/suggestions       risks found in a text, scored and with a preventive action (nothing is saved)
+    POST /v1/risk/assessment        probability, impact and preventive action for one risk a person typed
 
 The backend checks the user and the project, then sends only what the agent needs. The agent never
-calls the ISDLC API or the database in this flow; the person reviews the suggestions in the meeting form.
+calls the ISDLC API or the database in this flow; the person reviews the suggestions in the form.
 When AGENT_SERVICE_KEY is set, every request must carry it in the X-Agent-Key header.
 """
 
@@ -15,19 +17,22 @@ import hmac
 import logging
 from collections.abc import Callable
 from datetime import date
+from typing import TypeVar
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
-from isdlc_ai.agents.base import AgentOutputError
+from isdlc_ai.agents.base import AgentOutputError, RunInfo
 from isdlc_ai.agents.meeting_agent import MeetingAgent, MeetingInput
+from isdlc_ai.agents.risk_agent import RiskAgent, RiskInput
 from isdlc_ai.config import Settings, load_settings
 from isdlc_ai.llm import GeminiClient, LlmClient, LlmError
 
 logger = logging.getLogger("isdlc_ai.server")
 
 MAX_NOTES = 20_000
+T = TypeVar("T")
 
 
 class CamelModel(BaseModel):
@@ -70,6 +75,46 @@ class MeetingSuggestionsResponse(CamelModel):
     run: RunDto
 
 
+class RiskSuggestionsRequest(CamelModel):
+    project_code: str = Field(min_length=1, max_length=50)
+    source_text: str = Field(min_length=1, max_length=MAX_NOTES)
+    current_step: str | None = Field(default=None, max_length=1000)
+
+
+class SuggestedRisk(CamelModel):
+    title: str
+    description: str | None
+    category: str | None  # RiskCategory value, or null when the model gave none
+    probability: int | None  # null when the model did not score it (see warnings)
+    impact: int | None
+    assessment_reason: str | None
+    mitigation: str | None
+    evidence: str | None
+    warnings: list[str]
+
+
+class RiskSuggestionsResponse(CamelModel):
+    items: list[SuggestedRisk]
+    invalid_count: int
+    runs: list[RunDto]  # identify, assess, mitigate (only identify when no risk was found)
+
+
+class RiskAssessmentRequest(CamelModel):
+    project_code: str = Field(min_length=1, max_length=50)
+    title: str = Field(min_length=1, max_length=300)
+    description: str | None = Field(default=None, max_length=2000)
+    current_step: str | None = Field(default=None, max_length=1000)
+
+
+class RiskAssessmentResponse(CamelModel):
+    probability: int | None
+    impact: int | None
+    assessment_reason: str | None
+    mitigation: str | None
+    warnings: list[str]
+    runs: list[RunDto]  # assess, mitigate
+
+
 def create_app(settings: Settings | None = None, llm_factory: Callable[[], LlmClient] | None = None) -> FastAPI:
     """llm_factory lets tests use FakeLlmClient instead of the real model."""
     settings = settings or load_settings()
@@ -107,14 +152,7 @@ def create_app(settings: Settings | None = None, llm_factory: Callable[[], LlmCl
             notes=request.notes,
             current_step=request.current_step,
         )
-        try:
-            result = agent.suggest_open_issues(meeting)
-        except LlmError as error:
-            logger.warning("Model call failed: %s (code %s)", error, error.code)
-            raise HTTPException(503, _llm_error_message(error.code)) from error
-        except AgentOutputError as error:
-            logger.warning("Model output unusable: %s", error)
-            raise HTTPException(503, "Model iki denemede de geçerli bir cevap vermedi. Tekrar deneyin.") from error
+        result = _run(lambda: agent.suggest_open_issues(meeting))
 
         return MeetingSuggestionsResponse(
             summary=result.summary,
@@ -131,17 +169,88 @@ def create_app(settings: Settings | None = None, llm_factory: Callable[[], LlmCl
                 for s in result.suggestions
             ],
             invalid_count=len(result.invalid),
-            run=RunDto(
-                task=result.run.task,
-                prompt_version=result.run.prompt_version,
-                model_name=result.run.model_name,
-                masked_count=result.run.masked_count,
-                input_tokens=result.run.input_tokens,
-                output_tokens=result.run.output_tokens,
-            ),
+            run=_run_dto(result.run),
+        )
+
+    @app.post(
+        "/v1/risk/suggestions",
+        response_model=RiskSuggestionsResponse,
+        response_model_by_alias=True,
+        dependencies=[Depends(check_key)],
+    )
+    def risk_suggestions(request: RiskSuggestionsRequest) -> RiskSuggestionsResponse:
+        agent = RiskAgent(make_llm())
+        source = RiskInput(
+            project_code=request.project_code,
+            source_text=request.source_text,
+            current_step=request.current_step,
+        )
+        result = _run(lambda: agent.run(source))
+
+        return RiskSuggestionsResponse(
+            items=[
+                SuggestedRisk(
+                    title=item.risk.title,
+                    description=item.risk.description,
+                    category=item.risk.category.value if item.risk.category else None,
+                    probability=item.risk.probability,
+                    impact=item.risk.impact,
+                    assessment_reason=item.risk.assessment_reason,
+                    mitigation=item.risk.mitigation,
+                    evidence=item.risk.evidence,
+                    warnings=item.warnings,
+                )
+                for item in result.items
+            ],
+            invalid_count=len(result.invalid),
+            runs=[_run_dto(run) for run in result.runs],
+        )
+
+    @app.post(
+        "/v1/risk/assessment",
+        response_model=RiskAssessmentResponse,
+        response_model_by_alias=True,
+        dependencies=[Depends(check_key)],
+    )
+    def risk_assessment(request: RiskAssessmentRequest) -> RiskAssessmentResponse:
+        agent = RiskAgent(make_llm())
+        result = RiskAgent.from_risk(request.project_code, request.title, request.description, request.current_step)
+        _run(lambda: agent.mitigate(agent.assess(result)))
+
+        item = result.items[0]
+        return RiskAssessmentResponse(
+            probability=item.risk.probability,
+            impact=item.risk.impact,
+            assessment_reason=item.risk.assessment_reason,
+            mitigation=item.risk.mitigation,
+            warnings=item.warnings,
+            runs=[_run_dto(run) for run in result.runs],
         )
 
     return app
+
+
+def _run(call: Callable[[], T]) -> T:
+    """Runs an agent; model failures become a 503 with a Turkish message the backend shows as is."""
+    try:
+        return call()
+    except LlmError as error:
+        logger.warning("Model call failed: %s (code %s)", error, error.code)
+        raise HTTPException(503, _llm_error_message(error.code)) from error
+    except AgentOutputError as error:
+        logger.warning("Model output unusable: %s", error)
+        raise HTTPException(503, "Model iki denemede de geçerli bir cevap vermedi. Tekrar deneyin.") from error
+
+
+def _run_dto(run: RunInfo) -> RunDto:
+    return RunDto(
+        task=run.task,
+        prompt_version=run.prompt_version,
+        model_name=run.model_name,
+        masked_count=run.masked_count,
+        input_tokens=run.input_tokens,
+        output_tokens=run.output_tokens,
+    )
 
 
 def _llm_error_message(code: int | None) -> str:

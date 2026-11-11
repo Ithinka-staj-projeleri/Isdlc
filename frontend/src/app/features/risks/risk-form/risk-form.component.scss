@@ -40,6 +40,48 @@
 
 .button {
     @include ui.button;
+
+    &.ai {
+        margin-left: auto;
+    }
+}
+
+// What the AI assistant suggested and why; the values themselves are in the fields.
+.ai-note {
+    margin-bottom: 14px;
+    padding: 8px 12px;
+    border: 1px dashed var(--info);
+    border-radius: 6px;
+    background: #f3f7fc;
+    font-size: 13px;
+
+    &.full {
+        margin-bottom: 0;
+    }
+
+    p {
+        margin: 4px 0 0;
+    }
+
+    blockquote {
+        margin: 6px 0 0;
+        padding-left: 8px;
+        border-left: 3px solid var(--line);
+        color: var(--muted);
+    }
+
+    .warning {
+        color: var(--warn);
+    }
+
+    // The model often writes the preventive action as a "- " list on separate lines.
+    .lines {
+        white-space: pre-line;
+    }
+
+    .button {
+        margin-top: 6px;
+    }
 }
 
 .muted {

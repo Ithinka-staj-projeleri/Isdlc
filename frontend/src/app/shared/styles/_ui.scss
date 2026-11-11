@@ -35,6 +35,18 @@
         }
     }
 
+    // AI assistant buttons: blue, so they stand apart from the normal actions.
+    &.ai {
+        border-color: var(--info);
+        background: var(--info);
+        color: #fff;
+
+        &:hover:not(:disabled) {
+            background: var(--info);
+            filter: brightness(.95);
+        }
+    }
+
     &.small {
         padding: 3px 10px;
         font-size: 13px;

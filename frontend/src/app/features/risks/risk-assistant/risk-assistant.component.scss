@@ -1,0 +1,115 @@
+@use '../../../shared/styles/ui' as ui;
+
+@include ui.dialog;
+
+.dialog {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 760px;
+
+    h3 {
+        margin-bottom: 8px;
+    }
+
+    .dialog-actions {
+        align-self: stretch;
+        margin-top: 12px;
+    }
+}
+
+// The model often writes the preventive action as a "- " list on separate lines.
+.lines {
+    white-space: pre-line;
+}
+
+.field {
+    @include ui.field;
+    align-self: stretch;
+
+    textarea {
+        min-height: 120px;
+    }
+}
+
+.privacy {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.button {
+    @include ui.button;
+}
+
+.result {
+    align-self: stretch;
+    padding: 10px 12px;
+    border: 1px dashed var(--info);
+    border-radius: 6px;
+    background: #f3f7fc;
+    font-size: 13px;
+
+    p {
+        margin: 0 0 6px;
+    }
+}
+
+.suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 8px 0;
+    padding-left: 20px;
+
+    li {
+        padding: 10px 12px;
+        border-radius: 6px;
+        background: var(--panel);
+
+        &.done {
+            opacity: .6;
+        }
+    }
+
+    .head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .meta {
+        margin: 2px 0 6px;
+    }
+
+    blockquote {
+        margin: 0 0 6px;
+        padding-left: 8px;
+        border-left: 3px solid var(--line);
+        color: var(--muted);
+    }
+
+    .actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+}
+
+.warning {
+    color: var(--warn);
+}
+
+.added {
+    color: var(--ok);
+    font-weight: 600;
+}
+
+.small {
+    font-size: 12px;
+}
+
+.muted {
+    color: var(--muted);
+}

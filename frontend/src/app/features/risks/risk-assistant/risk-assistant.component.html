@@ -1,0 +1,68 @@
+<!-- Closes only with "Kapat", so a stray click outside does not lose the suggestions. -->
+<div class="overlay">
+    <section class="dialog" aria-labelledby="risk-assistant-title">
+        <h3 id="risk-assistant-title">Yapay zekâ ile risk öner</h3>
+
+        <label class="field">
+            Metin
+            <textarea [ngModel]="text()" (ngModelChange)="text.set($event)" [maxlength]="maxText" [disabled]="busy()"
+                placeholder="Toplantı notu, e-posta veya doküman metnini yapıştırın. Örn: ERP test ortamı henüz yok; müşteri BT erişimi cuma gönderecek…"></textarea>
+        </label>
+        <p class="privacy">
+            Metin yapay zekâ servisine gönderilir; e-posta, telefon gibi bilgiler göndermeden önce gizlenir.
+            Şimdilik yalnızca deneme verisi girin.
+        </p>
+        <button type="button" class="button ai" [disabled]="busy() || !text().trim()" (click)="ask()">
+            {{ busy() ? 'Riskler aranıyor ve puanlanıyor…' : 'Riskleri bul' }}
+        </button>
+
+        @if (result(); as r) {
+        <div class="result" role="status">
+            @if (r.items.length === 0) {
+            <p><b>Metinde risk bulunamadı.</b></p>
+            } @else {
+            <p>
+                <b>{{ r.items.length }} risk önerildi.</b>
+                "Forma aktar" ile riski açın, kontrol edip kaydedin; risk siz kaydedince oluşur.
+            </p>
+            <ol class="suggestions">
+                @for (s of r.items; track $index) {
+                <li [class.done]="added().has($index)">
+                    <div class="head">
+                        <b>{{ s.title }}</b>
+                        @if (s.score !== null && s.severity !== null) {
+                        <app-status-badge [label]="s.score + ' · ' + severityLabels[s.severity]" [tone]="severityTones[s.severity]" />
+                        }
+                    </div>
+                    <div class="meta muted small">
+                        {{ s.category ? categoryLabels[s.category] : 'Kategori önerilmedi' }}
+                        @if (s.probability !== null) { · Olasılık {{ s.probability }} × Etki {{ s.impact }} }
+                    </div>
+                    @if (s.assessmentReason) { <p class="small">{{ s.assessmentReason }}</p> }
+                    @if (s.mitigation) { <p class="small lines"><b>Önleyici aksiyon:</b><br>{{ s.mitigation }}</p> }
+                    @if (s.evidence) { <blockquote class="small">"{{ s.evidence }}"</blockquote> }
+                    @for (w of s.warnings; track $index) { <p class="warning small">{{ w }}</p> }
+                    <div class="actions">
+                        @if (added().has($index)) {
+                        <span class="added small">✓ Eklendi</span>
+                        } @else {
+                        <button type="button" class="button small" (click)="use.emit({ index: $index, suggestion: s })">
+                            Forma aktar
+                        </button>
+                        }
+                    </div>
+                </li>
+                }
+            </ol>
+            }
+            @if (r.skippedCount) {
+            <p class="muted small">{{ r.skippedCount }} öneri eksik ya da hatalı olduğu için atlandı.</p>
+            }
+        </div>
+        }
+
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="closed.emit()">Kapat</button>
+        </div>
+    </section>
+</div>

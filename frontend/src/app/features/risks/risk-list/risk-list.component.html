@@ -33,6 +33,9 @@
     }
     <span class="spacer"></span>
     @if (!readOnly()) {
+    @if (assistantEnabled()) {
+    <button type="button" class="button ai" (click)="openAssistant()">Yapay zekâ ile risk öner</button>
+    }
     <button type="button" class="button primary" (click)="editing.set('new')">+ Risk ekle</button>
     }
 </div>
@@ -136,7 +139,13 @@
     </div>
 </div>
 
+@if (assistantOpen()) {
+<!-- Kept (hidden) while the form is open, so its suggestions are still there after saving one. -->
+<app-risk-assistant [hidden]="editing() !== null" [projectId]="projectId()" [added]="addedSuggestions()"
+    (use)="useSuggestion($event)" (closed)="assistantOpen.set(false)" />
+}
+
 @if (editing(); as target) {
 <app-risk-form [projectId]="projectId()" [riskId]="target === 'new' ? null : target"
-    (saved)="onSaved()" (cancelled)="editing.set(null)" />
+    [suggestion]="fromSuggestion()?.suggestion ?? null" (saved)="onSaved()" (cancelled)="closeForm()" />
 }
