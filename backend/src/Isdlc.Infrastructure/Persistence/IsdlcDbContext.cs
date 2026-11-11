@@ -19,6 +19,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProcessFlow> ProcessFlows => Set<ProcessFlow>();
     public DbSet<ProcessStage> ProcessStages => Set<ProcessStage>();
     public DbSet<ProcessStep> ProcessSteps => Set<ProcessStep>();
     public DbSet<ProcessStepJump> ProcessStepJumps => Set<ProcessStepJump>();

@@ -17,23 +17,48 @@ public class ProcessService(
     INotificationService notifications,
     TimeProvider timeProvider) : IProcessService
 {
-    public async Task<IReadOnlyList<ProcessStageDto>> GetStagesAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ProcessFlowListItemDto>> GetFlowsAsync(CancellationToken cancellationToken)
+    {
+        return await dbContext.ProcessFlows
+            .AsNoTracking()
+            .OrderBy(flow => flow.Id)
+            .Select(flow => new ProcessFlowListItemDto(
+                flow.Id,
+                flow.Code,
+                flow.Name,
+                flow.Kind,
+                flow.ProjectStageOrder,
+                dbContext.ProcessSteps.Count(step => step.ProcessFlowId == flow.Id)))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<ProcessFlowDto> GetFlowAsync(string code, CancellationToken cancellationToken)
     {
         // Read-only query: AsNoTracking skips change tracking, and Select loads only the DTO fields.
-        return await dbContext.ProcessStages
+        return await dbContext.ProcessFlows
             .AsNoTracking()
-            .OrderBy(stage => stage.Order)
-            .Select(stage => new ProcessStageDto(
-                stage.Id,
-                stage.Order,
-                stage.Title,
-                stage.ShortTitle,
-                stage.Steps
-                    .AsQueryable()
-                    .OrderBy(step => step.Order)
-                    .Select(ProcessMappings.ToStepDto)
+            .Where(flow => flow.Code == code)
+            .Select(flow => new ProcessFlowDto(
+                flow.Id,
+                flow.Code,
+                flow.Name,
+                flow.Kind,
+                flow.ProjectStageOrder,
+                flow.Stages
+                    .OrderBy(stage => stage.Order)
+                    .Select(stage => new ProcessStageDto(
+                        stage.Id,
+                        stage.Order,
+                        stage.Title,
+                        stage.ShortTitle,
+                        stage.Steps
+                            .AsQueryable()
+                            .OrderBy(step => step.Order)
+                            .Select(ProcessMappings.ToStepDto)
+                            .ToList()))
                     .ToList()))
-            .ToListAsync(cancellationToken);
+            .SingleOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException("Akış bulunamadı.");
     }
 
     public async Task<ProjectProcessDto> GetProjectProcessAsync(int projectId, CancellationToken cancellationToken)
@@ -41,7 +66,16 @@ public class ProcessService(
         var project = await dbContext.Projects
             .AsNoTracking()
             .Where(p => p.Id == projectId)
-            .Select(p => new { p.Id, p.Code, p.Status, p.CurrentStepId })
+            .Select(p => new
+            {
+                p.Id,
+                p.Code,
+                p.Status,
+                p.CurrentStepId,
+                p.ProcessFlowId,
+                Flow = new ProcessFlowSummaryDto(p.ProcessFlow.Code, p.ProcessFlow.Name),
+                Context = new ConditionContext(p.Source, p.RequiresOffer, p.Level),
+            })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
 
@@ -81,9 +115,21 @@ public class ProcessService(
 
         var stages = await dbContext.ProcessStages
             .AsNoTracking()
+            .Where(stage => stage.ProcessFlowId == project.ProcessFlowId)
             .OrderBy(stage => stage.Order)
             .Select(stage => new { stage.Id, stage.Order, stage.ShortTitle, StepCount = stage.Steps.Count })
             .ToListAsync(cancellationToken);
+
+        var flowSteps = await LoadFlowStepsAsync(project.ProcessFlowId, cancellationToken);
+        var appliedOrders = flowSteps
+            .Where(s => StepConditions.Applies(s.Condition, project.Context))
+            .Select(s => s.Order)
+            .ToList();
+
+        // Position of the reference step among the steps done on the project; skipped steps do not count.
+        int? referencePosition = referenceStep is null
+            ? null
+            : appliedOrders.Count(order => order < referenceStep.Order) + 1;
 
         var userRole = currentUser.UserId is null
             ? null
@@ -93,14 +139,14 @@ public class ProcessService(
                 .Select(u => (UserRole?)u.Role)
                 .SingleOrDefaultAsync(cancellationToken);
 
-        var totalSteps = stages.Sum(stage => stage.StepCount);
-
         return new ProjectProcessDto(
             project.Id,
             project.Code,
+            project.Flow,
+            StepConditions.SkippedStepIds(flowSteps, project.Context),
             project.Status,
             currentStep,
-            ProcessProgress.CalculateProgressPercent(project.Status, referenceStep?.Order, totalSteps),
+            ProcessProgress.CalculateProgressPercent(project.Status, referencePosition, appliedOrders.Count),
             stages
                 .Select(stage => new ProcessStageProgressDto(
                     stage.Id,
@@ -157,7 +203,7 @@ public class ProcessService(
             throw new BusinessRuleException("Bu adım bir karar adımıdır; Evet/Hayır cevabı verilmelidir.");
         }
 
-        var nextStep = await LoadNextStepAsync(step, cancellationToken);
+        var nextStep = await LoadNextStepAsync(project, step, cancellationToken);
         var transition = ProcessTransitions.AfterCompleted(nextStep?.Id);
 
         await SaveTransitionAsync(project, step, user, StepAction.Completed, request.Note, transition, cancellationToken);
@@ -189,7 +235,7 @@ public class ProcessService(
                 throw new BusinessRuleException("Evet cevabında dönüş adımı seçilmez.");
             }
 
-            targetStep = await LoadNextStepAsync(step, cancellationToken);
+            targetStep = await LoadNextStepAsync(project, step, cancellationToken);
             transition = ProcessTransitions.AfterYes(targetStep?.Id);
         }
         else
@@ -240,13 +286,31 @@ public class ProcessService(
     /// <summary>A step the project moves to: enough to save the move and send notifications.</summary>
     private record StepRef(int Id, string Code, UserRole? ApproverRole);
 
-    /// <summary>The next step in flow order; null after the last step.</summary>
-    private Task<StepRef?> LoadNextStepAsync(CurrentStepInfo step, CancellationToken cancellationToken) =>
-        dbContext.ProcessSteps
+    /// <summary>
+    /// The next step of the project's flow whose conditions hold (StepConditions); null after the last one.
+    /// Conditions are checked with the project's values as they are now.
+    /// </summary>
+    private async Task<StepRef?> LoadNextStepAsync(
+        Project project, CurrentStepInfo step, CancellationToken cancellationToken)
+    {
+        var flowSteps = await LoadFlowStepsAsync(project.ProcessFlowId, cancellationToken);
+        var context = new ConditionContext(project.Source, project.RequiresOffer, project.Level);
+
+        return StepConditions.NextStepId(flowSteps, step.Order, context) is { } nextStepId
+            ? await LoadStepRefAsync(nextStepId, cancellationToken)
+            : null;
+    }
+
+    /// <summary>Every step of the flow with its order and conditions (a flow has at most a few dozen steps).</summary>
+    private async Task<IReadOnlyList<ConditionalStep>> LoadFlowStepsAsync(
+        int flowId, CancellationToken cancellationToken) =>
+        await dbContext.ProcessSteps
             .AsNoTracking()
-            .Where(s => s.Order == step.Order + 1)
-            .Select(s => new StepRef(s.Id, s.Code, s.ApproverRole))
-            .SingleOrDefaultAsync(cancellationToken);
+            .Where(s => s.ProcessFlowId == flowId)
+            .OrderBy(s => s.Order)
+            .Select(s => new ConditionalStep(
+                s.Id, s.Order, new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel)))
+            .ToListAsync(cancellationToken);
 
     private Task<StepRef?> LoadStepRefAsync(int stepId, CancellationToken cancellationToken) =>
         dbContext.ProcessSteps

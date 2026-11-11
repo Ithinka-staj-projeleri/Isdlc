@@ -2,7 +2,9 @@
 
 `Process` modülünün uç noktaları, DTO'ları, iş kuralları ve hata durumları.
 Veri modeli ve süreç ilerleme kuralları için: [data-model.md](data-model.md).
-Durum: 13 aşamalı tek akış **uygulandı**; Faz 4'te geçersiz olur ve yerini şirketin beş akışı alır (iş E1, **önerildi**),
+Durum: Akış altyapısı (iş E1) **uygulandı**: akışlar, adım koşulları, `GET /process-flows`, talep / proje ayrımı.
+Şirketin beş akışı E2 ile gelene kadar seed'de tek akış vardır: eski 13 aşamalı akış, geçici olarak `isdlc-v12` koduyla
+(`Seed/flows/isdlc-v12.json`; yeni talep bu akışa açılır, `ProcessFlowCodes.NewRequest`). E2'de bu akış kalkar,
 bkz. [Akışlar](#akışlar-faz-4). Aşağıdaki "13 aşama", "4.7" gibi örnekler eski akıştandır.
 Yetki kuralı ekip kararı bekliyor (aşağıda). Sorumlu: Erva; Faz 4'te Dide ([phase-4-plan.md](phase-4-plan.md)).
 

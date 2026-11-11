@@ -16,6 +16,10 @@ export const STEP_ACTION_LABELS: Record<StepAction, string> = {
 export interface ProjectProcess {
     projectId: number;
     projectCode: string;
+    /** The flow the project follows. */
+    flow: { code: string; name: string };
+    /** Steps of the flow whose conditions do not hold for this project; they are skipped. */
+    skippedStepIds: number[];
     status: ProjectStatus;
     /** null when the project is not active. */
     currentStep: ProcessStep | null;

@@ -1,4 +1,8 @@
 {
+  "code": "isdlc-v12",
+  "name": "ISDLC Yeni Yazılım Projesi (v12)",
+  "kind": "Request",
+  "projectStageOrder": 4,
   "stages": [
     {
       "order": 1,

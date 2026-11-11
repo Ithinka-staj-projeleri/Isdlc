@@ -15,20 +15,24 @@ public record StepPermissionInfo(bool IsDecision, UserRole ResponsibleRole, User
 /// </summary>
 public static class ProcessProgress
 {
-    public static int CalculateProgressPercent(ProjectStatus status, int? referenceStepOrder, int totalSteps)
+    /// <summary>
+    /// referenceStepPosition: 1-based position of the reference step among the steps done on the project
+    /// (skipped steps are not counted); totalSteps: how many steps are done on the project.
+    /// </summary>
+    public static int CalculateProgressPercent(ProjectStatus status, int? referenceStepPosition, int totalSteps)
     {
         if (status == ProjectStatus.Closed)
         {
             return 100;
         }
 
-        if (referenceStepOrder is null || totalSteps <= 0)
+        if (referenceStepPosition is null || totalSteps <= 0)
         {
             return 0;
         }
 
         // Steps before the reference step are done; integer division rounds down.
-        return (referenceStepOrder.Value - 1) * 100 / totalSteps;
+        return (referenceStepPosition.Value - 1) * 100 / totalSteps;
     }
 
     public static ProcessStageState GetStageState(ProjectStatus status, int stageOrder, int? referenceStageOrder)

@@ -36,6 +36,35 @@ public class ProcessQueryTests(DatabaseFixture database)
         return await AsUserAsync(email, s => s.GetProjectProcessAsync(projectId, default));
     }
 
+    // ---- Flows (Faz 4, E1) ----
+
+    [Fact]
+    public async Task Flows_ListTheSeededFlowWithItsStepCount()
+    {
+        var flows = await AsUserAsync(TestProjects.Analyst, s => s.GetFlowsAsync(default));
+
+        var flow = Assert.Single(flows, f => f.Code == ProcessFlowCodes.NewRequest);
+        Assert.Equal(ProcessFlowKind.Request, flow.Kind);
+        Assert.Equal(4, flow.ProjectStageOrder);
+        Assert.Equal(75, flow.StepCount);
+    }
+
+    [Fact]
+    public async Task Flow_UnknownCode_IsNotFound()
+    {
+        await Assert.ThrowsAsync<NotFoundException>(
+            () => AsUserAsync(TestProjects.Analyst, s => s.GetFlowAsync("no-such-flow", default)));
+    }
+
+    [Fact]
+    public async Task ProjectProcess_ShowsTheProjectsFlow_AndNoSkippedStepsInAFlowWithoutConditions()
+    {
+        var process = await ProcessOfAsync("ISDLC-2026-016");
+
+        Assert.Equal(ProcessFlowCodes.NewRequest, process.Flow.Code);
+        Assert.Empty(process.SkippedStepIds);
+    }
+
     // ---- Project process state (#19) ----
 
     [Fact]

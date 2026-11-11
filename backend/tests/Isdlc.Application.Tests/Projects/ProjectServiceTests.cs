@@ -71,6 +71,7 @@ public class ProjectServiceTests(DatabaseFixture database)
         string name = "Liste testi")
     {
         int? stepId = stepCode is null ? null : await TestProjects.StepIdAsync(database, stepCode);
+        var flowId = await TestProjects.FlowIdAsync(database);
         await using var scope = database.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var project = new Project
@@ -85,6 +86,8 @@ public class ProjectServiceTests(DatabaseFixture database)
             RequesterName = "Test",
             BusinessAnalystId = analystId,
             Status = status,
+            ProcessFlowId = flowId,
+            RequiresOffer = true,
             CurrentStepId = stepId,
             StartDate = new DateOnly(2026, 11, 1),
         };

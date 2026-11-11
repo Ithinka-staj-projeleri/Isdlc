@@ -1,17 +1,17 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
-import { rxResource, toSignal } from '@angular/core/rxjs-interop';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { catchError, of } from 'rxjs';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { BadgeTone, StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { PROJECT_STATUS_LABELS } from '../../../shared/models/project-status';
 import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
 import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
-import { ProcessStage, ProcessStep } from '../models/process-stage';
+import { ProcessStage, ProcessStep, conditionLabels } from '../models/process-stage';
 import { ProcessStageState, ProjectProcess, STEP_ACTION_LABELS, StepRecord } from '../models/project-process';
 import { ProcessService } from '../process.service';
 import { StepActionsComponent } from '../step-actions/step-actions.component';
 
-type StepState = 'done' | 'current' | 'stopped' | 'pending';
+type StepState = 'done' | 'current' | 'stopped' | 'pending' | 'skipped';
 
 /** Records loaded for the history and the answer badges; enough for the 75-step flow with some returns. */
 const RECORD_LIMIT = 100;
@@ -25,7 +25,7 @@ const STAGE_STATE_LABELS: Record<ProcessStageState, string> = {
 };
 
 /**
- * Süreç tab of the project detail page: where the project stands in the ISDLC flow, the actions the
+ * Süreç tab of the project detail page: where the project stands in its flow, the actions the
  * signed-in user can take on the current step, and the process history.
  * What the user may do comes from the API (availableActions); the screen only follows it.
  */
@@ -52,15 +52,25 @@ export class ProjectProcessComponent {
     protected readonly actionLabels = STEP_ACTION_LABELS;
     protected readonly stageStateLabels = STAGE_STATE_LABELS;
 
-    protected readonly flow = toSignal(
-        this.processService.stages$.pipe(catchError(() => of([] as ProcessStage[]))),
-        { initialValue: [] as ProcessStage[] },
-    );
-
     protected readonly process = rxResource({
         params: () => ({ projectId: this.projectId() }),
         stream: ({ params }) => this.processService.getProjectProcess(params.projectId),
     });
+
+    /** The stages and steps of the project's own flow; empty until the project's process is loaded. */
+    private readonly flowResource = rxResource({
+        params: () => (this.process.hasValue() ? { code: this.process.value().flow.code } : undefined),
+        stream: ({ params }) =>
+            this.processService.getFlow(params.code).pipe(catchError(() => of({ stages: [] as ProcessStage[] }))),
+    });
+
+    protected readonly flow = computed<ProcessStage[]>(() =>
+        this.flowResource.hasValue() ? this.flowResource.value().stages : []);
+
+    private readonly skippedStepIds = computed(() =>
+        new Set(this.process.hasValue() ? this.process.value().skippedStepIds : []));
+
+    protected readonly conditionLabels = conditionLabels;
 
     protected readonly records = rxResource({
         params: () => ({ projectId: this.projectId() }),
@@ -112,6 +122,7 @@ export class ProjectProcessComponent {
     protected readonly history = computed(() => this.recordItems().slice(0, this.historyShown()));
 
     protected stepState(step: ProcessStep, process: ProjectProcess): StepState {
+        if (this.skippedStepIds().has(step.id)) return 'skipped';
         const reached = this.reachedOrder();
         if (step.order < reached) return 'done';
         if (step.order > reached) return 'pending';

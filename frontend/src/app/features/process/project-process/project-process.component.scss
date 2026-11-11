@@ -196,6 +196,16 @@ h3 {
     &.pending .text {
         color: var(--muted);
     }
+
+    // A step whose conditions do not hold for this project (e.g. the offer steps when no offer is prepared).
+    &.skipped {
+        opacity: 0.55;
+
+        .text {
+            color: var(--muted);
+            text-decoration: line-through;
+        }
+    }
 }
 
 .body {

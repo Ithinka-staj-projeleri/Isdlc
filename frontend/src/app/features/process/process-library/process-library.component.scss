@@ -42,6 +42,42 @@
     border-radius: var(--r);
 }
 
+// Flow tabs: one per company flow.
+.flows {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.flow {
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--fg);
+    font: inherit;
+    cursor: pointer;
+
+    &:hover {
+        background: var(--bg);
+    }
+
+    &.on {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+    }
+
+    .count {
+        margin-left: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 400;
+    }
+}
+
 .library {
     display: grid;
     grid-template-columns: minmax(0, 260px) minmax(0, 1fr);

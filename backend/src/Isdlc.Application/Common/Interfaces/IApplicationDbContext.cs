@@ -23,6 +23,7 @@ public interface IApplicationDbContext
 {
     DbSet<User> Users { get; }
     DbSet<Project> Projects { get; }
+    DbSet<ProcessFlow> ProcessFlows { get; }
     DbSet<ProcessStage> ProcessStages { get; }
     DbSet<ProcessStep> ProcessSteps { get; }
     DbSet<ProcessStepJump> ProcessStepJumps { get; }

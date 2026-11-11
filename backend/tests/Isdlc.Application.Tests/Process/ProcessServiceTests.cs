@@ -2,13 +2,14 @@ using Isdlc.Application.Process;
 using Isdlc.Application.Process.Dtos;
 using Isdlc.Application.Tests.Common;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Isdlc.Application.Tests.Process;
 
 /// <summary>
-/// ProcessService against the real seed (Infrastructure/Seed/process-flow.json).
+/// ProcessService against the real seed (Infrastructure/Seed/flows/isdlc-v12.json, the flow new requests follow).
 /// Expectations come from docs/data-model.md and docs/process-api.md.
 /// </summary>
 [Collection("Database")]
@@ -18,14 +19,14 @@ public class ProcessServiceTests(DatabaseFixture database)
     {
         await using var scope = database.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IProcessService>();
-        return await service.GetStagesAsync(CancellationToken.None);
+        return (await service.GetFlowAsync(ProcessFlowCodes.NewRequest, CancellationToken.None)).Stages;
     }
 
     private static List<ProcessStepDto> AllSteps(IReadOnlyList<ProcessStageDto> stages) =>
         stages.SelectMany(stage => stage.Steps).ToList();
 
     [Fact]
-    public async Task GetStages_Returns13StagesInOrder()
+    public async Task GetFlow_Returns13StagesInOrder()
     {
         var stages = await GetStagesAsync();
 
@@ -35,7 +36,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task GetStages_Returns75StepsInFlowOrder()
+    public async Task GetFlow_Returns75StepsInFlowOrder()
     {
         var steps = AllSteps(await GetStagesAsync());
 
@@ -47,7 +48,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task GetStages_EachStepIsUnderItsOwnStage()
+    public async Task GetFlow_EachStepIsUnderItsOwnStage()
     {
         var stages = await GetStagesAsync();
 
@@ -60,7 +61,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task GetStages_Step54_GoesBackOnlyTo49()
+    public async Task GetFlow_Step54_GoesBackOnlyTo49()
     {
         // ISDLC v12.0 flow (Oct 2026): "No" on 5.4 always returns to 4.9; the earlier 4.1 option was removed.
         var steps = AllSteps(await GetStagesAsync());
@@ -73,7 +74,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task GetStages_JumpTargetIdsMatchTheirCodes()
+    public async Task GetFlow_JumpTargetIdsMatchTheirCodes()
     {
         var steps = AllSteps(await GetStagesAsync());
         var idsByCode = steps.ToDictionary(s => s.Code, s => s.Id);
@@ -84,7 +85,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task GetStages_JumpsOnlyGoBackToEarlierSteps()
+    public async Task GetFlow_JumpsOnlyGoBackToEarlierSteps()
     {
         var steps = AllSteps(await GetStagesAsync());
         var ordersById = steps.ToDictionary(s => s.Id, s => s.Order);
@@ -99,7 +100,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     [InlineData("3.2")]
     [InlineData("4.5")]
     [InlineData("5.1")]
-    public async Task GetStages_ApprovalSteps_AreApprovedBySoftwareDepartmentManager(string code)
+    public async Task GetFlow_ApprovalSteps_AreApprovedBySoftwareDepartmentManager(string code)
     {
         var step = AllSteps(await GetStagesAsync()).Single(s => s.Code == code);
 
@@ -107,7 +108,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task GetStages_OnlyApprovalStepsHaveAnApprover()
+    public async Task GetFlow_OnlyApprovalStepsHaveAnApprover()
     {
         var steps = AllSteps(await GetStagesAsync());
 
@@ -115,7 +116,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task GetStages_Step51_IsPreparedBySalesAndApprovedByManager()
+    public async Task GetFlow_Step51_IsPreparedBySalesAndApprovedByManager()
     {
         var step = AllSteps(await GetStagesAsync()).Single(s => s.Code == "5.1");
 
@@ -127,7 +128,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     [InlineData("1.2", ProjectStatus.Redirected)]
     [InlineData("3.2", ProjectStatus.Rejected)]
     [InlineData("5.3", ProjectStatus.Lost)]
-    public async Task GetStages_ClosingDecisions_HaveTheirOutcome(string code, ProjectStatus outcome)
+    public async Task GetFlow_ClosingDecisions_HaveTheirOutcome(string code, ProjectStatus outcome)
     {
         var step = AllSteps(await GetStagesAsync()).Single(s => s.Code == code);
 
@@ -136,7 +137,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task GetStages_NoStepHasBothAnOutcomeAndJumps()
+    public async Task GetFlow_NoStepHasBothAnOutcomeAndJumps()
     {
         // data-model.md: a decision step never has NoOutcome and jump options together.
         var steps = AllSteps(await GetStagesAsync());
@@ -145,7 +146,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task GetStages_OnlyDecisionStepsHaveOutcomesOrJumps()
+    public async Task GetFlow_OnlyDecisionStepsHaveOutcomesOrJumps()
     {
         var steps = AllSteps(await GetStagesAsync());
 

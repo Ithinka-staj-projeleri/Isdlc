@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 
 namespace Isdlc.Infrastructure.Persistence.Seeding;
@@ -26,7 +27,24 @@ internal static class SeedFiles
             ?? throw new InvalidOperationException($"Seed file '{fileName}' is empty.");
     }
 
-    public record ProcessFlowFile(List<StageSeed> Stages, List<StepSeed> Steps);
+    /// <summary>Every flow file in Seed/flows, one flow per file.</summary>
+    public static IReadOnlyList<ProcessFlowFile> ReadFlows()
+    {
+        const string prefix = "Isdlc.Infrastructure.Seed.flows.";
+        return typeof(SeedFiles).Assembly.GetManifestResourceNames()
+            .Where(name => name.StartsWith(prefix, StringComparison.Ordinal))
+            .Order(StringComparer.Ordinal)
+            .Select(name => Read<ProcessFlowFile>("flows." + name[prefix.Length..]))
+            .ToList();
+    }
+
+    public record ProcessFlowFile(
+        string Code,
+        string Name,
+        ProcessFlowKind Kind,
+        int? ProjectStageOrder,
+        List<StageSeed> Stages,
+        List<StepSeed> Steps);
 
     public record StageSeed(int Order, string Title, string ShortTitle);
 
@@ -40,7 +58,10 @@ internal static class SeedFiles
         UserRole ResponsibleRole,
         UserRole? ApproverRole,
         ProjectStatus? NoOutcome,
-        List<JumpSeed> NoJumps);
+        List<JumpSeed> NoJumps,
+        bool RequiresExternalRequest = false,
+        bool RequiresOffer = false,
+        int? MinLevel = null);
 
     public record JumpSeed(string TargetStepCode, string Label);
 
