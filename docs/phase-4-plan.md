@@ -132,3 +132,5 @@ Dalga 4                        D5 doküman kütüphanesi · D9 gösterge paneli 
 4. **Ek geliştirme numarası:** akışın son hâlinde `EG-01` biçimi yazmıyor. `14 / EG-01` önerisi teyit edilmeli.
 5. **Uygunluk ve kabul:** eski akıştaki "proje kabul puanlaması ve yönetici kararı" yeni akışta yok; yerini müşteri uygunluk anketi alıyor.
    Yönetici onayı yalnızca teklif (10. adım) ve kapsam-efor (Proje Yöneticisi onayı) için mi aranacak?
+6. **Ek geliştirmenin soru setleri:** dört formda (seviye, talep analizi, risk analizi, iç onay) yalnızca "Yeni Yazılım Projesi" iş tipi var.
+   Ek geliştirme için ayrı sorular mı hazırlanacak? Gelene kadar ek geliştirme, yeni proje sorularını kullanır ([question-bank-api.md](question-bank-api.md), karar 4).

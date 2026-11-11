@@ -1,0 +1,427 @@
+{
+  "code": "internal-approval",
+  "name": "Gereksinimler İç Onay Kontrol Listesi",
+  "sourceDocument": "ISDLC-Form-Analiz-012",
+  "version": "2.0",
+  "answerMode": "SharedOptions",
+  "options": [
+    {
+      "code": "compliant",
+      "label": "Uygun",
+      "meaning": "Complete",
+      "isScored": false,
+      "requiresNote": false
+    },
+    {
+      "code": "partly-compliant",
+      "label": "Kısmen Uygun",
+      "meaning": "Partial",
+      "isScored": false,
+      "requiresNote": true
+    },
+    {
+      "code": "not-compliant",
+      "label": "Uygun Değil",
+      "meaning": "Negative",
+      "isScored": false,
+      "requiresNote": true
+    },
+    {
+      "code": "not-applicable",
+      "label": "Uygulanamaz",
+      "meaning": "NotApplicable",
+      "isScored": false,
+      "requiresNote": true
+    }
+  ],
+  "bands": null,
+  "questions": [
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 1,
+      "group": "Doküman Yapısı ve Kontrolü",
+      "text": "BRD, kurum şablonuna uygun biçimde hazırlanmış; doküman kodu, versiyonu, tarihi, hazırlayanı ve değişiklik geçmişi güncel midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.5 (Conforming), §9.3.1; IREB CPRE FL §3.8 (Conformant)",
+      "order": 1
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 2,
+      "group": "Doküman Yapısı ve Kontrolü",
+      "text": "Şablondaki tüm zorunlu bölümler doldurulmuş; doldurulmayan bölümler için uygulanamama gerekçesi yazılmış mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3; IREB CPRE FL §3.8 (Complete)",
+      "order": 2
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 3,
+      "group": "Doküman Yapısı ve Kontrolü",
+      "text": "Dokümanda kullanılan iş terimleri ve kısaltmalar sözlükte (glossary) tanımlanmış ve doküman boyunca aynı anlamda kullanılmış mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.6 (Comprehensible); BABOK v3 §7.2 (Understandable), §10.23 Glossary",
+      "order": 3
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 4,
+      "group": "İş Bağlamı ve Kapsam",
+      "text": "Talebin çözmeyi amaçladığı iş problemi veya fırsat ile talebin iş amacı açık şekilde tanımlanmış mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.2 (Business purpose); BABOK v3 §6.1",
+      "order": 4
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 5,
+      "group": "İş Bağlamı ve Kapsam",
+      "text": "İş hedefleri; ölçüt, mevcut değer, hedef değer ve hedef tarih içerecek şekilde ölçülebilir olarak ifade edilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.7, §5.2.6 (Able to be validated); BABOK v3 §6.2",
+      "order": 5
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 6,
+      "group": "İş Bağlamı ve Kapsam",
+      "text": "Kapsam dahilindeki ve kapsam dışındaki süreçler, birimler ve fonksiyonlar ayrı ayrı belirtilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.3 (Business scope)",
+      "order": 6
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 7,
+      "group": "İş Bağlamı ve Kapsam",
+      "text": "Mevcut durum (as-is) ile hedeflenen durum (to-be) ve aralarındaki fark açık şekilde ortaya konmuş mudur?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.4; BABOK v3 §6.1, §6.2",
+      "order": 7
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 8,
+      "group": "İş Bağlamı ve Kapsam",
+      "text": "Çözümü sınırlayan yasal, düzenleyici, sözleşmesel, bütçe ve takvim kısıtları belirtilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.12, §9.3.19",
+      "order": 8
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 42,
+      "group": "İş Bağlamı ve Kapsam",
+      "text": "Gereksinimlerin grup politikaları, grup ortak sistemleri ve diğer grup şirketlerindeki benzer çözümlerle uyumu değerlendirilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.6, §9.3.11",
+      "order": 9
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 9,
+      "group": "Paydaşlar",
+      "text": "Ana paydaşlar (talep sahibi, iş sahibi, son kullanıcı grupları, karar vericiler) ve gereksinimlerdeki rolleri belirlenmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.5; BABOK v3 §3.2",
+      "order": 10
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 10,
+      "group": "İş Süreçleri ve İş Kuralları",
+      "text": "Kapsamdaki iş süreçleri; ana akış, alternatif akışlar ve istisna (hata) durumlarıyla birlikte tanımlanmış mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.10, §9.3.17",
+      "order": 11
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 11,
+      "group": "İş Süreçleri ve İş Kuralları",
+      "text": "İş kuralları (hesaplama, onay koşulu, doğrulama ve yetki kuralları) tek anlamlı, kaynağı belirtilmiş ve gereksinimlerden ayrıştırılmış olarak tanımlanmış mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.11; BABOK v3 §10.9 Business Rules Analysis",
+      "order": 12
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 12,
+      "group": "İş Süreçleri ve İş Kuralları",
+      "text": "Sürecin olağan dışı işletim koşulları (dönem sonu, yoğun dönem, sistem kesintisi, manuel devam) değerlendirilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.13 (Business operational modes)",
+      "order": 13
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 13,
+      "group": "Tekil Gereksinim Kalitesi",
+      "text": "Her gereksinim tek bir ihtiyacı ifade etmekte midir (birden fazla ihtiyaç “ve / veya” ile tek ifadede birleştirilmemiş midir)?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.5 (Singular); BABOK v3 §7.2 (Atomic)",
+      "order": 14
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 14,
+      "group": "Tekil Gereksinim Kalitesi",
+      "text": "Her gereksinim yalnızca tek şekilde yorumlanabilecek açıklıkta yazılmış; “hızlı”, “kolay”, “kullanıcı dostu”, “uygun”, “vb.” gibi belirsiz ifadeler kullanılmamış mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.5 (Unambiguous), §5.2.7; BABOK v3 §7.2 (Unambiguous); IREB CPRE FL §3.8",
+      "order": 15
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 15,
+      "group": "Tekil Gereksinim Kalitesi",
+      "text": "Her gereksinimin karşılanıp karşılanmadığı test, inceleme, gösterim veya analizle nesnel olarak doğrulanabilir mi?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.5 (Verifiable); BABOK v3 §7.2 (Testable); IREB CPRE FL §3.8 (Verifiable)",
+      "order": 16
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 16,
+      "group": "Tekil Gereksinim Kalitesi",
+      "text": "Her gereksinim bir paydaş ihtiyacına veya iş hedefine dayanmakta; çıkarıldığında eksiklik oluşturacak nitelikte midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.5 (Necessary); IREB CPRE FL §3.8 (Necessary)",
+      "order": 17
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 17,
+      "group": "Tekil Gereksinim Kalitesi",
+      "text": "Gereksinimler “ne” yapılacağını iş seviyesinde ifade etmekte; gerekçesiz tasarım veya teknik çözüm (“nasıl”) detayı içermemekte midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.5 (Appropriate)",
+      "order": 18
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 18,
+      "group": "Tekil Gereksinim Kalitesi",
+      "text": "Her gereksinim; anlaşılması için gereken koşul, kapsam ve ölçü bilgisini kendi içinde barındırmakta mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.5 (Complete); BABOK v3 §7.2 (Complete); IREB CPRE FL §3.8 (Complete – self-contained)",
+      "order": 19
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 19,
+      "group": "Tekil Gereksinim Kalitesi",
+      "text": "Her gereksinimin paydaş ihtiyacını doğru yansıttığı, görüşme ve toplantı kayıtlarıyla karşılaştırılarak teyit edilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.5 (Correct); IREB CPRE FL §3.8 (Adequate)",
+      "order": 20
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 20,
+      "group": "Tekil Gereksinim Kalitesi",
+      "text": "Her gereksinim bilinen teknik, bütçe, takvim ve yasal kısıtlar içinde kabul edilebilir risk ile gerçekleştirilebilir midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.5 (Feasible); BABOK v3 §7.2 (Feasible)",
+      "order": 21
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 21,
+      "group": "Tekil Gereksinim Kalitesi",
+      "text": "Gereksinim ifadeleri kısa ve öz yazılmış; kurumun gereksinim yazım kalıbına uygun mudur?",
+      "reference": "BABOK v3 §7.2 (Concise); ISO/IEC/IEEE 29148:2018 §5.2.4, §5.2.5 (Conforming)",
+      "order": 22
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 22,
+      "group": "Gereksinim Seti Kalitesi",
+      "text": "Gereksinimler arasında ve gereksinimler ile süreç / iş kuralı tanımları arasında çelişki bulunmamakta mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.6 (Consistent); BABOK v3 §7.2 (Consistent); IREB CPRE FL §3.8",
+      "order": 23
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 23,
+      "group": "Gereksinim Seti Kalitesi",
+      "text": "Aynı gereksinim dokümanın farklı bölümlerinde tekrar edilmemiş midir?",
+      "reference": "IREB CPRE FL §3.8 (Non-redundant)",
+      "order": 24
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 24,
+      "group": "Gereksinim Seti Kalitesi",
+      "text": "Her iş hedefi en az bir gereksinimle karşılanmakta ve bilinen, ilgili hiçbir gereksinim eksik kalmamış mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.6 (Complete); IREB CPRE FL §3.8 (Complete)",
+      "order": 25
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 25,
+      "group": "Gereksinim Seti Kalitesi",
+      "text": "Her gereksinim benzersiz bir kimlik numarası taşımakta; kaynağına (paydaş, toplantı, doküman) ve ilişkili iş hedefine izlenebilmekte midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.8 (Identification, Source); BABOK v3 §5.1; IREB CPRE FL §3.8 (Traceable)",
+      "order": 26
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 26,
+      "group": "Gereksinim Seti Kalitesi",
+      "text": "Gereksinimler paydaşlarla mutabık kalınan bir yönteme (ör. MoSCoW) göre önceliklendirilmiş midir?",
+      "reference": "BABOK v3 §5.3, §7.2 (Prioritized); ISO/IEC/IEEE 29148:2018 §5.2.8 (Priority)",
+      "order": 27
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 27,
+      "group": "Kalite, Güvenlik ve Mevzuat Beklentileri",
+      "text": "İş açısından kritik kalite beklentileri (yanıt süresi, erişilebilirlik / hizmet süresi, kullanıcı sayısı, kullanılabilirlik) ölçülebilir değerlerle belirtilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.14 (Business operational quality); ISO/IEC 25010:2023",
+      "order": 28
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 28,
+      "group": "Kalite, Güvenlik ve Mevzuat Beklentileri",
+      "text": "Yetkilendirme, işlem kaydı (log), denetim izi ve bilgi güvenliği beklentileri iş seviyesinde belirtilmiş midir?",
+      "reference": "ISO/IEC 27001:2022 Ek A (A.5.15, A.8.15); ISO/IEC 25010:2023 (Security)",
+      "order": 29
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 29,
+      "group": "Kalite, Güvenlik ve Mevzuat Beklentileri",
+      "text": "Kişisel veri işleniyorsa işlenen veri kategorileri, işleme amacı, saklama süresi ve aktarım ihtiyacı belirtilmiş midir?",
+      "reference": "6698 sayılı KVKK md. 4, 5, 6, 8, 9",
+      "order": 30
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 30,
+      "group": "Veri ve Entegrasyon",
+      "text": "Süreçte kullanılan ve üretilen temel iş verileri (girdi, çıktı, rapor) ile veri sahipleri tanımlanmış mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.9 (Information environment)",
+      "order": 31
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 31,
+      "group": "Veri ve Entegrasyon",
+      "text": "Etkileşimde bulunulacak mevcut sistemler ve dış kurumlar ile veri alışverişinin yönü belirtilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.6, §9.3.9",
+      "order": 32
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 32,
+      "group": "Veri ve Entegrasyon",
+      "text": "Mevcut sistemlerden veri aktarımı (migrasyon) gerekiyorsa aktarılacak verinin kapsamı ve sorumlusu belirtilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.18 (Other high-level life-cycle concepts)",
+      "order": 33
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 33,
+      "group": "Varsayım, Bağımlılık ve Açık Konular",
+      "text": "Gereksinimlerin dayandığı varsayımlar ve dış bağımlılıklar (müşteri, üçüncü taraf, altyapı) yazılı olarak belirtilmiş midir?",
+      "reference": "BABOK v3 §5.1, §6.3",
+      "order": 34
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 34,
+      "group": "Varsayım, Bağımlılık ve Açık Konular",
+      "text": "Karar bekleyen konular sorumlu ve hedef tarih ile açık konular listesine alınmış; dokümanda kayıt dışı “TBD / belirlenecek” ifadesi kalmamış mıdır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §5.2.6 (Complete); IREB CPRE FL §3.8 (Complete)",
+      "order": 35
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 35,
+      "group": "Kabul ve Onaya Hazırlık",
+      "text": "BRD; iş analisti, teknik lider / çözüm mimarı, test sorumlusu ve proje yöneticisi tarafından gözden geçirilmiş ve inceleme bulguları kapatılmış mıdır?",
+      "reference": "BABOK v3 §7.2, §10.37 Reviews; IREB CPRE FL §4.4",
+      "order": 36
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 36,
+      "group": "Kabul ve Onaya Hazırlık",
+      "text": "Müşteri kabulünde kullanılacak kabul kriterleri ve kabul yöntemi (UAT, demo, kontrol listesi) tanımlanmış mıdır?",
+      "reference": "BABOK v3 §7.3, §10.1 Acceptance and Evaluation Criteria",
+      "order": 37
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": null,
+      "no": 37,
+      "group": "Kabul ve Onaya Hazırlık",
+      "text": "BRD’yi müşteri adına onaylayacak yetkili(ler) ve onay yöntemi (ıslak / e-imza, resmî e-posta, sistem onayı) belirlenmiş midir?",
+      "reference": "BABOK v3 §5.5 (Approve Requirements)",
+      "order": 38
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 43,
+      "group": "Kabul ve Onaya Hazırlık",
+      "text": "İlişkili şirkete iletilecek versiyondan iç notlar, efor / maliyet bilgisi ve kuruma ait gizli bilgiler çıkarılmış mıdır?",
+      "reference": "ISO/IEC 27001:2022 A.5.12, A.5.14",
+      "order": 39
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 38,
+      "group": "İş Bağlamı ve Kapsam",
+      "text": "Talebin bağlı olduğu kurum veya birim hedefi ile talep sponsoru (bütçe sahibi birim) belirtilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.7; BABOK v3 §6.2",
+      "order": 40
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 39,
+      "group": "İş Süreçleri ve İş Kuralları",
+      "text": "Gereksinimler kurum iç politika ve prosedürleriyle (bilgi güvenliği politikası, yetki matrisi, onay limitleri) uyumlu mudur?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.11; ISO/IEC 27001:2022 A.5.1",
+      "order": 41
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 40,
+      "group": "İş Bağlamı ve Kapsam",
+      "text": "BRD’deki kapsam ve gereksinimler müşteri talep yazısı veya şartnamesiyle uyumlu; farklılıklar gerekçesiyle belirtilmiş midir?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.3.3, §9.3.19; BABOK v3 §7.3",
+      "order": 42
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 41,
+      "group": "Kabul ve Onaya Hazırlık",
+      "text": "Müşteriye iletilecek versiyondan iç notlar, iç yorumlar, efor / maliyet bilgisi ve kuruma ait gizli bilgiler çıkarılmış mıdır?",
+      "reference": "ISO/IEC 27001:2022 A.5.12, A.5.14",
+      "order": 43
+    }
+  ]
+}

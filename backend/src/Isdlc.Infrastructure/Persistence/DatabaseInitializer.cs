@@ -1,4 +1,5 @@
 using Isdlc.Infrastructure.Persistence.Seeding;
+using Isdlc.Infrastructure.QuestionBank;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,5 +21,8 @@ public static class DatabaseInitializer
         }
 
         await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync(includeSampleProjects: isDevelopment);
+
+        // The question bank follows its seed files on every start (docs/question-bank-api.md → Seed).
+        await scope.ServiceProvider.GetRequiredService<QuestionSetSeeder>().SeedAsync();
     }
 }

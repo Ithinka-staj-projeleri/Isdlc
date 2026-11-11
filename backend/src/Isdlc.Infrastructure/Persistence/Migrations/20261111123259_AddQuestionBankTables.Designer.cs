@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Isdlc.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(IsdlcDbContext))]
-    [Migration("20261111122452_AddProcessFlows")]
-    partial class AddProcessFlows
+    [Migration("20261111123259_AddQuestionBankTables")]
+    partial class AddQuestionBankTables
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -477,40 +477,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Isdlc.Domain.Process.ProcessFlow", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int?>("ProjectStageOrder")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.ToTable("ProcessFlows");
-                });
-
             modelBuilder.Entity("Isdlc.Domain.Process.ProcessStage", b =>
                 {
                     b.Property<int>("Id")
@@ -520,9 +486,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Order")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProcessFlowId")
                         .HasColumnType("int");
 
                     b.Property<string>("ShortTitle")
@@ -537,7 +500,7 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProcessFlowId", "Order")
+                    b.HasIndex("Order")
                         .IsUnique();
 
                     b.ToTable("ProcessStages");
@@ -563,9 +526,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDecision")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("MinLevel")
-                        .HasColumnType("int");
-
                     b.Property<string>("NoBranchText")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -577,17 +537,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
-                    b.Property<int>("ProcessFlowId")
-                        .HasColumnType("int");
-
                     b.Property<int>("ProcessStageId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("RequiresExternalRequest")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("RequiresOffer")
-                        .HasColumnType("bit");
 
                     b.Property<string>("ResponsibleRole")
                         .IsRequired()
@@ -601,13 +552,13 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("Order")
+                        .IsUnique();
+
                     b.HasIndex("ProcessStageId");
-
-                    b.HasIndex("ProcessFlowId", "Code")
-                        .IsUnique();
-
-                    b.HasIndex("ProcessFlowId", "Order")
-                        .IsUnique();
 
                     b.ToTable("ProcessSteps");
                 });
@@ -752,9 +703,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("ProcessFlowId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("ProjectManagerId")
                         .HasColumnType("int");
 
@@ -774,9 +722,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<bool>("RequiresNda")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("RequiresOffer")
                         .HasColumnType("bit");
 
                     b.Property<byte[]>("RowVersion")
@@ -815,8 +760,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CurrentStepId");
 
-                    b.HasIndex("ProcessFlowId");
-
                     b.HasIndex("ProjectManagerId");
 
                     b.HasIndex("Status");
@@ -827,6 +770,318 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_Projects_Level", "[Level] BETWEEN 1 AND 3");
                         });
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.Question", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ExpectedInfo")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Group")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("No")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionSetId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Requirement")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("RiskDescription")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Section")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Subcategory")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SuggestedAction")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("WorkType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.HasIndex("QuestionSetId", "WorkType", "Subcategory", "Order");
+
+                    b.ToTable("Questions");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.QuestionAnswer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("OptionId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Probability")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionnaireId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Severity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedById")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("OptionId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.HasIndex("QuestionnaireId", "QuestionId")
+                        .IsUnique();
+
+                    b.ToTable("QuestionAnswers", t =>
+                        {
+                            t.HasCheckConstraint("CK_QuestionAnswers_Probability", "[Probability] IS NULL OR [Probability] BETWEEN 1 AND 3");
+
+                            t.HasCheckConstraint("CK_QuestionAnswers_Severity", "[Severity] IS NULL OR [Severity] BETWEEN 1 AND 3");
+                        });
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.QuestionOption", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsScored")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Meaning")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("QuestionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionSetId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("RequiresNote")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("QuestionSetId");
+
+                    b.ToTable("QuestionOptions");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.QuestionSet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnswerMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Bands")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SourceDocument")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("QuestionSets");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.Questionnaire", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("ApprovedById")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly?>("ApprovedOn")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("AssessedOn")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Participants")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionSetId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Subcategory")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedById")
+                        .HasColumnType("int");
+
+                    b.Property<string>("WorkType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("QuestionSetId");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.HasIndex("ProjectId", "QuestionSetId")
+                        .IsUnique();
+
+                    b.ToTable("Questionnaires");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Requirements.Requirement", b =>
@@ -1139,32 +1394,13 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("SourceMeeting");
                 });
 
-            modelBuilder.Entity("Isdlc.Domain.Process.ProcessStage", b =>
-                {
-                    b.HasOne("Isdlc.Domain.Process.ProcessFlow", "ProcessFlow")
-                        .WithMany("Stages")
-                        .HasForeignKey("ProcessFlowId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ProcessFlow");
-                });
-
             modelBuilder.Entity("Isdlc.Domain.Process.ProcessStep", b =>
                 {
-                    b.HasOne("Isdlc.Domain.Process.ProcessFlow", "ProcessFlow")
-                        .WithMany()
-                        .HasForeignKey("ProcessFlowId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("Isdlc.Domain.Process.ProcessStage", "ProcessStage")
                         .WithMany("Steps")
                         .HasForeignKey("ProcessStageId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("ProcessFlow");
 
                     b.Navigation("ProcessStage");
                 });
@@ -1251,12 +1487,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CurrentStepId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Isdlc.Domain.Process.ProcessFlow", "ProcessFlow")
-                        .WithMany("Projects")
-                        .HasForeignKey("ProcessFlowId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("Isdlc.Domain.Identity.User", "ProjectManager")
                         .WithMany()
                         .HasForeignKey("ProjectManagerId")
@@ -1271,9 +1501,118 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.Navigation("CurrentStep");
 
-                    b.Navigation("ProcessFlow");
-
                     b.Navigation("ProjectManager");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.Question", b =>
+                {
+                    b.HasOne("Isdlc.Domain.QuestionBank.QuestionSet", "QuestionSet")
+                        .WithMany("Questions")
+                        .HasForeignKey("QuestionSetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("QuestionSet");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.QuestionAnswer", b =>
+                {
+                    b.HasOne("Isdlc.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.QuestionBank.QuestionOption", "Option")
+                        .WithMany()
+                        .HasForeignKey("OptionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Isdlc.Domain.Projects.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.QuestionBank.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.QuestionBank.Questionnaire", "Questionnaire")
+                        .WithMany("Answers")
+                        .HasForeignKey("QuestionnaireId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Option");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("Question");
+
+                    b.Navigation("Questionnaire");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.QuestionOption", b =>
+                {
+                    b.HasOne("Isdlc.Domain.QuestionBank.Question", "Question")
+                        .WithMany("Options")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Isdlc.Domain.QuestionBank.QuestionSet", "QuestionSet")
+                        .WithMany("Options")
+                        .HasForeignKey("QuestionSetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+
+                    b.Navigation("QuestionSet");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.Questionnaire", b =>
+                {
+                    b.HasOne("Isdlc.Domain.Identity.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Isdlc.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Projects.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.QuestionBank.QuestionSet", "QuestionSet")
+                        .WithMany()
+                        .HasForeignKey("QuestionSetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("QuestionSet");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Requirements.Requirement", b =>
@@ -1328,13 +1667,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("Isdlc.Domain.Process.ProcessFlow", b =>
-                {
-                    b.Navigation("Projects");
-
-                    b.Navigation("Stages");
-                });
-
             modelBuilder.Entity("Isdlc.Domain.Process.ProcessStage", b =>
                 {
                     b.Navigation("Steps");
@@ -1348,6 +1680,23 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Isdlc.Domain.Projects.Project", b =>
                 {
                     b.Navigation("StepRecords");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.Question", b =>
+                {
+                    b.Navigation("Options");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.QuestionSet", b =>
+                {
+                    b.Navigation("Options");
+
+                    b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.Questionnaire", b =>
+                {
+                    b.Navigation("Answers");
                 });
 #pragma warning restore 612, 618
         }

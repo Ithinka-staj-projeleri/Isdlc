@@ -4,6 +4,7 @@ using Isdlc.Infrastructure.Agents;
 using Isdlc.Infrastructure.Identity;
 using Isdlc.Application.Identity;
 using Isdlc.Infrastructure.Persistence;
+using Isdlc.Infrastructure.QuestionBank;
 using Isdlc.Infrastructure.Persistence.Interceptors;
 using Isdlc.Infrastructure.Persistence.Seeding;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<IsdlcDbContext>());
 
         services.AddScoped<DatabaseSeeder>();
+        services.AddScoped<QuestionSetSeeder>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddScoped<UserPasswordSeeder>();
 
