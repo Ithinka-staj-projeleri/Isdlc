@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <!-- Seed JSON files are embedded so they travel with the DLL. -->
-    <EmbeddedResource Include="Seed\*.json" />
+    <EmbeddedResource Include="Seed\**\*.json" />
   </ItemGroup>
 
   <PropertyGroup>

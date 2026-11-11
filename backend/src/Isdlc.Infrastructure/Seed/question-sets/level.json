@@ -1,0 +1,2363 @@
+{
+  "code": "level",
+  "name": "Seviye Belirleme Şablonu",
+  "sourceDocument": "ISDLC-Doküman-Analiz-008",
+  "version": "3.0",
+  "answerMode": "QuestionOptions",
+  "options": [],
+  "bands": [
+    {
+      "section": "1",
+      "title": "Doküman Seviyesi",
+      "ranges": [
+        {
+          "min": 1,
+          "max": 20,
+          "result": "1"
+        },
+        {
+          "min": 21,
+          "max": 40,
+          "result": "2"
+        },
+        {
+          "min": 41,
+          "max": 60,
+          "result": "3"
+        }
+      ]
+    },
+    {
+      "section": "2",
+      "title": "Araştırma Seviyesi",
+      "ranges": [
+        {
+          "min": 1,
+          "max": 10,
+          "result": "1d"
+        },
+        {
+          "min": 11,
+          "max": 20,
+          "result": "2d"
+        },
+        {
+          "min": 21,
+          "max": 30,
+          "result": "5d"
+        },
+        {
+          "min": 31,
+          "max": 40,
+          "result": "10d"
+        },
+        {
+          "min": 41,
+          "max": 50,
+          "result": "20d"
+        },
+        {
+          "min": 51,
+          "max": 60,
+          "result": "30d"
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 1,
+      "section": "1",
+      "text": "Talep analizi sonucunda belirlenen temel iş senaryosu ve modül sayısı hangi aralıktadır?",
+      "reference": "BABOK v3 §3.1 (Complexity and Risk); COCOMO II (yazılım büyüklüğü)",
+      "options": [
+        {
+          "label": "Tek iş senaryosu / tek fonksiyon",
+          "points": 1
+        },
+        {
+          "label": "2–5 iş senaryosu, tek modül",
+          "points": 2
+        },
+        {
+          "label": "6–15 iş senaryosu, 2–3 modül",
+          "points": 4
+        },
+        {
+          "label": "16–30 iş senaryosu, 4–6 modül",
+          "points": 6
+        },
+        {
+          "label": "30’dan fazla iş senaryosu veya 7 ve üzeri modül",
+          "points": 8
+        }
+      ],
+      "order": 1
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 2,
+      "section": "1",
+      "text": "Çözümde uygulanacak iş kuralları, onay akışları ve hesaplamaların karmaşıklık düzeyi nedir?",
+      "reference": "BABOK v3 Teknik: Business Rules Analysis; COCOMO II CPLX (ürün karmaşıklığı)",
+      "options": [
+        {
+          "label": "İş kuralı bulunmamaktadır / basit kayıt işlemi",
+          "points": 0
+        },
+        {
+          "label": "Birkaç basit iş kuralı, tek akış",
+          "points": 1
+        },
+        {
+          "label": "Onay akışı veya hesaplama içeren orta düzey kurallar",
+          "points": 2
+        },
+        {
+          "label": "Çok adımlı, çok rollü ve istisna durumları içeren akışlar",
+          "points": 3
+        },
+        {
+          "label": "Mevzuata dayalı hesaplama, karar tabloları ve çok senaryolu akışlar",
+          "points": 4
+        }
+      ],
+      "order": 2
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 3,
+      "section": "1",
+      "text": "Talepten etkilenen birim, kullanıcı grubu ve paydaş yapısı hangi genişliktedir?",
+      "reference": "BABOK v3 §3.2; ISO/IEC/IEEE 29148:2018 §6.3 (paydaş ihtiyaçları)",
+      "options": [
+        {
+          "label": "Tek birim, tek kullanıcı grubu",
+          "points": 0
+        },
+        {
+          "label": "Tek birim, birden fazla kullanıcı rolü",
+          "points": 1
+        },
+        {
+          "label": "2–3 birim veya kullanıcı grubu",
+          "points": 2
+        },
+        {
+          "label": "4 ve üzeri birim veya kurum dışı kullanıcılar",
+          "points": 3
+        },
+        {
+          "label": "Kurumlar arası / çoklu şirket / geniş son kullanıcı kitlesi",
+          "points": 4
+        }
+      ],
+      "order": 3
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 4,
+      "section": "1",
+      "text": "Gereksinimlerin onaylanması ve kabulü hangi resmiyet düzeyinde yürütülecektir?",
+      "reference": "BABOK v3 §3.1 (Formality and Level of Detail), §5.5; ISO/IEC/IEEE 29148:2018 (izlenebilirlik)",
+      "options": [
+        {
+          "label": "Sözlü veya e-posta onayı yeterlidir",
+          "points": 0
+        },
+        {
+          "label": "Tek onaycının yazılı onayı gereklidir",
+          "points": 2
+        },
+        {
+          "label": "Birden fazla paydaşın yazılı onayı gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Sözleşme / teklif eki olarak resmî doküman onayı gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Kabul komisyonu, denetim veya ihale şartnamesi kapsamında izlenebilir onay zorunludur",
+          "points": 6
+        }
+      ],
+      "order": 4
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 5,
+      "section": "1",
+      "text": "Talep hangi düzeyde mevzuat, kişisel veri veya düzenleyici kurum yükümlülüğü içermektedir?",
+      "reference": "6698 sayılı KVKK md. 6, md. 9; (EU) 2024/1689 Yapay Zekâ Tüzüğü; BABOK v3 §3.1",
+      "options": [
+        {
+          "label": "Mevzuat veya kişisel veri etkisi bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Sınırlı kişisel veri (ör. çalışan iletişim bilgisi) işlenmektedir",
+          "points": 2
+        },
+        {
+          "label": "Kişisel veri yaygın olarak işlenmektedir veya kurumsal politika uyumu gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Özel nitelikli kişisel veri, yurt dışı aktarım veya sektörel düzenleme (BDDK, SPK, EPDK, sağlık vb.) bulunmaktadır",
+          "points": 5
+        },
+        {
+          "label": "Düzenleyici kurum onayına / denetimine tabidir veya yüksek riskli yapay zekâ sistemi niteliğindedir",
+          "points": 6
+        }
+      ],
+      "order": 5
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 6,
+      "section": "1",
+      "text": "Sistemde işlenecek bilginin gizlilik, bütünlük ve erişilebilirlik açısından kritiklik düzeyi nedir?",
+      "reference": "Bilgi ve İletişim Güvenliği Rehberi (varlık grubu kritiklik derecelendirmesi); ISO/IEC 27001:2022; COCOMO II RELY",
+      "options": [
+        {
+          "label": "Düşük: kamuya açık bilgi, kesintinin etkisi ihmal edilebilir",
+          "points": 0
+        },
+        {
+          "label": "Düşük–orta: kurum içi genel bilgi, kesinti tek kullanıcı grubunu etkiler",
+          "points": 1
+        },
+        {
+          "label": "Orta: kurum içi gizli bilgi, kesinti bir birimin işini durdurur",
+          "points": 2
+        },
+        {
+          "label": "Yüksek: ticari sır / finansal veri, kesinti kurum genelini etkiler",
+          "points": 3
+        },
+        {
+          "label": "Çok yüksek: kritik hizmet, yüksek veri hacmi; ihlal ciddi mali / hukuki / itibar zararı doğurur",
+          "points": 4
+        }
+      ],
+      "order": 6
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 7,
+      "section": "1",
+      "text": "Çözümün diğer sistemlerle kuracağı entegrasyon ve arayüz yapısı nasıldır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.6 (SRS – dış arayüz gereksinimleri)",
+      "options": [
+        {
+          "label": "Entegrasyon bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Tek yönlü dosya aktarımı veya basit veri alışverişi",
+          "points": 1
+        },
+        {
+          "label": "1–2 sistemle çift yönlü entegrasyon (API / servis)",
+          "points": 2
+        },
+        {
+          "label": "3–5 sistemle entegrasyon",
+          "points": 3
+        },
+        {
+          "label": "6 ve üzeri, gerçek zamanlı veya kurum dışı kritik entegrasyonlar",
+          "points": 4
+        }
+      ],
+      "order": 7
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 8,
+      "section": "1",
+      "text": "Veri modeli, veri aktarımı (göç) ve raporlama ihtiyacı hangi kapsamdadır?",
+      "reference": "BABOK v3 Teknik: Data Modelling, Data Dictionary; COCOMO II DATA",
+      "options": [
+        {
+          "label": "Basit kayıt yapısı, veri aktarımı ve özel rapor bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Az sayıda veri varlığı ve standart listeler",
+          "points": 1
+        },
+        {
+          "label": "Orta ölçekli veri modeli ve birkaç yönetim raporu",
+          "points": 2
+        },
+        {
+          "label": "Kapsamlı veri modeli ile birlikte mevcut sistemlerden veri aktarımı",
+          "points": 3
+        },
+        {
+          "label": "Yüksek hacimli veri göçü, çok kaynaklı raporlama veya gösterge paneli / veri ambarı",
+          "points": 4
+        }
+      ],
+      "order": 8
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 9,
+      "section": "1",
+      "text": "Performans, erişilebilirlik, kullanılabilirlik ve süreklilik beklentileri hangi düzeydedir?",
+      "reference": "ISO/IEC 25010:2023; COCOMO II RELY, TIME",
+      "options": [
+        {
+          "label": "Standart beklentiler; özel hedef tanımlanmamıştır",
+          "points": 0
+        },
+        {
+          "label": "Belirli kullanılabilirlik / arayüz beklentileri bulunmaktadır",
+          "points": 1
+        },
+        {
+          "label": "Tanımlı performans veya erişilebilirlik hedefleri bulunmaktadır",
+          "points": 2
+        },
+        {
+          "label": "Hizmet seviyesi taahhüdüne (SLA) bağlı 7x24 çalışma veya yüksek eşzamanlı kullanım",
+          "points": 3
+        },
+        {
+          "label": "Kesintisiz hizmet, felaket kurtarma ve yüksek erişilebilirlik zorunludur",
+          "points": 4
+        }
+      ],
+      "order": 9
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 10,
+      "section": "1",
+      "text": "Çözümün kullanım ömrü ve bakım sorumluluğunun devri dokümantasyon ihtiyacını nasıl etkilemektedir?",
+      "reference": "COCOMO II DOCU (yaşam döngüsü ihtiyacına uygun dokümantasyon); ISO/IEC/IEEE 15289:2019; ISO/IEC/IEEE 12207:2026",
+      "options": [
+        {
+          "label": "Kısa ömürlü / tek seferlik kullanım",
+          "points": 0
+        },
+        {
+          "label": "Kurum içi kullanım, bakımı geliştiren ekip yapacaktır",
+          "points": 1
+        },
+        {
+          "label": "Uzun süreli kullanım, bakımı geliştiren ekip yapacaktır",
+          "points": 2
+        },
+        {
+          "label": "Bakım başka bir ekibe veya şirkete devredilecektir",
+          "points": 3
+        },
+        {
+          "label": "Kaynak kod ve teknik doküman teslimi sözleşmeseldir / uzun garanti ve çoklu ekip bakımı öngörülmektedir",
+          "points": 4
+        }
+      ],
+      "order": 10
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 11,
+      "section": "1",
+      "text": "Projenin kurum içinde onaylanması için hangi yönetişim düzeyinde doküman sunulması gerekmektedir?",
+      "reference": "PMBOK Guide 8. Baskı – Yönetişim performans alanı; BABOK v3 §3.3",
+      "options": [
+        {
+          "label": "Birim yöneticisinin onayı yeterlidir",
+          "points": 0
+        },
+        {
+          "label": "BT biriminin onayı gereklidir",
+          "points": 2
+        },
+        {
+          "label": "BT birimi ve iş birimi üst yönetiminin onayı gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Yatırım / BT yönlendirme komitesi onayı gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Yönetim kurulu onayı veya iç denetim raporlamasına tabidir",
+          "points": 6
+        }
+      ],
+      "order": 11
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 12,
+      "section": "1",
+      "text": "Çözüm, kurum içindeki görev tanımları, prosedürler ve organizasyon yapısında ne düzeyde değişiklik gerektirmektedir?",
+      "reference": "BABOK v3 §6.4 (Define Change Strategy)",
+      "options": [
+        {
+          "label": "Değişiklik gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "İş yapış şeklinde küçük değişiklikler",
+          "points": 2
+        },
+        {
+          "label": "Bir birimde süreç / prosedür değişikliği",
+          "points": 3
+        },
+        {
+          "label": "Birden fazla birimde görev tanımı ve prosedür değişikliği",
+          "points": 5
+        },
+        {
+          "label": "Organizasyon yapısında veya kurum geneli politikada değişiklik",
+          "points": 6
+        }
+      ],
+      "order": 12
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 13,
+      "section": "2",
+      "text": "Talep analizi görüşmeleri sonrasında ihtiyaç ve kapsamda kalan belirsizlik hangi düzeydedir?",
+      "reference": "BABOK v3 §4.1, §6.1; COCOMO II PREC / FLEX (ölçek faktörleri)",
+      "options": [
+        {
+          "label": "Net: açık konu bulunmamaktadır",
+          "points": 1
+        },
+        {
+          "label": "Talep Analiz listesindeki soruların %10’undan azı açıktır, etkisi düşüktür",
+          "points": 2
+        },
+        {
+          "label": "Soruların %10–25’i açıktır veya bazı ana konular netleşmemiştir",
+          "points": 4
+        },
+        {
+          "label": "Soruların %26–50’si açıktır, ana kapsam kararları beklenmektedir",
+          "points": 6
+        },
+        {
+          "label": "Soruların %50’den fazlası açıktır / çözümün bizim tarafımızdan keşfedilmesi beklenmektedir",
+          "points": 8
+        }
+      ],
+      "order": 13
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 14,
+      "section": "2",
+      "text": "Ekibin bu tür bir çözümü daha önce geliştirmiş olma düzeyi nedir?",
+      "reference": "COCOMO II PREC (benzerlik), APEX (uygulama deneyimi)",
+      "options": [
+        {
+          "label": "Aynı tür çözüm defalarca geliştirilmiştir, yeniden kullanılabilir bileşen vardır",
+          "points": 0
+        },
+        {
+          "label": "Benzer çözüm geliştirilmiştir",
+          "points": 2
+        },
+        {
+          "label": "Kısmen benzer çözüm geliştirilmiştir",
+          "points": 3
+        },
+        {
+          "label": "Alan yenidir, ekibin deneyimi sınırlıdır",
+          "points": 5
+        },
+        {
+          "label": "Ekipte bu tür çözüm deneyimi bulunmamaktadır",
+          "points": 6
+        }
+      ],
+      "order": 14
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 15,
+      "section": "2",
+      "text": "Çözümde kullanılacak teknolojinin ekip açısından yenilik düzeyi ve teknik belirsizliği nedir?",
+      "reference": "COCOMO II RESL (mimari / risk çözümü), LTEX, PLEX; BABOK v3 §6.3",
+      "options": [
+        {
+          "label": "Ekibin standart teknoloji yığını kullanılacaktır",
+          "points": 0
+        },
+        {
+          "label": "Küçük yeni bileşen / kütüphane kullanılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Kısmen yeni teknoloji kullanılacaktır",
+          "points": 3
+        },
+        {
+          "label": "Yeni teknoloji araştırması gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Kavram kanıtlama (POC) / prototip zorunludur (ör. yapay zekâ, görüntü işleme)",
+          "points": 6
+        }
+      ],
+      "order": 15
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 16,
+      "section": "2",
+      "text": "Mevcut iş sürecinin (As-Is) anlaşılması için gereken analiz derinliği nedir?",
+      "reference": "BABOK v3 §6.1 (Analyze Current State), Teknik: Process Modelling",
+      "options": [
+        {
+          "label": "Mevcut süreç yoktur veya güncel olarak belgelenmiştir",
+          "points": 0
+        },
+        {
+          "label": "Belgelenmiş süreç doğrulanacaktır",
+          "points": 1
+        },
+        {
+          "label": "Belgesiz süreç kısmen modellenecektir",
+          "points": 2
+        },
+        {
+          "label": "Birimler arası çok adımlı süreç modellenecek, yerinde gözlem yapılacaktır",
+          "points": 3
+        },
+        {
+          "label": "Süreç yeniden tasarlanacaktır (iş süreci yeniden yapılandırması)",
+          "points": 4
+        }
+      ],
+      "order": 16
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 17,
+      "section": "2",
+      "text": "Konu uzmanlarına, mevcut dokümanlara ve örnek verilere erişim hangi düzeydedir?",
+      "reference": "BABOK v3 §3.2, §4.1 (Prepare for Elicitation)",
+      "options": [
+        {
+          "label": "Konu uzmanları erişilebilir, dokümanlar eksiksizdir",
+          "points": 0
+        },
+        {
+          "label": "Küçük eksikler bulunmaktadır",
+          "points": 1
+        },
+        {
+          "label": "Kısmen erişilebilir / kısmen belgelenmiştir",
+          "points": 2
+        },
+        {
+          "label": "Konu uzmanı erişimi kısıtlıdır, doküman yetersizdir",
+          "points": 3
+        },
+        {
+          "label": "Bilgi kaynağı bulunmamaktadır veya çok sayıda paydaştan derlenmesi gerekmektedir",
+          "points": 4
+        }
+      ],
+      "order": 17
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 18,
+      "section": "2",
+      "text": "Paydaşların beklenti ve öncelikleri arasındaki uyum düzeyi nedir?",
+      "reference": "BABOK v3 §5.5 (Approve Requirements), §3.2",
+      "options": [
+        {
+          "label": "Tek karar verici; beklentiler uyumludur",
+          "points": 0
+        },
+        {
+          "label": "Küçük farklılıklar bulunmaktadır",
+          "points": 1
+        },
+        {
+          "label": "Birkaç farklı beklenti bulunmaktadır",
+          "points": 2
+        },
+        {
+          "label": "Çatışan öncelikler bulunmaktadır; çalıştay gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Belirgin çatışma; çok kurumlu müzakere ve uzlaştırma gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 18
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 19,
+      "section": "2",
+      "text": "Entegre olunacak veya etkilenecek mevcut sistemler için gereken teknik inceleme düzeyi nedir?",
+      "reference": "COCOMO II RESL; ISO/IEC/IEEE 12207:2026 (teknik süreçler)",
+      "options": [
+        {
+          "label": "Teknik inceleme gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Güncel API / arayüz dokümanı hazırdır",
+          "points": 1
+        },
+        {
+          "label": "Tek sistem incelenecektir",
+          "points": 2
+        },
+        {
+          "label": "Birden fazla sistem, dokümansız arayüzler incelenecektir",
+          "points": 3
+        },
+        {
+          "label": "Eski (legacy) sistemler için tersine mühendislik gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 19
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 20,
+      "section": "2",
+      "text": "Veri kalitesi, veri eşleştirme ve göç için gereken araştırma düzeyi nedir?",
+      "reference": "BABOK v3 Teknik: Data Mining, Data Modelling",
+      "options": [
+        {
+          "label": "Veri araştırması gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Küçük örnek veri incelemesi yeterlidir",
+          "points": 1
+        },
+        {
+          "label": "Veri kalitesi incelemesi gereklidir",
+          "points": 2
+        },
+        {
+          "label": "Çok kaynaklı veri eşleştirmesi gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Yüksek hacimli / düşük kaliteli veride profilleme ve temizleme analizi gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 20
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 21,
+      "section": "2",
+      "text": "Uyum gereksinimlerinin netleştirilmesi için gereken mevzuat araştırması düzeyi nedir?",
+      "reference": "6698 sayılı KVKK; (EU) 2024/1689; BABOK v3 §6.3",
+      "options": [
+        {
+          "label": "Mevzuat araştırması gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Bilinen kurallar uygulanacaktır",
+          "points": 1
+        },
+        {
+          "label": "KVKK uygunluk incelemesi yapılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Sektörel mevzuat araştırması ve hukuk görüşü gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Çoklu yargı alanı (yurt dışı aktarım, AB Yapay Zekâ Tüzüğü vb.) veya düzenleyici kurum görüşü gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 21
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 22,
+      "section": "2",
+      "text": "Çözüm seçeneklerinin (hazır ürün / özel geliştirme / hibrit) değerlendirilmesi için gereken çalışma düzeyi nedir?",
+      "reference": "BABOK v3 §6.4, §7.5, §7.6; SBB Kamu BİT Projeleri Hazırlama Rehberi (2023)",
+      "options": [
+        {
+          "label": "Çözüm yaklaşımı bellidir, değerlendirme gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Kısa karşılaştırma yeterlidir",
+          "points": 1
+        },
+        {
+          "label": "2–3 alternatif karşılaştırılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Piyasa araştırması ve maliyet–fayda analizi gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Kapsamlı fizibilite etüdü gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 22
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 23,
+      "section": "2",
+      "text": "Talebin kurumdaki mevcut sistemler, devam eden projeler veya bekleyen taleplerle örtüşme düzeyi nedir?",
+      "reference": "BABOK v3 §6.1, §6.4; PMBOK Guide 8. Baskı – Yönetişim",
+      "options": [
+        {
+          "label": "Kontrol edilmiştir; örtüşme bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Küçük işlevsel örtüşme bulunmaktadır",
+          "points": 2
+        },
+        {
+          "label": "Mevcut bir sistemle kısmi örtüşme bulunmaktadır",
+          "points": 3
+        },
+        {
+          "label": "Devam eden / bekleyen bir projeyle önemli örtüşme; kapsam ayrıştırması gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Birden fazla sistem / birim aracıyla örtüşme; konsolidasyon analizi gereklidir",
+          "points": 6
+        }
+      ],
+      "order": 23
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Internal",
+      "no": 24,
+      "section": "2",
+      "text": "Kurumsal mimari ve BT standartlarına uyum için gereken inceleme düzeyi nedir?",
+      "reference": "ISO/IEC/IEEE 12207:2026; BABOK v3 §7.4",
+      "options": [
+        {
+          "label": "Standart mimari ile uyumludur",
+          "points": 0
+        },
+        {
+          "label": "Küçük uyum kontrolleri yapılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Mimari ekip ile değerlendirme yapılacaktır",
+          "points": 3
+        },
+        {
+          "label": "Yeni bileşen için mimari tasarım çalışması gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Standart dışı teknoloji için mimari kurul / istisna onayı gereklidir",
+          "points": 6
+        }
+      ],
+      "order": 24
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 25,
+      "section": "1",
+      "text": "Talep analizi sonucunda belirlenen temel iş senaryosu ve modül sayısı hangi aralıktadır?",
+      "reference": "BABOK v3 §3.1 (Complexity and Risk); COCOMO II (yazılım büyüklüğü)",
+      "options": [
+        {
+          "label": "Tek iş senaryosu / tek fonksiyon",
+          "points": 1
+        },
+        {
+          "label": "2–5 iş senaryosu, tek modül",
+          "points": 2
+        },
+        {
+          "label": "6–15 iş senaryosu, 2–3 modül",
+          "points": 4
+        },
+        {
+          "label": "16–30 iş senaryosu, 4–6 modül",
+          "points": 6
+        },
+        {
+          "label": "30’dan fazla iş senaryosu veya 7 ve üzeri modül",
+          "points": 8
+        }
+      ],
+      "order": 25
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 26,
+      "section": "1",
+      "text": "Çözümde uygulanacak iş kuralları, onay akışları ve hesaplamaların karmaşıklık düzeyi nedir?",
+      "reference": "BABOK v3 Teknik: Business Rules Analysis; COCOMO II CPLX (ürün karmaşıklığı)",
+      "options": [
+        {
+          "label": "İş kuralı bulunmamaktadır / basit kayıt işlemi",
+          "points": 0
+        },
+        {
+          "label": "Birkaç basit iş kuralı, tek akış",
+          "points": 1
+        },
+        {
+          "label": "Onay akışı veya hesaplama içeren orta düzey kurallar",
+          "points": 2
+        },
+        {
+          "label": "Çok adımlı, çok rollü ve istisna durumları içeren akışlar",
+          "points": 3
+        },
+        {
+          "label": "Mevzuata dayalı hesaplama, karar tabloları ve çok senaryolu akışlar",
+          "points": 4
+        }
+      ],
+      "order": 26
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 27,
+      "section": "1",
+      "text": "Talepten etkilenen birim, kullanıcı grubu ve paydaş yapısı hangi genişliktedir?",
+      "reference": "BABOK v3 §3.2; ISO/IEC/IEEE 29148:2018 §6.3 (paydaş ihtiyaçları)",
+      "options": [
+        {
+          "label": "Tek birim, tek kullanıcı grubu",
+          "points": 0
+        },
+        {
+          "label": "Tek birim, birden fazla kullanıcı rolü",
+          "points": 1
+        },
+        {
+          "label": "2–3 birim veya kullanıcı grubu",
+          "points": 2
+        },
+        {
+          "label": "4 ve üzeri birim veya kurum dışı kullanıcılar",
+          "points": 3
+        },
+        {
+          "label": "Kurumlar arası / çoklu şirket / geniş son kullanıcı kitlesi",
+          "points": 4
+        }
+      ],
+      "order": 27
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 28,
+      "section": "1",
+      "text": "Gereksinimlerin onaylanması ve kabulü hangi resmiyet düzeyinde yürütülecektir?",
+      "reference": "BABOK v3 §3.1 (Formality and Level of Detail), §5.5; ISO/IEC/IEEE 29148:2018 (izlenebilirlik)",
+      "options": [
+        {
+          "label": "Sözlü veya e-posta onayı yeterlidir",
+          "points": 0
+        },
+        {
+          "label": "Tek onaycının yazılı onayı gereklidir",
+          "points": 2
+        },
+        {
+          "label": "Birden fazla paydaşın yazılı onayı gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Sözleşme / teklif eki olarak resmî doküman onayı gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Kabul komisyonu, denetim veya ihale şartnamesi kapsamında izlenebilir onay zorunludur",
+          "points": 6
+        }
+      ],
+      "order": 28
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 29,
+      "section": "1",
+      "text": "Talep hangi düzeyde mevzuat, kişisel veri veya düzenleyici kurum yükümlülüğü içermektedir?",
+      "reference": "6698 sayılı KVKK md. 6, md. 9; (EU) 2024/1689 Yapay Zekâ Tüzüğü; BABOK v3 §3.1",
+      "options": [
+        {
+          "label": "Mevzuat veya kişisel veri etkisi bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Sınırlı kişisel veri (ör. çalışan iletişim bilgisi) işlenmektedir",
+          "points": 2
+        },
+        {
+          "label": "Kişisel veri yaygın olarak işlenmektedir veya kurumsal politika uyumu gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Özel nitelikli kişisel veri, yurt dışı aktarım veya sektörel düzenleme (BDDK, SPK, EPDK, sağlık vb.) bulunmaktadır",
+          "points": 5
+        },
+        {
+          "label": "Düzenleyici kurum onayına / denetimine tabidir veya yüksek riskli yapay zekâ sistemi niteliğindedir",
+          "points": 6
+        }
+      ],
+      "order": 29
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 30,
+      "section": "1",
+      "text": "Sistemde işlenecek bilginin gizlilik, bütünlük ve erişilebilirlik açısından kritiklik düzeyi nedir?",
+      "reference": "Bilgi ve İletişim Güvenliği Rehberi (varlık grubu kritiklik derecelendirmesi); ISO/IEC 27001:2022; COCOMO II RELY",
+      "options": [
+        {
+          "label": "Düşük: kamuya açık bilgi, kesintinin etkisi ihmal edilebilir",
+          "points": 0
+        },
+        {
+          "label": "Düşük–orta: kurum içi genel bilgi, kesinti tek kullanıcı grubunu etkiler",
+          "points": 1
+        },
+        {
+          "label": "Orta: kurum içi gizli bilgi, kesinti bir birimin işini durdurur",
+          "points": 2
+        },
+        {
+          "label": "Yüksek: ticari sır / finansal veri, kesinti kurum genelini etkiler",
+          "points": 3
+        },
+        {
+          "label": "Çok yüksek: kritik hizmet, yüksek veri hacmi; ihlal ciddi mali / hukuki / itibar zararı doğurur",
+          "points": 4
+        }
+      ],
+      "order": 30
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 31,
+      "section": "1",
+      "text": "Çözümün diğer sistemlerle kuracağı entegrasyon ve arayüz yapısı nasıldır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.6 (SRS – dış arayüz gereksinimleri)",
+      "options": [
+        {
+          "label": "Entegrasyon bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Tek yönlü dosya aktarımı veya basit veri alışverişi",
+          "points": 1
+        },
+        {
+          "label": "1–2 sistemle çift yönlü entegrasyon (API / servis)",
+          "points": 2
+        },
+        {
+          "label": "3–5 sistemle entegrasyon",
+          "points": 3
+        },
+        {
+          "label": "6 ve üzeri, gerçek zamanlı veya kurum dışı kritik entegrasyonlar",
+          "points": 4
+        }
+      ],
+      "order": 31
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 32,
+      "section": "1",
+      "text": "Veri modeli, veri aktarımı (göç) ve raporlama ihtiyacı hangi kapsamdadır?",
+      "reference": "BABOK v3 Teknik: Data Modelling, Data Dictionary; COCOMO II DATA",
+      "options": [
+        {
+          "label": "Basit kayıt yapısı, veri aktarımı ve özel rapor bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Az sayıda veri varlığı ve standart listeler",
+          "points": 1
+        },
+        {
+          "label": "Orta ölçekli veri modeli ve birkaç yönetim raporu",
+          "points": 2
+        },
+        {
+          "label": "Kapsamlı veri modeli ile birlikte mevcut sistemlerden veri aktarımı",
+          "points": 3
+        },
+        {
+          "label": "Yüksek hacimli veri göçü, çok kaynaklı raporlama veya gösterge paneli / veri ambarı",
+          "points": 4
+        }
+      ],
+      "order": 32
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 33,
+      "section": "1",
+      "text": "Performans, erişilebilirlik, kullanılabilirlik ve süreklilik beklentileri hangi düzeydedir?",
+      "reference": "ISO/IEC 25010:2023; COCOMO II RELY, TIME",
+      "options": [
+        {
+          "label": "Standart beklentiler; özel hedef tanımlanmamıştır",
+          "points": 0
+        },
+        {
+          "label": "Belirli kullanılabilirlik / arayüz beklentileri bulunmaktadır",
+          "points": 1
+        },
+        {
+          "label": "Tanımlı performans veya erişilebilirlik hedefleri bulunmaktadır",
+          "points": 2
+        },
+        {
+          "label": "Hizmet seviyesi taahhüdüne (SLA) bağlı 7x24 çalışma veya yüksek eşzamanlı kullanım",
+          "points": 3
+        },
+        {
+          "label": "Kesintisiz hizmet, felaket kurtarma ve yüksek erişilebilirlik zorunludur",
+          "points": 4
+        }
+      ],
+      "order": 33
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 34,
+      "section": "1",
+      "text": "Çözümün kullanım ömrü ve bakım sorumluluğunun devri dokümantasyon ihtiyacını nasıl etkilemektedir?",
+      "reference": "COCOMO II DOCU (yaşam döngüsü ihtiyacına uygun dokümantasyon); ISO/IEC/IEEE 15289:2019; ISO/IEC/IEEE 12207:2026",
+      "options": [
+        {
+          "label": "Kısa ömürlü / tek seferlik kullanım",
+          "points": 0
+        },
+        {
+          "label": "Kurum içi kullanım, bakımı geliştiren ekip yapacaktır",
+          "points": 1
+        },
+        {
+          "label": "Uzun süreli kullanım, bakımı geliştiren ekip yapacaktır",
+          "points": 2
+        },
+        {
+          "label": "Bakım başka bir ekibe veya şirkete devredilecektir",
+          "points": 3
+        },
+        {
+          "label": "Kaynak kod ve teknik doküman teslimi sözleşmeseldir / uzun garanti ve çoklu ekip bakımı öngörülmektedir",
+          "points": 4
+        }
+      ],
+      "order": 34
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 35,
+      "section": "1",
+      "text": "Müşteri ile kurulacak ticari ilişkinin sözleşmesel bağlayıcılık düzeyi nedir?",
+      "reference": "4734 sayılı Kamu İhale Kanunu md. 12 (Teknik şartnameler); BABOK v3 §3.1",
+      "options": [
+        {
+          "label": "Sözleşme öngörülmemektedir (ön çalışma / bilgi amaçlı)",
+          "points": 0
+        },
+        {
+          "label": "Basit sipariş veya teklif kabulü",
+          "points": 1
+        },
+        {
+          "label": "Standart hizmet sözleşmesi, değişebilir kapsam (adam/gün)",
+          "points": 2
+        },
+        {
+          "label": "Sabit fiyatlı sözleşme, teknik şartname eki ve SLA",
+          "points": 3
+        },
+        {
+          "label": "Kamu ihalesi (4734 sayılı Kanun) veya cezai şartlı resmî teknik şartname",
+          "points": 4
+        }
+      ],
+      "order": 35
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 36,
+      "section": "1",
+      "text": "Müşterinin kabul süreci hangi resmiyet düzeyinde yürütülecektir?",
+      "reference": "4735 sayılı Kamu İhale Sözleşmeleri Kanunu; ISO/IEC/IEEE 29119-3:2021",
+      "options": [
+        {
+          "label": "Resmî kabul süreci bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Müşterinin e-posta ile onayı yeterlidir",
+          "points": 1
+        },
+        {
+          "label": "Kabul testleri müşteri tarafından yürütülecektir",
+          "points": 2
+        },
+        {
+          "label": "Geçici ve kesin kabul tutanakları düzenlenecektir",
+          "points": 3
+        },
+        {
+          "label": "Kabul komisyonu, muayene ve kabul yönetmeliği uygulanacaktır",
+          "points": 4
+        }
+      ],
+      "order": 36
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 37,
+      "section": "1",
+      "text": "Kaynak kod, fikri mülkiyet ve teknik doküman teslimi konusundaki yükümlülük düzeyi nedir?",
+      "reference": "5846 sayılı Fikir ve Sanat Eserleri Kanunu; ISO/IEC/IEEE 15289:2019",
+      "options": [
+        {
+          "label": "Lisans modeli; kaynak kod ve teknik doküman teslimi yoktur",
+          "points": 0
+        },
+        {
+          "label": "Kullanıcı kılavuzu teslimi yeterlidir",
+          "points": 1
+        },
+        {
+          "label": "Kullanıcı ve yönetici kılavuzları teslim edilecektir",
+          "points": 2
+        },
+        {
+          "label": "Kaynak kod ve teknik doküman teslim edilecektir",
+          "points": 3
+        },
+        {
+          "label": "Fikri mülkiyet devri, kaynak kod emaneti (escrow) ve tam teknik doküman seti teslim edilecektir",
+          "points": 4
+        }
+      ],
+      "order": 37
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 38,
+      "section": "2",
+      "text": "Talep analizi görüşmeleri sonrasında ihtiyaç ve kapsamda kalan belirsizlik hangi düzeydedir?",
+      "reference": "BABOK v3 §4.1, §6.1; COCOMO II PREC / FLEX (ölçek faktörleri)",
+      "options": [
+        {
+          "label": "Net: açık konu bulunmamaktadır",
+          "points": 1
+        },
+        {
+          "label": "Talep Analiz listesindeki soruların %10’undan azı açıktır, etkisi düşüktür",
+          "points": 2
+        },
+        {
+          "label": "Soruların %10–25’i açıktır veya bazı ana konular netleşmemiştir",
+          "points": 4
+        },
+        {
+          "label": "Soruların %26–50’si açıktır, ana kapsam kararları beklenmektedir",
+          "points": 6
+        },
+        {
+          "label": "Soruların %50’den fazlası açıktır / çözümün bizim tarafımızdan keşfedilmesi beklenmektedir",
+          "points": 8
+        }
+      ],
+      "order": 38
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 39,
+      "section": "2",
+      "text": "Ekibin bu tür bir çözümü daha önce geliştirmiş olma düzeyi nedir?",
+      "reference": "COCOMO II PREC (benzerlik), APEX (uygulama deneyimi)",
+      "options": [
+        {
+          "label": "Aynı tür çözüm defalarca geliştirilmiştir, yeniden kullanılabilir bileşen vardır",
+          "points": 0
+        },
+        {
+          "label": "Benzer çözüm geliştirilmiştir",
+          "points": 2
+        },
+        {
+          "label": "Kısmen benzer çözüm geliştirilmiştir",
+          "points": 3
+        },
+        {
+          "label": "Alan yenidir, ekibin deneyimi sınırlıdır",
+          "points": 5
+        },
+        {
+          "label": "Ekipte bu tür çözüm deneyimi bulunmamaktadır",
+          "points": 6
+        }
+      ],
+      "order": 39
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 40,
+      "section": "2",
+      "text": "Çözümde kullanılacak teknolojinin ekip açısından yenilik düzeyi ve teknik belirsizliği nedir?",
+      "reference": "COCOMO II RESL (mimari / risk çözümü), LTEX, PLEX; BABOK v3 §6.3",
+      "options": [
+        {
+          "label": "Ekibin standart teknoloji yığını kullanılacaktır",
+          "points": 0
+        },
+        {
+          "label": "Küçük yeni bileşen / kütüphane kullanılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Kısmen yeni teknoloji kullanılacaktır",
+          "points": 3
+        },
+        {
+          "label": "Yeni teknoloji araştırması gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Kavram kanıtlama (POC) / prototip zorunludur (ör. yapay zekâ, görüntü işleme)",
+          "points": 6
+        }
+      ],
+      "order": 40
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 41,
+      "section": "2",
+      "text": "Mevcut iş sürecinin (As-Is) anlaşılması için gereken analiz derinliği nedir?",
+      "reference": "BABOK v3 §6.1 (Analyze Current State), Teknik: Process Modelling",
+      "options": [
+        {
+          "label": "Mevcut süreç yoktur veya güncel olarak belgelenmiştir",
+          "points": 0
+        },
+        {
+          "label": "Belgelenmiş süreç doğrulanacaktır",
+          "points": 1
+        },
+        {
+          "label": "Belgesiz süreç kısmen modellenecektir",
+          "points": 2
+        },
+        {
+          "label": "Birimler arası çok adımlı süreç modellenecek, yerinde gözlem yapılacaktır",
+          "points": 3
+        },
+        {
+          "label": "Süreç yeniden tasarlanacaktır (iş süreci yeniden yapılandırması)",
+          "points": 4
+        }
+      ],
+      "order": 41
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 42,
+      "section": "2",
+      "text": "Konu uzmanlarına, mevcut dokümanlara ve örnek verilere erişim hangi düzeydedir?",
+      "reference": "BABOK v3 §3.2, §4.1 (Prepare for Elicitation)",
+      "options": [
+        {
+          "label": "Konu uzmanları erişilebilir, dokümanlar eksiksizdir",
+          "points": 0
+        },
+        {
+          "label": "Küçük eksikler bulunmaktadır",
+          "points": 1
+        },
+        {
+          "label": "Kısmen erişilebilir / kısmen belgelenmiştir",
+          "points": 2
+        },
+        {
+          "label": "Konu uzmanı erişimi kısıtlıdır, doküman yetersizdir",
+          "points": 3
+        },
+        {
+          "label": "Bilgi kaynağı bulunmamaktadır veya çok sayıda paydaştan derlenmesi gerekmektedir",
+          "points": 4
+        }
+      ],
+      "order": 42
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 43,
+      "section": "2",
+      "text": "Paydaşların beklenti ve öncelikleri arasındaki uyum düzeyi nedir?",
+      "reference": "BABOK v3 §5.5 (Approve Requirements), §3.2",
+      "options": [
+        {
+          "label": "Tek karar verici; beklentiler uyumludur",
+          "points": 0
+        },
+        {
+          "label": "Küçük farklılıklar bulunmaktadır",
+          "points": 1
+        },
+        {
+          "label": "Birkaç farklı beklenti bulunmaktadır",
+          "points": 2
+        },
+        {
+          "label": "Çatışan öncelikler bulunmaktadır; çalıştay gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Belirgin çatışma; çok kurumlu müzakere ve uzlaştırma gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 43
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 44,
+      "section": "2",
+      "text": "Entegre olunacak veya etkilenecek mevcut sistemler için gereken teknik inceleme düzeyi nedir?",
+      "reference": "COCOMO II RESL; ISO/IEC/IEEE 12207:2026 (teknik süreçler)",
+      "options": [
+        {
+          "label": "Teknik inceleme gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Güncel API / arayüz dokümanı hazırdır",
+          "points": 1
+        },
+        {
+          "label": "Tek sistem incelenecektir",
+          "points": 2
+        },
+        {
+          "label": "Birden fazla sistem, dokümansız arayüzler incelenecektir",
+          "points": 3
+        },
+        {
+          "label": "Eski (legacy) sistemler için tersine mühendislik gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 44
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 45,
+      "section": "2",
+      "text": "Veri kalitesi, veri eşleştirme ve göç için gereken araştırma düzeyi nedir?",
+      "reference": "BABOK v3 Teknik: Data Mining, Data Modelling",
+      "options": [
+        {
+          "label": "Veri araştırması gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Küçük örnek veri incelemesi yeterlidir",
+          "points": 1
+        },
+        {
+          "label": "Veri kalitesi incelemesi gereklidir",
+          "points": 2
+        },
+        {
+          "label": "Çok kaynaklı veri eşleştirmesi gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Yüksek hacimli / düşük kaliteli veride profilleme ve temizleme analizi gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 45
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 46,
+      "section": "2",
+      "text": "Uyum gereksinimlerinin netleştirilmesi için gereken mevzuat araştırması düzeyi nedir?",
+      "reference": "6698 sayılı KVKK; (EU) 2024/1689; BABOK v3 §6.3",
+      "options": [
+        {
+          "label": "Mevzuat araştırması gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Bilinen kurallar uygulanacaktır",
+          "points": 1
+        },
+        {
+          "label": "KVKK uygunluk incelemesi yapılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Sektörel mevzuat araştırması ve hukuk görüşü gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Çoklu yargı alanı (yurt dışı aktarım, AB Yapay Zekâ Tüzüğü vb.) veya düzenleyici kurum görüşü gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 46
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 47,
+      "section": "2",
+      "text": "Çözüm seçeneklerinin (hazır ürün / özel geliştirme / hibrit) değerlendirilmesi için gereken çalışma düzeyi nedir?",
+      "reference": "BABOK v3 §6.4, §7.5, §7.6; SBB Kamu BİT Projeleri Hazırlama Rehberi (2023)",
+      "options": [
+        {
+          "label": "Çözüm yaklaşımı bellidir, değerlendirme gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Kısa karşılaştırma yeterlidir",
+          "points": 1
+        },
+        {
+          "label": "2–3 alternatif karşılaştırılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Piyasa araştırması ve maliyet–fayda analizi gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Kapsamlı fizibilite etüdü gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 47
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 48,
+      "section": "2",
+      "text": "Müşterinin faaliyet gösterdiği sektöre ilişkin kurumsal bilgi birikimi hangi düzeydedir?",
+      "reference": "COCOMO II APEX; BABOK v3 §6.1",
+      "options": [
+        {
+          "label": "Sektörde çok sayıda proje tamamlanmıştır",
+          "points": 0
+        },
+        {
+          "label": "Sektörde benzer proje tamamlanmıştır",
+          "points": 1
+        },
+        {
+          "label": "Sektör bilgisi kısmen bulunmaktadır",
+          "points": 2
+        },
+        {
+          "label": "Sektör yenidir",
+          "points": 3
+        },
+        {
+          "label": "Sektör yenidir ve sektöre özgü mevzuat / iş kuralları yoğundur",
+          "points": 4
+        }
+      ],
+      "order": 48
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 49,
+      "section": "2",
+      "text": "Teklif hazırlanmadan önce gereken ön çalışma düzeyi nedir?",
+      "reference": "BABOK v3 §7.6; PMBOK Guide 8. Baskı – Finans performans alanı",
+      "options": [
+        {
+          "label": "Standart teklif yeterlidir",
+          "points": 0
+        },
+        {
+          "label": "Kısa ön değerlendirme yapılacaktır",
+          "points": 1
+        },
+        {
+          "label": "Detaylı kapsam ve efor tahmini çalışması yapılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Yerinde keşif veya demo hazırlanacaktır",
+          "points": 3
+        },
+        {
+          "label": "Kavram kanıtlama (POC) çalışması veya rekabetçi teklif süreci yürütülecektir",
+          "points": 4
+        }
+      ],
+      "order": 49
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 50,
+      "section": "2",
+      "text": "Müşteri sistemlerine, ortamlarına ve örnek verilere erişim hangi düzeydedir?",
+      "reference": "BABOK v3 §4.1; ISO/IEC 27001:2022",
+      "options": [
+        {
+          "label": "Tam ve hızlı erişim sağlanmaktadır",
+          "points": 0
+        },
+        {
+          "label": "Küçük kısıtlar bulunmaktadır",
+          "points": 1
+        },
+        {
+          "label": "Erişim kısmidir, izin süreçleri gereklidir",
+          "points": 2
+        },
+        {
+          "label": "Erişim kısıtlıdır; maskelenmiş veri / test ortamı hazırlanmalıdır",
+          "points": 3
+        },
+        {
+          "label": "Erişim bulunmamaktadır; güvenlik prosedürleri (VPN, NDA vb.) uzun sürmektedir",
+          "points": 4
+        }
+      ],
+      "order": 50
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 51,
+      "section": "1",
+      "text": "Talep analizi sonucunda belirlenen temel iş senaryosu ve modül sayısı hangi aralıktadır?",
+      "reference": "BABOK v3 §3.1 (Complexity and Risk); COCOMO II (yazılım büyüklüğü)",
+      "options": [
+        {
+          "label": "Tek iş senaryosu / tek fonksiyon",
+          "points": 1
+        },
+        {
+          "label": "2–5 iş senaryosu, tek modül",
+          "points": 2
+        },
+        {
+          "label": "6–15 iş senaryosu, 2–3 modül",
+          "points": 4
+        },
+        {
+          "label": "16–30 iş senaryosu, 4–6 modül",
+          "points": 6
+        },
+        {
+          "label": "30’dan fazla iş senaryosu veya 7 ve üzeri modül",
+          "points": 8
+        }
+      ],
+      "order": 51
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 52,
+      "section": "1",
+      "text": "Çözümde uygulanacak iş kuralları, onay akışları ve hesaplamaların karmaşıklık düzeyi nedir?",
+      "reference": "BABOK v3 Teknik: Business Rules Analysis; COCOMO II CPLX (ürün karmaşıklığı)",
+      "options": [
+        {
+          "label": "İş kuralı bulunmamaktadır / basit kayıt işlemi",
+          "points": 0
+        },
+        {
+          "label": "Birkaç basit iş kuralı, tek akış",
+          "points": 1
+        },
+        {
+          "label": "Onay akışı veya hesaplama içeren orta düzey kurallar",
+          "points": 2
+        },
+        {
+          "label": "Çok adımlı, çok rollü ve istisna durumları içeren akışlar",
+          "points": 3
+        },
+        {
+          "label": "Mevzuata dayalı hesaplama, karar tabloları ve çok senaryolu akışlar",
+          "points": 4
+        }
+      ],
+      "order": 52
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 53,
+      "section": "1",
+      "text": "Talepten etkilenen birim, kullanıcı grubu ve paydaş yapısı hangi genişliktedir?",
+      "reference": "BABOK v3 §3.2; ISO/IEC/IEEE 29148:2018 §6.3 (paydaş ihtiyaçları)",
+      "options": [
+        {
+          "label": "Tek birim, tek kullanıcı grubu",
+          "points": 0
+        },
+        {
+          "label": "Tek birim, birden fazla kullanıcı rolü",
+          "points": 1
+        },
+        {
+          "label": "2–3 birim veya kullanıcı grubu",
+          "points": 2
+        },
+        {
+          "label": "4 ve üzeri birim veya kurum dışı kullanıcılar",
+          "points": 3
+        },
+        {
+          "label": "Kurumlar arası / çoklu şirket / geniş son kullanıcı kitlesi",
+          "points": 4
+        }
+      ],
+      "order": 53
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 54,
+      "section": "1",
+      "text": "Gereksinimlerin onaylanması ve kabulü hangi resmiyet düzeyinde yürütülecektir?",
+      "reference": "BABOK v3 §3.1 (Formality and Level of Detail), §5.5; ISO/IEC/IEEE 29148:2018 (izlenebilirlik)",
+      "options": [
+        {
+          "label": "Sözlü veya e-posta onayı yeterlidir",
+          "points": 0
+        },
+        {
+          "label": "Tek onaycının yazılı onayı gereklidir",
+          "points": 2
+        },
+        {
+          "label": "Birden fazla paydaşın yazılı onayı gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Sözleşme / teklif eki olarak resmî doküman onayı gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Kabul komisyonu, denetim veya ihale şartnamesi kapsamında izlenebilir onay zorunludur",
+          "points": 6
+        }
+      ],
+      "order": 54
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 55,
+      "section": "1",
+      "text": "Talep hangi düzeyde mevzuat, kişisel veri veya düzenleyici kurum yükümlülüğü içermektedir?",
+      "reference": "6698 sayılı KVKK md. 6, md. 9; (EU) 2024/1689 Yapay Zekâ Tüzüğü; BABOK v3 §3.1",
+      "options": [
+        {
+          "label": "Mevzuat veya kişisel veri etkisi bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Sınırlı kişisel veri (ör. çalışan iletişim bilgisi) işlenmektedir",
+          "points": 2
+        },
+        {
+          "label": "Kişisel veri yaygın olarak işlenmektedir veya kurumsal politika uyumu gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Özel nitelikli kişisel veri, yurt dışı aktarım veya sektörel düzenleme (BDDK, SPK, EPDK, sağlık vb.) bulunmaktadır",
+          "points": 5
+        },
+        {
+          "label": "Düzenleyici kurum onayına / denetimine tabidir veya yüksek riskli yapay zekâ sistemi niteliğindedir",
+          "points": 6
+        }
+      ],
+      "order": 55
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 56,
+      "section": "1",
+      "text": "Sistemde işlenecek bilginin gizlilik, bütünlük ve erişilebilirlik açısından kritiklik düzeyi nedir?",
+      "reference": "Bilgi ve İletişim Güvenliği Rehberi (varlık grubu kritiklik derecelendirmesi); ISO/IEC 27001:2022; COCOMO II RELY",
+      "options": [
+        {
+          "label": "Düşük: kamuya açık bilgi, kesintinin etkisi ihmal edilebilir",
+          "points": 0
+        },
+        {
+          "label": "Düşük–orta: kurum içi genel bilgi, kesinti tek kullanıcı grubunu etkiler",
+          "points": 1
+        },
+        {
+          "label": "Orta: kurum içi gizli bilgi, kesinti bir birimin işini durdurur",
+          "points": 2
+        },
+        {
+          "label": "Yüksek: ticari sır / finansal veri, kesinti kurum genelini etkiler",
+          "points": 3
+        },
+        {
+          "label": "Çok yüksek: kritik hizmet, yüksek veri hacmi; ihlal ciddi mali / hukuki / itibar zararı doğurur",
+          "points": 4
+        }
+      ],
+      "order": 56
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 57,
+      "section": "1",
+      "text": "Çözümün diğer sistemlerle kuracağı entegrasyon ve arayüz yapısı nasıldır?",
+      "reference": "ISO/IEC/IEEE 29148:2018 §9.6 (SRS – dış arayüz gereksinimleri)",
+      "options": [
+        {
+          "label": "Entegrasyon bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Tek yönlü dosya aktarımı veya basit veri alışverişi",
+          "points": 1
+        },
+        {
+          "label": "1–2 sistemle çift yönlü entegrasyon (API / servis)",
+          "points": 2
+        },
+        {
+          "label": "3–5 sistemle entegrasyon",
+          "points": 3
+        },
+        {
+          "label": "6 ve üzeri, gerçek zamanlı veya kurum dışı kritik entegrasyonlar",
+          "points": 4
+        }
+      ],
+      "order": 57
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 58,
+      "section": "1",
+      "text": "Veri modeli, veri aktarımı (göç) ve raporlama ihtiyacı hangi kapsamdadır?",
+      "reference": "BABOK v3 Teknik: Data Modelling, Data Dictionary; COCOMO II DATA",
+      "options": [
+        {
+          "label": "Basit kayıt yapısı, veri aktarımı ve özel rapor bulunmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Az sayıda veri varlığı ve standart listeler",
+          "points": 1
+        },
+        {
+          "label": "Orta ölçekli veri modeli ve birkaç yönetim raporu",
+          "points": 2
+        },
+        {
+          "label": "Kapsamlı veri modeli ile birlikte mevcut sistemlerden veri aktarımı",
+          "points": 3
+        },
+        {
+          "label": "Yüksek hacimli veri göçü, çok kaynaklı raporlama veya gösterge paneli / veri ambarı",
+          "points": 4
+        }
+      ],
+      "order": 58
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 59,
+      "section": "1",
+      "text": "Performans, erişilebilirlik, kullanılabilirlik ve süreklilik beklentileri hangi düzeydedir?",
+      "reference": "ISO/IEC 25010:2023; COCOMO II RELY, TIME",
+      "options": [
+        {
+          "label": "Standart beklentiler; özel hedef tanımlanmamıştır",
+          "points": 0
+        },
+        {
+          "label": "Belirli kullanılabilirlik / arayüz beklentileri bulunmaktadır",
+          "points": 1
+        },
+        {
+          "label": "Tanımlı performans veya erişilebilirlik hedefleri bulunmaktadır",
+          "points": 2
+        },
+        {
+          "label": "Hizmet seviyesi taahhüdüne (SLA) bağlı 7x24 çalışma veya yüksek eşzamanlı kullanım",
+          "points": 3
+        },
+        {
+          "label": "Kesintisiz hizmet, felaket kurtarma ve yüksek erişilebilirlik zorunludur",
+          "points": 4
+        }
+      ],
+      "order": 59
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 60,
+      "section": "1",
+      "text": "Çözümün kullanım ömrü ve bakım sorumluluğunun devri dokümantasyon ihtiyacını nasıl etkilemektedir?",
+      "reference": "COCOMO II DOCU (yaşam döngüsü ihtiyacına uygun dokümantasyon); ISO/IEC/IEEE 15289:2019; ISO/IEC/IEEE 12207:2026",
+      "options": [
+        {
+          "label": "Kısa ömürlü / tek seferlik kullanım",
+          "points": 0
+        },
+        {
+          "label": "Kurum içi kullanım, bakımı geliştiren ekip yapacaktır",
+          "points": 1
+        },
+        {
+          "label": "Uzun süreli kullanım, bakımı geliştiren ekip yapacaktır",
+          "points": 2
+        },
+        {
+          "label": "Bakım başka bir ekibe veya şirkete devredilecektir",
+          "points": 3
+        },
+        {
+          "label": "Kaynak kod ve teknik doküman teslimi sözleşmeseldir / uzun garanti ve çoklu ekip bakımı öngörülmektedir",
+          "points": 4
+        }
+      ],
+      "order": 60
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 61,
+      "section": "1",
+      "text": "Grup içi hizmet işleminin vergi, muhasebe ve denetim açısından belgelendirme gereksinimi hangi düzeydedir?",
+      "reference": "5520 sayılı Kurumlar Vergisi Kanunu md. 13; OECD Transfer Fiyatlandırması Rehberi Bölüm VII; TMS 24",
+      "options": [
+        {
+          "label": "Grup içi bedel ve raporlama öngörülmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Basit maliyet yansıtması yapılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Grup içi hizmet sözleşmesi ve maliyet dağıtım anahtarı gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Emsallere uygunluk belgelendirmesine / transfer fiyatlandırması raporuna girdi sağlanacaktır",
+          "points": 5
+        },
+        {
+          "label": "Çok şirketli maliyet paylaşımı, bağımsız denetim ve TMS 24 açıklaması kapsamındadır",
+          "points": 6
+        }
+      ],
+      "order": 61
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 62,
+      "section": "1",
+      "text": "Çözümün grup şirketlerinde kullanım kapsamı ve grup standartlarına uyum gereksinimi nedir?",
+      "reference": "BABOK v3 §3.1; ISO/IEC 27001:2022; 6698 sayılı KVKK",
+      "options": [
+        {
+          "label": "Tek şirket, grup standardı uygulanmamaktadır",
+          "points": 0
+        },
+        {
+          "label": "Tek şirket, grup BT standartlarına uyum gereklidir",
+          "points": 2
+        },
+        {
+          "label": "İki şirket ortak kullanacaktır",
+          "points": 3
+        },
+        {
+          "label": "3 ve üzeri şirket; şirket bazında veri ayrımı ve yetkilendirme gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Grup geneli yaygınlaştırma; şirketlere göre farklılaşan kurallar uygulanacaktır",
+          "points": 6
+        }
+      ],
+      "order": 62
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 63,
+      "section": "2",
+      "text": "Talep analizi görüşmeleri sonrasında ihtiyaç ve kapsamda kalan belirsizlik hangi düzeydedir?",
+      "reference": "BABOK v3 §4.1, §6.1; COCOMO II PREC / FLEX (ölçek faktörleri)",
+      "options": [
+        {
+          "label": "Net: açık konu bulunmamaktadır",
+          "points": 1
+        },
+        {
+          "label": "Talep Analiz listesindeki soruların %10’undan azı açıktır, etkisi düşüktür",
+          "points": 2
+        },
+        {
+          "label": "Soruların %10–25’i açıktır veya bazı ana konular netleşmemiştir",
+          "points": 4
+        },
+        {
+          "label": "Soruların %26–50’si açıktır, ana kapsam kararları beklenmektedir",
+          "points": 6
+        },
+        {
+          "label": "Soruların %50’den fazlası açıktır / çözümün bizim tarafımızdan keşfedilmesi beklenmektedir",
+          "points": 8
+        }
+      ],
+      "order": 63
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 64,
+      "section": "2",
+      "text": "Ekibin bu tür bir çözümü daha önce geliştirmiş olma düzeyi nedir?",
+      "reference": "COCOMO II PREC (benzerlik), APEX (uygulama deneyimi)",
+      "options": [
+        {
+          "label": "Aynı tür çözüm defalarca geliştirilmiştir, yeniden kullanılabilir bileşen vardır",
+          "points": 0
+        },
+        {
+          "label": "Benzer çözüm geliştirilmiştir",
+          "points": 2
+        },
+        {
+          "label": "Kısmen benzer çözüm geliştirilmiştir",
+          "points": 3
+        },
+        {
+          "label": "Alan yenidir, ekibin deneyimi sınırlıdır",
+          "points": 5
+        },
+        {
+          "label": "Ekipte bu tür çözüm deneyimi bulunmamaktadır",
+          "points": 6
+        }
+      ],
+      "order": 64
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 65,
+      "section": "2",
+      "text": "Çözümde kullanılacak teknolojinin ekip açısından yenilik düzeyi ve teknik belirsizliği nedir?",
+      "reference": "COCOMO II RESL (mimari / risk çözümü), LTEX, PLEX; BABOK v3 §6.3",
+      "options": [
+        {
+          "label": "Ekibin standart teknoloji yığını kullanılacaktır",
+          "points": 0
+        },
+        {
+          "label": "Küçük yeni bileşen / kütüphane kullanılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Kısmen yeni teknoloji kullanılacaktır",
+          "points": 3
+        },
+        {
+          "label": "Yeni teknoloji araştırması gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Kavram kanıtlama (POC) / prototip zorunludur (ör. yapay zekâ, görüntü işleme)",
+          "points": 6
+        }
+      ],
+      "order": 65
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 66,
+      "section": "2",
+      "text": "Mevcut iş sürecinin (As-Is) anlaşılması için gereken analiz derinliği nedir?",
+      "reference": "BABOK v3 §6.1 (Analyze Current State), Teknik: Process Modelling",
+      "options": [
+        {
+          "label": "Mevcut süreç yoktur veya güncel olarak belgelenmiştir",
+          "points": 0
+        },
+        {
+          "label": "Belgelenmiş süreç doğrulanacaktır",
+          "points": 1
+        },
+        {
+          "label": "Belgesiz süreç kısmen modellenecektir",
+          "points": 2
+        },
+        {
+          "label": "Birimler arası çok adımlı süreç modellenecek, yerinde gözlem yapılacaktır",
+          "points": 3
+        },
+        {
+          "label": "Süreç yeniden tasarlanacaktır (iş süreci yeniden yapılandırması)",
+          "points": 4
+        }
+      ],
+      "order": 66
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 67,
+      "section": "2",
+      "text": "Konu uzmanlarına, mevcut dokümanlara ve örnek verilere erişim hangi düzeydedir?",
+      "reference": "BABOK v3 §3.2, §4.1 (Prepare for Elicitation)",
+      "options": [
+        {
+          "label": "Konu uzmanları erişilebilir, dokümanlar eksiksizdir",
+          "points": 0
+        },
+        {
+          "label": "Küçük eksikler bulunmaktadır",
+          "points": 1
+        },
+        {
+          "label": "Kısmen erişilebilir / kısmen belgelenmiştir",
+          "points": 2
+        },
+        {
+          "label": "Konu uzmanı erişimi kısıtlıdır, doküman yetersizdir",
+          "points": 3
+        },
+        {
+          "label": "Bilgi kaynağı bulunmamaktadır veya çok sayıda paydaştan derlenmesi gerekmektedir",
+          "points": 4
+        }
+      ],
+      "order": 67
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 68,
+      "section": "2",
+      "text": "Paydaşların beklenti ve öncelikleri arasındaki uyum düzeyi nedir?",
+      "reference": "BABOK v3 §5.5 (Approve Requirements), §3.2",
+      "options": [
+        {
+          "label": "Tek karar verici; beklentiler uyumludur",
+          "points": 0
+        },
+        {
+          "label": "Küçük farklılıklar bulunmaktadır",
+          "points": 1
+        },
+        {
+          "label": "Birkaç farklı beklenti bulunmaktadır",
+          "points": 2
+        },
+        {
+          "label": "Çatışan öncelikler bulunmaktadır; çalıştay gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Belirgin çatışma; çok kurumlu müzakere ve uzlaştırma gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 68
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 69,
+      "section": "2",
+      "text": "Entegre olunacak veya etkilenecek mevcut sistemler için gereken teknik inceleme düzeyi nedir?",
+      "reference": "COCOMO II RESL; ISO/IEC/IEEE 12207:2026 (teknik süreçler)",
+      "options": [
+        {
+          "label": "Teknik inceleme gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Güncel API / arayüz dokümanı hazırdır",
+          "points": 1
+        },
+        {
+          "label": "Tek sistem incelenecektir",
+          "points": 2
+        },
+        {
+          "label": "Birden fazla sistem, dokümansız arayüzler incelenecektir",
+          "points": 3
+        },
+        {
+          "label": "Eski (legacy) sistemler için tersine mühendislik gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 69
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 70,
+      "section": "2",
+      "text": "Veri kalitesi, veri eşleştirme ve göç için gereken araştırma düzeyi nedir?",
+      "reference": "BABOK v3 Teknik: Data Mining, Data Modelling",
+      "options": [
+        {
+          "label": "Veri araştırması gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Küçük örnek veri incelemesi yeterlidir",
+          "points": 1
+        },
+        {
+          "label": "Veri kalitesi incelemesi gereklidir",
+          "points": 2
+        },
+        {
+          "label": "Çok kaynaklı veri eşleştirmesi gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Yüksek hacimli / düşük kaliteli veride profilleme ve temizleme analizi gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 70
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 71,
+      "section": "2",
+      "text": "Uyum gereksinimlerinin netleştirilmesi için gereken mevzuat araştırması düzeyi nedir?",
+      "reference": "6698 sayılı KVKK; (EU) 2024/1689; BABOK v3 §6.3",
+      "options": [
+        {
+          "label": "Mevzuat araştırması gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Bilinen kurallar uygulanacaktır",
+          "points": 1
+        },
+        {
+          "label": "KVKK uygunluk incelemesi yapılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Sektörel mevzuat araştırması ve hukuk görüşü gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Çoklu yargı alanı (yurt dışı aktarım, AB Yapay Zekâ Tüzüğü vb.) veya düzenleyici kurum görüşü gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 71
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 72,
+      "section": "2",
+      "text": "Çözüm seçeneklerinin (hazır ürün / özel geliştirme / hibrit) değerlendirilmesi için gereken çalışma düzeyi nedir?",
+      "reference": "BABOK v3 §6.4, §7.5, §7.6; SBB Kamu BİT Projeleri Hazırlama Rehberi (2023)",
+      "options": [
+        {
+          "label": "Çözüm yaklaşımı bellidir, değerlendirme gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Kısa karşılaştırma yeterlidir",
+          "points": 1
+        },
+        {
+          "label": "2–3 alternatif karşılaştırılacaktır",
+          "points": 2
+        },
+        {
+          "label": "Piyasa araştırması ve maliyet–fayda analizi gereklidir",
+          "points": 3
+        },
+        {
+          "label": "Kapsamlı fizibilite etüdü gereklidir",
+          "points": 4
+        }
+      ],
+      "order": 72
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 73,
+      "section": "2",
+      "text": "Grup şirketlerinin gereksinimlerinin uyumlaştırılması için gereken çalışma düzeyi nedir?",
+      "reference": "BABOK v3 §6.2, §5.5",
+      "options": [
+        {
+          "label": "Tek şirket; uyumlaştırma gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "İki şirket, süreçler benzerdir",
+          "points": 2
+        },
+        {
+          "label": "Şirketler arası farklar küçüktür",
+          "points": 3
+        },
+        {
+          "label": "Belirgin farklılıklar bulunmaktadır; ortak süreç modeli çalışması gereklidir",
+          "points": 5
+        },
+        {
+          "label": "Tüm grup için standart süreç tasarımı gereklidir",
+          "points": 6
+        }
+      ],
+      "order": 73
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "Affiliated",
+      "no": 74,
+      "section": "2",
+      "text": "Grup ortak altyapısı ve grup yönetişim mekanizmalarının incelenmesi için gereken çalışma düzeyi nedir?",
+      "reference": "PMBOK Guide 8. Baskı – Yönetişim; ISO/IEC/IEEE 12207:2026",
+      "options": [
+        {
+          "label": "İnceleme gerekmemektedir",
+          "points": 0
+        },
+        {
+          "label": "Grup BT standartları kontrol edilecektir",
+          "points": 2
+        },
+        {
+          "label": "Ortak bir sistemle entegrasyon incelenecektir",
+          "points": 3
+        },
+        {
+          "label": "Grup ERP / ortak kimlik yönetimi incelenecektir",
+          "points": 5
+        },
+        {
+          "label": "Grup BT komitesi onayı ve çoklu ortak sistem incelemesi gereklidir",
+          "points": 6
+        }
+      ],
+      "order": 74
+    }
+  ]
+}

@@ -7,6 +7,7 @@ using Isdlc.Domain.Notifications;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
+using Isdlc.Domain.QuestionBank;
 using Isdlc.Domain.Requirements;
 using Isdlc.Domain.Risks;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,11 @@ public interface IApplicationDbContext
     DbSet<Risk> Risks { get; }
     DbSet<ProjectAssessment> ProjectAssessments { get; }
     DbSet<Notification> Notifications { get; }
+    DbSet<QuestionSet> QuestionSets { get; }
+    DbSet<Question> Questions { get; }
+    DbSet<QuestionOption> QuestionOptions { get; }
+    DbSet<Questionnaire> Questionnaires { get; }
+    DbSet<QuestionAnswer> QuestionAnswers { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

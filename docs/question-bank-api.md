@@ -2,7 +2,7 @@
 
 Şirketin dört formu aynı yapıdadır: bir **iş tipi** ve **alt kategori** seçilir, o seçime ait soru listesi çıkar, her soru
 projede cevaplanır, formun sonucu cevaplardan hesaplanır. Bu doküman o ortak yapıyı (soru setleri, sorular, seçenekler,
-cevaplar) ve uç noktalarını anlatır. Durum: **taslak, ekip onayı bekliyor.** Sorumlu: Baran.
+cevaplar) ve uç noktalarını anlatır. Durum: sözleşme **onaylandı** (#117); entity'ler, migration ve seed uygulandı (2. adım). Sorumlu: Baran.
 Plan: [phase-4-plan.md](phase-4-plan.md) → B1. Veri modeli: [data-model.md](data-model.md) → "Soru bankası".
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601,
@@ -231,7 +231,7 @@ kombinasyonda veritabanısız test edilir (AGENTS.md Bölüm 9). Eşikler seed'd
 ## Uygulama sırası (her biri ayrı PR)
 
 1. Bu doküman (ekip onayı)
-2. Entity'ler, migration, seeder ve dört setin JSON dosyaları (Excel'den çıkarma betiği repoya konmaz; dosyalar elle doğrulanır)
+2. Entity'ler, migration, seeder ve dört setin JSON dosyaları (Excel'den çıkarma betiği repoya konmaz; dosyaların formlarla aynı olduğunu `QuestionSetFileTests` doğrular) ✅
 3. Servisler ve API; `QuestionnaireRules` testleri
 4. Ortak ekran bileşeni (`shared/question-bank`); ilk kullanan B2 olur
 

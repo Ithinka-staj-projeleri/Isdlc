@@ -8,6 +8,7 @@ using Isdlc.Domain.Notifications;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
+using Isdlc.Domain.QuestionBank;
 using Isdlc.Domain.Requirements;
 using Isdlc.Domain.Risks;
 using Isdlc.Infrastructure.Persistence.Converters;
@@ -32,6 +33,11 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
     public DbSet<Risk> Risks => Set<Risk>();
     public DbSet<ProjectAssessment> ProjectAssessments => Set<ProjectAssessment>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<QuestionSet> QuestionSets => Set<QuestionSet>();
+    public DbSet<Question> Questions => Set<Question>();
+    public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
+    public DbSet<Questionnaire> Questionnaires => Set<Questionnaire>();
+    public DbSet<QuestionAnswer> QuestionAnswers => Set<QuestionAnswer>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

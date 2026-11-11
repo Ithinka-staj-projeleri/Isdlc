@@ -389,17 +389,20 @@ QuestionAnswer * ──── 0..1 QuestionOption
 | --- | --- |
 | `QuestionSet` | `Id`, `Code` (`level`, `request-analysis`, `risk-analysis`, `internal-approval`; benzersiz), `Name`, `SourceDocument`, `Version`, `AnswerMode` (`SharedOptions` / `QuestionOptions`), `Bands` (formlara özgü eşikler, JSON) |
 | `Question` | `Id`, `QuestionSetId`, `Key` (kalıcı anahtar, benzersiz), `WorkType` (akış anahtarı), `Subcategory` (`RequestSource?`; boş = bütün alt kategoriler), `No`, `Order`, `Section?`, `Group?`, `Topic?`, `Text` (2000), `Requirement` (`QuestionRequirement?`), `ExpectedInfo?`, `RiskDescription?`, `SuggestedAction?`, `Reference?` (1000), `IsActive` |
-| `QuestionOption` | `Id`, `QuestionSetId`, `QuestionId?` (doluysa soruya özgü), `Code`, `Label` (500), `Points?`, `Meaning?` (`OptionMeaning`), `IsScored`, `Order` |
+| `QuestionOption` | `Id`, `QuestionSetId`, `QuestionId?` (doluysa soruya özgü), `Key` (kalıcı anahtar, benzersiz: ortak seçenekte `{set}/{kod}`, soruya özgüde `{soru anahtarı}/{sıra}`), `Label` (500), `Points?`, `Meaning?` (`OptionMeaning`), `IsScored`, `RequiresNote` (form açıklama bekliyor), `Order` |
 
 **İşlem verisi** (`AuditableEntity`, `IAudited`, `IProjectRecord`):
 
 | Entity | Alanlar |
 | --- | --- |
 | `Questionnaire` | `Id`, `ProjectId`, `QuestionSetId` (`(ProjectId, QuestionSetId)` benzersiz), `WorkType`, `Subcategory` (`RequestSource`), `Participants?` (1000), `AssessedOn?` (DateOnly), `ApprovedById?` (FK → User), `ApprovedOn?` |
-| `QuestionAnswer` | `Id`, `QuestionnaireId`, `QuestionId` (`(QuestionnaireId, QuestionId)` benzersiz), `OptionId?`, `Text?` (4000), `Note?` (2000), `Probability?` (1–3), `Severity?` (1–3) |
+| `QuestionAnswer` | `Id`, `QuestionnaireId`, `ProjectId` (denetim kaydı için formunkinin aynısı), `QuestionId` (`(QuestionnaireId, QuestionId)` benzersiz), `OptionId?`, `Text?` (4000), `Note?` (2000), `Probability?` (1–3), `Severity?` (1–3) |
 
 - Formun sonucu (seviye, uygunluk oranı, risk derecesi) ve özet **saklanmaz**, cevaplardan hesaplanır.
 - Dosyadan çıkan soru silinmez, `IsActive = false` olur; cevabı korunur.
+- Seed her açılışta dosyalarla eşitlenir (`QuestionSetSeeder`); dosyalar önce doğrulanır, bozuksa uygulama açılmaz.
+  Dosya değişmediyse veritabanına hiçbir şey yazılmaz.
+- `RequestSource`'a `Affiliated` (İlişkili şirket) eklendi; soruların üçüncü alt kategorisi. Talep formundaki karşılığı D1 ile gelir.
 - Veritabanında `Probability` ve `Severity` için 1–3 kontrolü (check constraint) bulunur.
 
 ## Enum'lar
