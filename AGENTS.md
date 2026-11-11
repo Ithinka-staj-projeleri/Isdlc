@@ -43,10 +43,10 @@ Aşağıdaki liste kesin değildir; kapsam netleştikçe güncellenir.
 | Gösterge paneli | `Dashboard` | Özet göstergeler |
 | Bildirimler | `Notifications` | Uygulama içi bildirimler |
 | Denetim kaydı | `Audit` | Yapılan değişikliklerin kaydı |
-| Yapay zekâ yardımcıları | `Agents` | Toplantı notlarından karar ve aksiyon önerisi (ekip onayıyla MVP'ye alındı) |
+| Yapay zekâ yardımcıları | `Agents` | Toplantı notlarından karar ve aksiyon önerisi (ekip onayıyla MVP'ye alındı); metinden risk, risk için puan ve önleyici aksiyon önerisi |
 
 **Sonraki sürümlere bırakılanlar:** Test & UAT, Teklif & Maliyet, Kaynak Planlama, Faturalama,
-Proje Devir, Otomasyon, toplantı yardımcısı dışındaki AI özellikleri (bkz. [docs/ai-vision.md](docs/ai-vision.md)).
+Proje Devir, Otomasyon, toplantı ve risk yardımcıları dışındaki AI özellikleri (bkz. [docs/ai-vision.md](docs/ai-vision.md)).
 
 ## 4. Klasör yapısı
 
@@ -175,7 +175,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Tutanaktan aktarılan kayıt | `OpenIssue.SourceMeetingId` |
 | Bildirim | `Notification` (alıcı başına bir satır; `ReadAt` okunma zamanı). Modüller yalnızca `INotificationService` ile gönderir |
 | Denetim kaydı | `AuditLog` |
-| Yapay zekâ yardımcısı / önerisi | `Agents` modülü; tutanak önerileri `MeetingSuggestionsDto` (kaydedilmez, formu doldurur) |
+| Yapay zekâ yardımcısı / önerisi | `Agents` modülü; tutanak önerileri `MeetingSuggestionsDto`, risk önerileri `RiskSuggestionsDto` ve `RiskAssessmentSuggestionDto` (kaydedilmez, formu doldurur) |
 
 Yeni bir kavram gerektiğinde önce bu tabloya eklenir.
 

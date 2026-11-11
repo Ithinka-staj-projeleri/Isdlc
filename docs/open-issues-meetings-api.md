@@ -170,7 +170,7 @@ formu doldurur, kişi düzenleyip tutanağı yukarıdaki `POST /meetings` ile ka
 
 | İstek | Açıklama | Başarılı cevap |
 | --- | --- | --- |
-| `GET /agents/status` | Yapay zekâ servisi ayarlı ve çalışıyor mu (butonu göstermek için) | `200` `{ "meetingAssistantEnabled": true }` |
+| `GET /agents/status` | Yapay zekâ servisi ayarlı ve çalışıyor mu (butonları göstermek için) | `200` `{ "meetingAssistantEnabled": true, "riskAssistantEnabled": true }` |
 | `POST /projects/{projectId}/meetings/suggestions` | Ham notlardan öneriler | `200` `MeetingSuggestionsDto` |
 
 ```jsonc
@@ -205,7 +205,7 @@ Hatalar: proje yok `404`, proje aktif değil `409` ("Proje aktif değil; kayıt 
 servis ayarlı değil, çalışmıyor ya da model hata verdi `503` (Türkçe `detail`, ör. "Yapay zekâ servisine şu an ulaşılamıyor.").
 
 Backend, `ai/` servisini `Agents:ServiceUrl` adresinden `X-Agent-Key: Agents:ServiceKey` başlığıyla çağırır
-(`Isdlc.Infrastructure/Agents/HttpMeetingAgentClient.cs`). Tarayıcı Python servisini hiçbir zaman doğrudan çağırmaz.
+(`Isdlc.Infrastructure/Agents/HttpAgentClient.cs`). Tarayıcı Python servisini hiçbir zaman doğrudan çağırmaz.
 
 ## Hata durumları
 

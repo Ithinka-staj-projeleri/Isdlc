@@ -11,6 +11,8 @@ import {
     SaveRisk, severityOf,
 } from '../models/risk';
 import { RiskService } from '../risk.service';
+import { AgentService } from '../../agents/agent.service';
+import { RiskAssessmentSuggestion, SuggestedRisk } from '../../agents/models/risk-suggestions';
 
 type Field = 'title' | 'description' | 'category' | 'probability' | 'impact' | 'mitigation' | 'ownerUserId' | 'status';
 
@@ -23,11 +25,14 @@ type Field = 'title' | 'description' | 'category' | 'probability' | 'impact' | '
 })
 export class RiskFormComponent implements OnInit {
     private readonly riskService = inject(RiskService);
+    private readonly agentService = inject(AgentService);
     private readonly fb = inject(FormBuilder);
 
     readonly projectId = input.required<number>();
     /** null adds a new risk. */
     readonly riskId = input<number | null>(null);
+    /** A new risk filled from the AI assistant's suggestion; the person checks it and saves. */
+    readonly suggestion = input<SuggestedRisk | null>(null);
 
     readonly saved = output<Risk>();
     readonly cancelled = output<void>();
@@ -72,9 +77,18 @@ export class RiskFormComponent implements OnInit {
     /** Messages from the API, by field name. */
     protected readonly serverErrors = signal<Record<string, string[]>>({});
 
+    /** "Puan ve aksiyon öner" is shown only when the AI service is on and the risk can be changed. */
+    protected readonly assistantEnabled = toSignal(this.agentService.riskAssistantEnabled(), { initialValue: false });
+    protected readonly assessing = signal(false);
+    /** The last score suggestion, with its reason; the suggested values are already in the form. */
+    protected readonly assessment = signal<RiskAssessmentSuggestion | null>(null);
+    /** A suggested preventive action not written into the form because the person had already typed one. */
+    protected readonly otherMitigation = signal<string | null>(null);
+
     ngOnInit(): void {
         const id = this.riskId();
         if (id === null) {
+            this.fillFrom(this.suggestion());
             return;
         }
 
@@ -96,6 +110,60 @@ export class RiskFormComponent implements OnInit {
                 this.loading.set(false);
             },
             error: () => this.cancelled.emit(),
+        });
+    }
+
+    /** Asks the AI service for probability, impact and a preventive action for the risk as typed so far. */
+    protected suggestAssessment(): void {
+        const value = this.form.getRawValue();
+        const title = value.title.trim();
+        if (!title || this.assessing()) {
+            return;
+        }
+
+        this.assessing.set(true);
+        this.agentService.suggestRiskAssessment(this.projectId(), title, value.description.trim() || null).subscribe({
+            next: suggestion => {
+                this.assessing.set(false);
+                this.assessment.set(suggestion);
+                if (suggestion.probability !== null && suggestion.impact !== null) {
+                    this.form.patchValue({ probability: suggestion.probability, impact: suggestion.impact });
+                }
+                // Never overwrite what the person wrote; offer the suggestion next to it instead.
+                const mitigation = suggestion.mitigation;
+                if (mitigation && !this.form.controls.mitigation.value.trim()) {
+                    this.form.patchValue({ mitigation });
+                    this.otherMitigation.set(null);
+                } else {
+                    this.otherMitigation.set(mitigation);
+                }
+            },
+            // The error interceptor shows the API's message (service busy, quota...).
+            error: () => this.assessing.set(false),
+        });
+    }
+
+    protected useOtherMitigation(): void {
+        const mitigation = this.otherMitigation();
+        if (mitigation) {
+            this.form.patchValue({ mitigation });
+            this.otherMitigation.set(null);
+        }
+    }
+
+    private fillFrom(suggestion: SuggestedRisk | null): void {
+        if (!suggestion) {
+            return;
+        }
+
+        this.form.patchValue({
+            title: suggestion.title,
+            description: suggestion.description ?? '',
+            mitigation: suggestion.mitigation ?? '',
+            ...(suggestion.category ? { category: suggestion.category } : {}),
+            ...(suggestion.probability !== null && suggestion.impact !== null
+                ? { probability: suggestion.probability, impact: suggestion.impact }
+                : {}),
         });
     }
 

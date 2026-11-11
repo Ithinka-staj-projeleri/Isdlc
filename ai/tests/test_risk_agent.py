@@ -2,6 +2,7 @@ import json
 
 from isdlc_ai.agents.risk_agent import RiskAgent, RiskInput
 from isdlc_ai.llm import FakeLlmClient
+from isdlc_ai.schemas import RiskCategory
 
 NOTES = (
     "ERP entegrasyonu için test ortamı henüz yok. Müşteri BT erişimi gelecek cuma gönderecek. "
@@ -16,8 +17,8 @@ def identified(*risks):
 
 
 def risk(title="ERP test ortamı geç gelirse entegrasyon testleri gecikir.",
-         evidence="ERP entegrasyonu için test ortamı henüz yok."):
-    return {"title": title, "description": None, "evidence": evidence}
+         evidence="ERP entegrasyonu için test ortamı henüz yok.", category="Technical"):
+    return {"title": title, "description": None, "category": category, "evidence": evidence}
 
 
 def assessed(*items):
@@ -39,7 +40,7 @@ def test_run_ChainsThreeTasksWithTheirOwnPrompts():
 
     result = RiskAgent(llm).run(SOURCE)
 
-    assert [run.prompt_version for run in result.runs] == ["risk/identify.v1", "risk/assess.v1", "risk/mitigate.v1"]
+    assert [run.prompt_version for run in result.runs] == ["risk/identify.v2", "risk/assess.v1", "risk/mitigate.v2"]
     assert len({system for system, _ in llm.calls}) == 3
     item = result.items[0]
     assert (item.risk.probability, item.risk.impact, item.risk.score) == (4, 5, 20)
@@ -118,3 +119,57 @@ def test_fromTitles_RunsOnlyAssessAndMitigate():
     assert len(llm.calls) == 2
     assert [item.risk.score for item in result.items] == [6, 16]
     assert [run.task for run in result.runs] == ["risk.assess", "risk.mitigate"]
+
+
+def test_identify_KeepsTheCategory():
+    llm = FakeLlmClient([identified(risk(category="Supplier"))])
+
+    result = RiskAgent(llm).identify(SOURCE)
+
+    assert result.items[0].risk.category == RiskCategory.SUPPLIER
+    assert result.items[0].warnings == []
+
+
+def test_identify_UnknownOrMissingCategory_KeepsTheRiskWithoutCategory():
+    llm = FakeLlmClient([identified(risk(category="Hava durumu"), risk(title="İkinci risk", category=" "))])
+
+    result = RiskAgent(llm).identify(SOURCE)
+
+    assert [item.risk.category for item in result.items] == [None, None]
+    assert any("kategori" in w for w in result.items[0].warnings)
+    assert not any("kategori" in w for w in result.items[1].warnings)
+    assert result.invalid == []
+
+
+def test_fromRisk_SendsTitleAndDescriptionToAssess():
+    llm = FakeLlmClient([assessed((1, 3, 4)), mitigated((1, "- Lisans siparişi erkene alınır"))])
+    agent = RiskAgent(llm)
+
+    result = RiskAgent.from_risk("ISDLC-2026-014", "  Lisans gecikir  ", "Tedarikçi stokta yok dedi.", "4.8 Riskler")
+    agent.mitigate(agent.assess(result))
+
+    _, assess_message = llm.calls[0]
+    assert "1. Lisans gecikir" in assess_message
+    assert "Açıklama: Tedarikçi stokta yok dedi." in assess_message
+    assert "4.8 Riskler" in assess_message
+    assert (result.items[0].risk.score, result.items[0].risk.mitigation) == (12, "- Lisans siparişi erkene alınır")
+
+
+def test_mitigate_PlaceholderTheModelMadeUp_IsFlagged():
+    llm = FakeLlmClient([identified(risk()), assessed((1, 3, 3)),
+                         mitigated((1, "- [TELEFON_1] aranarak müşteri BT hatırlatılır"))])
+
+    result = RiskAgent(llm).run(SOURCE)
+
+    assert any("yer tutucu" in w for w in result.items[0].warnings)
+
+
+def test_mitigate_RealMaskedValue_IsRestoredAndNotFlagged():
+    # The notes have bt@musteri.com; the model may repeat its placeholder, which is put back.
+    llm = FakeLlmClient([identified(risk()), assessed((1, 3, 3)),
+                         mitigated((1, "- [EPOSTA_1] adresine yazılı termin sorulur"))])
+
+    result = RiskAgent(llm).run(SOURCE)
+
+    assert result.items[0].risk.mitigation == "- bt@musteri.com adresine yazılı termin sorulur"
+    assert not any("yer tutucu" in w for w in result.items[0].warnings)

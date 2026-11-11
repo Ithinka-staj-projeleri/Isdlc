@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
@@ -10,6 +10,9 @@ import {
 } from '../models/risk';
 import { RiskFormComponent } from '../risk-form/risk-form.component';
 import { RiskService } from '../risk.service';
+import { AgentService } from '../../agents/agent.service';
+import { SuggestedRisk } from '../../agents/models/risk-suggestions';
+import { RiskAssistantComponent } from '../risk-assistant/risk-assistant.component';
 
 interface HeatCell {
     probability: number;
@@ -26,7 +29,10 @@ const LEVELS = [1, 2, 3, 4, 5];
  */
 @Component({
     selector: 'app-risk-list',
-    imports: [FormsModule, EmptyStateComponent, PaginationComponent, StatusBadgeComponent, RiskFormComponent],
+    imports: [
+        FormsModule, EmptyStateComponent, PaginationComponent, StatusBadgeComponent, RiskFormComponent,
+        RiskAssistantComponent,
+    ],
     templateUrl: './risk-list.component.html',
     styleUrl: './risk-list.component.scss',
 })
@@ -58,6 +64,14 @@ export class RiskListComponent {
 
     /** null: form closed; 'new': adding; a number: editing that risk. */
     protected readonly editing = signal<'new' | number | null>(null);
+
+    /** "Yapay zekâ ile risk öner" is shown only when the AI service is on. */
+    protected readonly assistantEnabled = toSignal(inject(AgentService).riskAssistantEnabled(), { initialValue: false });
+    protected readonly assistantOpen = signal(false);
+    /** The suggestion being added in the form, with its place in the assistant's list. */
+    protected readonly fromSuggestion = signal<{ index: number; suggestion: SuggestedRisk } | null>(null);
+    /** Suggestions already saved as risks; the assistant marks them. */
+    protected readonly addedSuggestions = signal<ReadonlySet<number>>(new Set());
 
     protected readonly risks = rxResource({
         params: () => ({
@@ -126,8 +140,28 @@ export class RiskListComponent {
     }
 
     protected onSaved(): void {
-        this.editing.set(null);
+        const used = this.fromSuggestion();
+        if (used) {
+            this.addedSuggestions.update(added => new Set([...added, used.index]));
+        }
+        this.closeForm();
         this.risks.reload();
         this.matrix.reload();
+    }
+
+    protected openAssistant(): void {
+        this.addedSuggestions.set(new Set());
+        this.assistantOpen.set(true);
+    }
+
+    /** Opens the form filled with the suggestion; the assistant waits behind it with its list. */
+    protected useSuggestion(used: { index: number; suggestion: SuggestedRisk }): void {
+        this.fromSuggestion.set(used);
+        this.editing.set('new');
+    }
+
+    protected closeForm(): void {
+        this.editing.set(null);
+        this.fromSuggestion.set(null);
     }
 }

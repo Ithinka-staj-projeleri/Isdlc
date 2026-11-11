@@ -148,11 +148,63 @@ açık konulardaki aktif kullanıcı kontrolünün aynısıdır.
 Bileşen, `Projects` modülünün (Dide) proje detay sayfasına `projectId` alan bir sekme olarak eklenir; kapanmış projede salt okunurdur.
 Menüdeki genel "Risk Yönetimi" sayfası (bütün projelerin riskleri) MVP'de yoktur; gerekirse `Dashboard` ile birlikte ele alınır.
 
-## Yapay zekâ (sonra)
+## Yapay zekâ önerileri (`Agents`)
 
-Risk ajanı (`ai/isdlc_ai/schemas.py` → `RiskSuggestion`) bu sözleşmeyle hizalıdır: `title` 300, `description` ve `mitigation`
-2000 karakter, `probability` / `impact` 1–5, `score` hesaplanır. Ajan bağlandığında `category` alanının şemaya eklenmesi gerekir.
-Bağlantı MVP kapsamında değildir ([ai-vision.md](ai-vision.md)).
+Riskler sekmesindeki "Yapay zekâ ile risk öner" ve risk formundaki "Yapay zekâ ile puan ve aksiyon öner" butonları için.
+**Hiçbir şey kaydedilmez:** öneri risk formunu doldurur, kişi kontrol edip yukarıdaki `POST /risks` ile kaydeder.
+Butonlar `GET /agents/status` → `riskAssistantEnabled` doğruysa ve proje aktifse görünür. Tasarım: [ai-vision.md](ai-vision.md).
+
+| İstek | Açıklama | Başarılı cevap |
+| --- | --- | --- |
+| `POST /projects/{projectId}/risks/suggestions` | Metinden riskler: bul, puanla, önleyici aksiyon öner | `200` `RiskSuggestionsDto` |
+| `POST /projects/{projectId}/risks/assessment-suggestion` | Formda yazılan risk için olasılık, etki ve önleyici aksiyon | `200` `RiskAssessmentSuggestionDto` |
+
+```jsonc
+// SuggestRisksDto (POST .../risks/suggestions)
+{ "sourceText": "ERP entegrasyonu için test ortamı henüz yok. Müşteri BT erişimi gelecek cuma gönderecek." }
+
+// RiskSuggestionsDto
+{
+  "items": [
+    {
+      "title": "ERP test ortamı geç gelirse entegrasyon testleri gecikir.",
+      "description": null,
+      "category": "Technical",          // null: model kategori vermedi, kişi seçer
+      "probability": 4, "impact": 4,     // null: model puanlamadı (warnings nedenini söyler)
+      "score": 16, "severity": "High",   // RiskRules ile hesaplanır
+      "assessmentReason": "Erişim tarihi belli ama test ortamı henüz kurulmamış.",
+      "mitigation": "Müşteri BT'den yazılı termin alınır; gecikmeye karşı sahte servisle test edilir.",
+      "evidence": "ERP entegrasyonu için test ortamı henüz yok.",
+      "warnings": []
+    }
+  ],
+  "skippedCount": 0,                     // doğrulamadan geçemeyen öneriler; yalnızca sayılır
+  "modelName": "gemini-..."
+}
+
+// SuggestRiskAssessmentDto (POST .../risks/assessment-suggestion)
+{ "title": "Lisans teslimi gecikebilir", "description": null }
+
+// RiskAssessmentSuggestionDto
+{ "probability": 3, "impact": 4, "score": 12, "severity": "Medium",
+  "assessmentReason": "…", "mitigation": "…", "warnings": [], "modelName": "gemini-..." }
+```
+
+| Alan | Kural |
+| --- | --- |
+| `sourceText` | Zorunlu, en fazla 20000 karakter. E-posta, telefon, IBAN ve TCKN modele gitmeden gizlenir; **yalnızca sahte veri** |
+| `title`, `description` (puan önerisi) | Formdaki kurallar: zorunlu / 300, isteğe bağlı / 2000 |
+| `probability`, `impact` | İkisi de 1–5 ise gönderilir; biri eksik ya da aralık dışındaysa ikisi de `null` olur ve uyarı eklenir |
+| `category` | `RiskCategory` değerlerinden biri değilse `null` |
+| `title` (öneri) | Boş ya da 300 karakterden uzun öneri atlanır ve `skippedCount`'a eklenir |
+| `warnings` | Ajanın uyarıları: dayanak metinde bulunamadı, model puanlamadı, geçersiz kategori / puan |
+
+Formda: öneri riskin alanlarını doldurur (sorumlu, işlemi yapan kişi olarak gelir). Puan önerisi olasılık ve etkiyi
+değiştirir; önleyici aksiyon alanı boşsa doldurur, doluysa öneriyi yanında "Bunu kullan" ile gösterir.
+
+Hatalar: proje yok `404`, proje aktif değil `409`, servis ayarlı değil, çalışmıyor ya da model hata verdi `503`
+(Türkçe `detail`). Backend, `ai/` servisinin `POST /v1/risk/suggestions` ve `POST /v1/risk/assessment` uç noktalarını
+`Isdlc.Infrastructure/Agents/HttpAgentClient.cs` ile çağırır; ajanın prompt'ları `ai/isdlc_ai/prompts/risk/`.
 
 ## Ekip onayı bekleyen kararlar
 

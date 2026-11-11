@@ -28,12 +28,6 @@
 
 .button {
     @include ui.button;
-
-    &.ai {
-        border-color: var(--info);
-        background: var(--info);
-        color: #fff;
-    }
 }
 
 .result {

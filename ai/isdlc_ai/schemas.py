@@ -77,15 +77,25 @@ class MeetingMinutesSuggestion(BaseModel):
         }
 
 
-class RiskSuggestion(BaseModel):
-    """A risk the agent suggests.
+class RiskCategory(StrEnum):
+    """Same values as RiskCategory in the ISDLC API (docs/risks-api.md)."""
 
-    The Risks module has no API contract yet, so the field limits and the 1-5 scale are assumptions
-    to be aligned with the Risks contract when it is written.
-    """
+    TECHNICAL = "Technical"
+    SCOPE = "Scope"
+    STAKEHOLDER = "Stakeholder"
+    SCHEDULE = "Schedule"
+    COST = "Cost"
+    DATA = "Data"
+    SECURITY_PRIVACY = "SecurityPrivacy"
+    SUPPLIER = "Supplier"
+
+
+class RiskSuggestion(BaseModel):
+    """A risk the agent suggests. Same limits as CreateRiskDto (docs/risks-api.md), plus the evidence and the reason."""
 
     title: str = Field(min_length=1, max_length=300)
     description: str | None = Field(default=None, max_length=2000)
+    category: RiskCategory | None = None
     evidence: str | None = Field(default=None, description="Quote from the source text; empty for risks a person typed")
     probability: int | None = Field(default=None, ge=1, le=5)
     impact: int | None = Field(default=None, ge=1, le=5)

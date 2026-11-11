@@ -1,9 +1,10 @@
 # Yapay Zekâ Ajanları — Vizyon
 
 ISDLC sürecindeki işlerin bir kısmının yapay zekâ ajanlarıyla hazırlanması için ilk tasarım notu.
-Durum: **toplantı yardımcısı MVP'de (ekip onayı); geri kalanı vizyon.** Sorumlu: Erva.
+Durum: **toplantı ve risk yardımcıları uygulamada; geri kalanı vizyon.** Sorumlu: Erva.
 Komut satırındaki denemenin ardından ekip, toplantı ajanını Python servisi olarak uygulamaya almayı onayladı:
-bkz. "Uygulamada: toplantı yardımcısı". Belgenin geri kalanı sonraki adımların tasarımıdır.
+bkz. "Uygulamada: toplantı yardımcısı". Risks modülü gelince risk ajanı aynı yoldan bağlandı: bkz. "Uygulamada: risk
+yardımcısı". Belgenin geri kalanı sonraki adımların tasarımıdır.
 
 ## Temel ilke: ajan hazırlar, insan onaylar
 
@@ -253,6 +254,20 @@ Tutanak formu ──► POST /api/v1/projects/{id}/meetings/suggestions (.NET: g
 - Servis çalışmıyorsa `GET /api/v1/agents/status` kapalı döner ve buton görünmez.
 - Sözleşme: [open-issues-meetings-api.md](open-issues-meetings-api.md) → "Yapay zekâ önerileri".
 
+## Uygulamada: risk yardımcısı
+
+Riskler sekmesinde (akış 4.8, Risk Analiz Formu) iki kullanım:
+
+| Buton | Ne yapar | Ajan görevleri |
+| --- | --- | --- |
+| "Yapay zekâ ile risk öner" | Yapıştırılan metinden (toplantı notu, e-posta) riskleri bulur; her biri için kategori, olasılık, etki, gerekçe, önleyici aksiyon ve dayanak cümle önerir. "Forma aktar" risk formunu doldurur; kişi kontrol edip kaydeder. Liste açık kalır, birkaç risk art arda eklenebilir | bul → puanla → önlem öner (3 model çağrısı) |
+| "Yapay zekâ ile puan ve aksiyon öner" (risk formunda) | Kişinin yazdığı risk için olasılık, etki ve önleyici aksiyon önerir. Puanı forma işler; önleyici aksiyon alanı doluysa üzerine yazmaz, öneriyi yanında gösterir | puanla → önlem öner (2 model çağrısı) |
+
+- Akış toplantı yardımcısıyla aynıdır: tarayıcı → .NET (giriş, proje aktif mi, mevcut adım) → `ai/` servisi
+  (`/v1/risk/suggestions`, `/v1/risk/assessment`) → .NET doğrular (puan 1–5, kategori, başlık uzunluğu) → form.
+- Skor ve seviye modelden istenmez; `RiskRules` ile hesaplanır.
+- Sözleşme: [risks-api.md](risks-api.md) → "Yapay zekâ önerileri".
+
 ## Deneme: toplantı ve risk ajanları (komut satırı)
 
 Ajan fikrini gerçek kodla sınamak için yapılan deneme. Kod: [`ai/`](../ai/README.md). Komut satırı hâlâ çalışır;
@@ -275,13 +290,13 @@ Denemede iki ajan ve beş görev var:
 | --- | --- | --- | --- | --- |
 | Toplantı | Açık konu önerileri | `meeting/open_issues.v1` | `CreateOpenIssueDto` | Komut satırında onaylanır, API'ye yazılır |
 | Toplantı | Tutanak taslağı (tür, katılımcılar, gündem) | `meeting/minutes.v1` | `CreateMeetingDto` önizlemesi; kararlar ve aksiyonlar ilk görevden gelir | Meetings API'si gelince |
-| Risk | Riskleri bulma | `risk/identify.v1` | Risk başlığı, açıklama, dayanak | Risks API'si gelince |
-| Risk | Olasılık ve etki puanlama (1-5) | `risk/assess.v1` | Puan ve gerekçe; skor kodda hesaplanır | Risks API'si gelince |
-| Risk | Önleyici aksiyon | `risk/mitigate.v1` | Aksiyon metni | Risks API'si gelince |
+| Risk | Riskleri bulma | `risk/identify.v2` | Risk başlığı, açıklama, kategori, dayanak | Uygulamada: risk formuna aktarılır |
+| Risk | Olasılık ve etki puanlama (1-5) | `risk/assess.v1` | Puan ve gerekçe; skor kodda hesaplanır | Uygulamada: risk formuna aktarılır |
+| Risk | Önleyici aksiyon | `risk/mitigate.v2` | Aksiyon metni | Uygulamada: risk formuna aktarılır |
 
 Risk ajanının üç görevi sırayla çalışır: bul, puanla, önlem öner. Puanlama ve önlem görevleri, kişinin yazdığı
-risklerde tek başına da çalışır; ileride Risks ekranındaki "puan öner" butonu bu görevleri kullanabilir.
-Risk alanları ve 1-5 ölçeği varsayımdır; Risks sözleşmesi yazılınca ona göre düzeltilir.
+riskte tek başına da çalışır (risk formundaki "puan ve aksiyon öner" butonu). Risk alanları Risks sözleşmesiyle
+hizalıdır; `identify.v2` kategori de önerir (`identify.v1` iz için duruyor).
 
 Denemenin sonunda ekibe şu sorularla dönülür: Ajan beklenen kayıtların ne kadarını buluyor? Ne sıklıkla uyduruyor
 (dayanağı notlarda olmayan öneri)? İnceleme süresi elle girmekten kısa mı?
@@ -293,7 +308,7 @@ Denemenin sonunda ekibe şu sorularla dönülür: Ajan beklenen kayıtların ne 
 | A | **Deneme:** toplantı ajanı, komut satırından onay ✅ | OpenIssues API'si (hazır) |
 | 0 | MVP tamamlanır | — |
 | 1 | Ekip kararı: Python servisi ✅ (onaylandı); `AgentRun` / `AgentSuggestion` tabloları ve model sağlayıcısı bekliyor | Deneme sonuçları |
-| 2 | Toplantı ajanı uygulamaya girer: tutanak formunda öneri butonu (şu an); öneri paneli sonra | Meetings modülü (hazır) |
+| 2 | Toplantı ajanı uygulamaya girer: tutanak formunda öneri butonu ✅; risk ajanı Riskler sekmesinde ✅; öneri paneli sonra | Meetings ve Risks modülleri (hazır) |
 | 3 | Pilot: Aşama 4'te doküman ajanı + gözden geçirme ajanı | Şablonlar, kontrol listesi, doküman içeriği saklama |
 | 4 | Ölçüm: önerilerin kabul, düzeltme ve ret oranları | Gerçek kullanım |
 | 5 | Diğer ajan tipleri ve `StepAutomation` ayar ekranı | Pilotun başarılı olması |

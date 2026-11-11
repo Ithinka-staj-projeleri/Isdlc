@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Isdlc.Application.Tests.Agents;
 
 /// <summary>
-/// The .NET side of the meeting assistant, with the AI service replaced by FakeMeetingAgentClient (no model is called).
+/// The .NET side of the meeting assistant, with the AI service replaced by FakeAgentClient (no model is called).
 /// Expectations: docs/open-issues-meetings-api.md → "Yapay zekâ önerileri" and docs/ai-vision.md.
 /// Cross test (PLANNING.md): Dide → Erva's modules.
 /// </summary>
@@ -23,7 +23,7 @@ public class AgentServiceTests(DatabaseFixture database)
     private static SuggestMeetingItemsDto Notes(string notes = "Ekran taslaklarını Can Öztürk hazırlayacak.") =>
         new() { MeetingDate = MeetingDate, Notes = notes };
 
-    private async Task<T> AsAsync<T>(string? email, FakeMeetingAgentClient agent, Func<IAgentService, Task<T>> action)
+    private async Task<T> AsAsync<T>(string? email, FakeAgentClient agent, Func<IAgentService, Task<T>> action)
     {
         var userId = email is null ? (int?)null : await TestProjects.UserIdAsync(database, email);
         await using var scope = database.CreateScope();
@@ -32,10 +32,10 @@ public class AgentServiceTests(DatabaseFixture database)
         return await action(service);
     }
 
-    private Task<MeetingSuggestionsDto> SuggestAsync(FakeMeetingAgentClient agent, int projectId, SuggestMeetingItemsDto? request = null) =>
+    private Task<MeetingSuggestionsDto> SuggestAsync(FakeAgentClient agent, int projectId, SuggestMeetingItemsDto? request = null) =>
         AsAsync(TestProjects.Analyst, agent, s => s.SuggestMeetingItemsAsync(projectId, request ?? Notes(), CancellationToken.None));
 
-    private static FakeMeetingAgentClient Answering(params MeetingAgentItem[] items) =>
+    private static FakeAgentClient Answering(params MeetingAgentItem[] items) =>
         new() { Result = new MeetingAgentResult("ERP ve raporlar konuşuldu.", items, 0, "gemini-test") };
 
     private static MeetingAgentItem Item(
@@ -49,10 +49,11 @@ public class AgentServiceTests(DatabaseFixture database)
     [InlineData(false)]
     public async Task GetStatus_FollowsTheService(bool available)
     {
-        var status = await AsAsync(TestProjects.Sales, new FakeMeetingAgentClient { IsAvailable = available },
+        var status = await AsAsync(TestProjects.Sales, new FakeAgentClient { IsAvailable = available },
             s => s.GetStatusAsync(CancellationToken.None));
 
         Assert.Equal(available, status.MeetingAssistantEnabled);
+        Assert.Equal(available, status.RiskAssistantEnabled);
     }
 
     // ---- Checks before the AI service is called ----
@@ -94,7 +95,7 @@ public class AgentServiceTests(DatabaseFixture database)
     public async Task Suggest_ServiceNotConfigured_ThrowsServiceUnavailable()
     {
         var projectId = await TestProjects.CreateAsync(database, "7.1");
-        var agent = new FakeMeetingAgentClient { IsConfigured = false };
+        var agent = new FakeAgentClient { IsConfigured = false };
 
         var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() => SuggestAsync(agent, projectId));
 
@@ -106,7 +107,7 @@ public class AgentServiceTests(DatabaseFixture database)
     public async Task Suggest_ServiceFails_PassesTheErrorOn()
     {
         var projectId = await TestProjects.CreateAsync(database, "7.1");
-        var agent = new FakeMeetingAgentClient { Failure = new ServiceUnavailableException("Yapay zekâ servisi cevap vermedi.") };
+        var agent = new FakeAgentClient { Failure = new ServiceUnavailableException("Yapay zekâ servisi cevap vermedi.") };
 
         var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() => SuggestAsync(agent, projectId));
 
@@ -167,7 +168,7 @@ public class AgentServiceTests(DatabaseFixture database)
     public async Task Suggest_UnknownTypeOrBlankTitle_IsSkippedAndCounted()
     {
         var projectId = await TestProjects.CreateAsync(database, "7.1");
-        var agent = new FakeMeetingAgentClient
+        var agent = new FakeAgentClient
         {
             // The service already dropped 2 items it could not read.
             Result = new MeetingAgentResult("Özet", [

@@ -3,8 +3,11 @@ using Isdlc.Domain.OpenIssues;
 
 namespace Isdlc.Application.Agents.Dtos;
 
-/// <summary>GET /api/v1/agents/status — which AI features the screen may offer.</summary>
-public record AgentStatusDto(bool MeetingAssistantEnabled);
+/// <summary>
+/// GET /api/v1/agents/status — which AI features the screen may offer. Both come from the same service today;
+/// they are separate so a feature can be turned off on its own later.
+/// </summary>
+public record AgentStatusDto(bool MeetingAssistantEnabled, bool RiskAssistantEnabled);
 
 /// <summary>POST .../meetings/suggestions — the raw meeting notes.</summary>
 public record SuggestMeetingItemsDto

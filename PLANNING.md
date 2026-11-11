@@ -129,6 +129,8 @@ Ekip, komut satırındaki denemenin ardından toplantı ajanını MVP'ye almayı
   Servis çalışmıyorsa yapay zekâ butonları görünmez, uygulamanın geri kalanı etkilenmez.
 - **MVP kapsamı:** Yeni tutanak formunda "Yapay zekâ ile karar ve aksiyonları çıkar". Öneriler formu doldurur; kişi
   düzenleyip tutanağı normal şekilde kaydeder. Ajan kendisi kayıt oluşturmaz.
-- **Sonraya kalanlar:** risk ajanı (`Risks` modülü gelince), `AgentRun` / `AgentSuggestion` tabloları ve öneri paneli,
-  diğer ajan tipleri.
+- **Risk ajanı:** Risks modülü gelince bağlandı. Riskler sekmesinde "Yapay zekâ ile risk öner" (metinden riskler) ve
+  risk formunda "Yapay zekâ ile puan ve aksiyon öner". Öneriler risk formunu doldurur; kaydeden yine kişidir.
+- **Sonraya kalanlar:** `AgentRun` / `AgentSuggestion` tabloları ve öneri paneli, toplantı ajanının tutanak taslağı
+  görevi (tür, katılımcılar, gündem), diğer ajan tipleri.
 - **Yalnızca sahte veriyle** çalışılır; model sağlayıcısı ve şirketin veri gönderme izni ayrıca kararlaştırılacak.
