@@ -57,11 +57,10 @@ Kurallar ve akış listesi: [process-api.md → Akışlar](process-api.md#akış
 | Alan | Tür | Not |
 | --- | --- | --- |
 | `Id` | int | |
-| `Code` | string | `new-software-project`, `add-on`, `process-improvement`, `isdlc-v1`; benzersiz, en fazla 50 |
+| `Code` | string | `new-software-project`, `add-on`, `process-improvement`, `resource-planning`, `billing`; benzersiz, en fazla 50 |
 | `Name` | string | "Yeni Yazılım Projesi"; en fazla 100 |
-| `Kind` | `ProcessFlowKind` | `Request` (Talepler / Projeler'de görünür), `Improvement` (Süreç İyileştirme'de görünür) |
+| `Kind` | `ProcessFlowKind` | Kaydın listelendiği menü: `Request` (Talepler / Projeler), `Improvement` (Süreç İyileştirme), `ResourcePlanning` (Kaynak Planlama), `Billing` (Faturalama) |
 | `ProjectStageOrder` | int? | Kaydın proje sayılmaya başladığı bölüm; boşsa kayıt hiç projeye dönüşmez |
-| `IsActive` | bool | Pasif akışa yeni kayıt açılmaz; içindeki kayıtlar sonuna kadar ilerler |
 
 ### `ProcessStage` — akışın aşamaları (Faz 4'te "bölüm")
 
@@ -145,7 +144,7 @@ yapı birden fazlasına izin verir.
 | `Level` | int? | 1–3; seviye belirlenene kadar boş. Yalnızca `Assessment` değiştirir ("Seviyeyi uygula") |
 | `Priority` | `ProjectPriority`? | 3.2'de proje kabul edilirken verilir |
 | `Status` | `ProjectStatus` | |
-| `ProcessFlowId` | int (FK → ProcessFlow) | Faz 4. Kaydın izlediği akış; açılırken verilir, sonra değişmez. Mevcut kayıtlar migration'da `isdlc-v1`'e bağlanır |
+| `ProcessFlowId` | int (FK → ProcessFlow) | Faz 4. Kaydın izlediği akış; açılırken verilir, sonra değişmez |
 | `RequiresOffer` | bool | Faz 4. Talep kaydındaki "teklif hazırlanacak mı"; teklif adımlarının yapılıp yapılmayacağını belirler. Mevcut kayıtlarda `true` |
 | `CurrentStepId` | int? (FK → ProcessStep) | Proje aktif değilse boş. Faz 4: her zaman kaydın akışındaki bir adım |
 | `StartDate` | DateOnly | |
@@ -381,7 +380,7 @@ API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-a
 | `RequestType` | `NewProject` (Yeni yazılım projesi), `AdditionalModule` (Devam eden projeye ek modül), `CompanyProduct` (Şirket ürünü), `Support` (Destek / ticket) |
 | `ProjectPriority` | `Low`, `Medium`, `High` |
 | `ProjectStatus` | `Active` (Aktif), `Closed` (Kapandı), `Rejected` (Reddedildi), `Lost` (Kaybedildi), `Redirected` (Yönlendirildi) |
-| `ProcessFlowKind` | *(Faz 4)* `Request` (Talep / proje), `Improvement` (Süreç iyileştirme) |
+| `ProcessFlowKind` | *(Faz 4)* `Request` (Talep / proje), `Improvement` (Süreç iyileştirme), `ResourcePlanning` (Kaynak planlama), `Billing` (Faturalama) |
 | `StepAction` | `Completed` (Tamamlandı), `Yes` (Evet), `No` (Hayır), `Rejected` (Yönetici kararıyla reddedildi) |
 | `AuditAction` | `Created` (Oluşturuldu), `Updated` (Güncellendi), `Deleted` (Silindi) |
 | `OpenIssueType` | `Question` (Soru), `Action` (Aksiyon), `Decision` (Karar), `ChangeRequest` (Değişiklik Talebi), `Dependency` (Bağımlılık), `Assumption` (Varsayım) |
@@ -436,9 +435,11 @@ API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-a
     seviye yalnızca "Seviyeyi uygula" ile `Project.Level`'e yazılır. Ayrıntılar: [assessment-api.md](assessment-api.md) → "Ekip onayı bekleyen kararlar".
 17. *(Taslak)* Bildirimler kişi başına satırdır; gönderen modüller `INotificationService`'i değiştirmeden kullanır.
     Ayrıntılar: [notifications-api.md](notifications-api.md) → "Ekip onayı bekleyen kararlar".
-18. *(Faz 4, önerildi)* Akışlar veri olarak tutulur (`ProcessFlow`); her kayıt tek bir akışı izler. Eski 13 aşamalı akış silinmez, pasife alınır.
+18. *(Faz 4, önerildi)* Akışlar veri olarak tutulur (`ProcessFlow`); her kayıt tek bir akışı izler. Akışlar şirketin beş akışıdır;
+    eski 13 aşamalı akış geçersizdir ve kaldırılır (uygulama canlıda olmadığı için veritabanı yeni akışlarla baştan kurulur).
 19. *(Faz 4, önerildi)* Adımın yapılıp yapılmayacağı üç koşulla belirlenir (dış talep, teklif, en düşük seviye); koşulu sağlanmayan adım atlanır ve kaydı tutulmaz.
-20. *(Faz 4, önerildi)* Süreç iyileştirme önerisi ayrı tablo değil, `Improvement` türündeki akışı izleyen bir `Project` kaydıdır.
+20. *(Faz 4, önerildi)* Süreç iyileştirme önerisi, kaynak planlama haftası ve faturalama ayı ayrı tablo değil, kendi akışını izleyen
+    birer `Project` kaydıdır; akışın türü (`ProcessFlowKind`) kaydın hangi menüde listeleneceğini belirler.
 
 ## Seed verisi
 
@@ -451,8 +452,9 @@ değişmez; projeler ve süreç geçmişi etkilenmez. Böylece şirket akışı 
 değiştirilir. Adım eklemek, çıkarmak veya sırasını değiştirmek bu yolla yapılmaz (projelerin bulunduğu adımı
 kaydırır); böyle bir fark logda uyarı olarak görünür ve ayrı bir migration gerektirir.
 
-**Faz 4 (önerildi):** her akış ayrı bir dosyadır: `Seed/flows/<code>.json` (`process-flow.json` → `flows/isdlc-v1.json`).
-Dosyada akışın `code`, `name`, `kind`, `projectStageOrder`, `isActive` alanları ve `stages` / `steps` bulunur; adımlarda
+**Faz 4 (önerildi):** her akış ayrı bir dosyadır: `Seed/flows/<code>.json` (beş dosya). `process-flow.json` ve eski akışa
+göre yazılmış `sample-projects.json` kaldırılır; örnek projeler yeni akışlara göre yeniden yazılır (E2).
+Dosyada akışın `code`, `name`, `kind`, `projectStageOrder` alanları ve `stages` / `steps` bulunur; adımlarda
 ayrıca `requiresExternalRequest`, `requiresOffer`, `minLevel`. Eşitleme akış bazında yapılır: veritabanında olmayan bir akış
 dosyası **eklenir** (içinde henüz kayıt olmadığı için migration gerekmez); var olan akışta adım eklemek, çıkarmak veya
 sıralamak bugünkü gibi migration ister.

@@ -2,7 +2,8 @@
 
 `Process` modülünün uç noktaları, DTO'ları, iş kuralları ve hata durumları.
 Veri modeli ve süreç ilerleme kuralları için: [data-model.md](data-model.md).
-Durum: 13 aşamalı tek akış **uygulandı.** Birden çok akış (Faz 4, iş E1) **önerildi**, bkz. [Akışlar](#akışlar-faz-4).
+Durum: 13 aşamalı tek akış **uygulandı**; Faz 4'te geçersiz olur ve yerini şirketin beş akışı alır (iş E1, **önerildi**),
+bkz. [Akışlar](#akışlar-faz-4). Aşağıdaki "13 aşama", "4.7" gibi örnekler eski akıştandır.
 Yetki kuralı ekip kararı bekliyor (aşağıda). Sorumlu: Erva; Faz 4'te Dide ([phase-4-plan.md](phase-4-plan.md)).
 
 Bütün uç noktalar AGENTS.md'deki ve Faz 0'daki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin,
@@ -15,20 +16,25 @@ JSON alan adları camelCase'dir.
 koda gömülmez, **veri** olarak tutulur: aşamalar ve adımlar bir akışa (`ProcessFlow`) bağlanır, her kayıt hangi akışı
 izlediğini bilir (`Project.ProcessFlowId`). Yeni bir akış eklemek = yeni bir seed dosyası; migration gerekmez.
 
+Uygulamadaki akışlar, şirketin paylaştığı **beş akıştan** ibarettir (kaynak: `Ithinka Proje Dokümanları/Akışlar`):
+
 | Akış (`Code`) | Ad | Tür (`Kind`) | Bölüm / adım | Projeye dönüştüğü bölüm |
 | --- | --- | --- | --- | --- |
 | `new-software-project` | Yeni Yazılım Projesi | `Request` | 4 / 19 | 3 (Proje başlatma ve geliştirme) |
 | `add-on` | Devam Eden Proje Ek Modül veya Geliştirme | `Request` | 4 / 17 | — (ana projenin altında görünür, bkz. D3) |
 | `process-improvement` | Süreç İyileştirme | `Improvement` | 4 / 8 | — |
-| `isdlc-v1` | ISDLC v12 (eski, 13 aşama) | `Request` | 13 / 75 | 4 · `IsActive = false` |
+| `resource-planning` | Haftalık Kaynak Planlama | `ResourcePlanning` | 4 / 8 | — |
+| `billing` | Aylık Faturalama | `Billing` | 4 / 6 | — |
 
-- **Eski akış silinmez** (kayıt silinmez kuralı). Pasife alınır: mevcut projeler onda kalır ve sonuna kadar ilerleyebilir,
-  yeni talep ona açılamaz.
-- **Haftalık kaynak planlama ve aylık faturalama** bu motoru kullanmaz. Bir talebe bağlı değiller, her hafta / ay yeniden
-  başlıyorlar; kendi kayıtlarında basit bir durum alanı tutarlar (B6, B7).
-- **Süreç iyileştirme önerisi** de bir `Project` kaydıdır (ekip kararı, 11.11.2026). Müşteri ve talep sahibi alanları bu akışta
-  boş kalabilir; kayıt Talepler ve Projeler listelerinde görünmez, Süreç İyileştirme menüsünde listelenir (E5). Böylece süreç
-  geçmişi, bildirimler ve denetim kaydı değişmeden çalışır.
+- **Eski 13 aşamalı akış (ISDLC v12) geçersizdir ve kaldırılır.** Uygulama henüz canlıda olmadığı için eski akıştaki
+  kayıtlar taşınmaz: E2'deki migration ile veritabanı yeni akışlarla baştan kurulur, örnek projeler yeni akışlara göre
+  seed'den gelir. Herkes lokal veritabanını bir kez sıfırlar (PR açıklamasında komut verilir).
+- **Bütün kayıtlar `Project` tablosundadır** (ekip kararı, 11.11.2026). Akışın türü kaydın hangi menüde listeleneceğini belirler:
+  `Request` → Talepler / Projeler, `Improvement` → Süreç İyileştirme (E5), `ResourcePlanning` → Kaynak Planlama (B6),
+  `Billing` → Faturalama (B7). Müşteri ve talep sahibi gibi alanlar `Request` dışındaki akışlarda boş kalabilir. Böylece süreç
+  geçmişi, bildirimler ve denetim kaydı her akışta değişmeden çalışır.
+- **Kaynak planlama ve faturalama dönemseldir:** her hafta / her ay için yeni bir kayıt açılır ("2026 · 46. hafta",
+  "2026 · Kasım"); kayıt akışın sonunda kapanır. Dönemin görev ve ticket satırları B6 / B7'nin kendi tablolarındadır.
 
 **Hangi kayıt hangi akışa girer**
 
@@ -37,6 +43,8 @@ izlediğini bilir (`Project.ProcessFlowId`). Yeni bir akış eklemek = yeni bir 
 | Talepler → Yeni talep (`POST /projects`) | `new-software-project` |
 | Proje detayı → Ek Geliştirmeler → Yeni (D3) | `add-on` |
 | Süreç İyileştirme → Yeni öneri (E5) | `process-improvement` |
+| Kaynak Planlama → Yeni hafta (B6) | `resource-planning` |
+| Faturalama → Yeni ay (B7) | `billing` |
 
 İleride gelen akışlar için talep formuna "iş tipi" seçimi eklenir; seçilen tip akışı belirler. `RequestType` alanı
 bilgi amaçlı kalır, akışı seçmez.
@@ -66,7 +74,7 @@ akış o adıma hiç uğramaz ve `StepRecord` yazılmaz.
 Talepler ve Projeler menüleri aynı `Project` tablosunu gösterir. Hangisinde görüneceğini akış belirler
 (`ProcessFlow.ProjectStageOrder`): kaydın mevcut adımının bölümü bu değere ulaştıysa kayıt **proje**, ulaşmadıysa **talep**dir.
 Değer boşsa kayıt hiçbir zaman projeye dönüşmez. Kapanmış kayıtlar Projeler listesinin "tümü" görünümündedir (bugünkü gibi).
-`Improvement` türündeki akışların kayıtları iki listede de görünmez.
+Türü `Request` olmayan akışların kayıtları iki listede de görünmez.
 
 Bugün `ProjectService` ve `DashboardService` içindeki "aşama 1–3 taleptir" sabiti (`LastRequestStageOrder = 3`) bu kurala
 çevrilir.
@@ -75,7 +83,7 @@ Bugün `ProjectService` ve `DashboardService` içindeki "aşama 1–3 taleptir" 
 
 | İstek | Açıklama | Başarılı cevap |
 | --- | --- | --- |
-| `GET /api/v1/process-flows` | Akışlar (adımsız). `?includeInactive=true` pasifleri de getirir | `200` `ProcessFlowListItemDto[]` |
+| `GET /api/v1/process-flows` | Beş akış (adımsız) | `200` `ProcessFlowListItemDto[]` |
 | `GET /api/v1/process-flows/{code}` | Akışın bölümleri ve adımları (Süreç Kütüphanesi) | `200` `ProcessFlowDto` |
 | ~~`GET /api/v1/process-stages`~~ | **Kalkar** (Faz 4): aşamalar artık bir akışa ait; yerine `process-flows/{code}` | — |
 | `GET /api/v1/projects/{projectId}/process` | Projenin süreç durumu | `200` `ProjectProcessDto` |
@@ -96,8 +104,7 @@ Bugün `ProjectService` ve `DashboardService` içindeki "aşama 1–3 taleptir" 
   "id": 2,
   "code": "new-software-project",
   "name": "Yeni Yazılım Projesi",
-  "kind": "Request",            // ProcessFlowKind: Request, Improvement
-  "isActive": true,
+  "kind": "Request",            // ProcessFlowKind: Request, Improvement, ResourcePlanning, Billing
   "projectStageOrder": 3,       // null: kayıt hiç projeye dönüşmez
   "stepCount": 19
 }
@@ -108,7 +115,6 @@ Bugün `ProjectService` ve `DashboardService` içindeki "aşama 1–3 taleptir" 
   "code": "new-software-project",
   "name": "Yeni Yazılım Projesi",
   "kind": "Request",
-  "isActive": true,
   "projectStageOrder": 3,
   "stages": [ /* ProcessStageDto[] */ ]
 }
