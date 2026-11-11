@@ -68,6 +68,10 @@ export class MeetingFormComponent implements OnInit {
     /** Decision lines the AI assistant added, so asking again replaces them instead of adding them twice. */
     private agentDecisionLines: string[] = [];
 
+    /** The info fields as the AI assistant last filled them; a field still showing that value may be replaced again. */
+    private agentInfo: { type: MeetingType | null; participants: string | null; agenda: string | null } =
+        { type: null, participants: null, agenda: null };
+
     protected get actions(): FormArray<FormGroup> {
         return this.form.controls.actions;
     }
@@ -130,7 +134,33 @@ export class MeetingFormComponent implements OnInit {
         this.agentDecisionLines = suggestions.decisions.map(d => d.title.trim());
         this.form.controls.decisions.setValue([...ownLines, ...this.agentDecisionLines].join('\n'));
 
+        this.applyMinutesDraft(suggestions);
         this.serverErrors.set({});
+    }
+
+    /**
+     * Type, participants and agenda from the AI draft, only where the person has not written anything:
+     * an empty field, a type left as it was, or a value the assistant itself put there before.
+     */
+    private applyMinutesDraft(suggestions: MeetingSuggestions): void {
+        const draft = suggestions.minutes;
+        if (!draft) {
+            return;
+        }
+
+        const { type, participants, agenda } = this.form.controls;
+        if (type.pristine || type.value === this.agentInfo.type) {
+            type.setValue(draft.type);
+            this.agentInfo.type = draft.type;
+        }
+        if (!participants.value.trim() || participants.value === this.agentInfo.participants) {
+            participants.setValue(draft.participants);
+            this.agentInfo.participants = draft.participants;
+        }
+        if (!agenda.value.trim() || agenda.value === this.agentInfo.agenda) {
+            agenda.setValue(draft.agenda);
+            this.agentInfo.agenda = draft.agenda;
+        }
     }
 
     protected removeAction(index: number): void {

@@ -26,7 +26,17 @@ public interface IAgentClient
 /// <summary>What the agent gets: only the project code, the date, the current step and the notes.</summary>
 public record MeetingAgentRequest(string ProjectCode, DateOnly MeetingDate, string Notes, string? CurrentStep);
 
-public record MeetingAgentResult(string Summary, IReadOnlyList<MeetingAgentItem> Items, int InvalidCount, string ModelName);
+/// <summary>Minutes is null when the agent could not draft them; the open issues are still usable.</summary>
+public record MeetingAgentResult(
+    string Summary,
+    IReadOnlyList<MeetingAgentItem> Items,
+    int InvalidCount,
+    string ModelName,
+    MeetingAgentMinutes? Minutes = null);
+
+/// <summary>The minutes' info as the agent drafts it. Type is a MeetingType name; agenda has one "- " line per topic.</summary>
+public record MeetingAgentMinutes(
+    string Type, string? TypeReason, string Participants, string Agenda, IReadOnlyList<string> Warnings);
 
 /// <summary>One suggestion as the agent returns it. Type is an OpenIssueType name ("Action", "Decision", ...).</summary>
 public record MeetingAgentItem(

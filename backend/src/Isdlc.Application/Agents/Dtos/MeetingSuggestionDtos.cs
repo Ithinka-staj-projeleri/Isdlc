@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
 
 namespace Isdlc.Application.Agents.Dtos;
@@ -23,6 +24,10 @@ public record SuggestMeetingItemsDto
 public static class MeetingSuggestionLimits
 {
     public const int MaxNotes = 20_000;
+
+    /// <summary>The minutes form's limits (CreateMeetingDto).</summary>
+    public const int MaxParticipants = 1000;
+    public const int MaxAgenda = 4000;
 }
 
 /// <summary>
@@ -35,7 +40,19 @@ public record MeetingSuggestionsDto(
     IReadOnlyList<SuggestedActionDto> Actions,
     IReadOnlyList<SuggestedOpenIssueDto> Others, // questions, dependencies...: no place in the form, shown for manual entry
     int SkippedCount, // items the model returned that did not pass validation; only counted
-    string ModelName);
+    string ModelName,
+    MinutesDraftDto? Minutes = null); // null when the agent could not draft the minutes' info
+
+/// <summary>
+/// The minutes' info drafted from the notes: type, participants (comma separated) and agenda (one "- " line per topic).
+/// The form fills only the fields the person has not filled yet.
+/// </summary>
+public record MinutesDraftDto(
+    MeetingType Type,
+    string? TypeReason,
+    string Participants,
+    string Agenda,
+    IReadOnlyList<string> Warnings);
 
 public record SuggestedDecisionDto(string Title, string Evidence);
 

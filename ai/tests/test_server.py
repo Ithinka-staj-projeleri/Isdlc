@@ -115,3 +115,49 @@ def test_riskSuggestions_BrokenModelAnswerTwice_Returns503():
 
     assert response.status_code == 503
     assert "geçerli bir cevap" in response.json()["detail"]
+
+
+# ---------- meeting suggestions: open issues and the minutes draft ----------
+
+MEETING_NOTES = "Katılımcılar: Elif Yılmaz, Can Öztürk. Ekran taslaklarını Can Öztürk cuma gününe kadar hazırlayacak."
+OPEN_ISSUES = json.dumps({"summary": "Ekran taslakları konuşuldu.", "items": [{
+    "type": "Action", "title": "Ekran taslakları", "description": None, "owner_name": "Can Öztürk",
+    "due_date": "2026-11-13", "evidence": "Ekran taslaklarını Can Öztürk cuma gününe kadar hazırlayacak."}]},
+    ensure_ascii=False)
+MINUTES = json.dumps({"meeting_type": "AnalysisSession", "type_reason": "Ekranlar ayrıntılı konuşulmuş.",
+                      "participants": ["Elif Yılmaz", "Can Öztürk"], "agenda": ["Ekran taslakları", "Takvim"]},
+                     ensure_ascii=False)
+MEETING_BODY = {"projectCode": "ISDLC-2026-014", "meetingDate": "2026-11-10", "notes": MEETING_NOTES}
+
+
+def test_meetingSuggestions_ReturnsOpenIssuesAndMinutesDraft():
+    response = client(OPEN_ISSUES, MINUTES).post("/v1/meeting/suggestions", json=MEETING_BODY)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["items"][0]["title"] == "Ekran taslakları"
+    assert body["minutes"] == {
+        "type": "AnalysisSession",
+        "typeReason": "Ekranlar ayrıntılı konuşulmuş.",
+        "participants": "Elif Yılmaz, Can Öztürk",
+        "agenda": "- Ekran taslakları\n- Takvim",
+        "warnings": [],
+    }
+    assert body["minutesRun"]["task"] == "meeting.minutes"
+
+
+def test_meetingSuggestions_MinutesTaskFails_StillReturnsOpenIssues():
+    response = client(OPEN_ISSUES, "bozuk", "yine bozuk").post("/v1/meeting/suggestions", json=MEETING_BODY)
+
+    assert response.status_code == 200
+    assert len(response.json()["items"]) == 1
+    assert response.json()["minutes"] is None
+
+
+def test_meetingSuggestions_UnknownMeetingType_ReturnsNoMinutes():
+    bad = json.dumps({"meeting_type": "Party", "type_reason": "", "participants": ["Elif"], "agenda": ["Konu"]})
+
+    response = client(OPEN_ISSUES, bad).post("/v1/meeting/suggestions", json=MEETING_BODY)
+
+    assert response.status_code == 200
+    assert response.json()["minutes"] is None

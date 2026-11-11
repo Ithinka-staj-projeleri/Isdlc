@@ -9,7 +9,7 @@ ayrı bir model çağrısıdır.
 
 | Ajan | Görevler | Kayıt |
 | --- | --- | --- |
-| **Toplantı ajanı** | 1. Açık konu önerileri (aksiyon, karar, soru, bağımlılık, varsayım, değişiklik talebi) <br> 2. Tutanak taslağı (tür, katılımcılar, gündem) | Açık konular onaylanınca API'ye yazılır. Tutanak, Meetings API'si gelene kadar yalnızca çıktı dosyasında |
+| **Toplantı ajanı** | 1. Açık konu önerileri (aksiyon, karar, soru, bağımlılık, varsayım, değişiklik talebi) <br> 2. Tutanak taslağı (tür, katılımcılar, gündem) | Uygulamada ikisi birlikte tutanak formunu doldurur (tür, katılımcılar, gündem yalnızca boşsa). Komut satırında açık konular onaylanınca API'ye yazılır |
 | **Risk ajanı** | 1. Riskleri bulma <br> 2. Olasılık ve etki puanlama (1-5) <br> 3. Önleyici aksiyon | Risks API'si gelene kadar yalnızca çıktı dosyasında |
 
 Ajanlara görevlerin nasıl bölüştürüldüğü: [docs/ai-vision.md → Ajan ve görev](../docs/ai-vision.md#ajan-ve-görev).
@@ -192,5 +192,4 @@ Görev başka türde bir kayıt üretiyorsa (ör. gereksinim) mevcut ajana deği
 ## Henüz yapılmayanlar
 
 - Uygulamada öneriler tutanak formunda inceleniyor; kabul / ret oranlarını ölçmek için `AgentSuggestion` tablosu ve öneri paneli sonra gelecek (bkz. ai-vision.md).
-- Tutanak taslağı görevi (`--minutes`) henüz uygulamaya bağlı değil; yalnızca komut satırında.
 - Komut satırında sorumlu her zaman `ownerName` olarak gönderiliyor. Uygulamada backend, adı aktif bir kullanıcıyla eşleşen sorumluyu `ownerUserId` yapıyor.

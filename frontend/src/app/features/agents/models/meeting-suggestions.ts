@@ -1,3 +1,4 @@
+import { MeetingType } from '../../meetings/models/meeting';
 import { OpenIssueType } from '../../open-issues/models/open-issue';
 
 /** GET /api/v1/agents/status */
@@ -16,6 +17,20 @@ export interface MeetingSuggestions {
     /** Items the model returned that did not pass validation. */
     skippedCount: number;
     modelName: string;
+    /** Type, participants and agenda; null when the agent could not draft them. */
+    minutes: MinutesDraft | null;
+}
+
+/** The form fills only the fields the person has not filled yet. */
+export interface MinutesDraft {
+    type: MeetingType;
+    /** Why the model chose this type. */
+    typeReason: string | null;
+    /** Comma separated, as the form takes it. */
+    participants: string;
+    /** One "- " line per topic. */
+    agenda: string;
+    warnings: string[];
 }
 
 export interface SuggestedDecision {

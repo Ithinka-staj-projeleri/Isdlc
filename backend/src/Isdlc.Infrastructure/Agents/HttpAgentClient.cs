@@ -86,7 +86,10 @@ public class HttpAgentClient(
                 i.Evidence ?? string.Empty,
                 i.Warnings ?? [])).ToList(),
             body.InvalidCount,
-            body.Run?.ModelName ?? string.Empty);
+            body.Run?.ModelName ?? string.Empty,
+            body.Minutes is { Type: not null } m
+                ? new MeetingAgentMinutes(m.Type, m.TypeReason, m.Participants ?? string.Empty, m.Agenda ?? string.Empty, m.Warnings ?? [])
+                : null);
     }
 
     public async Task<RiskAgentResult> SuggestRisksAsync(RiskAgentRequest request, CancellationToken cancellationToken)
@@ -194,7 +197,11 @@ public class HttpAgentClient(
     }
 
     // Shapes of the AI service's JSON (camelCase, see ai/isdlc_ai/server.py).
-    private record ServiceResponse(string? Summary, List<ServiceItem>? Items, int InvalidCount, ServiceRun? Run);
+    private record ServiceResponse(
+        string? Summary, List<ServiceItem>? Items, int InvalidCount, ServiceRun? Run, ServiceMinutes? Minutes);
+
+    private record ServiceMinutes(
+        string? Type, string? TypeReason, string? Participants, string? Agenda, List<string>? Warnings);
 
     private record ServiceItem(
         string? Type, string? Title, string? Description, string? OwnerName, DateOnly? DueDate, string? Evidence, List<string>? Warnings);
