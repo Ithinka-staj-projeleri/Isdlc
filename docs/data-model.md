@@ -10,6 +10,8 @@ Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip 
 ## Genel bakış
 
 ```
+ProcessFlow  1 ──── * ProcessStage        (Faz 4: her aşama bir akışa aittir)
+ProcessFlow  1 ──── * Project             (Faz 4: kaydın izlediği akış)
 ProcessStage 1 ──── * ProcessStep
 ProcessStep  1 ──── * StepRecord * ──── 1 Project
 User         1 ──── * StepRecord          (PerformedById)
@@ -31,7 +33,7 @@ Project      1 ──── * Notification        (bildirimin ilgili olduğu pro
 User         1 ──── * Risk                (OwnerUserId: sorumlu ekip üyesi)
 ```
 
-- **Ana veri:** `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `DocumentType`. Seed ile yüklenir, kullanıcı tarafından değiştirilmez.
+- **Ana veri:** `ProcessFlow`, `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `DocumentType`. Seed ile yüklenir, kullanıcı tarafından değiştirilmez.
 - **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`, `Notification`. Uygulama kullanıldıkça oluşur.
 
 ## Ortak temel sınıf: `AuditableEntity`
@@ -48,12 +50,25 @@ Alanları denetim kaydı altyapısı `SaveChanges` sırasında otomatik doldurur
 
 ## Ana veri
 
-### `ProcessStage` — 13 aşama
+### `ProcessFlow` — iş akışı (Faz 4, önerildi)
+
+Kurallar ve akış listesi: [process-api.md → Akışlar](process-api.md#akışlar-faz-4).
 
 | Alan | Tür | Not |
 | --- | --- | --- |
 | `Id` | int | |
-| `Order` | int | 1–13, benzersiz |
+| `Code` | string | `new-software-project`, `add-on`, `process-improvement`, `resource-planning`, `billing`; benzersiz, en fazla 50 |
+| `Name` | string | "Yeni Yazılım Projesi"; en fazla 100 |
+| `Kind` | `ProcessFlowKind` | Kaydın listelendiği menü: `Request` (Talepler / Projeler), `Improvement` (Süreç İyileştirme), `ResourcePlanning` (Kaynak Planlama), `Billing` (Faturalama) |
+| `ProjectStageOrder` | int? | Kaydın proje sayılmaya başladığı bölüm; boşsa kayıt hiç projeye dönüşmez |
+
+### `ProcessStage` — akışın aşamaları (Faz 4'te "bölüm")
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `ProcessFlowId` | int (FK → ProcessFlow) | Faz 4 |
+| `Order` | int | Akış içinde 1'den başlar; (`ProcessFlowId`, `Order`) benzersiz. Eski akışta 1–13 |
 | `Title` | string | "Talebin Kayda Alınması" |
 | `ShortTitle` | string | "Talep Kaydı" (menü ve listelerde) |
 
@@ -63,8 +78,12 @@ Alanları denetim kaydı altyapısı `SaveChanges` sırasında otomatik doldurur
 | --- | --- | --- |
 | `Id` | int | |
 | `ProcessStageId` | int (FK → ProcessStage) | |
-| `Code` | string | "4.7", benzersiz |
-| `Order` | int | Bütün akış içindeki sıra; sonraki adım `Order + 1`'dir |
+| `ProcessFlowId` | int (FK → ProcessFlow) | Faz 4. Aşamanın akışıyla aynıdır; benzersizlik ve "sonraki adım" sorgusu için adımda da tutulur |
+| `Code` | string | Eski akışta "4.7", yeni akışlarda adım numarası ("12"). (`ProcessFlowId`, `Code`) benzersiz |
+| `Order` | int | Akış içindeki sıra; (`ProcessFlowId`, `Order`) benzersiz. Faz 4'te sonraki adım `Order + 1` değil, koşulları sağlanan ilk büyük `Order`'dır |
+| `RequiresExternalRequest` | bool | Faz 4. Adım yalnızca dış talepte yapılır |
+| `RequiresOffer` | bool | Faz 4. Adım yalnızca `Project.RequiresOffer` ise yapılır |
+| `MinLevel` | int? | Faz 4. Adım yalnızca `Project.Level ≥ MinLevel` ise (veya seviye henüz belirlenmediyse) yapılır |
 | `Text` | string | Adımın açıklaması |
 | `IsDecision` | bool | Evet/Hayır sorusu mu |
 | `NoBranchText` | string? | "Hayır ise" açıklaması |
@@ -125,7 +144,9 @@ yapı birden fazlasına izin verir.
 | `Level` | int? | 1–3; seviye belirlenene kadar boş. Yalnızca `Assessment` değiştirir ("Seviyeyi uygula") |
 | `Priority` | `ProjectPriority`? | 3.2'de proje kabul edilirken verilir |
 | `Status` | `ProjectStatus` | |
-| `CurrentStepId` | int? (FK → ProcessStep) | Proje aktif değilse boş |
+| `ProcessFlowId` | int (FK → ProcessFlow) | Faz 4. Kaydın izlediği akış; açılırken verilir, sonra değişmez |
+| `RequiresOffer` | bool | Faz 4. Talep kaydındaki "teklif hazırlanacak mı"; teklif adımlarının yapılıp yapılmayacağını belirler. Mevcut kayıtlarda `true` |
+| `CurrentStepId` | int? (FK → ProcessStep) | Proje aktif değilse boş. Faz 4: her zaman kaydın akışındaki bir adım |
 | `StartDate` | DateOnly | |
 | `DueDate` | DateOnly? | |
 | `RowVersion` | byte[] | EF Core eşzamanlılık belirteci (SQL Server `rowversion`); bkz. [process-api.md](process-api.md) |
@@ -359,6 +380,7 @@ API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-a
 | `RequestType` | `NewProject` (Yeni yazılım projesi), `AdditionalModule` (Devam eden projeye ek modül), `CompanyProduct` (Şirket ürünü), `Support` (Destek / ticket) |
 | `ProjectPriority` | `Low`, `Medium`, `High` |
 | `ProjectStatus` | `Active` (Aktif), `Closed` (Kapandı), `Rejected` (Reddedildi), `Lost` (Kaybedildi), `Redirected` (Yönlendirildi) |
+| `ProcessFlowKind` | *(Faz 4)* `Request` (Talep / proje), `Improvement` (Süreç iyileştirme), `ResourcePlanning` (Kaynak planlama), `Billing` (Faturalama) |
 | `StepAction` | `Completed` (Tamamlandı), `Yes` (Evet), `No` (Hayır), `Rejected` (Yönetici kararıyla reddedildi) |
 | `AuditAction` | `Created` (Oluşturuldu), `Updated` (Güncellendi), `Deleted` (Silindi) |
 | `OpenIssueType` | `Question` (Soru), `Action` (Aksiyon), `Decision` (Karar), `ChangeRequest` (Değişiklik Talebi), `Dependency` (Bağımlılık), `Assumption` (Varsayım) |
@@ -377,8 +399,8 @@ API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-a
 
 | İşlem | Sonuç |
 | --- | --- |
-| Yeni talep açılır (`Projects`) | `Status` = `Active`, `CurrentStepId` = akışın ilk adımı (`Order` en küçük, 1.1); `StepRecord` yazılmaz. 1.1'in metni talep kaydının kendisidir; tamamlanınca 1.2'ye geçilir |
-| Karar olmayan adım tamamlanır | `StepRecord(Completed)`; `CurrentStepId` sonraki adıma geçer |
+| Yeni talep açılır (`Projects`) | `Status` = `Active`, `CurrentStepId` = akışın ilk adımı (`Order` en küçük, 1.1); `StepRecord` yazılmaz. 1.1'in metni talep kaydının kendisidir; tamamlanınca 1.2'ye geçilir. Faz 4: kaydın akışında, koşulları sağlanan ilk adım |
+| Karar olmayan adım tamamlanır | `StepRecord(Completed)`; `CurrentStepId` sonraki adıma geçer. Faz 4: aynı akışta koşulları sağlanan sonraki adım; atlanan adımlara `StepRecord` yazılmaz |
 | Karar adımında "Evet" | `StepRecord(Yes)`; `CurrentStepId` sonraki adıma geçer |
 | "Hayır" + `NoOutcome` dolu | `StepRecord(No)`; `Status` = `NoOutcome`, `CurrentStepId` = boş |
 | "Hayır" + dönüş seçeneği var | Kullanıcı seçeneği seçer; `StepRecord(No, JumpedToStepId)`; `CurrentStepId` = seçilen adım |
@@ -413,6 +435,11 @@ API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-a
     seviye yalnızca "Seviyeyi uygula" ile `Project.Level`'e yazılır. Ayrıntılar: [assessment-api.md](assessment-api.md) → "Ekip onayı bekleyen kararlar".
 17. *(Taslak)* Bildirimler kişi başına satırdır; gönderen modüller `INotificationService`'i değiştirmeden kullanır.
     Ayrıntılar: [notifications-api.md](notifications-api.md) → "Ekip onayı bekleyen kararlar".
+18. *(Faz 4, önerildi)* Akışlar veri olarak tutulur (`ProcessFlow`); her kayıt tek bir akışı izler. Akışlar şirketin beş akışıdır;
+    eski 13 aşamalı akış geçersizdir ve kaldırılır (uygulama canlıda olmadığı için veritabanı yeni akışlarla baştan kurulur).
+19. *(Faz 4, önerildi)* Adımın yapılıp yapılmayacağı üç koşulla belirlenir (dış talep, teklif, en düşük seviye); koşulu sağlanmayan adım atlanır ve kaydı tutulmaz.
+20. *(Faz 4, önerildi)* Süreç iyileştirme önerisi, kaynak planlama haftası ve faturalama ayı ayrı tablo değil, kendi akışını izleyen
+    birer `Project` kaydıdır; akışın türü (`ProcessFlowKind`) kaydın hangi menüde listeleneceğini belirler.
 
 ## Seed verisi
 
@@ -424,6 +451,13 @@ başlık, adım metni, "Hayır" açıklaması, roller, kapanış sonucu ve dön�
 değişmez; projeler ve süreç geçmişi etkilenmez. Böylece şirket akışı güncellediğinde yalnızca `process-flow.json`
 değiştirilir. Adım eklemek, çıkarmak veya sırasını değiştirmek bu yolla yapılmaz (projelerin bulunduğu adımı
 kaydırır); böyle bir fark logda uyarı olarak görünür ve ayrı bir migration gerektirir.
+
+**Faz 4 (önerildi):** her akış ayrı bir dosyadır: `Seed/flows/<code>.json` (beş dosya). `process-flow.json` ve eski akışa
+göre yazılmış `sample-projects.json` kaldırılır; örnek projeler yeni akışlara göre yeniden yazılır (E2).
+Dosyada akışın `code`, `name`, `kind`, `projectStageOrder` alanları ve `stages` / `steps` bulunur; adımlarda
+ayrıca `requiresExternalRequest`, `requiresOffer`, `minLevel`. Eşitleme akış bazında yapılır: veritabanında olmayan bir akış
+dosyası **eklenir** (içinde henüz kayıt olmadığı için migration gerekmez); var olan akışta adım eklemek, çıkarmak veya
+sıralamak bugünkü gibi migration ister.
 
 **`backend/src/Isdlc.Infrastructure/Seed/process-flow.json`** (hazır; kaynak: şirketin ISDLC v12.0 akış şeması,
 "1 - Yeni Yazılım Projesi" sayfası, 27.10.2026)

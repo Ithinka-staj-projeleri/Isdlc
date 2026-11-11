@@ -147,8 +147,11 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Öncelik | `ProjectPriority` |
 | Kullanıcı | `User` |
 | Rol | `UserRole` (kullanıcı başına tek rol) |
-| Aşama | `ProcessStage` |
+| İş akışı (yeni yazılım projesi, ek geliştirme, süreç iyileştirme, kaynak planlama, faturalama) | `ProcessFlow` (`Project.ProcessFlowId`; türü `ProcessFlowKind`: `Request`, `Improvement`, `ResourcePlanning`, `Billing`) |
+| Aşama (akıştaki "bölüm") | `ProcessStage` |
 | Adım | `ProcessStep` |
+| Atlanan adım (yalnızca dış talepte / teklif hazırlanacaksa / seviye ≥ N) | `ProcessStep.RequiresExternalRequest`, `RequiresOffer`, `MinLevel` |
+| Teklif hazırlanacak mı | `Project.RequiresOffer` |
 | "Hayır" cevabında dönülecek adım | `ProcessStepJump` |
 | Adımda yapılan işlem | `StepRecord` |
 | İşlem türü (Tamamlandı, Evet, Hayır, Reddedildi) | `StepAction` |
