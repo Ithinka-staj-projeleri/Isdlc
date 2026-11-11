@@ -2,7 +2,7 @@
 
 Şirketin dört formu aynı yapıdadır: bir **iş tipi** ve **alt kategori** seçilir, o seçime ait soru listesi çıkar, her soru
 projede cevaplanır, formun sonucu cevaplardan hesaplanır. Bu doküman o ortak yapıyı (soru setleri, sorular, seçenekler,
-cevaplar) ve uç noktalarını anlatır. Durum: sözleşme **onaylandı** (#117); entity'ler, migration ve seed uygulandı (2. adım). Sorumlu: Baran.
+cevaplar) ve uç noktalarını anlatır. Durum: sözleşme **onaylandı** (#117); entity'ler, migration ve seed (2. adım) ile servisler ve API (3. adım) uygulandı. Sorumlu: Baran.
 Plan: [phase-4-plan.md](phase-4-plan.md) → B1. Veri modeli: [data-model.md](data-model.md) → "Soru bankası".
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601,
@@ -39,7 +39,8 @@ Ortak iskelet: **soru seti → (iş tipi, alt kategori) → bölüm → grup →
 
 - **İş tipi:** formlarda şimdilik yalnızca *Yeni Yazılım Projesi* var. Kodda akışın anahtarıyla (`ProcessFlow.Code`) aynı tutulur:
   `new-software-project` ([process-api.md](process-api.md) → Akışlar). Ek geliştirme akışının anahtarı `add-on`'dur ama formlarda ona ait soru yok
-  (karar 4). Yeni bir iş tipi yeni soru satırı demektir, kod değişmez.
+  (karar 4). Yeni bir iş tipi yeni soru satırı demektir, kod değişmez. Projeler akışını Faz 4 · E1 ile alana kadar formlar
+  `new-software-project` sorularını listeler (`QuestionnaireRules.DefaultWorkType`); E1 gelince form oluşurken projenin akışından alınır.
 - **Alt kategori:** projenin talep kaynağıdır (`RequestSource`: `Internal` kurum içi, `External` dış / müşteri, `Affiliated` ilişkili şirket;
   `Affiliated` D1 ile eklenir). Formlardaki "TÜM ALT KATEGORİLER" satırları `null` alt kategoriyle tutulur ve her alt kategoride listelenir.
 
@@ -76,6 +77,7 @@ Seviye setinde seçenekler soruya özgüdür ve anlamı yoktur, yalnızca puanı
   yeni alt kategoride olmayan soruların cevapları silinmez, listede görünmez ve özete katılmaz (kaynak geri alınırsa geri gelir).
 - **Zorunluluk:** `Required` (Zorunlu) ya da `Conditional` (Duruma Bağlı). Duruma bağlı soru, projeye uymuyorsa `NotApplicable` seçilerek kapatılır.
   Formun **tamamlanmış** sayılması için bütün zorunlu soruların bir seçeneği olmalıdır. Duruma bağlı sorular tamamlanmayı engellemez.
+  Zorunluluk sütunu olmayan formlarda (seviye, iç onay) her soru zorunlu sayılır. Seçenek seçilmeden yalnızca not yazılan soru cevaplanmış sayılmaz.
 - Cevaplar **tek tek** kaydedilir (satır satır doldurulan Excel gibi); bütün formu birden göndermek gerekmez.
 - **Eş zamanlı düzenleme:** aynı cevabı aynı anda iki kişi kaydederse son kaydeden kazanır.
 
@@ -113,7 +115,7 @@ Cevap kaydedince bütün form döner, çünkü özet (sayılar, sonuç) her ceva
   "riskDescription": "Kapsamın yazılı ve teyitli olmaması nedeniyle …",   // yalnızca risk analizinde
   "suggestedAction": "Kapsam ve teslimatlar Proje Kapsam Dokümanı'nda yazılmalı …", // yalnızca risk analizinde
   "reference": "SEI TBQ A.1.b Completeness …",
-  "options": [ { "id": 3, "code": "risk-present", "label": "Risk Var", "points": null, "meaning": "Negative", "isScored": true } ]
+  "options": [ { "id": 3, "code": "risk-present", "label": "Risk Var", "points": null, "meaning": "Negative", "isScored": true, "requiresNote": true } ]
 }
 
 // QuestionnaireDto
@@ -142,7 +144,7 @@ Cevap kaydedince bütün form döner, çünkü özet (sayılar, sonuç) her ceva
   ],
   "summary": {
     "listed": 46, "answered": 12, "requiredUnanswered": 19, "isComplete": false,
-    "byMeaning": { "Complete": 6, "Partial": 1, "Open": 2, "Negative": 3, "NotApplicable": 0 },
+    "byMeaning": { "complete": 6, "partial": 1, "open": 2, "negative": 3, "notApplicable": 0 },
     "missingNote": 1                                       // not ister seçenekte not yazılmamış cevap
   },
   "result": null                                           // formlara özgü sonuç (aşağıda); bu PR'da hep null
@@ -232,7 +234,7 @@ kombinasyonda veritabanısız test edilir (AGENTS.md Bölüm 9). Eşikler seed'd
 
 1. Bu doküman (ekip onayı)
 2. Entity'ler, migration, seeder ve dört setin JSON dosyaları (Excel'den çıkarma betiği repoya konmaz; dosyaların formlarla aynı olduğunu `QuestionSetFileTests` doğrular) ✅
-3. Servisler ve API; `QuestionnaireRules` testleri
+3. Servisler ve API; `QuestionnaireRules` testleri ✅
 4. Ortak ekran bileşeni (`shared/question-bank`); ilk kullanan B2 olur
 
 ## Ekip onayı bekleyen kararlar
