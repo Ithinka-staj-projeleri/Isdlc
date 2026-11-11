@@ -114,7 +114,8 @@ Referans prototip: "ISDLC Analiz Merkezi" (tek HTML dosyası). Birebir kopyalanm
 - 13 aşama ve her aşamadaki adımlar; Evet/Hayır karar adımları ve "Hayır" durumunda ne yapılacağı.
 - 6 rol: İş Analisti, Yazılım Departman Yöneticisi, Proje Yöneticisi, Yazılım Geliştirici,
   Test Uzmanı, Satış Temsilcisi.
-- Onay adımları: 2.3, 3.2, 4.5, 5.1 → Yazılım Departman Yöneticisi.
+- Onay adımları: 3.2, 4.5, 5.1 → Yazılım Departman Yöneticisi. (Prototipte 2.3 de onay adımıydı; şirketin güncel
+  ISDLC v12.0 akışında 2.3, yöneticinin "Talebi reddet" işlemidir.)
 - Talebi kapatan sonuçlar: 1.2 → Yönlendirildi, 3.2 → Reddedildi, 5.3 → Kaybedildi.
 
 **Veri modeli için not:** Akış her zaman ileri gitmez; bazı "Hayır" cevapları önceki bir adıma döner
