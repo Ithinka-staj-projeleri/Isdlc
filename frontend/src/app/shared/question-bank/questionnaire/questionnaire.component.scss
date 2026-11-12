@@ -1,0 +1,266 @@
+@use '../../styles/ui' as ui;
+
+:host {
+    display: block;
+}
+
+.note {
+    margin: 0 0 12px;
+    color: var(--muted);
+}
+
+.card {
+    @include ui.card;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+
+.head .title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+
+    h3 {
+        margin: 0;
+        font-size: 15px;
+    }
+}
+
+.fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.field {
+    @include ui.field;
+
+    &.grow {
+        flex: 1 1 260px;
+    }
+}
+
+.question .field {
+    margin-top: 8px;
+
+    textarea {
+        min-height: 48px;
+    }
+}
+
+// Sticks to the top while scrolling the questions, so the counts stay in view.
+.summary {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin-bottom: 12px;
+    padding: 10px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+    font-size: 13px;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    padding: 2px 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+}
+
+.warn {
+    color: var(--warn);
+}
+
+.toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    cursor: pointer;
+}
+
+.section-title {
+    margin: 0 0 4px;
+    font-size: 15px;
+}
+
+.group-title {
+    margin: 14px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+.question {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+
+    &:last-child {
+        border-bottom: 0;
+    }
+
+    &.busy {
+        cursor: progress;
+    }
+}
+
+.question-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.no {
+    flex: none;
+    min-width: 26px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.question-text {
+    flex: 1;
+}
+
+.topic {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.requirement {
+    flex: none;
+    padding: 1px 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 12px;
+
+    &.required {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+}
+
+.help {
+    margin: 6px 0 0 36px;
+    font-size: 13px;
+
+    summary {
+        color: var(--accent);
+        cursor: pointer;
+    }
+
+    p {
+        margin: 6px 0 0;
+    }
+}
+
+.options,
+.levels {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 0 36px;
+}
+
+.levels {
+    gap: 16px;
+    font-size: 13px;
+}
+
+.levels-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.question .field {
+    margin-left: 36px;
+}
+
+.option {
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--fg);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+
+    &.score {
+        min-width: 30px;
+        padding: 4px 0;
+        text-align: center;
+    }
+
+    &:hover:not(:disabled),
+    &:focus-visible {
+        border-color: var(--accent);
+    }
+
+    &.on {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+    }
+
+    // The meaning shows on the chosen option, so the eye finds the open and negative answers.
+    &.on[data-meaning='Partial'],
+    &.on[data-meaning='Open'] {
+        border-color: var(--warn);
+        background: var(--warn);
+    }
+
+    &.on[data-meaning='Negative'] {
+        border-color: var(--bad);
+        background: var(--bad);
+    }
+
+    &.on[data-meaning='NotApplicable'] {
+        border-color: var(--muted);
+        background: var(--muted);
+    }
+
+    &:disabled {
+        cursor: default;
+    }
+
+    &:disabled:not(.on) {
+        opacity: .6;
+    }
+}
+
+.points {
+    opacity: .75;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.small {
+    font-size: 12px;
+}
+
+.question > .small {
+    margin: 6px 0 0 36px;
+}
