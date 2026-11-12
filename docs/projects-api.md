@@ -56,7 +56,7 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
 | D1-2 | Talebi kayda alan kişi ayrı alan mı? | Hayır. Talebi yalnızca İş Analisti açar (karar 1); kaydı açan kişi `createdBy` olarak zaten tutuluyor ve detayda "Talebi kayda alan" etiketiyle gösterilir |
 | D1-3 | Talep kaynağı ve teklif bilgisi sonradan değiştirilebilir mi? | Yalnızca kayıt, akışın bu iki bilgiye bağlı **ilk adımına gelmeden** (yeni yazılım projesinde 4. adım). Sonrasında 409: hangi adımların atlandığı bu iki bilgiyle belirlendiği için geçmiş tutarsız olur. Aynı değeri tekrar göndermek hata değildir |
 | D1-4 | Mevcut kayıtlar | Migration çevirir: kod `ISDLC-2026-014` → `14`, kanal `Written` → `Email`, `Verbal` → `Phone` |
-| D1-5 | Form düzeni | Talep formu ve proje detayı, Talep Kayıt Formu'nun alanlarını **aynı sırada ve aynı adlarla** gösterir. Formda olmayan alanlar (teklif, talep türü, NDA, sorumlular, bitiş tarihi) ayrı bir "Süreç Bilgileri" bölümündedir. Kanal kararı (phase-4-plan.md) belgeye göre güncellendi: dört seçenek |
+| D1-5 | Form düzeni | Talep formu ve proje detayı, Talep Kayıt Formu'nun alanlarını **aynı sırada ve aynı adlarla** gösterir. Formda olmayan alanlar (teklif, talep türü, NDA, sorumlular, bitiş tarihi) **yeni talep formunda gösterilmez**; düzenleme ekranında ve detayda ayrı bir "Süreç Bilgileri" bölümündedir. Yeni talepte ekran şunları gönderir: talep türü `NewProject`, teklif `true` (hiçbir adım atlanmaz; "teklif yok" 4. adıma kadar düzenlemede seçilir), iş analisti talebi açan İş Analisti, diğerleri boş. API kuralları değişmez. Kanal kararı (phase-4-plan.md) belgeye göre güncellendi: dört seçenek |
 
 ## Ortak kurallar
 

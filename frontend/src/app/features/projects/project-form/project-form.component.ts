@@ -10,6 +10,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
+import { AuthService } from '../../../core/auth/auth.service';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
 import { UserLookup, UserSummary } from '../../../shared/models/user-summary';
 import { ProcessFlow, ProcessStep } from '../../process/models/process-stage';
@@ -106,6 +107,7 @@ export class ProjectFormComponent {
   private readonly _router = inject(Router);
   private readonly _projectService = inject(ProjectService);
   private readonly _processService = inject(ProcessService);
+  private readonly _auth = inject(AuthService);
 
   readonly channelOptions = Object.entries(REQUEST_CHANNEL_LABELS) as [RequestChannel, string][];
   readonly typeOptions = Object.entries(REQUEST_TYPE_LABELS) as [RequestType, string][];
@@ -178,15 +180,20 @@ export class ProjectFormComponent {
       requestChannel: this._fb.control<RequestChannel | null>(null, Validators.required),
       requestChannelOther: this._fb.nonNullable.control('', Validators.maxLength(200)),
       source: this._fb.control<RequestSource | null>(null, Validators.required),
-      requestType: this._fb.control<RequestType | null>(null, Validators.required),
-      // No default: "no offer" skips steps of the flow, so the analyst has to choose.
-      requiresOffer: this._fb.control<boolean | null>(null, Validators.required),
+      // A new request shows only the company form; the fields below start with what fits a new request in Talepler
+      // and can be changed on the edit form (the offer only until step 4).
+      requestType: this._fb.control<RequestType | null>('NewProject', Validators.required),
+      // "Offer" skips nothing, so it is the safe start; "no offer" is set on the edit form before step 4.
+      requiresOffer: this._fb.control<boolean | null>(true, Validators.required),
       customerName: this._fb.nonNullable.control('', [Validators.required, notBlank, Validators.maxLength(200)]),
       requesterName: this._fb.nonNullable.control('', [Validators.required, notBlank, Validators.maxLength(200)]),
       requesterContact: this._fb.nonNullable.control('', Validators.maxLength(200)),
       requiresNda: this._fb.nonNullable.control(false),
       notes: this._fb.nonNullable.control('', Validators.maxLength(2000)),
-      businessAnalystId: this._fb.control<number | null>(null),
+      // Only a Business Analyst opens requests: the one who registers it is its analyst until changed.
+      businessAnalystId: this._fb.control<number | null>(
+        this._auth.user()?.role === 'BusinessAnalyst' ? this._auth.user()!.id : null,
+      ),
       projectManagerId: this._fb.control<number | null>(null),
       dueDate: this._fb.control<string | null>(null),
     },
