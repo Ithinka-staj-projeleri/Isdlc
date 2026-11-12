@@ -1,6 +1,7 @@
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.QuestionBank;
 using Isdlc.Application.QuestionBank.Dtos;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Isdlc.Domain.QuestionBank;
 
@@ -47,6 +48,15 @@ public class QuestionnaireRulesTests
 
         Assert.False(rule(Seeded(isActive: false)));
         Assert.False(rule(Seeded(workType: "add-on")));
+    }
+
+    [Theory]
+    [InlineData(ProcessFlowCodes.NewRequest, ProcessFlowCodes.NewRequest)]
+    [InlineData(ProcessFlowCodes.AddOn, ProcessFlowCodes.NewRequest)]   // no add-on questions yet (decision 4)
+    [InlineData(ProcessFlowCodes.ProcessImprovement, ProcessFlowCodes.ProcessImprovement)]
+    public void WorkTypeFor_ProjectsFlow_IsTheFlowExceptAddOn(string flowCode, string workType)
+    {
+        Assert.Equal(workType, QuestionnaireRules.WorkTypeFor(flowCode));
     }
 
     // ---- Validation ----
