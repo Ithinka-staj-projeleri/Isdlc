@@ -43,6 +43,7 @@ Aşağıdaki liste kesin değildir; kapsam netleştikçe güncellenir.
 | Gösterge paneli | `Dashboard` | Özet göstergeler |
 | Bildirimler | `Notifications` | Uygulama içi bildirimler |
 | Denetim kaydı | `Audit` | Yapılan değişikliklerin kaydı |
+| Süreç iyileştirme (Faz 4 · E5) | `ProcessImprovement` | İyileştirme önerisi, önceliklendirme, çalışma dokümanı, pilot değerlendirme |
 | Yapay zekâ yardımcıları | `Agents` | Toplantı notlarından karar ve aksiyon önerisi (ekip onayıyla MVP'ye alındı); metinden risk, risk için puan ve önleyici aksiyon önerisi |
 
 **Sonraki sürümlere bırakılanlar:** Test & UAT, Teklif & Maliyet, Kaynak Planlama, Faturalama,
@@ -190,6 +191,11 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Projede doldurulan form / cevap | `Questionnaire` / `QuestionAnswer` |
 | Zorunlu / duruma bağlı soru | `QuestionRequirement` (`Required`, `Conditional`) |
 | Seçeneğin anlamı | `OptionMeaning` (`Complete`, `Partial`, `Open`, `Negative`, `NotApplicable`) |
+| Süreç iyileştirme önerisi | `process-improvement` akışındaki `Project` kaydı (kod `SI-001`) + 1'e 1 `ProcessImprovement` (modül `ProcessImprovement`) |
+| Önerinin kaynağı / önceliği | `ImprovementSource` (`Retrospective`, `DefectOrComplaint`, `EmployeeSuggestion`, `ManagementGoal`), `ImprovementPriority` (`High`, `Medium`, `Low`; saklanmaz, etki + sıklık + kolaylıktan hesaplanır) |
+| Etkilediği süreç / öneriyi getiren | `ProcessImprovement.AffectedProcess`, `SuggestedBy` |
+| Çalışma dokümanı (mevcut durum, kök neden, çözüm, pilot planı, fayda / maliyet) | `CurrentState`, `RootCause`, `Solution`, `PilotPlan`, `CostBenefit` |
+| Pilot hedefi / gerçekleşen / sonuç | `PilotTarget`, `PilotActual`, `PilotResult` (`Met`, `PartiallyMet`, `NotMet`) |
 | Yapay zekâ yardımcısı / önerisi | `Agents` modülü; tutanak önerileri `MeetingSuggestionsDto`, risk önerileri `RiskSuggestionsDto` ve `RiskAssessmentSuggestionDto` (kaydedilmez, formu doldurur) |
 
 Yeni bir kavram gerektiğinde önce bu tabloya eklenir.

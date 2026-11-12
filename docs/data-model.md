@@ -3,7 +3,7 @@
 Faz 0'ın temel entity'leri (`ProcessStage`, `ProcessStep`, `User`, `Project`, `StepRecord`), denetim kaydı
 ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
 Kaynak: "ISDLC Analiz Merkezi" prototipi.
-Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **uygulandı**; `Notification` (Faz 3) **uygulandı**; soru bankası (Faz 4 · B1) **taslak, ekip onayı bekliyor**; tutanak ve ziyaret alanları (Faz 4 · E4) **taslak, ekip onayı bekliyor.**
+Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **uygulandı**; `Notification` (Faz 3) **uygulandı**; soru bankası (Faz 4 · B1) **taslak, ekip onayı bekliyor**; tutanak ve ziyaret alanları (Faz 4 · E4) **taslak, ekip onayı bekliyor**; süreç iyileştirme (Faz 4 · E5) **taslak, ekip onayı bekliyor.**
 
 İsimlendirme AGENTS.md'ye uyar: entity tekil, tablo çoğul; `?` alanın boş bırakılabileceğini (nullable) gösterir.
 
@@ -431,6 +431,33 @@ QuestionAnswer * ──── 0..1 QuestionOption
 - `RequestSource`'a `Affiliated` (İlişkili şirket) eklendi; soruların üçüncü alt kategorisi. Talep formundaki karşılığı D1 ile gelir.
 - Veritabanında `Probability` ve `Severity` için 1–3 kontrolü (check constraint) bulunur.
 
+## Süreç iyileştirme (Faz 4 · E5, taslak)
+
+Öneri, `process-improvement` akışını izleyen bir `Project` kaydıdır (karar 20): kod `SI-001`, başlık `Name`, sorunun tanımı
+`Description`, yürüten `BusinessAnalystId`. Öneriye özgü alanlar 1'e 1 bağlı `ProcessImprovement` tablosundadır.
+Sözleşme: [process-improvement-api.md](process-improvement-api.md).
+
+### `ProcessImprovement` — öneri bilgileri
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `ProjectId` | int (PK, FK → Project) | Kaydın kendisi; akışı `process-improvement` olmalıdır |
+| `Source` | `ImprovementSource` | Önerinin kaynağı |
+| `AffectedProcess` | string | En fazla 200 |
+| `ProposedSolution` | string? | Öneriyle gelen çözüm fikri; en fazla 2000 |
+| `SuggestedBy` | string | Öneriyi getiren kişi (serbest metin); en fazla 200 |
+| `Impact`, `Frequency`, `Ease` | int? | Önceliklendirme, 1–5; üçü birlikte dolu ya da boş. Öncelik saklanmaz, hesaplanır |
+| `CurrentState`, `RootCause`, `Solution`, `PilotPlan`, `CostBenefit` | string? | Çalışma dokümanı; her biri en fazla 4000 |
+| `PilotTarget`, `PilotActual` | string? | Pilotun hedefi ve gerçekleşen; en fazla 1000 |
+| `PilotFeedback` | string? | En fazla 4000 |
+| `PilotResult` | `PilotResult`? | Pilot değerlendirme sonucu |
+| `PilotDecision` | string? | En fazla 2000 |
+| + `AuditableEntity` alanları | | `IAudited` + `IProjectRecord`: değişiklikler önerinin Kayıt Geçmişi'nde görünür |
+
+- Alanlar formlara göre dört bölümdür (öneri, önceliklendirme, çalışma, pilot). Formlar (040–042) gelince eksik alanlar
+  ilgili bölüme kolon olarak eklenir.
+- Veritabanında `Impact`, `Frequency`, `Ease` için 1–5 kontrolü ve "üçü birlikte" kontrolü (check constraint) bulunur.
+
 ## Enum'lar
 
 | Enum | Değerler |
@@ -453,6 +480,9 @@ QuestionAnswer * ──── 0..1 QuestionOption
 | `OptionMeaning` | `Complete`, `Partial`, `Open`, `Negative`, `NotApplicable`; formlardaki karşılıkları: [question-bank-api.md](question-bank-api.md) → Kavramlar |
 | `AnswerMode` | `SharedOptions` (seçenekler setin), `QuestionOptions` (her sorunun kendi seçenekleri) |
 | `AcceptanceRecommendation` | `Accept` (Kabul önerilir, ≥ 3,50), `Conditional` (Koşullu kabul, 2,50–3,49), `RejectOrPostpone` (Ret / erteleme önerilir, < 2,50). Saklanmaz, yalnızca DTO'da |
+| `ImprovementSource` | *(Faz 4 · E5)* `Retrospective` (Proje kapanışı / retrospektif), `DefectOrComplaint` (Hata, sapma, müşteri şikâyeti), `EmployeeSuggestion` (Çalışan önerisi), `ManagementGoal` (Yönetim hedefi) |
+| `ImprovementPriority` | *(Faz 4 · E5, saklanmaz)* `High` (Yüksek), `Medium` (Orta), `Low` (Düşük) |
+| `PilotResult` | *(Faz 4 · E5)* `Met` (Karşılandı), `PartiallyMet` (Kısmen karşılandı), `NotMet` (Karşılanmadı) |
 | `MeetingType` | `RequestInterview` (Talep Görüşmesi), `AnalysisSession` (Analiz Oturumu), `KickOff` (Proje Başlangıç / Kick-off), `Review` (Gözden Geçirme), `Internal` (Departman İçi), `CustomerVisit` (Müşteri Ziyareti), `Handover` (Devir Görüşmesi), `ProjectEvaluation` (Proje Değerlendirme) |
 | `RequirementType` | `Business` (İş gereksinimi), `Functional` (Fonksiyonel), `NonFunctional` (Fonksiyonel olmayan) |
 | `RequirementPriority` | `MustHave` (Olmazsa olmaz), `ShouldHave` (Olmalı), `CouldHave` (Olabilir), `WontHave` (Bu sürümde yok) |
