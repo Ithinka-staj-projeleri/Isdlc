@@ -2,7 +2,7 @@
 
 Şirketin dört formu aynı yapıdadır: bir **iş tipi** ve **alt kategori** seçilir, o seçime ait soru listesi çıkar, her soru
 projede cevaplanır, formun sonucu cevaplardan hesaplanır. Bu doküman o ortak yapıyı (soru setleri, sorular, seçenekler,
-cevaplar) ve uç noktalarını anlatır. Durum: sözleşme **onaylandı** (#117); entity'ler, migration ve seed (2. adım) ile servisler ve API (3. adım) uygulandı. Sorumlu: Baran.
+cevaplar) ve uç noktalarını anlatır. Durum: sözleşme **onaylandı** (#117); entity'ler, migration ve seed (2. adım), servisler ve API (3. adım) ile ortak ekran bileşeni (4. adım) uygulandı. Sorumlu: Baran.
 Plan: [phase-4-plan.md](phase-4-plan.md) → B1. Veri modeli: [data-model.md](data-model.md) → "Soru bankası".
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601,
@@ -231,12 +231,33 @@ kombinasyonda veritabanısız test edilir (AGENTS.md Bölüm 9). Eşikler seed'd
 | `Isdlc.Api/Controllers/` | `QuestionSetsController`, `QuestionnairesController` |
 | `frontend/src/app/shared/question-bank/` | Ortak bileşen: bölüm ve gruplara ayrılmış soru listesi, satır satır cevap, özet şeridi. Dört sekme bunu kullanır |
 
+## Ortak ekran bileşeni
+
+Dört sekme aynı bileşeni kullanır; sekme yalnızca kendi sonucunu (seviye, oran, risk özeti) yanına ekler.
+
+```html
+<app-questionnaire [projectId]="p.id" setCode="level" [readOnly]="readOnly()"
+    [sectionTitles]="{ '1': 'Doküman seviyesi', '2': 'Araştırma seviyesi' }" (changed)="form.set($event)" />
+```
+
+| Girdi / çıktı | Ne işe yarar |
+| --- | --- |
+| `projectId`, `setCode` | Hangi projenin hangi formu |
+| `readOnly` | Proje aktif değilse `true`: form görüntülenir, değiştirilemez |
+| `sectionTitles` | Bölüm kodlarına ad (`'1'` → "Doküman seviyesi"); verilmezse kod gösterilir |
+| `changed` | Form yüklendiğinde ve her kayıttan sonra bütün form (`Questionnaire`); sekme sonucunu bundan hesaplar ya da gösterir |
+
+Bileşen: başlık (alt kategori, katılanlar, tarih), yapışkan özet şeridi (tamamlandı / bekleyen zorunlu, cevaplanan, anlamlara göre sayılar,
+eksik açıklama), "Yalnızca cevaplanmamışlar" süzgeci, bölüm ve gruplara ayrılmış sorular. Her tıklama hemen kaydedilir; seçili seçeneğe
+yeniden tıklamak onu kaldırır. Puanlanan cevapta olasılık / şiddet (1–3) ve derece, talep analizinde paydaş yanıtı, seçenek seçilince not
+alanı çıkar. Not ve yanıt alan terk edilince kaydedilir. Onaylayan seçimi (iç onay) D7'de eklenir.
+
 ## Uygulama sırası (her biri ayrı PR)
 
 1. Bu doküman (ekip onayı)
 2. Entity'ler, migration, seeder ve dört setin JSON dosyaları (Excel'den çıkarma betiği repoya konmaz; dosyaların formlarla aynı olduğunu `QuestionSetFileTests` doğrular) ✅
 3. Servisler ve API; `QuestionnaireRules` testleri ✅
-4. Ortak ekran bileşeni (`shared/question-bank`); ilk kullanan B2 olur
+4. Ortak ekran bileşeni (`shared/question-bank`); ilk kullanan B2 olur ✅
 
 ## Ekip onayı bekleyen kararlar
 
