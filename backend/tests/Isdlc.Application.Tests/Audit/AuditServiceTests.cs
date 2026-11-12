@@ -66,7 +66,7 @@ public class AuditServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_CreatedThenUpdated_NewestFirstWithFieldChanges()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
         var requirement = await InScopeAsync((db, userId) =>
             new RequirementService(db, new TestUser(userId)).CreateAsync(projectId, new CreateRequirementDto
             {
@@ -100,9 +100,9 @@ public class AuditServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_ProjectChange_ShowsPeopleAndStepCodesInsteadOfIds()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var managerId = await TestProjects.UserIdAsync(database, TestProjects.Manager);
-        var stepId = await TestProjects.StepIdAsync(database, "7.1");
+        var stepId = await TestProjects.StepIdAsync(database, "14");
         await InScopeAsync(async db =>
         {
             var project = await db.Projects.SingleAsync(p => p.Id == projectId);
@@ -116,13 +116,13 @@ public class AuditServiceTests(DatabaseFixture database)
         Assert.Equal(AuditAction.Updated, update.Action);
         Assert.Equal((await TestProjects.GetAsync(database, projectId)).Code, update.RecordCode);
         Assert.Contains(new AuditFieldChangeDto("ProjectManagerId", "Ayşe Demir", "Mert Kaya"), update.Changes);
-        Assert.Contains(new AuditFieldChangeDto("CurrentStepId", "6.3", "7.1"), update.Changes);
+        Assert.Contains(new AuditFieldChangeDto("CurrentStepId", "12", "14"), update.Changes);
     }
 
     [Fact]
     public async Task List_MeetingAction_ShowsOwnerNameAndMeetingCode()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
         await InScopeAsync((db, userId) =>
             new MeetingService(db, new TestUser(userId), new RecordingNotificationService(), TimeProvider.System)
@@ -149,7 +149,7 @@ public class AuditServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_DocumentChange_ShowsTheDocumentName()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
         await InScopeAsync(async (db, userId) =>
         {
             var typeId = await db.DocumentTypes.Where(t => t.Code == "PKD").Select(t => t.Id).SingleAsync();
@@ -167,7 +167,7 @@ public class AuditServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_RiskHasItsCode_AssessmentHasNone()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.8");
+        var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
         await InScopeAsync(async db =>
         {
@@ -195,8 +195,8 @@ public class AuditServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_FilterPagingAndOtherProjects()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
-        var otherProjectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
+        var otherProjectId = await TestProjects.CreateAsync(database, "6");
         foreach (var (id, title) in new[] { (projectId, "Birinci"), (projectId, "İkinci"), (otherProjectId, "Başka") })
         {
             await InScopeAsync((db, userId) => new RequirementService(db, new TestUser(userId)).CreateAsync(id,
@@ -223,7 +223,7 @@ public class AuditServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_OldOrDamagedRows_AreShownWithoutBreakingTheHistory()
     {
-        var projectId = await TestProjects.CreateAsync(database, "6.3");
+        var projectId = await TestProjects.CreateAsync(database, "12");
         var rowIds = await InScopeAsync(async (db, userId) =>
         {
             AuditLog Row(string changes, int entityId = int.MaxValue) => new()

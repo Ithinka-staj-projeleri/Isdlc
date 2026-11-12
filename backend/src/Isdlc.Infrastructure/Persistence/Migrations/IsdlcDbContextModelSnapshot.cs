@@ -497,6 +497,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
                     b.Property<int?>("ProjectStageOrder")
                         .HasColumnType("int");
 

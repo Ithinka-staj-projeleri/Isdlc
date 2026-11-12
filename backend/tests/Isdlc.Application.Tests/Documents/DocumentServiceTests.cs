@@ -59,7 +59,7 @@ public class DocumentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_NewProject_EveryDocumentNotStarted()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
 
         var documents = await AsAsync(TestProjects.Developer, s => s.ListAsync(projectId, CancellationToken.None));
 
@@ -84,7 +84,7 @@ public class DocumentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_FirstTime_CreatesRecordShownInList()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
         var typeId = await TypeIdAsync("PKD");
 
         var saved = await SaveAsync(projectId, typeId, DocumentStatus.InReview, "Müşteri yorumu bekleniyor.",
@@ -105,7 +105,7 @@ public class DocumentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_SecondTime_UpdatesTheSameRecord()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
         var typeId = await TypeIdAsync("PGD");
 
         await SaveAsync(projectId, typeId, DocumentStatus.InProgress, "Taslak");
@@ -122,7 +122,7 @@ public class DocumentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_BlankNoteAndLink_AreStoredAsEmpty()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
 
         var saved = await SaveAsync(projectId, await TypeIdAsync("KTR"), DocumentStatus.NotRequired, "   ", " ");
 
@@ -143,7 +143,7 @@ public class DocumentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_UnknownDocumentType_ThrowsNotFound()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
 
         await Assert.ThrowsAsync<NotFoundException>(() => SaveAsync(projectId, int.MaxValue, DocumentStatus.Approved));
     }
@@ -151,7 +151,7 @@ public class DocumentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_NotSignedIn_ThrowsForbidden()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
         var typeId = await TypeIdAsync("PKD");
 
         await Assert.ThrowsAsync<ForbiddenException>(() => AsAsync(null, s => s.UpdateAsync(
@@ -161,7 +161,7 @@ public class DocumentServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_WritesAuditLogWithProject()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
 
         await SaveAsync(projectId, await TypeIdAsync("TPL"), DocumentStatus.InProgress);
 

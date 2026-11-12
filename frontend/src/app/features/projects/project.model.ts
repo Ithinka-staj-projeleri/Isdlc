@@ -13,8 +13,8 @@ export type ProjectPriority = 'Low' | 'Medium' | 'High';
 
 /**
  * Every record is in exactly one phase.
- * Request = waiting request: active, stages 1–3 ("Talepler").
- * Project = everything else: active projects in stages 4–13 and all closed records ("Projeler").
+ * Request = waiting request: active, before its flow's project stage ("Talepler").
+ * Project = everything else: active projects from the project stage on and all closed records ("Projeler").
  */
 export type ProjectPhase = 'Request' | 'Project';
 

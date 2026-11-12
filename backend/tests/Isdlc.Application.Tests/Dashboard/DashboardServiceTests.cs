@@ -120,17 +120,17 @@ public class DashboardServiceTests(DatabaseFixture database)
     {
         var mine = await NewUserAsync(UserRole.BusinessAnalyst);
         var other = await NewUserAsync(UserRole.BusinessAnalyst);
-        var projectId = await NewProjectAsync("4.1", analystId: mine);
+        var projectId = await NewProjectAsync("6", analystId: mine);
 
-        await WaitingSinceLongAgoAsync(projectId, "3.2");
+        await WaitingSinceLongAgoAsync(projectId, "4");
 
         var forMine = await AsAsync(mine);
         var forOther = await AsAsync(other);
 
         // Unassigned projects of other tests are shown to every analyst too (decision 3), so look for this one.
         var item = Assert.Single(forMine.MyWaitingSteps.Items, x => x.Project.Id == projectId);
-        Assert.Equal("4.1", item.Step.Code);
-        Assert.Equal(4, item.Step.StageOrder);
+        Assert.Equal("6", item.Step.Code);
+        Assert.Equal(1, item.Step.StageOrder);
         Assert.False(item.IsApproval);
         Assert.DoesNotContain(forOther.MyWaitingSteps.Items, x => x.Project.Id == projectId);
     }
@@ -139,8 +139,8 @@ public class DashboardServiceTests(DatabaseFixture database)
     public async Task MyWaitingSteps_NoAnalystAssigned_EveryAnalystSeesIt()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var projectId = await NewProjectAsync("7.1", analystId: null);
-        await WaitingSinceLongAgoAsync(projectId, "7.1");
+        var projectId = await NewProjectAsync("14", analystId: null);
+        await WaitingSinceLongAgoAsync(projectId, "14");
 
         Assert.True(await IsWaitingForAsync(analyst, projectId));
     }
@@ -150,8 +150,8 @@ public class DashboardServiceTests(DatabaseFixture database)
     {
         var mine = await NewUserAsync(UserRole.ProjectManager);
         var other = await NewUserAsync(UserRole.ProjectManager);
-        var projectId = await NewProjectAsync("10.1", analystId: null, managerId: mine);
-        await WaitingSinceLongAgoAsync(projectId, "10.1");
+        var projectId = await NewProjectAsync("12", analystId: null, managerId: mine);
+        await WaitingSinceLongAgoAsync(projectId, "12");
 
         Assert.True(await IsWaitingForAsync(mine, projectId));
         Assert.False(await IsWaitingForAsync(other, projectId));
@@ -162,10 +162,10 @@ public class DashboardServiceTests(DatabaseFixture database)
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
         var manager = await NewUserAsync(UserRole.SoftwareDepartmentManager);
-        var projectId = await NewProjectAsync("4.5", analystId: analyst);
-        await WaitingSinceLongAgoAsync(projectId, "4.4");
+        var projectId = await NewProjectAsync("10", analystId: analyst);
+        await WaitingSinceLongAgoAsync(projectId, "9");
 
-        // 4.5 is the analyst's step, but its approver is the department manager: only the manager can act on it.
+        // 10 is the sales representative's step, but its approver is the department manager: only the manager can act on it.
         Assert.False(await IsWaitingForAsync(analyst, projectId));
         var item = await WaitingItemAsync(manager, projectId);
         Assert.True(item.IsApproval);
@@ -188,10 +188,10 @@ public class DashboardServiceTests(DatabaseFixture database)
     public async Task MyWaitingSteps_LongestWaitingFirst_FromTheLastProcessRecord()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var newer = await NewProjectAsync("4.1", analystId: analyst);
-        var older = await NewProjectAsync("7.1", analystId: analyst);
-        await AddStepRecordAsync(newer, "4.1", new DateTime(2000, 1, 3, 9, 0, 0, DateTimeKind.Utc), analyst);
-        await AddStepRecordAsync(older, "7.1", new DateTime(2000, 1, 1, 9, 0, 0, DateTimeKind.Utc), analyst);
+        var newer = await NewProjectAsync("6", analystId: analyst);
+        var older = await NewProjectAsync("14", analystId: analyst);
+        await AddStepRecordAsync(newer, "6", new DateTime(2000, 1, 3, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(older, "14", new DateTime(2000, 1, 1, 9, 0, 0, DateTimeKind.Utc), analyst);
 
         var dashboard = await AsAsync(analyst);
 
@@ -206,8 +206,8 @@ public class DashboardServiceTests(DatabaseFixture database)
     public async Task MyWaitingSteps_EveryItem_IsAllowedByTheProcessRule()
     {
         var manager = await NewUserAsync(UserRole.SoftwareDepartmentManager);
-        await NewProjectAsync("4.5", analystId: null);
-        await NewProjectAsync("5.1", analystId: null);
+        await NewProjectAsync("10", analystId: null);
+        await NewProjectAsync("10", analystId: null);
 
         var dashboard = await AsAsync(manager, DashboardScope.All);
 
@@ -228,13 +228,13 @@ public class DashboardServiceTests(DatabaseFixture database)
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
         var manager = await NewUserAsync(UserRole.ProjectManager);
-        await NewProjectAsync("1.1", analystId: analyst);                                   // request, stage 1
-        await NewProjectAsync("2.1", analystId: analyst);                                   // request, stage 2
-        await NewProjectAsync("4.1", analystId: null, managerId: analyst);                  // project, stage 4 (the user as its manager)
-        await NewProjectAsync("7.1", analystId: analyst, dueDate: Today.AddDays(-1));       // project, stage 7, late
+        await NewProjectAsync("1", analystId: analyst);                                   // request, stage 1
+        await NewProjectAsync("10", analystId: analyst);                                    // request, stage 2
+        await NewProjectAsync("12", analystId: null, managerId: analyst);                   // project, stage 3 (the user as its manager)
+        await NewProjectAsync("14", analystId: analyst, dueDate: Today.AddDays(-1));        // project, stage 3, late
         await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Closed);
         await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Lost);
-        await NewProjectAsync("4.1", analystId: null, managerId: manager);                  // not the analyst's
+        await NewProjectAsync("12", analystId: null, managerId: manager);                   // not the analyst's
 
         var dashboard = await AsAsync(analyst);
 
@@ -243,9 +243,9 @@ public class DashboardServiceTests(DatabaseFixture database)
         Assert.Equal(2, dashboard.Summary.ActiveProjects);
         Assert.Equal(1, dashboard.Summary.OverdueProjects);
         Assert.Equal(new FinishedThisYearDto(1, 1, 0, 0), dashboard.Summary.FinishedThisYear);
-        Assert.Equal(13, dashboard.Stages.Count);
-        Assert.Equal(Enumerable.Range(1, 13), dashboard.Stages.Select(s => s.StageOrder));
-        Assert.Equal([1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0], dashboard.Stages.Select(s => s.Count));
+        Assert.Equal(4, dashboard.Stages.Count);
+        Assert.Equal([1, 2, 3, 4], dashboard.Stages.Select(s => s.StageOrder));
+        Assert.Equal([1, 1, 2, 0], dashboard.Stages.Select(s => s.Count));
     }
 
     [Fact]
@@ -253,7 +253,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
         var projectId = await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Rejected);
-        await AddStepRecordAsync(projectId, "3.2", new DateTime(DateTime.UtcNow.Year - 1, 6, 1, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(projectId, "4", new DateTime(DateTime.UtcNow.Year - 1, 6, 1, 9, 0, 0, DateTimeKind.Utc), analyst);
 
         var dashboard = await AsAsync(analyst);
 
@@ -266,7 +266,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     public async Task MyOpenIssues_NotClosedOnActiveProjects_OverdueFirst()
     {
         var owner = await NewUserAsync(UserRole.SoftwareDeveloper);
-        var projectId = await NewProjectAsync("7.1", analystId: null);
+        var projectId = await NewProjectAsync("14", analystId: null);
         var closedProjectId = await NewProjectAsync(null, analystId: null, status: ProjectStatus.Closed);
         var noDue = await AddOpenIssueAsync(projectId, "AK-001", owner, null);
         var later = await AddOpenIssueAsync(projectId, "AK-002", owner, Today.AddDays(5));
@@ -287,7 +287,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
         var owner = await NewUserAsync(UserRole.SoftwareDeveloper);
-        var projectId = await NewProjectAsync("7.1", analystId: analyst);
+        var projectId = await NewProjectAsync("14", analystId: analyst);
         var closedProjectId = await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Closed);
         var oldest = await AddOpenIssueAsync(projectId, "AK-001", owner, Today.AddDays(-10));
         var late = await AddOpenIssueAsync(projectId, "AK-002", owner, Today.AddDays(-1));
@@ -307,15 +307,15 @@ public class DashboardServiceTests(DatabaseFixture database)
     public async Task RecentActivity_Mine_NewestFirstFromTheUsersProjects()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var projectId = await NewProjectAsync("2.1", analystId: analyst);
-        var otherProjectId = await NewProjectAsync("2.1", analystId: null);
-        await AddStepRecordAsync(projectId, "1.1", DateTime.UtcNow.AddHours(-3), analyst);
-        await AddStepRecordAsync(projectId, "1.2", DateTime.UtcNow.AddHours(-1), analyst);
-        await AddStepRecordAsync(otherProjectId, "1.1", DateTime.UtcNow, analyst);
+        var projectId = await NewProjectAsync("5", analystId: analyst);
+        var otherProjectId = await NewProjectAsync("5", analystId: null);
+        await AddStepRecordAsync(projectId, "1", DateTime.UtcNow.AddHours(-3), analyst);
+        await AddStepRecordAsync(projectId, "2", DateTime.UtcNow.AddHours(-1), analyst);
+        await AddStepRecordAsync(otherProjectId, "1", DateTime.UtcNow, analyst);
 
         var dashboard = await AsAsync(analyst);
 
-        Assert.Equal(["1.2", "1.1"], dashboard.RecentActivity.Select(x => x.StepCode));
+        Assert.Equal(["2", "1"], dashboard.RecentActivity.Select(x => x.StepCode));
         Assert.All(dashboard.RecentActivity, x => Assert.Equal(projectId, x.Project.Id));
         Assert.Equal("Test BusinessAnalyst", dashboard.RecentActivity[0].PerformedBy.FullName);
     }
@@ -327,7 +327,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
         var owner = await NewUserAsync(UserRole.SoftwareDeveloper);
-        var projectId = await NewProjectAsync("4.8", analystId: analyst);
+        var projectId = await NewProjectAsync("8", analystId: analyst);
         var closedProjectId = await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Closed);
         await AddRiskAsync(projectId, "RSK-001", 3, 5, owner, RiskStatus.Monitoring);  // 15: high (lowest high score)
         await AddRiskAsync(projectId, "RSK-002", 4, 4, owner);                         // 16: high
@@ -354,10 +354,10 @@ public class DashboardServiceTests(DatabaseFixture database)
     public async Task Levels_Mine_CountsActiveRecordsByAppliedLevel()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        await SetLevelAsync(await NewProjectAsync("4.1", analystId: analyst), 1);
-        await SetLevelAsync(await NewProjectAsync("4.1", analystId: analyst), 2);
-        await SetLevelAsync(await NewProjectAsync("7.1", analystId: analyst), 2);
-        await NewProjectAsync("1.1", analystId: analyst);                                                  // not set yet
+        await SetLevelAsync(await NewProjectAsync("6", analystId: analyst), 1);
+        await SetLevelAsync(await NewProjectAsync("6", analystId: analyst), 2);
+        await SetLevelAsync(await NewProjectAsync("14", analystId: analyst), 2);
+        await NewProjectAsync("1", analystId: analyst);                                                  // not set yet
         await SetLevelAsync(await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Closed), 3); // not active
 
         var dashboard = await AsAsync(analyst);
@@ -372,23 +372,23 @@ public class DashboardServiceTests(DatabaseFixture database)
     // ---- Acceptance queue (decision 13) ----
 
     [Fact]
-    public async Task AcceptanceQueue_Mine_OnlyStage3_WithRecommendationOnceFullyScored()
+    public async Task AcceptanceQueue_Mine_OnlyTheSuitabilityStep_WithRecommendationOnceFullyScored()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var notScored = await NewProjectAsync("3.1", analystId: analyst);
-        var accept = await NewProjectAsync("3.2", analystId: analyst);
-        var conditional = await NewProjectAsync("3.2", analystId: analyst);
-        var partly = await NewProjectAsync("3.1", analystId: analyst);
-        var notInQueue = await NewProjectAsync("2.4", analystId: analyst);
+        var notScored = await NewProjectAsync("4", analystId: analyst);
+        var accept = await NewProjectAsync("4", analystId: analyst);
+        var conditional = await NewProjectAsync("4", analystId: analyst);
+        var partly = await NewProjectAsync("4", analystId: analyst);
+        var notInQueue = await NewProjectAsync("5", analystId: analyst);
         await AddAssessmentAsync(accept, 4, 4, 4, 4, 4, 4);
         await AddAssessmentAsync(conditional, 3, 3, 3, 3, 3, 3);
         await AddAssessmentAsync(partly, 5, 5, 5, 5, null, null);
         await AddAssessmentAsync(notInQueue, 5, 5, 5, 5, 5, 5);
         // Longest waiting first: give each a different last process record.
-        await AddStepRecordAsync(notScored, "3.1", new DateTime(2000, 1, 1, 9, 0, 0, DateTimeKind.Utc), analyst);
-        await AddStepRecordAsync(accept, "3.1", new DateTime(2000, 1, 2, 9, 0, 0, DateTimeKind.Utc), analyst);
-        await AddStepRecordAsync(conditional, "3.1", new DateTime(2000, 1, 3, 9, 0, 0, DateTimeKind.Utc), analyst);
-        await AddStepRecordAsync(partly, "2.4", new DateTime(2000, 1, 4, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(notScored, "4", new DateTime(2000, 1, 1, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(accept, "4", new DateTime(2000, 1, 2, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(conditional, "4", new DateTime(2000, 1, 3, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(partly, "5", new DateTime(2000, 1, 4, 9, 0, 0, DateTimeKind.Utc), analyst);
 
         var dashboard = await AsAsync(analyst);
 
@@ -396,9 +396,9 @@ public class DashboardServiceTests(DatabaseFixture database)
         Assert.Equal([notScored, accept, conditional, partly], dashboard.AcceptanceQueue.Items.Select(x => x.Project.Id));
         var items = dashboard.AcceptanceQueue.Items;
 
-        Assert.Equal(("3.1", 0, (decimal?)null, (AcceptanceRecommendation?)null),
+        Assert.Equal(("4", 0, (decimal?)null, (AcceptanceRecommendation?)null),
             (items[0].StepCode, items[0].AnsweredCount, items[0].WeightedScore, items[0].Recommendation));
-        Assert.Equal(("3.2", 6, (decimal?)4.00m, (AcceptanceRecommendation?)AcceptanceRecommendation.Accept),
+        Assert.Equal(("4", 6, (decimal?)4.00m, (AcceptanceRecommendation?)AcceptanceRecommendation.Accept),
             (items[1].StepCode, items[1].AnsweredCount, items[1].WeightedScore, items[1].Recommendation));
         Assert.Equal((decimal?)3.00m, items[2].WeightedScore);
         Assert.Equal(AcceptanceRecommendation.Conditional, items[2].Recommendation);
@@ -410,7 +410,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     public async Task AcceptanceQueue_MatchesTheAssessmentRules()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var projectId = await NewProjectAsync("3.2", analystId: analyst);
+        var projectId = await NewProjectAsync("4", analystId: analyst);
         var scores = new AcceptanceScoresDto
         {
             StrategicFit = 5, CommercialValue = 2, TechnicalFeasibility = 4,

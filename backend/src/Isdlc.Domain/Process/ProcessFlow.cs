@@ -16,6 +16,9 @@ public class ProcessFlow
 
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>Position in flow lists (Süreç Kütüphanesi); the first flow is shown by default.</summary>
+    public int Order { get; set; }
+
     /// <summary>Which menu lists the flow's records.</summary>
     public ProcessFlowKind Kind { get; set; }
 

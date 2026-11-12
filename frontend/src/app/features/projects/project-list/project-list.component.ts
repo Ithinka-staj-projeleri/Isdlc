@@ -12,7 +12,7 @@ import { PagedResult } from '../../../shared/models/paged-result';
 import { ProjectFilter, ProjectListItem, ProjectStatus } from '../project.model';
 import { ProjectService } from '../project.service';
 
-/** Which menu opened the list: "Talepler" (stages 1–3) or "Projeler" (stages 4–13 and closed ones). */
+/** Which menu opened the list: "Talepler" (before the project stage) or "Projeler" (from it on, and closed ones). */
 export type ProjectListMode = 'requests' | 'projects';
 
 /** The "Durum" choice on the Projeler page: active projects, everything, or one closed status. */

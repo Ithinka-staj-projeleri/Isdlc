@@ -12,8 +12,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Isdlc.Application.Tests.Process;
 
 /// <summary>
-/// Complete, answer and reject on a real database. Every test creates its own project (TestProjects),
-/// so seed projects are never changed. Expectations: docs/process-api.md and docs/data-model.md.
+/// Complete, answer and reject on a real database, on the company's flows (Seed/flows/*.json).
+/// Every test creates its own project (TestProjects), so seed projects are never changed.
+/// Expectations: docs/process-api.md and docs/data-model.md.
 /// </summary>
 [Collection("Database")]
 public class ProcessCommandTests(DatabaseFixture database)
@@ -53,24 +54,28 @@ public class ProcessCommandTests(DatabaseFixture database)
             .ToListAsync();
     }
 
-    private Task<int> Step(string code) => TestProjects.StepIdAsync(database, code);
+    private Task<int> Step(string code, string flowCode = ProcessFlowCodes.NewRequest) =>
+        TestProjects.StepIdAsync(database, code, flowCode);
+
+    private const string AddOn = ProcessFlowCodes.AddOn;
+    private const string Improvement = ProcessFlowCodes.ProcessImprovement;
 
     // ---- Complete ----
 
     [Fact]
     public async Task Complete_ResponsibleRole_MovesToTheNextStepAndWritesHistory()
     {
-        var projectId = await TestProjects.CreateAsync(database, "1.1");
+        var projectId = await TestProjects.CreateAsync(database, "1");
         await using var analyst = await SignInAsync(TestProjects.Analyst);
 
         var result = await analyst.Service.CompleteStepAsync(
-            projectId, new CompleteStepDto { ExpectedStepId = await Step("1.1"), Note = "  Form dolduruldu.  " }, default);
+            projectId, new CompleteStepDto { ExpectedStepId = await Step("1"), Note = "  Form dolduruldu.  " }, default);
 
         Assert.Equal(ProjectStatus.Active, result.Status);
-        Assert.Equal("1.2", result.CurrentStep!.Code);
+        Assert.Equal("2", result.CurrentStep!.Code);
 
         var record = Assert.Single(await RecordsAsync(projectId));
-        Assert.Equal("1.1", record.ProcessStep.Code);
+        Assert.Equal("1", record.ProcessStep.Code);
         Assert.Equal(StepAction.Completed, record.Action);
         Assert.Equal("Form dolduruldu.", record.Note);
         Assert.Equal(await TestProjects.UserIdAsync(database, TestProjects.Analyst), record.PerformedById);
@@ -79,43 +84,44 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Fact]
     public async Task Complete_OtherRole_IsForbidden()
     {
-        var projectId = await TestProjects.CreateAsync(database, "1.1");
+        var projectId = await TestProjects.CreateAsync(database, "1");
         await using var developer = await SignInAsync(TestProjects.Developer);
 
         var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await developer.Service.CompleteStepAsync(
-            projectId, new CompleteStepDto { ExpectedStepId = await Step("1.1") }, default));
+            projectId, new CompleteStepDto { ExpectedStepId = await Step("1") }, default));
 
         Assert.Equal("Bu adım İş Analisti tarafından yapılır.", error.Message);
         Assert.Empty(await RecordsAsync(projectId));
     }
 
     [Fact]
-    public async Task Complete_Step51_SalesPreparesButOnlyTheManagerCloses()
+    public async Task Complete_ApprovalStep_OnlyTheApproverCloses()
     {
-        var projectId = await TestProjects.CreateAsync(database, "5.1");
-        var step51 = await Step("5.1");
+        // Process improvement 8: the analyst prepares the standard, the department manager puts it into force.
+        var projectId = await TestProjects.CreateAsync(database, "8", flowCode: Improvement);
+        var step8 = await Step("8", Improvement);
 
-        await using (var sales = await SignInAsync(TestProjects.Sales))
+        await using (var analyst = await SignInAsync(TestProjects.Analyst))
         {
-            var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await sales.Service.CompleteStepAsync(
-                projectId, new CompleteStepDto { ExpectedStepId = step51 }, default));
+            var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await analyst.Service.CompleteStepAsync(
+                projectId, new CompleteStepDto { ExpectedStepId = step8 }, default));
             Assert.Equal("Bu adım Yazılım Departman Yöneticisi tarafından onaylanır.", error.Message);
         }
 
         await using var manager = await SignInAsync(TestProjects.Manager);
-        var result = await manager.Service.CompleteStepAsync(projectId, new CompleteStepDto { ExpectedStepId = step51 }, default);
+        var result = await manager.Service.CompleteStepAsync(projectId, new CompleteStepDto { ExpectedStepId = step8 }, default);
 
-        Assert.Equal("5.2", result.CurrentStep!.Code);
+        Assert.Equal(ProjectStatus.Closed, result.Status);
     }
 
     [Fact]
     public async Task Complete_DecisionStep_MustBeAnsweredInstead()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.2");
-        await using var analyst = await SignInAsync(TestProjects.Analyst);
+        var projectId = await TestProjects.CreateAsync(database, "17");
+        await using var developer = await SignInAsync(TestProjects.Developer);
 
-        var error = await Assert.ThrowsAsync<BusinessRuleException>(async () => await analyst.Service.CompleteStepAsync(
-            projectId, new CompleteStepDto { ExpectedStepId = await Step("2.2") }, default));
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(async () => await developer.Service.CompleteStepAsync(
+            projectId, new CompleteStepDto { ExpectedStepId = await Step("17") }, default));
 
         Assert.Equal("Bu adım bir karar adımıdır; Evet/Hayır cevabı verilmelidir.", error.Message);
     }
@@ -123,36 +129,103 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Fact]
     public async Task Complete_ArrivingAtAnApprovalStep_NotifiesTheApproverRole()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.4");
+        // 9 → 10: the offer step is approved by the department manager.
+        var projectId = await TestProjects.CreateAsync(database, "9");
         var code = (await TestProjects.GetAsync(database, projectId)).Code;
-        await using var analyst = await SignInAsync(TestProjects.Analyst);
+        await using var projectManager = await SignInAsync(TestProjects.ProjectManager);
 
-        await analyst.Service.CompleteStepAsync(projectId, new CompleteStepDto { ExpectedStepId = await Step("4.4") }, default);
+        await projectManager.Service.CompleteStepAsync(projectId, new CompleteStepDto { ExpectedStepId = await Step("9") }, default);
 
-        var sent = Assert.Single(analyst.Notifications.Sent);
+        var sent = Assert.Single(projectManager.Notifications.Sent);
         Assert.Equal(UserRole.SoftwareDepartmentManager, sent.Role);
-        Assert.Equal($"{code} · 4.5 onayınızı bekliyor.", sent.Message);
+        Assert.Equal($"{code} · 10 onayınızı bekliyor.", sent.Message);
     }
 
     [Fact]
     public async Task Complete_LastStep_ClosesTheProjectAndNotifiesAnalystAndProjectManager()
     {
-        var projectId = await TestProjects.CreateAsync(database, "13.5");
+        var projectId = await TestProjects.CreateAsync(database, "19");
         var code = (await TestProjects.GetAsync(database, projectId)).Code;
-        await using var analyst = await SignInAsync(TestProjects.Analyst);
+        await using var projectManager = await SignInAsync(TestProjects.ProjectManager);
 
-        var result = await analyst.Service.CompleteStepAsync(
-            projectId, new CompleteStepDto { ExpectedStepId = await Step("13.5") }, default);
+        var result = await projectManager.Service.CompleteStepAsync(
+            projectId, new CompleteStepDto { ExpectedStepId = await Step("19") }, default);
 
         Assert.Equal(ProjectStatus.Closed, result.Status);
         Assert.Null(result.CurrentStep);
         Assert.Equal(100, result.ProgressPercent);
 
-        var sent = Assert.Single(analyst.Notifications.Sent);
+        var sent = Assert.Single(projectManager.Notifications.Sent);
         Assert.Equal(
             [await TestProjects.UserIdAsync(database, TestProjects.Analyst), await TestProjects.UserIdAsync(database, TestProjects.ProjectManager)],
             sent.UserIds.Order());
         Assert.Equal($"{code} kapandı: Kapandı.", sent.Message);
+    }
+
+    // ---- Conditional steps (docs/process-api.md → "Adım koşulları") ----
+
+    [Theory]
+    [InlineData(RequestSource.External, true, "4")]  // the customer suitability survey
+    [InlineData(RequestSource.Internal, true, "5")]  // only for external customers
+    [InlineData(RequestSource.External, false, "5")] // "doğrudan proje": no offer, no survey
+    public async Task Complete_Step3_GoesToSuitabilityOnlyForExternalRequestsWithAnOffer(
+        RequestSource source, bool requiresOffer, string next)
+    {
+        var projectId = await TestProjects.CreateAsync(database, "3", source: source, requiresOffer: requiresOffer);
+        await using var analyst = await SignInAsync(TestProjects.Analyst);
+
+        var result = await analyst.Service.CompleteStepAsync(
+            projectId, new CompleteStepDto { ExpectedStepId = await Step("3") }, default);
+
+        Assert.Equal(next, result.CurrentStep!.Code);
+    }
+
+    [Fact]
+    public async Task Complete_Step9_WithoutAnOffer_SkipsTheOfferStageAndItsApproval()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "9", requiresOffer: false);
+        await using var projectManager = await SignInAsync(TestProjects.ProjectManager);
+
+        var result = await projectManager.Service.CompleteStepAsync(
+            projectId, new CompleteStepDto { ExpectedStepId = await Step("9") }, default);
+
+        Assert.Equal("12", result.CurrentStep!.Code);
+        Assert.Equal(
+            [await Step("4"), await Step("10"), await Step("11")],
+            result.SkippedStepIds);
+        // Nobody is asked to approve an offer that is not prepared.
+        Assert.Empty(projectManager.Notifications.Sent);
+        // Only the record of 9 is written; skipped steps leave no history.
+        Assert.Equal(["9"], (await RecordsAsync(projectId)).Select(r => r.ProcessStep.Code));
+    }
+
+    [Theory]
+    [InlineData(1, "10")] // level 1: no scope document, no offer
+    [InlineData(2, "8")]  // level 2: scope and effort
+    [InlineData(3, "8")]
+    public async Task Complete_AddOnStep7_GoesToScopeOnlyFromLevel2(int level, string next)
+    {
+        var projectId = await TestProjects.CreateAsync(database, "7", level: level, flowCode: AddOn);
+        await using var projectManager = await SignInAsync(TestProjects.ProjectManager);
+
+        var result = await projectManager.Service.CompleteStepAsync(
+            projectId, new CompleteStepDto { ExpectedStepId = await Step("7", AddOn) }, default);
+
+        Assert.Equal(next, result.CurrentStep!.Code);
+    }
+
+    [Theory]
+    [InlineData(2, "10")] // level 2: the scope goes to the customer without an offer
+    [InlineData(3, "9")]  // level 3: the sales department prepares an offer
+    public async Task AnswerYes_AddOnStep8_GoesToTheOfferOnlyOnLevel3(int level, string next)
+    {
+        var projectId = await TestProjects.CreateAsync(database, "8", level: level, flowCode: AddOn);
+        await using var projectManager = await SignInAsync(TestProjects.ProjectManager);
+
+        var result = await projectManager.Service.AnswerStepAsync(projectId,
+            new AnswerStepDto { ExpectedStepId = await Step("8", AddOn), Answer = StepAnswer.Yes }, default);
+
+        Assert.Equal(next, result.CurrentStep!.Code);
     }
 
     // ---- Checks every command shares (in order: 404, 409 not active, 409 step changed, 403) ----
@@ -181,12 +254,12 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Fact]
     public async Task Command_FromAnOldScreen_Is409()
     {
-        // The user still sees 1.1, but the project has already moved to 1.2.
-        var projectId = await TestProjects.CreateAsync(database, "1.2");
+        // The user still sees 1, but the project has already moved to 2.
+        var projectId = await TestProjects.CreateAsync(database, "2");
         await using var analyst = await SignInAsync(TestProjects.Analyst);
 
         var error = await Assert.ThrowsAsync<ConflictException>(async () => await analyst.Service.CompleteStepAsync(
-            projectId, new CompleteStepDto { ExpectedStepId = await Step("1.1") }, default));
+            projectId, new CompleteStepDto { ExpectedStepId = await Step("1") }, default));
 
         Assert.Equal("Proje bu arada başka bir adıma geçti. Sayfayı yenileyin.", error.Message);
         Assert.Empty(await RecordsAsync(projectId));
@@ -195,11 +268,11 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Fact]
     public async Task Command_NobodySignedIn_IsForbidden()
     {
-        var projectId = await TestProjects.CreateAsync(database, "1.1");
+        var projectId = await TestProjects.CreateAsync(database, "1");
         await using var nobody = await SignInAsync(email: null);
 
         var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await nobody.Service.CompleteStepAsync(
-            projectId, new CompleteStepDto { ExpectedStepId = await Step("1.1") }, default));
+            projectId, new CompleteStepDto { ExpectedStepId = await Step("1") }, default));
 
         Assert.Equal("İşlem yapmak için giriş yapılmalıdır.", error.Message);
     }
@@ -207,8 +280,8 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Fact]
     public async Task Command_TwoUsersAtTheSameMoment_SecondOneFailsAndWritesNothing()
     {
-        var projectId = await TestProjects.CreateAsync(database, "1.1");
-        var step11 = await Step("1.1");
+        var projectId = await TestProjects.CreateAsync(database, "1");
+        var step1 = await Step("1");
 
         // User A opened the project (it is loaded and tracked) ...
         await using var userA = await SignInAsync(TestProjects.Analyst);
@@ -217,15 +290,15 @@ public class ProcessCommandTests(DatabaseFixture database)
         // ... user B completes the step in the meantime ...
         await using (var userB = await SignInAsync(TestProjects.Analyst))
         {
-            await userB.Service.CompleteStepAsync(projectId, new CompleteStepDto { ExpectedStepId = step11 }, default);
+            await userB.Service.CompleteStepAsync(projectId, new CompleteStepDto { ExpectedStepId = step1 }, default);
         }
 
         // ... then A completes the same step from the same screen: RowVersion stops it (409 in the API).
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(async () => await userA.Service.CompleteStepAsync(
-            projectId, new CompleteStepDto { ExpectedStepId = step11 }, default));
+            projectId, new CompleteStepDto { ExpectedStepId = step1 }, default));
 
         Assert.Single(await RecordsAsync(projectId));
-        Assert.Equal("1.2", (await TestProjects.GetAsync(database, projectId)).CurrentStep!.Code);
+        Assert.Equal("2", (await TestProjects.GetAsync(database, projectId)).CurrentStep!.Code);
     }
 
     // ---- Answer: Yes ----
@@ -233,24 +306,24 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Fact]
     public async Task AnswerYes_MovesToTheNextStep()
     {
-        var projectId = await TestProjects.CreateAsync(database, "1.2");
-        await using var analyst = await SignInAsync(TestProjects.Analyst);
+        var projectId = await TestProjects.CreateAsync(database, "17");
+        await using var developer = await SignInAsync(TestProjects.Developer);
 
-        var result = await analyst.Service.AnswerStepAsync(
-            projectId, new AnswerStepDto { ExpectedStepId = await Step("1.2"), Answer = StepAnswer.Yes }, default);
+        var result = await developer.Service.AnswerStepAsync(
+            projectId, new AnswerStepDto { ExpectedStepId = await Step("17"), Answer = StepAnswer.Yes }, default);
 
-        Assert.Equal("1.3", result.CurrentStep!.Code);
+        Assert.Equal("18", result.CurrentStep!.Code);
         Assert.Equal(StepAction.Yes, Assert.Single(await RecordsAsync(projectId)).Action);
     }
 
     [Fact]
     public async Task AnswerYes_WithAReturnStep_IsRejected()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.7");
-        await using var analyst = await SignInAsync(TestProjects.Analyst);
+        var projectId = await TestProjects.CreateAsync(database, "17");
+        await using var developer = await SignInAsync(TestProjects.Developer);
 
-        var error = await Assert.ThrowsAsync<BusinessRuleException>(async () => await analyst.Service.AnswerStepAsync(projectId,
-            new AnswerStepDto { ExpectedStepId = await Step("4.7"), Answer = StepAnswer.Yes, JumpTargetStepId = await Step("4.1") },
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(async () => await developer.Service.AnswerStepAsync(projectId,
+            new AnswerStepDto { ExpectedStepId = await Step("17"), Answer = StepAnswer.Yes, JumpTargetStepId = await Step("16") },
             default));
 
         Assert.Equal("Evet cevabında dönüş adımı seçilmez.", error.Message);
@@ -259,28 +332,49 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Fact]
     public async Task Answer_NonDecisionStep_IsRejected()
     {
-        var projectId = await TestProjects.CreateAsync(database, "1.1");
+        var projectId = await TestProjects.CreateAsync(database, "1");
         await using var analyst = await SignInAsync(TestProjects.Analyst);
 
         await Assert.ThrowsAsync<BusinessRuleException>(async () => await analyst.Service.AnswerStepAsync(
-            projectId, new AnswerStepDto { ExpectedStepId = await Step("1.1"), Answer = StepAnswer.Yes }, default));
+            projectId, new AnswerStepDto { ExpectedStepId = await Step("1"), Answer = StepAnswer.Yes }, default));
+    }
+
+    [Fact]
+    public async Task Answer_OfferApproval_SalesCannotButManagerCan()
+    {
+        // 10: sales prepares the offer, the department manager approves it.
+        var projectId = await TestProjects.CreateAsync(database, "10", source: RequestSource.External);
+        var step10 = await Step("10");
+
+        await using (var sales = await SignInAsync(TestProjects.Sales))
+        {
+            var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await sales.Service.AnswerStepAsync(
+                projectId, new AnswerStepDto { ExpectedStepId = step10, Answer = StepAnswer.Yes }, default));
+            Assert.Equal("Bu adım Yazılım Departman Yöneticisi tarafından onaylanır.", error.Message);
+        }
+
+        await using var manager = await SignInAsync(TestProjects.Manager);
+        var result = await manager.Service.AnswerStepAsync(
+            projectId, new AnswerStepDto { ExpectedStepId = step10, Answer = StepAnswer.Yes }, default);
+
+        Assert.Equal("11", result.CurrentStep!.Code);
     }
 
     // ---- Answer: No (three outcomes) ----
 
     [Theory]
-    [InlineData("1.2", TestProjects.Analyst, ProjectStatus.Redirected, "Yönlendirildi")]
-    [InlineData("3.2", TestProjects.Manager, ProjectStatus.Rejected, "Reddedildi")] // approval step: the manager answers
-    [InlineData("5.3", TestProjects.Analyst, ProjectStatus.Lost, "Kaybedildi")]
+    [InlineData(ProcessFlowCodes.NewRequest, "4", TestProjects.Analyst, ProjectStatus.Rejected, "Reddedildi")]
+    [InlineData(ProcessFlowCodes.NewRequest, "11", TestProjects.Sales, ProjectStatus.Lost, "Kaybedildi")]
+    [InlineData(ProcessFlowCodes.ProcessImprovement, "2", TestProjects.Manager, ProjectStatus.Rejected, "Reddedildi")]
     public async Task AnswerNo_ClosingStep_ClosesTheProjectWithItsOutcome(
-        string stepCode, string answeredBy, ProjectStatus outcome, string outcomeName)
+        string flowCode, string stepCode, string answeredBy, ProjectStatus outcome, string outcomeName)
     {
-        var projectId = await TestProjects.CreateAsync(database, stepCode);
+        var projectId = await TestProjects.CreateAsync(database, stepCode, source: RequestSource.External, flowCode: flowCode);
         var code = (await TestProjects.GetAsync(database, projectId)).Code;
         await using var user = await SignInAsync(answeredBy);
 
-        var result = await user.Service.AnswerStepAsync(
-            projectId, new AnswerStepDto { ExpectedStepId = await Step(stepCode), Answer = StepAnswer.No }, default);
+        var result = await user.Service.AnswerStepAsync(projectId,
+            new AnswerStepDto { ExpectedStepId = await Step(stepCode, flowCode), Answer = StepAnswer.No }, default);
 
         Assert.Equal(outcome, result.Status);
         Assert.Null(result.CurrentStep);
@@ -293,54 +387,60 @@ public class ProcessCommandTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task AnswerNo_Step47_GoesBackTo41AndNotifiesTheAnalyst()
+    public async Task AnswerNo_Step10_ScopeChanged_GoesBackTo9AndNotifiesTheAnalyst()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.7");
+        var projectId = await TestProjects.CreateAsync(database, "10", source: RequestSource.External);
         var code = (await TestProjects.GetAsync(database, projectId)).Code;
-        await using var analyst = await SignInAsync(TestProjects.Analyst);
+        await using var manager = await SignInAsync(TestProjects.Manager);
 
-        var result = await analyst.Service.AnswerStepAsync(projectId,
-            new AnswerStepDto { ExpectedStepId = await Step("4.7"), Answer = StepAnswer.No, JumpTargetStepId = await Step("4.1") },
+        var result = await manager.Service.AnswerStepAsync(projectId,
+            new AnswerStepDto { ExpectedStepId = await Step("10"), Answer = StepAnswer.No, JumpTargetStepId = await Step("9") },
             default);
 
         Assert.Equal(ProjectStatus.Active, result.Status);
-        Assert.Equal("4.1", result.CurrentStep!.Code);
-        Assert.Equal("4.1", Assert.Single(await RecordsAsync(projectId)).JumpedToStep!.Code);
+        Assert.Equal("9", result.CurrentStep!.Code);
+        Assert.Equal("9", Assert.Single(await RecordsAsync(projectId)).JumpedToStep!.Code);
 
-        var sent = Assert.Single(analyst.Notifications.Sent);
+        var sent = Assert.Single(manager.Notifications.Sent);
         Assert.Equal([await TestProjects.UserIdAsync(database, TestProjects.Analyst)], sent.UserIds);
-        Assert.Equal($"{code} · 4.7 adımından 4.1 adımına dönüldü.", sent.Message);
+        Assert.Equal($"{code} · 10 adımından 9 adımına dönüldü.", sent.Message);
     }
 
     [Theory]
-    [InlineData("4.9")] // the only return option since the ISDLC v12.0 flow (Oct 2026); 4.1 was removed
-    public async Task AnswerNo_Step54_GoesBackToTheChosenOption(string target)
+    [InlineData("5")] // target partly met: repeat the pilot
+    [InlineData("3")] // target not met: back to the study
+    public async Task AnswerNo_ImprovementStep7_GoesBackToTheChosenOption(string target)
     {
-        var projectId = await TestProjects.CreateAsync(database, "5.4");
+        var projectId = await TestProjects.CreateAsync(database, "7", flowCode: Improvement);
         await using var analyst = await SignInAsync(TestProjects.Analyst);
 
         var result = await analyst.Service.AnswerStepAsync(projectId,
-            new AnswerStepDto { ExpectedStepId = await Step("5.4"), Answer = StepAnswer.No, JumpTargetStepId = await Step(target) },
+            new AnswerStepDto
+            {
+                ExpectedStepId = await Step("7", Improvement),
+                Answer = StepAnswer.No,
+                JumpTargetStepId = await Step(target, Improvement),
+            },
             default);
 
         Assert.Equal(target, result.CurrentStep!.Code);
     }
 
     [Theory]
-    [InlineData(null)]  // no option chosen
-    [InlineData("4.5")] // a step that is not one of the options
-    [InlineData("4.1")] // an option in the earlier flow, no longer one
-    public async Task AnswerNo_Step54_WithoutAValidOption_IsRejected(string? target)
+    [InlineData(null)] // no option chosen
+    [InlineData("6")]  // an earlier step that is not one of the options
+    [InlineData("8")]  // a later step
+    public async Task AnswerNo_ImprovementStep7_WithoutAValidOption_IsRejected(string? target)
     {
-        var projectId = await TestProjects.CreateAsync(database, "5.4");
+        var projectId = await TestProjects.CreateAsync(database, "7", flowCode: Improvement);
         await using var analyst = await SignInAsync(TestProjects.Analyst);
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(async () => await analyst.Service.AnswerStepAsync(projectId,
             new AnswerStepDto
             {
-                ExpectedStepId = await Step("5.4"),
+                ExpectedStepId = await Step("7", Improvement),
                 Answer = StepAnswer.No,
-                JumpTargetStepId = target is null ? null : await Step(target),
+                JumpTargetStepId = target is null ? null : await Step(target, Improvement),
             },
             default));
 
@@ -351,17 +451,17 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Fact]
     public async Task AnswerNo_StepWithoutOutcomeOrOptions_StaysOnTheStep()
     {
-        // 2.2: the project waits on the same step until it is answered again.
-        var projectId = await TestProjects.CreateAsync(database, "2.2");
+        // Add-on 8: the scope document is revised until the project manager approves it.
+        var projectId = await TestProjects.CreateAsync(database, "8", level: 2, flowCode: AddOn);
         var before = await TestProjects.GetAsync(database, projectId);
-        await using var analyst = await SignInAsync(TestProjects.Analyst);
+        await using var projectManager = await SignInAsync(TestProjects.ProjectManager);
 
-        var result = await analyst.Service.AnswerStepAsync(
-            projectId, new AnswerStepDto { ExpectedStepId = await Step("2.2"), Answer = StepAnswer.No }, default);
+        var result = await projectManager.Service.AnswerStepAsync(projectId,
+            new AnswerStepDto { ExpectedStepId = await Step("8", AddOn), Answer = StepAnswer.No }, default);
 
-        Assert.Equal("2.2", result.CurrentStep!.Code);
+        Assert.Equal("8", result.CurrentStep!.Code);
         Assert.Equal(StepAction.No, Assert.Single(await RecordsAsync(projectId)).Action);
-        Assert.Empty(analyst.Notifications.Sent);
+        Assert.Empty(projectManager.Notifications.Sent);
 
         // The project row is still updated, so RowVersion protects this answer from a parallel one.
         var after = await TestProjects.GetAsync(database, projectId);
@@ -371,33 +471,19 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Fact]
     public async Task AnswerNo_StepWithoutOptions_RejectsAReturnStep()
     {
-        var projectId = await TestProjects.CreateAsync(database, "2.2");
-        await using var analyst = await SignInAsync(TestProjects.Analyst);
+        var projectId = await TestProjects.CreateAsync(database, "8", level: 2, flowCode: AddOn);
+        await using var projectManager = await SignInAsync(TestProjects.ProjectManager);
 
-        var error = await Assert.ThrowsAsync<BusinessRuleException>(async () => await analyst.Service.AnswerStepAsync(projectId,
-            new AnswerStepDto { ExpectedStepId = await Step("2.2"), Answer = StepAnswer.No, JumpTargetStepId = await Step("1.1") },
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(async () => await projectManager.Service.AnswerStepAsync(projectId,
+            new AnswerStepDto
+            {
+                ExpectedStepId = await Step("8", AddOn),
+                Answer = StepAnswer.No,
+                JumpTargetStepId = await Step("7", AddOn),
+            },
             default));
 
         Assert.Equal("Bu adımda dönüş seçeneği yok; dönüş adımı seçilmez.", error.Message);
-    }
-
-    [Fact]
-    public async Task Answer_ApprovalStep45_AnalystCannotButManagerCan()
-    {
-        var projectId = await TestProjects.CreateAsync(database, "4.5");
-        var step45 = await Step("4.5");
-
-        await using (var analyst = await SignInAsync(TestProjects.Analyst))
-        {
-            await Assert.ThrowsAsync<ForbiddenException>(async () => await analyst.Service.AnswerStepAsync(
-                projectId, new AnswerStepDto { ExpectedStepId = step45, Answer = StepAnswer.Yes }, default));
-        }
-
-        await using var manager = await SignInAsync(TestProjects.Manager);
-        var result = await manager.Service.AnswerStepAsync(
-            projectId, new AnswerStepDto { ExpectedStepId = step45, Answer = StepAnswer.Yes }, default);
-
-        Assert.Equal("4.6", result.CurrentStep!.Code);
     }
 
     // ---- Reject ----
@@ -405,19 +491,19 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Fact]
     public async Task Reject_Manager_ClosesAsRejectedWithTheReasonOnTheCurrentStep()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.4");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var code = (await TestProjects.GetAsync(database, projectId)).Code;
         await using var manager = await SignInAsync(TestProjects.Manager);
 
         var result = await manager.Service.RejectAsync(projectId,
-            new RejectProjectDto { ExpectedStepId = await Step("7.4"), Reason = "  Bir aydır cevap alınamadı.  " }, default);
+            new RejectProjectDto { ExpectedStepId = await Step("14"), Reason = "  Bir aydır cevap alınamadı.  " }, default);
 
         Assert.Equal(ProjectStatus.Rejected, result.Status);
         Assert.Null(result.CurrentStep);
 
         var record = Assert.Single(await RecordsAsync(projectId));
         Assert.Equal(StepAction.Rejected, record.Action);
-        Assert.Equal("7.4", record.ProcessStep.Code);
+        Assert.Equal("14", record.ProcessStep.Code);
         Assert.Equal("Bir aydır cevap alınamadı.", record.Note);
 
         Assert.Equal($"{code} kapandı: Reddedildi.", Assert.Single(manager.Notifications.Sent).Message);
@@ -428,11 +514,11 @@ public class ProcessCommandTests(DatabaseFixture database)
     [InlineData(TestProjects.ProjectManager)]
     public async Task Reject_OtherRole_IsForbidden(string email)
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.4");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         await using var user = await SignInAsync(email);
 
         var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await user.Service.RejectAsync(projectId,
-            new RejectProjectDto { ExpectedStepId = await Step("7.4"), Reason = "Gerekçe" }, default));
+            new RejectProjectDto { ExpectedStepId = await Step("14"), Reason = "Gerekçe" }, default));
 
         Assert.Equal("Talebi yalnızca Yazılım Departman Yöneticisi reddedebilir.", error.Message);
         Assert.Equal(ProjectStatus.Active, (await TestProjects.GetAsync(database, projectId)).Status);

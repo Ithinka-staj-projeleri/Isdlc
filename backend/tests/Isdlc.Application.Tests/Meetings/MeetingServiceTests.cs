@@ -80,7 +80,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_FirstMeeting_GetsFirstCodeAndTrimmedText()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         var meeting = await CreateAsync(projectId, NewMeeting());
 
@@ -96,7 +96,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_SecondMeeting_GetsNextCode()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         await CreateAsync(projectId, NewMeeting());
         var second = await CreateAsync(projectId, NewMeeting());
@@ -109,7 +109,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_ActionsBecomeOpenActions_DecisionsBecomeClosedDecisions()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var analystId = await TestProjects.UserIdAsync(database, TestProjects.Analyst);
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
 
@@ -149,7 +149,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_IssueCodes_ContinueTheProjectList_ActionsFirstThenDecisions()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         await using (var scope = database.CreateScope())
         {
             // An open issue added directly before the meeting: AK-001.
@@ -178,7 +178,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_BlankDecisionLines_AreSkipped()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         var meeting = await CreateAsync(projectId, NewMeeting(decisions: ["", "   ", null, "  Tek karar  "]));
 
@@ -190,7 +190,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_SecondActionHasNoOwner_SavesNothingAndNamesTheLine()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(() => CreateAsync(projectId, NewMeeting(
             decisions: ["Karar"],
@@ -204,7 +204,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_DecisionTooLong_SavesNothingAndNamesTheLine()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(() => CreateAsync(projectId, NewMeeting(
             decisions: ["Kısa karar", "", new string('k', 301)],
@@ -226,7 +226,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_NotSignedIn_ThrowsForbidden()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
 
         await Assert.ThrowsAsync<ForbiddenException>(() =>
             AsAsync(null, s => s.CreateAsync(projectId, NewMeeting(), CancellationToken.None)));
@@ -237,7 +237,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_ActionAssignedToTeamMember_NotifiesOnlyThem()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var analystId = await TestProjects.UserIdAsync(database, TestProjects.Analyst);
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
 
@@ -259,7 +259,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_ShowsTheCurrentStatusOfActions()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var meeting = await CreateAsync(projectId, NewMeeting(actions: [Action("Kapanacak aksiyon")]));
         var actionId = Assert.Single(meeting.Actions).Id;
         await using (var scope = database.CreateScope())
@@ -282,8 +282,8 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_MeetingOfAnotherProject_ThrowsNotFound()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
-        var otherProjectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
+        var otherProjectId = await TestProjects.CreateAsync(database, "14");
         var meeting = await CreateAsync(projectId, NewMeeting());
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
@@ -293,7 +293,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_NewestFirst_WithDecisionAndActionCounts()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var older = await CreateAsync(projectId, NewMeeting(date: MeetingDate.AddDays(-7)));
         var newer = await CreateAsync(projectId, NewMeeting(
             decisions: ["Karar 1", "Karar 2"],
@@ -324,7 +324,7 @@ public class MeetingServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_ChangesTheMinutesOnly_KeepsDecisionsAndActions()
     {
-        var projectId = await TestProjects.CreateAsync(database, "7.1");
+        var projectId = await TestProjects.CreateAsync(database, "14");
         var meeting = await CreateAsync(projectId, NewMeeting(decisions: ["Karar"], actions: [Action("Aksiyon")]));
 
         var (updated, _) = await AsAsync(TestProjects.ProjectManager, s => s.UpdateAsync(projectId, meeting.Id,

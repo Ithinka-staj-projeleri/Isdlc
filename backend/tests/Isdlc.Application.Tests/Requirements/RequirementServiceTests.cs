@@ -51,7 +51,7 @@ public class RequirementServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_FirstRecord_StartsAsDraftWithFirstCode()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
 
         var created = await CreateAsync(projectId);
 
@@ -65,8 +65,8 @@ public class RequirementServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_NextRecords_GetIncreasingCodesPerProject()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
-        var otherProjectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
+        var otherProjectId = await TestProjects.CreateAsync(database, "6");
 
         await CreateAsync(projectId);
         var second = await CreateAsync(projectId);
@@ -93,7 +93,7 @@ public class RequirementServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_NotSignedIn_ThrowsForbidden()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
 
         await Assert.ThrowsAsync<ForbiddenException>(() =>
             AsAsync(null, s => s.CreateAsync(projectId, NewRequirement("Başlık"), CancellationToken.None)));
@@ -102,7 +102,7 @@ public class RequirementServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_BlankTitle_ThrowsBusinessRule()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => CreateAsync(projectId, "   "));
     }
@@ -110,7 +110,7 @@ public class RequirementServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_WritesAuditLogWithProject()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
 
         var created = await CreateAsync(projectId);
 
@@ -127,7 +127,7 @@ public class RequirementServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_ChangesContent_KeepsCodeAndStatus()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
         var created = await CreateAsync(projectId);
         await SetStatusAsync(projectId, created.Id, RequirementStatus.InReview);
 
@@ -152,8 +152,8 @@ public class RequirementServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_RecordOfAnotherProject_ThrowsNotFound()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
-        var otherProjectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
+        var otherProjectId = await TestProjects.CreateAsync(database, "6");
         var created = await CreateAsync(projectId);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
@@ -169,7 +169,7 @@ public class RequirementServiceTests(DatabaseFixture database)
     [Fact]
     public async Task UpdateStatus_Cancelled_CanBeMadeDraftAgain()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
         var created = await CreateAsync(projectId);
 
         var cancelled = await SetStatusAsync(projectId, created.Id, RequirementStatus.Cancelled);
@@ -184,7 +184,7 @@ public class RequirementServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_CancelledLast_ThenByCode()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
         var first = await CreateAsync(projectId, "Birinci");
         await CreateAsync(projectId, "İkinci");
         await CreateAsync(projectId, "Üçüncü");
@@ -200,7 +200,7 @@ public class RequirementServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_Filters_ReturnOnlyMatchingRecords()
     {
-        var projectId = await TestProjects.CreateAsync(database, "4.1");
+        var projectId = await TestProjects.CreateAsync(database, "6");
         var mobile = await CreateAsync(projectId, "Mobil onay ekranı");
         await CreateAsync(projectId, "Rapor çıktısı");
         await SetStatusAsync(projectId, mobile.Id, RequirementStatus.Approved);

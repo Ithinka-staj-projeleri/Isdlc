@@ -486,33 +486,31 @@ QuestionAnswer * ──── 0..1 QuestionOption
 Seed, EF Core'un `HasData` yöntemiyle değil JSON dosyalarıyla yapılır. Uygulama açılırken
 tablo boşsa bir seeder sınıfı dosyayı okuyup tabloya yazar.
 
-**Süreç akışı her açılışta dosyayla eşitlenir.** Tablo doluysa seeder aşamaları sırasına, adımları koduna göre eşleştirir;
-başlık, adım metni, "Hayır" açıklaması, roller, kapanış sonucu ve dönüş seçenekleri dosyadaki gibi yapılır. `Id`'ler
-değişmez; projeler ve süreç geçmişi etkilenmez. Böylece şirket akışı güncellediğinde yalnızca `process-flow.json`
-değiştirilir. Adım eklemek, çıkarmak veya sırasını değiştirmek bu yolla yapılmaz (projelerin bulunduğu adımı
-kaydırır); böyle bir fark logda uyarı olarak görünür ve ayrı bir migration gerektirir.
+**Akışlar her açılışta dosyalarıyla eşitlenir.** Her akış ayrı bir dosyadır: `Seed/flows/<code>.json` (beş dosya; kaynak:
+`Ithinka Proje Dokümanları/Akışlar`, 11.11.2026). Veritabanında olmayan bir akış dosyası **eklenir** (içinde henüz kayıt
+olmadığı için migration gerekmez). Var olan bir akışta seeder aşamaları sırasına, adımları koduna göre eşleştirir;
+başlık, adım metni, "Hayır" açıklaması, roller, kapanış sonucu, koşullar ve dönüş seçenekleri dosyadaki gibi yapılır.
+`Id`'ler değişmez; projeler ve süreç geçmişi etkilenmez. Böylece şirket bir akışı güncellediğinde yalnızca dosyası değişir.
+Var olan akışta adım eklemek, çıkarmak veya sırasını değiştirmek bu yolla yapılmaz (projelerin bulunduğu adımı kaydırır);
+böyle bir fark logda uyarı olarak görünür ve ayrı bir migration gerektirir.
 
-**Faz 4:** her akış ayrı bir dosyadır: `Seed/flows/<code>.json`. E1 ile **uygulandı**; şimdilik tek dosya var
-(`flows/isdlc-v12.json`, eski `process-flow.json`). E2'de beş akışın dosyaları gelir, `isdlc-v12` ve eski akışa göre yazılmış
-`sample-projects.json` kaldırılır; örnek projeler yeni akışlara göre yeniden yazılır.
-Dosyada akışın `code`, `name`, `kind`, `projectStageOrder` alanları ve `stages` / `steps` bulunur; adımlarda
-ayrıca `requiresExternalRequest`, `requiresOffer`, `minLevel`. Eşitleme akış bazında yapılır: veritabanında olmayan bir akış
-dosyası **eklenir** (içinde henüz kayıt olmadığı için migration gerekmez); var olan akışta adım eklemek, çıkarmak veya
-sıralamak bugünkü gibi migration ister.
+Dosyanın alanları:
+- Akış: `code`, `order`, `name`, `kind`, `projectStageOrder`.
+- `stages`: 4 bölüm (`order`, `title`, `shortTitle`).
+- `steps`: `code`, `stageOrder`, `order`, `text`, `isDecision`, `noBranchText`, `responsibleRole`, `approverRole`,
+  `noOutcome`, `noJumps`, `requiresExternalRequest`, `requiresOffer`, `minLevel`.
+- Adımlar birbirine ve bölümlere `Id` ile değil `code` ve `stageOrder` ile bağlanır; seeder bunları kaydederken
+  `Id`'lere çevirir. Enum değerleri metin olarak yazılır.
 
-**`backend/src/Isdlc.Infrastructure/Seed/process-flow.json`** (hazır; kaynak: şirketin ISDLC v12.0 akış şeması,
-"1 - Yeni Yazılım Projesi" sayfası, 27.10.2026)
-- `stages`: 13 aşama (`order`, `title`, `shortTitle`).
-- `steps`: 75 adım (`code`, `stageOrder`, `order`, `text`, `isDecision`, `noBranchText`,
-  `responsibleRole`, `approverRole`, `noOutcome`, `noJumps`).
-- Adımlar birbirine ve aşamalara `Id` ile değil `code` ve `stageOrder` ile bağlanır;
-  seeder bunları kaydederken `Id`'lere çevirir. Enum değerleri metin olarak yazılır.
-
-Şemadaki 2.3 ("Talep Sahibi'nden bir aydır cevap alınamıyor mu?") ayrı adım değildir; 2.2'nin "Hayır" açıklamasında
-yer alır ve yöneticinin "Talebi reddet" işlemiyle karşılanır (karar 6).
-
-Sorumlu roller prototipin kuralına göre atanmıştır: Aşama 8 Yazılım Geliştirici; 9.1–9.5 Test Uzmanı,
-9.6–9.9 İş Analisti; Aşama 10–11 Proje Yöneticisi; 5.1 Satış Temsilcisi; diğer adımlar İş Analisti.
+**Akış şemasında olmayan, eklenen yorumlar** (ekip gözden geçirmeli):
+- Şemada "karar" olarak çizilmeyen ama iki yolu olan adımlar Evet/Hayır kararı yapıldı: yeni proje 4 (uygun değil → reddedildi),
+  10 (kapsam değişti → 9), 11 (ret → kaybedildi), 17 (hata → 16); ek geliştirme 8 (Proje Yöneticisi onayı; onay yoksa adımda
+  kalınır) ve 10 (kapsam değişti → 9); süreç iyileştirme 2, 4 ve 7; kaynak planlama 7; faturalama 4.
+- Bir adımın hem kapanış sonucu hem dönüşü olamadığı için (karar 5) ret / erteleme, dönüşü olan adımlarda yöneticinin
+  "Talebi reddet" işlemiyle yapılır. Erteleme durumu D2 ile gelir.
+- Sorumlu roller şemadaki açıklamalardan çıkarıldı: analiz adımları İş Analisti; zaman ve kaynak planı, proje başlatma,
+  bakım ve kapanış Proje Yöneticisi; teklif ve anlaşma Satış Temsilcisi (teklifi Yazılım Departman Yöneticisi onaylar);
+  geliştirme ve canlıya alma Yazılım Geliştirici; test Test Uzmanı.
 Ekip gerekirse dosyada adım adım değiştirebilir.
 
 **`backend/src/Isdlc.Infrastructure/Seed/document-types.json`** (hazır)
@@ -528,15 +526,15 @@ Ekip gerekirse dosyada adım adım değiştirebilir.
   adımların çoğu bu role ait).
 
 **`backend/src/Isdlc.Infrastructure/Seed/sample-projects.json`** (hazır, yalnızca geliştirme ortamı)
-- 9 örnek proje; bütün durumlar temsil edilir: 5 `Active` (1.1, 2.2, 4.5, 7.4, 9.6 adımlarında),
-  1 `Closed`, 1 `Lost` (5.3), 1 `Rejected` (3.2), 1 `Redirected` (1.2).
-  İlk 7'si prototipten, `ISDLC-2026-012` ve `-013` eksik durumları göstermek için eklenmiştir.
+- 8 örnek proje, hepsi yeni yazılım projesi akışında: 5 `Active` (1, 6, 10, 14, 16. adımlarda), 1 `Closed`,
+  1 `Lost` (11: teklif kabul edilmedi), 1 `Rejected` (4: müşteri uygun değil).
+  `ISDLC-2026-015` teklifsiz bir iç taleptir ("doğrudan proje"): 4, 10 ve 11. adımlar onda atlanır.
 - Kullanıcılara `Id` ile değil e-posta ile bağlanır (`businessAnalystEmail`, `projectManagerEmail`).
-- Aktif projede `currentStepCode`, kapanmış projede `closedAtStepCode` bulunur.
-- Seviye 2.4'ten, öncelik 3.2'den sonraki projelerde doludur.
+- Aktif projede `currentStepCode`, kapanmış projede `closedAtStepCode` bulunur; `requiresOffer` teklif hazırlanıp hazırlanmayacağıdır.
+- Seviye 5. adımdan sonraki projelerde doludur.
 
 **Örnek projelerin süreç geçmişi** JSON'da tek tek yazılmaz; seeder şu kurala göre `StepRecord` üretir:
-- Mevcut (veya kapanış) adımından önceki her adım için bir kayıt: karar adımıysa `Yes`, değilse `Completed`.
-- Kapanmış projelerde kapanış adımı için de bir kayıt: `Closed` ise `Completed` (13.5), diğerlerinde `No`.
+- Mevcut (veya kapanış) adımından önceki her adım için bir kayıt: karar adımıysa `Yes`, değilse `Completed`. Projede atlanan adımlara kayıt yazılmaz.
+- Kapanmış projelerde kapanış adımı için de bir kayıt: `Closed` ise `Completed` (19), diğerlerinde `No`.
 - `PerformedById`: adımın `ApproverRole`'ü varsa o rolden, yoksa `ResponsibleRole`'den seed'deki ilk kullanıcı.
 - `PerformedAt`: proje `StartDate`'inden başlayarak adım başına bir gün artar, bugünü geçmez.
