@@ -10,7 +10,7 @@ public record CurrentStepSummaryDto(int Id, string Code, int StageOrder, string 
 /// <summary>One row of GET /api/v1/projects: only what the list screen shows.</summary>
 public record ProjectListItemDto(
     int Id,
-    string Code,
+    string Code, // Proje No
     string Name,
     string CustomerName,
     RequestType RequestType,
@@ -19,7 +19,7 @@ public record ProjectListItemDto(
     UserSummaryDto? BusinessAnalyst,
     int? Level,
     ProjectPriority? Priority,
-    DateOnly StartDate,
+    DateOnly RequestDate,
     DateOnly? DueDate);
 
 /// <summary>
@@ -28,11 +28,11 @@ public record ProjectListItemDto(
 /// </summary>
 public enum ProjectPhase
 {
-    /// <summary>A waiting request: active, current step in stages 1–3 (before the project is accepted at 3.2).</summary>
+    /// <summary>A waiting request: active, current step before the flow's project stage (docs/process-api.md).</summary>
     Request,
 
     /// <summary>
-    /// Everything that has left the request phase: active projects in stages 4–13 and all closed records
+    /// Everything that has left the request phase: active records in the project stages and all closed records
     /// (closed, rejected, lost, redirected). Combine with status=Active for active projects only.
     /// </summary>
     Project,
@@ -45,7 +45,7 @@ public record ProjectFilter
 
     public ProjectPhase? Phase { get; init; }
 
-    /// <summary>Text found in the code, project name or customer name.</summary>
+    /// <summary>The exact Proje No, or text found in the project name or customer name.</summary>
     public string? Search { get; init; }
 
     public int? BusinessAnalystId { get; init; }
@@ -62,6 +62,9 @@ public record ProjectDto(
     RequestType RequestType,
     string CustomerName,
     string RequesterName,
+    string? RequesterContact,
+    string? Notes,
+    bool RequiresOffer,
     bool RequiresNda,
     ProjectStatus Status,
     CurrentStepSummaryDto? CurrentStep, // null when the project is not active
@@ -69,14 +72,14 @@ public record ProjectDto(
     UserSummaryDto? ProjectManager,
     int? Level,
     ProjectPriority? Priority,
-    DateOnly StartDate,
+    DateOnly RequestDate,
     DateOnly? DueDate,
-    UserSummaryDto CreatedBy,
+    UserSummaryDto CreatedBy, // talebi kayda alan
     DateTime CreatedAt,
     DateTime? UpdatedAt);
 
 /// <summary>
-/// POST /api/v1/projects — a new request always starts Active at step 1.1.
+/// POST /api/v1/projects — a new request always starts Active at the first step of its flow.
 /// Status, current step, priority and level are not here: Process and Assessment own them.
 /// </summary>
 public record CreateProjectDto : IValidatableObject
@@ -99,13 +102,24 @@ public record CreateProjectDto : IValidatableObject
     [Required(ErrorMessage = "Talep türü zorunludur.")]
     public RequestType? RequestType { get; init; }
 
-    [Required(ErrorMessage = "Müşteri adı zorunludur.")]
-    [MaxLength(200, ErrorMessage = "Müşteri adı en fazla 200 karakter olabilir.")]
-    public string? CustomerName { get; init; }
-
     [Required(ErrorMessage = "Talep sahibi zorunludur.")]
     [MaxLength(200, ErrorMessage = "Talep sahibi en fazla 200 karakter olabilir.")]
+    public string? CustomerName { get; init; }
+
+    [Required(ErrorMessage = "Talebi ileten kişi zorunludur.")]
+    [MaxLength(200, ErrorMessage = "Talebi ileten kişi en fazla 200 karakter olabilir.")]
     public string? RequesterName { get; init; }
+
+    /// <summary>E-mail or phone; the format is not checked.</summary>
+    [MaxLength(200, ErrorMessage = "İletişim bilgisi en fazla 200 karakter olabilir.")]
+    public string? RequesterContact { get; init; }
+
+    [MaxLength(2000, ErrorMessage = "Notlar en fazla 2000 karakter olabilir.")]
+    public string? Notes { get; init; }
+
+    /// <summary>Nullable so a missing answer is an error instead of silently becoming false.</summary>
+    [Required(ErrorMessage = "Teklif hazırlanıp hazırlanmayacağı belirtilmelidir.")]
+    public bool? RequiresOffer { get; init; }
 
     public bool RequiresNda { get; init; }
 
@@ -115,24 +129,25 @@ public record CreateProjectDto : IValidatableObject
     /// <summary>Optional; must be an active Project Manager.</summary>
     public int? ProjectManagerId { get; init; }
 
-    [Required(ErrorMessage = "Başlangıç tarihi zorunludur.")]
-    public DateOnly? StartDate { get; init; }
+    [Required(ErrorMessage = "Talep tarihi zorunludur.")]
+    public DateOnly? RequestDate { get; init; }
 
     public DateOnly? DueDate { get; init; }
 
     /// <summary>Rules that involve more than one field (shared by create and update).</summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (StartDate is { } start && DueDate is { } due && due < start)
+        if (RequestDate is { } requested && DueDate is { } due && due < requested)
         {
             yield return new ValidationResult(
-                "Bitiş tarihi başlangıç tarihinden önce olamaz.", [nameof(DueDate)]);
+                "Bitiş tarihi talep tarihinden önce olamaz.", [nameof(DueDate)]);
         }
     }
 }
 
 /// <summary>
 /// PUT /api/v1/projects/{projectId} — the same fields and rules as a new request.
-/// Code, status, current step, priority and level never change here.
+/// Proje No, status, current step, priority and level never change here. Source and RequiresOffer change only
+/// until the record reaches the first step that depends on them (409 afterwards).
 /// </summary>
 public record UpdateProjectDto : CreateProjectDto;

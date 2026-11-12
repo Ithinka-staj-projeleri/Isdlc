@@ -8,7 +8,7 @@
     <a [routerLink]="backLink().path" class="back">← {{ backLink().label }}</a>
 
     <div class="title">
-      <span class="code">{{ p.code }}</span>
+      <span class="code" title="Proje No">No {{ p.code }}</span>
       <h2>{{ p.name }}</h2>
       <app-status-badge [label]="statusLabels[p.status]" [tone]="statusTones[p.status]" />
       @if (p.status === 'Active') {
@@ -72,15 +72,23 @@
       }
       @default {
         <div class="card">
-          <h3>Talep</h3>
+          <h3>Talep kayıt bilgileri</h3>
           <p class="description">{{ p.description }}</p>
           <dl>
-            <dt>Talep türü</dt>
-            <dd>{{ typeLabels[p.requestType] }}</dd>
-            <dt>Talep kaynağı</dt>
-            <dd>{{ sourceLabels[p.source] }}</dd>
+            <dt>Proje No</dt>
+            <dd>{{ p.code }}</dd>
+            <dt>Talep tarihi</dt>
+            <dd>{{ p.requestDate | dateOnly }}</dd>
+            <dt>Talebi kayda alan</dt>
+            <dd>{{ p.createdBy.fullName }} · {{ p.createdAt | localDate }}</dd>
             <dt>Talep kanalı</dt>
             <dd>{{ channelLabels[p.requestChannel] }}</dd>
+            <dt>Talep kaynağı</dt>
+            <dd>{{ sourceLabels[p.source] }}</dd>
+            <dt>Talep türü</dt>
+            <dd>{{ typeLabels[p.requestType] }}</dd>
+            <dt>Teklif</dt>
+            <dd>{{ p.requiresOffer ? 'Hazırlanacak' : 'Hazırlanmayacak (doğrudan proje)' }}</dd>
             <dt>Seviye</dt>
             <dd>{{ p.level ?? 'Belirlenmedi' }}</dd>
             <dt>Öncelik</dt>
@@ -91,28 +99,33 @@
         <div class="card">
           <h3>Talep sahibi</h3>
           <dl>
-            <dt>Müşteri / birim</dt>
+            <dt>Talep sahibi (firma / birim)</dt>
             <dd>{{ p.customerName }}</dd>
-            <dt>Talep sahibi</dt>
+            <dt>Talebi ileten kişi</dt>
             <dd>{{ p.requesterName }}</dd>
+            <dt>İletişim</dt>
+            <dd>{{ p.requesterContact ?? '—' }}</dd>
             <dt>Gizlilik sözleşmesi (NDA)</dt>
             <dd>{{ p.requiresNda ? 'Gerekiyor' : 'Gerekmiyor' }}</dd>
           </dl>
         </div>
 
+        @if (p.notes) {
+          <div class="card">
+            <h3>Notlar</h3>
+            <p class="description">{{ p.notes }}</p>
+          </div>
+        }
+
         <div class="card">
-          <h3>Sorumlular ve tarihler</h3>
+          <h3>Sorumlular ve hedef tarih</h3>
           <dl>
             <dt>İş analisti</dt>
             <dd>{{ p.businessAnalyst?.fullName ?? 'Atanmadı' }}</dd>
             <dt>Proje yöneticisi</dt>
             <dd>{{ p.projectManager?.fullName ?? 'Atanmadı' }}</dd>
-            <dt>Başlangıç</dt>
-            <dd>{{ p.startDate | dateOnly }}</dd>
             <dt>Bitiş</dt>
             <dd>{{ (p.dueDate | dateOnly) || '—' }}</dd>
-            <dt>Oluşturan</dt>
-            <dd>{{ p.createdBy.fullName }} · {{ p.createdAt | localDate }}</dd>
             <dt>Son güncelleme</dt>
             <dd>{{ (p.updatedAt | localDate) || '—' }}</dd>
           </dl>

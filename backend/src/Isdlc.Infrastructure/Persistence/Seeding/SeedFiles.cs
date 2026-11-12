@@ -85,6 +85,8 @@ internal static class SeedFiles
         RequestType RequestType,
         string CustomerName,
         string RequesterName,
+        string? RequesterContact,
+        string? Notes,
         bool RequiresNda,
         bool RequiresOffer,
         string? BusinessAnalystEmail,
@@ -94,6 +96,6 @@ internal static class SeedFiles
         ProjectStatus Status,
         string? CurrentStepCode,
         string? ClosedAtStepCode,
-        DateOnly StartDate,
+        DateOnly RequestDate,
         DateOnly? DueDate);
 }

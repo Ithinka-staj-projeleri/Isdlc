@@ -15,11 +15,12 @@ public class CreateProjectDtoTests
         Name = "Bayi Sipariş Portalı",
         Description = "Bayilerin sipariş vermesi ve durumunu takip etmesi.",
         Source = RequestSource.External,
-        RequestChannel = RequestChannel.Written,
+        RequestChannel = RequestChannel.Email,
         RequestType = RequestType.NewProject,
         CustomerName = "Ege Gıda Dağıtım Ltd.",
         RequesterName = "Satış Direktörü",
-        StartDate = new DateOnly(2026, 11, 5),
+        RequiresOffer = true,
+        RequestDate = new DateOnly(2026, 11, 5),
         DueDate = new DateOnly(2027, 3, 1),
     };
 
@@ -46,8 +47,11 @@ public class CreateProjectDtoTests
     [Fact]
     public void Validate_OnlyRequiredFields_IsValid()
     {
-        // Due date, NDA and the people are optional.
-        Assert.Empty(Validate(Valid() with { DueDate = null, BusinessAnalystId = null, ProjectManagerId = null }));
+        // Due date, NDA, contact, notes and the people are optional.
+        Assert.Empty(Validate(Valid() with
+        {
+            DueDate = null, BusinessAnalystId = null, ProjectManagerId = null, RequesterContact = null, Notes = null,
+        }));
     }
 
     [Theory]
@@ -91,26 +95,57 @@ public class CreateProjectDtoTests
             [nameof(CreateProjectDto.Source)] = "Talep kaynağı zorunludur.",
             [nameof(CreateProjectDto.RequestChannel)] = "Talep kanalı zorunludur.",
             [nameof(CreateProjectDto.RequestType)] = "Talep türü zorunludur.",
-            [nameof(CreateProjectDto.CustomerName)] = "Müşteri adı zorunludur.",
-            [nameof(CreateProjectDto.RequesterName)] = "Talep sahibi zorunludur.",
-            [nameof(CreateProjectDto.StartDate)] = "Başlangıç tarihi zorunludur.",
+            [nameof(CreateProjectDto.CustomerName)] = "Talep sahibi zorunludur.",
+            [nameof(CreateProjectDto.RequesterName)] = "Talebi ileten kişi zorunludur.",
+            [nameof(CreateProjectDto.RequiresOffer)] = "Teklif hazırlanıp hazırlanmayacağı belirtilmelidir.",
+            [nameof(CreateProjectDto.RequestDate)] = "Talep tarihi zorunludur.",
         }, messages);
     }
 
     [Fact]
-    public void Validate_DueDateBeforeStartDate_ReturnsTurkishErrorOnDueDate()
+    public void Validate_DueDateBeforeRequestDate_ReturnsTurkishErrorOnDueDate()
     {
-        var dto = Valid() with { StartDate = new DateOnly(2026, 11, 5), DueDate = new DateOnly(2026, 11, 4) };
+        var dto = Valid() with { RequestDate = new DateOnly(2026, 11, 5), DueDate = new DateOnly(2026, 11, 4) };
 
         var error = SingleError(dto, nameof(CreateProjectDto.DueDate));
-        Assert.Equal("Bitiş tarihi başlangıç tarihinden önce olamaz.", error.ErrorMessage);
+        Assert.Equal("Bitiş tarihi talep tarihinden önce olamaz.", error.ErrorMessage);
     }
 
     [Fact]
-    public void Validate_DueDateOnStartDate_IsValid()
+    public void Validate_DueDateOnRequestDate_IsValid()
     {
         var day = new DateOnly(2026, 11, 5);
-        Assert.Empty(Validate(Valid() with { StartDate = day, DueDate = day }));
+        Assert.Empty(Validate(Valid() with { RequestDate = day, DueDate = day }));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Validate_RequiresOfferYesOrNo_IsValid(bool requiresOffer)
+    {
+        Assert.Empty(Validate(Valid() with { RequiresOffer = requiresOffer }));
+    }
+
+    [Fact]
+    public void Validate_RequiresOfferNotGiven_ReturnsTurkishError()
+    {
+        // Not silently "no offer": that would skip the offer steps of the flow.
+        var error = SingleError(Valid() with { RequiresOffer = null }, nameof(CreateProjectDto.RequiresOffer));
+        Assert.Equal("Teklif hazırlanıp hazırlanmayacağı belirtilmelidir.", error.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_ContactOver200_ReturnsTurkishError()
+    {
+        var error = SingleError(Valid() with { RequesterContact = new string('a', 201) }, nameof(CreateProjectDto.RequesterContact));
+        Assert.Equal("İletişim bilgisi en fazla 200 karakter olabilir.", error.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_NotesOver2000_ReturnsTurkishError()
+    {
+        var error = SingleError(Valid() with { Notes = new string('a', 2001) }, nameof(CreateProjectDto.Notes));
+        Assert.Equal("Notlar en fazla 2000 karakter olabilir.", error.ErrorMessage);
     }
 
     [Fact]

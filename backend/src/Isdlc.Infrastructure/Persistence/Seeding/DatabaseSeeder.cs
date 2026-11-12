@@ -313,6 +313,8 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 RequestType = seed.RequestType,
                 CustomerName = seed.CustomerName,
                 RequesterName = seed.RequesterName,
+                RequesterContact = seed.RequesterContact,
+                Notes = seed.Notes,
                 RequiresNda = seed.RequiresNda,
                 BusinessAnalystId = businessAnalyst?.Id,
                 ProjectManagerId = projectManager?.Id,
@@ -322,9 +324,9 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 ProcessFlowId = flow.Id,
                 RequiresOffer = seed.RequiresOffer,
                 CurrentStepId = isActive ? markerStep.Id : null,
-                StartDate = seed.StartDate,
+                RequestDate = seed.RequestDate,
                 DueDate = seed.DueDate,
-                CreatedAt = ToUtc(seed.StartDate),
+                CreatedAt = ToUtc(seed.RequestDate),
                 CreatedById = createdById,
             };
 
@@ -346,7 +348,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             {
                 var (step, action) = history[i];
                 // One day per step from the start date, never in the future, always increasing.
-                var performedAt = Min(ToUtc(seed.StartDate).AddDays(i), now.AddMinutes(i - history.Count));
+                var performedAt = Min(ToUtc(seed.RequestDate).AddDays(i), now.AddMinutes(i - history.Count));
                 var performedById = FirstUserWithRole(users, step.ApproverRole ?? step.ResponsibleRole).Id;
 
                 project.StepRecords.Add(new StepRecord
