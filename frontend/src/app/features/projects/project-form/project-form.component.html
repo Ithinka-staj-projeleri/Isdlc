@@ -148,7 +148,8 @@
     </label>
   </section>
 
-  <!-- Not on the company form: the flow and the other screens need them. -->
+  <!-- Not on the company form, so not on a new request; edited here once the request exists. -->
+  @if (isEdit()) {
   <section class="card">
     <h3>Süreç Bilgileri</h3>
     <p class="hint wide">Bu alanlar Talep Kayıt Formu'nda yok; süreç akışı ve diğer ekranlar kullanır.</p>
@@ -233,6 +234,7 @@
       <span>Görüşme öncesi gizlilik sözleşmesi (NDA) gerekiyor</span>
     </label>
   </section>
+  }
 
   <footer class="actions">
     <a [routerLink]="backLink().path" class="button">İptal</a>
