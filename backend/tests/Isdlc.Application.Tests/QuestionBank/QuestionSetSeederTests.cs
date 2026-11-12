@@ -28,6 +28,7 @@ public class QuestionSetSeederTests(DatabaseFixture database)
         Assert.Equal(new Dictionary<string, int>
         {
             ["internal-approval"] = 43,
+            ["customer-fit"] = 10,
             ["level"] = 74,
             ["request-analysis"] = 97,
             ["risk-analysis"] = 62,
@@ -44,7 +45,7 @@ public class QuestionSetSeederTests(DatabaseFixture database)
         var levelOptionCounts = await db.Questions.Where(q => q.QuestionSet.Code == "level")
             .Select(q => q.Options.Count).Distinct().ToListAsync();
         var sharedSetQuestionOptions = await db.QuestionOptions
-            .CountAsync(o => o.QuestionId != null && o.QuestionSet.Code != "level");
+            .CountAsync(o => o.QuestionId != null && o.QuestionSet.AnswerMode == AnswerMode.SharedOptions);
 
         Assert.Equal([5], levelOptionCounts);
         Assert.Equal(0, sharedSetQuestionOptions);

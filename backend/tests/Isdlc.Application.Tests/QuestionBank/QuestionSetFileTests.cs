@@ -23,9 +23,9 @@ public class QuestionSetFileTests
     // ---- The real files ----
 
     [Fact]
-    public void ReadAll_EmbeddedFiles_AreTheFourForms()
+    public void ReadAll_EmbeddedFiles_AreTheFiveForms()
     {
-        Assert.Equal(["internal-approval", "level", "request-analysis", "risk-analysis"], Files.Select(f => f.Code));
+        Assert.Equal(["customer-fit", "internal-approval", "level", "request-analysis", "risk-analysis"], Files.Select(f => f.Code));
     }
 
     [Fact]
@@ -40,6 +40,7 @@ public class QuestionSetFileTests
     [InlineData("level", 24, 26, 24)]
     [InlineData("risk-analysis", 45, 46, 45)]
     [InlineData("internal-approval", 39, 39, 39)]
+    [InlineData("customer-fit", 0, 10, 0)]          // only for external requests
     public void EmbeddedFiles_ListAsManyQuestionsAsTheForms(string code, int internalCount, int externalCount, int affiliatedCount)
     {
         var file = File(code);
@@ -70,6 +71,21 @@ public class QuestionSetFileTests
 
         Assert.Equal(60, file.Bands!.Single(b => b.Section == "1").Ranges[^1].Max);
         Assert.Equal(60, file.Bands!.Single(b => b.Section == "2").Ranges[^1].Max);
+    }
+
+    [Fact]
+    public void CustomerFit_TenQuestionsOf0To10_AndTheFormsFourRatingsUpTo100()
+    {
+        var file = File("customer-fit");
+
+        Assert.Equal(AnswerMode.QuestionOptions, file.AnswerMode);
+        Assert.All(file.Questions, q => Assert.Equal(RequestSource.External, q.Subcategory));
+        Assert.All(file.Questions, q => Assert.Equal(Enumerable.Range(0, 11), q.Options!.Select(o => o.Points)));
+        Assert.Equal(100, file.Questions.Sum(q => q.Options!.Max(o => o.Points)));
+
+        var ranges = Assert.Single(file.Bands!).Ranges;
+        Assert.Equal([(0, 49, "NotFit"), (50, 69, "Risky"), (70, 84, "ConditionallyFit"), (85, 100, "Fit")],
+            ranges.Select(r => (r.Min, r.Max, r.Result)));
     }
 
     [Fact]

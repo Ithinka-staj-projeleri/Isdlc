@@ -790,6 +790,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<bool>("RequiresOffer")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("ResearchDays")
+                        .HasColumnType("int");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -834,6 +837,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.ToTable("Projects", t =>
                         {
                             t.HasCheckConstraint("CK_Projects_Level", "[Level] BETWEEN 1 AND 3");
+
+                            t.HasCheckConstraint("CK_Projects_ResearchDays", "[ResearchDays] BETWEEN 1 AND 30");
                         });
                 });
 

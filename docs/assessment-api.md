@@ -4,7 +4,7 @@
 **doküman seviyesi** (5. adım). İkisi de soru bankasının formlarıyla doldurulur ([question-bank-api.md](question-bank-api.md));
 bu modül formların **sonucunu** hesaplar ve seviyeyi projeye uygular. Sorumlu: Baran. Plan: [phase-4-plan.md](phase-4-plan.md) → B2.
 
-Durum: **taslak, ekip onayı bekliyor.** Faz 1'deki sürüm (6 soruluk seviye ve 6 ölçütlü kabul puanlaması; #96–#98) bu sözleşmeyle
+Durum: sözleşme **onaylandı** (#130); seed ve `Project.ResearchDays` uygulandı (2. adım). Faz 1'deki sürüm (6 soruluk seviye ve 6 ölçütlü kabul puanlaması; #96–#98) bu sözleşmeyle
 **kalkar**; yerine şirketin kendi formları gelir.
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, hatalar `ProblemDetails`, JSON alanları camelCase.
@@ -107,7 +107,7 @@ Cevap kaydındaki hatalar soru bankasınınkilerle aynıdır ([question-bank-api
 | --- | --- |
 | Yeni soru seti `customer-fit`: `Seed/question-sets/customer-fit.json` (form 006, 10 soru, `External` alt kategorisi, eşikler `bands`'de) | Anket soru bankasında tutulur (question-bank-api.md → karar 8) |
 | `Project.ResearchDays` (`int?`) | Araştırma süresi seviyeyle birlikte uygulanır (karar 3) |
-| `ProjectAssessments` tablosu kaldırılır | Faz 1 formu kalktı (karar 1) |
+| `ProjectAssessments` tablosu kaldırılır (3. adımda, eski kodla birlikte) | Faz 1 formu kalktı (karar 1) |
 | `Level` ve `ResearchDays` değişiklikleri denetim kaydına `Project` olarak yazılır | Mevcut kural |
 
 ## Gösterge paneli
@@ -137,8 +137,9 @@ B2'nin API PR'ında, panelin derlenmeye devam etmesi için satırdaki `weightedS
 ## Uygulama sırası (her biri ayrı PR)
 
 1. Bu doküman (ekip onayı)
-2. Seed (`customer-fit.json`), `Project.ResearchDays`, `ProjectAssessments` tablosunun kaldırılması (tek migration)
-3. `LevelRules`, `CustomerFitRules` ve testleri; `result` alanı, `apply-level`; eski uç noktalar ve gösterge paneli satırı
+2. Seed (`customer-fit.json`) ve `Project.ResearchDays` (migration `AddProjectResearchDays`) ✅
+3. `LevelRules`, `CustomerFitRules` ve testleri; `result` alanı, `apply-level`; eski uç noktalar, gösterge paneli satırı ve
+   `ProjectAssessments` tablosunun kaldırılması (migration). Tablo eski kodla aynı PR'da kalkar; yoksa 2. adımda derleme kırılırdı
 4. Ekran: "Seviye & Uygunluk" sekmesi ve menü sayfası
 
 ## Ekip onayı bekleyen kararlar
