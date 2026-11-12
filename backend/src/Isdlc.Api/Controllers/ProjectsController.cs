@@ -30,7 +30,7 @@ public class ProjectsController(IProjectService projectService) : ApiControllerB
     }
 
     /// <summary>
-    /// A new request. It starts Active at step 1.1 and gets the next code of the year (ISDLC-2026-019).
+    /// A new request. It starts Active at the first step of its flow and gets the next Proje No (e.g. 19).
     /// Only a Business Analyst can open a request.
     /// </summary>
     [HttpPost]

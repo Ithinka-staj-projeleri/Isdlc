@@ -15,10 +15,9 @@ namespace Isdlc.Application.Projects;
 public class ProjectService(
     IApplicationDbContext dbContext,
     ICurrentUserService currentUser,
-    INotificationService notifications,
-    TimeProvider timeProvider) : IProjectService
+    INotificationService notifications) : IProjectService
 {
-    /// <summary>The first try plus 3 retries when another request took the same code at the same moment.</summary>
+    /// <summary>The first try plus 3 retries when another request took the same Proje No at the same moment.</summary>
     private const int MaxCodeAttempts = 4;
 
     public async Task<PagedResult<ProjectListItemDto>> ListAsync(
@@ -33,7 +32,7 @@ public class ProjectService(
         }
 
         // The two phases split every record in two: a waiting request (active, before the flow's project stage) or not.
-        // A closed record is never a waiting request, even if it was closed early (e.g. redirected at 1.2).
+        // A closed record is never a waiting request, even if it was closed early (e.g. rejected at step 4).
         // A flow without a project stage never turns its records into projects (docs/process-api.md → "Talep mi, proje mi").
         if (filter.Phase == ProjectPhase.Request)
         {
@@ -54,10 +53,11 @@ public class ProjectService(
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            // The database collation ignores case, so "portal" also finds "Portal".
+            // Proje No must match exactly ("14" does not find 114); the database collation ignores case, so "portal"
+            // also finds "Portal".
             var search = filter.Search.Trim();
             query = query.Where(p =>
-                p.Code.Contains(search) || p.Name.Contains(search) || p.CustomerName.Contains(search));
+                p.Code == search || p.Name.Contains(search) || p.CustomerName.Contains(search));
         }
 
         if (filter.BusinessAnalystId is { } analystId)
@@ -68,7 +68,7 @@ public class ProjectService(
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query
-            // Newest request first. Longer codes first, so "-1000" comes before "-999".
+            // Newest request first. Longer numbers first, so "1000" comes before "999".
             .OrderByDescending(p => p.Code.Length)
             .ThenByDescending(p => p.Code)
             .ApplyPaging(pageRequest)
@@ -87,7 +87,7 @@ public class ProjectService(
                 p.BusinessAnalyst != null ? new UserSummaryDto(p.BusinessAnalyst.Id, p.BusinessAnalyst.FullName) : null,
                 p.Level,
                 p.Priority,
-                p.StartDate,
+                p.RequestDate,
                 p.DueDate))
             .ToListAsync(cancellationToken);
 
@@ -127,20 +127,14 @@ public class ProjectService(
                 s.Id, s.Order, new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel)))
             .ToListAsync(cancellationToken);
 
-        var project = new Project
-        {
-            Status = ProjectStatus.Active,
-            ProcessFlowId = flowId,
-            // The request form gets "teklif hazırlanacak mı" in Faz 4 (D1); until then every request may get an offer.
-            RequiresOffer = true,
-        };
+        var project = new Project { Status = ProjectStatus.Active, ProcessFlowId = flowId };
         ApplyContent(project, request);
         project.CurrentStepId = StepConditions.FirstStepId(
                 flowSteps, new ConditionContext(project.Source, project.RequiresOffer, project.Level))
             ?? throw new InvalidOperationException($"Flow {ProcessFlowCodes.NewRequest} has no step for this request.");
         dbContext.Projects.Add(project);
 
-        await SaveWithNewCodeAsync(project, cancellationToken);
+        await SaveWithNewCodeAsync(project, flowId, cancellationToken);
         await NotifyAssignedPeopleAsync(project, previousAnalystId: null, previousManagerId: null, userId, cancellationToken);
 
         return await GetAsync(project.Id, cancellationToken);
@@ -161,6 +155,11 @@ public class ProjectService(
         }
 
         await ValidatePeopleAsync(request.BusinessAnalystId, request.ProjectManagerId, cancellationToken);
+
+        if (project.Source != request.Source || project.RequiresOffer != request.RequiresOffer)
+        {
+            await EnsureStepConditionsCanChangeAsync(project, cancellationToken);
+        }
 
         var previousAnalystId = project.BusinessAnalystId;
         var previousManagerId = project.ProjectManagerId;
@@ -188,11 +187,45 @@ public class ProjectService(
         project.RequestType = request.RequestType!.Value;
         project.CustomerName = request.CustomerName!.Trim();
         project.RequesterName = request.RequesterName!.Trim();
+        project.RequesterContact = TrimToNull(request.RequesterContact);
+        project.Notes = TrimToNull(request.Notes);
+        project.RequiresOffer = request.RequiresOffer!.Value;
         project.RequiresNda = request.RequiresNda;
         project.BusinessAnalystId = request.BusinessAnalystId;
         project.ProjectManagerId = request.ProjectManagerId;
-        project.StartDate = request.StartDate!.Value;
+        project.RequestDate = request.RequestDate!.Value;
         project.DueDate = request.DueDate;
+    }
+
+    private static string? TrimToNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    /// <summary>
+    /// Source and RequiresOffer decide which steps are skipped. Once the record has reached the first step that
+    /// depends on them, changing them would make the history inconsistent (409). Decision D1-3, docs/projects-api.md.
+    /// </summary>
+    private async Task EnsureStepConditionsCanChangeAsync(Project project, CancellationToken cancellationToken)
+    {
+        var firstDependentStep = await dbContext.ProcessSteps
+            .AsNoTracking()
+            .Where(s => s.ProcessFlowId == project.ProcessFlowId && (s.RequiresExternalRequest || s.RequiresOffer))
+            .OrderBy(s => s.Order)
+            .Select(s => new { s.Order, s.Code })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (firstDependentStep is null)
+        {
+            return;
+        }
+
+        var currentOrder = await dbContext.ProcessSteps
+            .AsNoTracking()
+            .Where(s => s.Id == project.CurrentStepId)
+            .Select(s => (int?)s.Order)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (currentOrder >= firstDependentStep.Order)
+        {
+            throw new ConflictException(
+                $"Talep kaynağı ve teklif bilgisi {firstDependentStep.Code}. adıma gelindikten sonra değiştirilemez.");
+        }
     }
 
     /// <summary>An assigned person must be an active user with the matching role (400).</summary>
@@ -214,17 +247,15 @@ public class ProjectService(
         dbContext.Users.AnyAsync(u => u.Id == userId && u.IsActive && u.Role == role, cancellationToken);
 
     /// <summary>
-    /// Gives the project the next code of the year and saves it. Codes come from "highest + 1", so two requests
-    /// saved at the same moment can pick the same code; the unique index stops the second one, which then
+    /// Gives the project the next Proje No and saves it. Numbers come from "highest + 1", so two requests
+    /// saved at the same moment can pick the same number; the unique index stops the second one, which then
     /// tries again with a new number. The user is never asked to resend the form.
     /// </summary>
-    private async Task SaveWithNewCodeAsync(Project project, CancellationToken cancellationToken)
+    private async Task SaveWithNewCodeAsync(Project project, int flowId, CancellationToken cancellationToken)
     {
-        var year = timeProvider.GetUtcNow().Year;
-
         for (var attempt = 1; ; attempt++)
         {
-            project.Code = ProjectCodes.Format(year, ProjectCodes.NextNumber(await HighestCodeAsync(year, cancellationToken)));
+            project.Code = ProjectCodes.Format(ProjectCodes.NextNumber(await HighestCodeAsync(flowId, cancellationToken)));
 
             try
             {
@@ -246,13 +277,16 @@ public class ProjectService(
         }
     }
 
-    /// <summary>Highest code of the year. Longer codes first, so "-1000" comes before "-999".</summary>
-    private Task<string?> HighestCodeAsync(int year, CancellationToken cancellationToken)
+    /// <summary>
+    /// Highest Proje No among the records of the flow; other flows number their records their own way.
+    /// Longer numbers first, so "1000" comes before "999".
+    /// </summary>
+    private Task<string?> HighestCodeAsync(int flowId, CancellationToken cancellationToken)
     {
-        var prefix = ProjectCodes.YearPrefix(year);
         return dbContext.Projects
             .AsNoTracking()
-            .Where(p => p.Code.StartsWith(prefix))
+            // Only plain numbers count; a record with any other code (e.g. written by hand) is ignored.
+            .Where(p => p.ProcessFlowId == flowId && !EF.Functions.Like(p.Code, "%[^0-9]%"))
             .OrderByDescending(p => p.Code.Length)
             .ThenByDescending(p => p.Code)
             .Select(p => p.Code)
@@ -291,6 +325,9 @@ public class ProjectService(
             p.RequestType,
             p.CustomerName,
             p.RequesterName,
+            p.RequesterContact,
+            p.Notes,
+            p.RequiresOffer,
             p.RequiresNda,
             p.Status,
             p.CurrentStep != null
@@ -302,7 +339,7 @@ public class ProjectService(
             p.ProjectManager != null ? new UserSummaryDto(p.ProjectManager.Id, p.ProjectManager.FullName) : null,
             p.Level,
             p.Priority,
-            p.StartDate,
+            p.RequestDate,
             p.DueDate,
             dbContext.Users
                 .Where(u => u.Id == p.CreatedById)

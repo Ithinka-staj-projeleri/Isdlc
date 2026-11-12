@@ -18,7 +18,7 @@
 <section class="filters">
   <input
     type="search"
-    placeholder="Kod, proje adı veya müşteri ara"
+    placeholder="Proje No, proje adı veya talep sahibi ara"
     aria-label="Ara"
     [value]="search()"
     (input)="onSearchInput($any($event.target).value)"
@@ -51,9 +51,9 @@
     <table>
       <thead>
         <tr>
-          <th>Kod</th>
+          <th>Proje No</th>
           <th>Proje adı</th>
-          <th>Müşteri</th>
+          <th>Talep sahibi</th>
           <th>Tür</th>
           <th>Mevcut adım</th>
           <th>Durum</th>

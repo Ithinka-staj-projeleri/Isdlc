@@ -32,14 +32,17 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
 
 const FIELD_LABELS: Record<AuditEntityType, Record<string, string>> = {
     Project: {
-        Code: 'Kod',
+        Code: 'Proje No',
         Name: 'Proje adı',
         Description: 'Açıklama',
         Source: 'Talep kaynağı',
         RequestChannel: 'Talep kanalı',
         RequestType: 'Talep türü',
-        CustomerName: 'Müşteri',
-        RequesterName: 'Talep sahibi',
+        CustomerName: 'Talep sahibi (firma / birim)',
+        RequesterName: 'Talebi ileten kişi',
+        RequesterContact: 'İletişim',
+        Notes: 'Notlar',
+        RequiresOffer: 'Teklif hazırlanacak',
         RequiresNda: 'Gizlilik sözleşmesi (NDA)',
         BusinessAnalystId: 'İş analisti',
         ProjectManagerId: 'Proje yöneticisi',
@@ -47,7 +50,9 @@ const FIELD_LABELS: Record<AuditEntityType, Record<string, string>> = {
         Priority: 'Öncelik',
         Status: 'Durum',
         CurrentStepId: 'Mevcut adım',
-        StartDate: 'Başlangıç tarihi',
+        RequestDate: 'Talep tarihi',
+        // Records written before the field was renamed (Faz 4, D1).
+        StartDate: 'Talep tarihi',
         DueDate: 'Hedef bitiş tarihi',
     },
     OpenIssue: {
@@ -116,7 +121,8 @@ const FIELD_LABELS: Record<AuditEntityType, Record<string, string>> = {
 const VALUE_LABELS: Partial<Record<AuditEntityType, Record<string, Record<string, string>>>> = {
     Project: {
         Source: REQUEST_SOURCE_LABELS,
-        RequestChannel: REQUEST_CHANNEL_LABELS,
+        // Old records may still hold the channels used before Faz 4 (D1).
+        RequestChannel: { ...REQUEST_CHANNEL_LABELS, Written: 'Yazılı', Verbal: 'Sözlü' },
         RequestType: REQUEST_TYPE_LABELS,
         Priority: PROJECT_PRIORITY_LABELS,
         Status: PROJECT_STATUS_LABELS,

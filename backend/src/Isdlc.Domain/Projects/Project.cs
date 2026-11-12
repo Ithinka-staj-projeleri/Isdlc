@@ -11,7 +11,10 @@ public class Project : AuditableEntity, IAudited
 {
     public int Id { get; set; }
 
-    /// <summary>Shown to users, e.g. "ISDLC-2026-014". Generated automatically.</summary>
+    /// <summary>
+    /// Proje No, shown to users: a plain number kept as text, e.g. "14". Generated automatically
+    /// (docs/projects-api.md → "Proje No").
+    /// </summary>
     public string Code { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
@@ -20,11 +23,16 @@ public class Project : AuditableEntity, IAudited
     public RequestChannel RequestChannel { get; set; }
     public RequestType RequestType { get; set; }
 
-    /// <summary>Customer or internal unit name (no separate table in the MVP).</summary>
+    /// <summary>Talep sahibi: the customer company or internal unit (no separate table in the MVP).</summary>
     public string CustomerName { get; set; } = string.Empty;
 
-    /// <summary>Requester person or title. Not a system user.</summary>
+    /// <summary>Talebi ileten kişi: the person or title who passed the request on. Not a system user.</summary>
     public string RequesterName { get; set; } = string.Empty;
+
+    /// <summary>E-mail or phone of the requester; free text.</summary>
+    public string? RequesterContact { get; set; }
+
+    public string? Notes { get; set; }
 
     public bool RequiresNda { get; set; }
 
@@ -37,7 +45,7 @@ public class Project : AuditableEntity, IAudited
     /// <summary>1–3. Empty until the level is assessed.</summary>
     public int? Level { get; set; }
 
-    /// <summary>Set when the project is accepted (step 3.2).</summary>
+    /// <summary>Set when the project is accepted.</summary>
     public ProjectPriority? Priority { get; set; }
 
     public ProjectStatus Status { get; set; } = ProjectStatus.Active;
@@ -53,7 +61,8 @@ public class Project : AuditableEntity, IAudited
     public int? CurrentStepId { get; set; }
     public ProcessStep? CurrentStep { get; set; }
 
-    public DateOnly StartDate { get; set; }
+    /// <summary>Talep tarihi: when the request came in. The talebi kayda alan person is CreatedById.</summary>
+    public DateOnly RequestDate { get; set; }
     public DateOnly? DueDate { get; set; }
 
     /// <summary>Concurrency token: a stale update fails instead of overwriting.</summary>

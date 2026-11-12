@@ -9,9 +9,11 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { map } from 'rxjs';
+import { map, switchMap } from 'rxjs';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
 import { UserLookup, UserSummary } from '../../../shared/models/user-summary';
+import { ProcessFlow, ProcessStep } from '../../process/models/process-stage';
+import { ProcessService } from '../../process/process.service';
 import { REQUEST_CHANNEL_LABELS, REQUEST_SOURCE_LABELS, REQUEST_TYPE_LABELS } from '../project-labels';
 import { ProjectInput, RequestChannel, RequestSource, RequestType } from '../project.model';
 import { ProjectService } from '../project.service';
@@ -20,14 +22,14 @@ import { ProjectService } from '../project.service';
 const notBlank: ValidatorFn = (control) =>
   typeof control.value === 'string' && control.value.trim() === '' ? { required: true } : null;
 
-/** "Bitiş tarihi başlangıç tarihinden önce olamaz." Dates are "yyyy-MM-dd", so text comparison works. */
-const dueNotBeforeStart: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
-  const start = group.get('startDate')?.value as string | null;
+/** "Bitiş tarihi talep tarihinden önce olamaz." Dates are "yyyy-MM-dd", so text comparison works. */
+const dueNotBeforeRequest: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
+  const requested = group.get('requestDate')?.value as string | null;
   const due = group.get('dueDate')?.value as string | null;
-  return start && due && due < start ? { dueBeforeStart: true } : null;
+  return requested && due && due < requested ? { dueBeforeRequest: true } : null;
 };
 
-/** Today in the user's time zone as "yyyy-MM-dd" (the form suggests it as the start date). */
+/** Today in the user's time zone as "yyyy-MM-dd" (the form suggests it as the request date). */
 function today(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -39,6 +41,23 @@ function withAssigned(users: UserLookup[], assigned: UserSummary | null | undefi
   return assigned && !users.some((user) => user.id === assigned.id) ? [assigned, ...users] : users;
 }
 
+/** Optional text: trimmed, and only spaces is sent as "not given". */
+function textOrNull(value: string): string | null {
+  return value.trim() === '' ? null : value.trim();
+}
+
+/**
+ * The code of the first step that depends on the request source or the offer, when the record has already reached it;
+ * null while both can still change (docs/projects-api.md, decision D1-3). The API checks the same rule.
+ */
+function conditionsLockedAt(flow: ProcessFlow, currentStep: ProcessStep | null): string | null {
+  const first = flow.stages
+    .flatMap((stage) => stage.steps)
+    .filter((step) => step.condition.requiresExternalRequest || step.condition.requiresOffer)
+    .sort((a, b) => a.order - b.order)[0];
+  return first && currentStep && currentStep.order >= first.order ? first.code : null;
+}
+
 /** Turkish messages for the client-side checks; the same texts the API uses. */
 const MESSAGES: Record<string, Record<string, string>> = {
   name: { required: 'Proje adı zorunludur.', maxlength: 'Proje adı en fazla 200 karakter olabilir.' },
@@ -46,13 +65,20 @@ const MESSAGES: Record<string, Record<string, string>> = {
   source: { required: 'Talep kaynağı zorunludur.' },
   requestChannel: { required: 'Talep kanalı zorunludur.' },
   requestType: { required: 'Talep türü zorunludur.' },
-  customerName: { required: 'Müşteri adı zorunludur.', maxlength: 'Müşteri adı en fazla 200 karakter olabilir.' },
-  requesterName: { required: 'Talep sahibi zorunludur.', maxlength: 'Talep sahibi en fazla 200 karakter olabilir.' },
-  startDate: { required: 'Başlangıç tarihi zorunludur.' },
+  requiresOffer: { required: 'Teklif hazırlanıp hazırlanmayacağı belirtilmelidir.' },
+  customerName: { required: 'Talep sahibi zorunludur.', maxlength: 'Talep sahibi en fazla 200 karakter olabilir.' },
+  requesterName: {
+    required: 'Talebi ileten kişi zorunludur.',
+    maxlength: 'Talebi ileten kişi en fazla 200 karakter olabilir.',
+  },
+  requesterContact: { maxlength: 'İletişim bilgisi en fazla 200 karakter olabilir.' },
+  notes: { maxlength: 'Notlar en fazla 2000 karakter olabilir.' },
+  requestDate: { required: 'Talep tarihi zorunludur.' },
 };
 
 /**
- * The request form ("Yeni talep"). Contract: docs/projects-api.md → CreateProjectDto.
+ * The request form ("Yeni talep"), in the order of the company's Talep Kayıt Formu.
+ * Contract: docs/projects-api.md → CreateProjectDto.
  * Rules are checked here first; the API checks them again and its 400 messages appear under the same fields.
  */
 @Component({
@@ -66,6 +92,7 @@ export class ProjectFormComponent {
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
   private readonly _projectService = inject(ProjectService);
+  private readonly _processService = inject(ProcessService);
 
   readonly sourceOptions = Object.entries(REQUEST_SOURCE_LABELS) as [RequestSource, string][];
   readonly channelOptions = Object.entries(REQUEST_CHANNEL_LABELS) as [RequestChannel, string][];
@@ -92,6 +119,22 @@ export class ProjectFormComponent {
   /** A closed, rejected, lost or redirected project keeps its information (API: 409). */
   readonly locked = computed(() => !!this.existing() && this.existing()!.status !== 'Active');
 
+  /** Edit of an active record only: where it stands in its flow, to know whether source and offer can change. */
+  private readonly _conditionLock = rxResource({
+    params: () => (this.existing()?.status === 'Active' ? this.projectId() ?? undefined : undefined),
+    stream: ({ params }) =>
+      this._processService.getProjectProcess(params).pipe(
+        switchMap((process) =>
+          this._processService
+            .getFlow(process.flow.code)
+            .pipe(map((flow) => conditionsLockedAt(flow, process.currentStep))),
+        ),
+      ),
+  });
+
+  /** The step code from which source and offer are locked ("4"), or null while they can change. */
+  readonly conditionsLockedAt = computed(() => (this._conditionLock.hasValue() ? this._conditionLock.value() : null));
+
   private readonly _analysts = rxResource({ stream: () => this._projectService.users('BusinessAnalyst') });
   private readonly _managers = rxResource({ stream: () => this._projectService.users('ProjectManager') });
 
@@ -107,19 +150,23 @@ export class ProjectFormComponent {
   readonly form = this._fb.group(
     {
       name: this._fb.nonNullable.control('', [Validators.required, notBlank, Validators.maxLength(200)]),
+      requestDate: this._fb.control<string | null>(today(), Validators.required),
       description: this._fb.nonNullable.control('', [Validators.required, notBlank, Validators.maxLength(2000)]),
-      requestType: this._fb.control<RequestType | null>(null, Validators.required),
-      source: this._fb.control<RequestSource | null>(null, Validators.required),
       requestChannel: this._fb.control<RequestChannel | null>(null, Validators.required),
+      source: this._fb.control<RequestSource | null>(null, Validators.required),
+      requestType: this._fb.control<RequestType | null>(null, Validators.required),
+      // No default: "no offer" skips steps of the flow, so the analyst has to choose.
+      requiresOffer: this._fb.control<boolean | null>(null, Validators.required),
       customerName: this._fb.nonNullable.control('', [Validators.required, notBlank, Validators.maxLength(200)]),
       requesterName: this._fb.nonNullable.control('', [Validators.required, notBlank, Validators.maxLength(200)]),
+      requesterContact: this._fb.nonNullable.control('', Validators.maxLength(200)),
       requiresNda: this._fb.nonNullable.control(false),
+      notes: this._fb.nonNullable.control('', Validators.maxLength(2000)),
       businessAnalystId: this._fb.control<number | null>(null),
       projectManagerId: this._fb.control<number | null>(null),
-      startDate: this._fb.control<string | null>(today(), Validators.required),
       dueDate: this._fb.control<string | null>(null),
     },
-    { validators: dueNotBeforeStart },
+    { validators: dueNotBeforeRequest },
   );
 
   readonly saving = signal(false);
@@ -134,20 +181,31 @@ export class ProjectFormComponent {
       }
       this.form.reset({
         name: project.name,
+        requestDate: project.requestDate,
         description: project.description,
-        requestType: project.requestType,
-        source: project.source,
         requestChannel: project.requestChannel,
+        source: project.source,
+        requestType: project.requestType,
+        requiresOffer: project.requiresOffer,
         customerName: project.customerName,
         requesterName: project.requesterName,
+        requesterContact: project.requesterContact ?? '',
         requiresNda: project.requiresNda,
+        notes: project.notes ?? '',
         businessAnalystId: project.businessAnalyst?.id ?? null,
         projectManagerId: project.projectManager?.id ?? null,
-        startDate: project.startDate,
         dueDate: project.dueDate,
       });
       if (project.status !== 'Active') {
         this.form.disable();
+      }
+    });
+
+    // Past the first step that depends on them, source and offer keep their values (still sent, so the API sees no change).
+    effect(() => {
+      if (this.conditionsLockedAt()) {
+        this.form.controls.source.disable();
+        this.form.controls.requiresOffer.disable();
       }
     });
   }
@@ -179,8 +237,8 @@ export class ProjectFormComponent {
     if (due.errors?.['server']) {
       return due.errors['server'] as string;
     }
-    return this.form.errors?.['dueBeforeStart'] && (due.touched || this._submitted())
-      ? 'Bitiş tarihi başlangıç tarihinden önce olamaz.'
+    return this.form.errors?.['dueBeforeRequest'] && (due.touched || this._submitted())
+      ? 'Bitiş tarihi talep tarihinden önce olamaz.'
       : null;
   }
 
@@ -219,20 +277,24 @@ export class ProjectFormComponent {
   }
 
   private toInput(): ProjectInput {
+    // Raw value: locked fields are sent unchanged.
     const value = this.form.getRawValue();
     return {
       name: value.name.trim(),
+      requestDate: value.requestDate!,
       description: value.description.trim(),
-      requestType: value.requestType!,
-      source: value.source!,
       requestChannel: value.requestChannel!,
+      source: value.source!,
+      requestType: value.requestType!,
+      requiresOffer: value.requiresOffer!,
       customerName: value.customerName.trim(),
       requesterName: value.requesterName.trim(),
+      requesterContact: textOrNull(value.requesterContact),
       requiresNda: value.requiresNda,
+      notes: textOrNull(value.notes),
       // A <select> gives text; the API wants a number or null.
       businessAnalystId: value.businessAnalystId ? Number(value.businessAnalystId) : null,
       projectManagerId: value.projectManagerId ? Number(value.projectManagerId) : null,
-      startDate: value.startDate!,
       dueDate: value.dueDate || null,
     };
   }

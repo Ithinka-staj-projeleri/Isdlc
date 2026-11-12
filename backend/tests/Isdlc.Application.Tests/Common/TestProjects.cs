@@ -39,7 +39,7 @@ public static class TestProjects
             Name = $"Test projesi ({stepCode ?? status.ToString()})",
             Description = "Test için oluşturuldu.",
             Source = source,
-            RequestChannel = RequestChannel.Written,
+            RequestChannel = RequestChannel.Email,
             RequestType = RequestType.NewProject,
             CustomerName = "Test",
             RequesterName = "Test",
@@ -50,7 +50,7 @@ public static class TestProjects
             ProcessFlowId = await FlowIdAsync(database, flowCode),
             RequiresOffer = requiresOffer,
             CurrentStepId = stepCode is null ? null : await StepIdAsync(database, stepCode, flowCode),
-            StartDate = new DateOnly(2026, 11, 1),
+            RequestDate = new DateOnly(2026, 11, 1),
         };
 
         db.Projects.Add(project);

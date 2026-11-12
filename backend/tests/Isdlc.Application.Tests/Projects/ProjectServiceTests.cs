@@ -15,7 +15,7 @@ namespace Isdlc.Application.Tests.Projects;
 /// Requests and projects on a real database. Expectations: docs/projects-api.md.
 /// Every test opens requests as a Business Analyst of its own and assigns them to that analyst, so the requests do
 /// not show up in other tests' "my work" lists and seed projects are never changed.
-/// Codes are tested in far years (2090, 2091…) so the real numbering of this year is not affected.
+/// Proje No is shared by every test, so number tests check "one more than the highest", never a fixed number.
 /// Cross test (PLANNING.md): Baran → Dide's modules.
 /// </summary>
 [Collection("Database")]
@@ -25,20 +25,19 @@ public class ProjectServiceTests(DatabaseFixture database)
 
     /// <summary>The service as one user would call it, with notifications kept for checking.</summary>
     private async Task<(T Result, RecordingNotificationService Notifications)> AsAsync<T>(
-        int? userId, Func<IProjectService, Task<T>> action, TimeProvider? time = null)
+        int? userId, Func<IProjectService, Task<T>> action)
     {
         await using var scope = database.CreateScope();
         var notifications = new RecordingNotificationService();
         var service = new ProjectService(
             scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(),
             new TestUser(userId),
-            notifications,
-            time ?? TimeProvider.System);
+            notifications);
         return (await action(service), notifications);
     }
 
-    private async Task<ProjectDto> CreateAsync(int userId, CreateProjectDto request, TimeProvider? time = null) =>
-        (await AsAsync(userId, s => s.CreateAsync(request, CancellationToken.None), time)).Result;
+    private async Task<ProjectDto> CreateAsync(int userId, CreateProjectDto request) =>
+        (await AsAsync(userId, s => s.CreateAsync(request, CancellationToken.None))).Result;
 
     private async Task<PagedResult<ProjectListItemDto>> ListAsync(ProjectFilter filter) =>
         (await AsAsync(null, s => s.ListAsync(filter, FirstPage, CancellationToken.None))).Result;
@@ -68,7 +67,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     /// <summary>A project written straight to the database, for list and code tests that need a given state.</summary>
     private async Task<int> InsertProjectAsync(
         int analystId, string? stepCode, ProjectStatus status = ProjectStatus.Active, string? code = null,
-        string name = "Liste testi")
+        string name = "Liste testi", RequestSource source = RequestSource.Internal, bool requiresOffer = true)
     {
         int? stepId = stepCode is null ? null : await TestProjects.StepIdAsync(database, stepCode);
         var flowId = await TestProjects.FlowIdAsync(database);
@@ -79,27 +78,21 @@ public class ProjectServiceTests(DatabaseFixture database)
             Code = code ?? $"T-{Guid.NewGuid():N}"[..14],
             Name = name,
             Description = "Test için oluşturuldu.",
-            Source = RequestSource.Internal,
-            RequestChannel = RequestChannel.Written,
+            Source = source,
+            RequestChannel = RequestChannel.Email,
             RequestType = RequestType.NewProject,
             CustomerName = "Test",
             RequesterName = "Test",
             BusinessAnalystId = analystId,
             Status = status,
             ProcessFlowId = flowId,
-            RequiresOffer = true,
+            RequiresOffer = requiresOffer,
             CurrentStepId = stepId,
-            StartDate = new DateOnly(2026, 11, 1),
+            RequestDate = new DateOnly(2026, 11, 1),
         };
         db.Projects.Add(project);
         await db.SaveChangesAsync();
         return project.Id;
-    }
-
-    /// <summary>"Now" in a chosen year, so code tests have the year's numbering to themselves.</summary>
-    private sealed class FixedYear(int year) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => new(year, 6, 1, 12, 0, 0, TimeSpan.Zero);
     }
 
     // ---- Create ----
@@ -117,7 +110,7 @@ public class ProjectServiceTests(DatabaseFixture database)
         Assert.Equal(1, project.CurrentStep.StageOrder);
         Assert.Null(project.Priority);
         Assert.Null(project.Level);
-        Assert.StartsWith(ProjectCodes.YearPrefix(DateTime.UtcNow.Year), project.Code);
+        Assert.Matches("^[1-9][0-9]*$", project.Code);
         // CreatedBy is not checked here: AuditableEntityInterceptor takes the user from the fixture's DI container
         // (Elif Yılmaz), not from the TestUser given to the service. In the API both are the signed-in user.
         Assert.Equal(new UserSummaryDto(analyst, "Test Analist"), project.BusinessAnalyst);
@@ -135,12 +128,50 @@ public class ProjectServiceTests(DatabaseFixture database)
             Description = "  Açıklama  ",
             CustomerName = "  Ege Gıda  ",
             RequesterName = "  Satış Direktörü  ",
+            RequesterContact = "  0232 000 00 00  ",
+            Notes = "  Not  ",
         });
 
         Assert.Equal("Bayi Portalı", project.Name);
         Assert.Equal("Açıklama", project.Description);
         Assert.Equal("Ege Gıda", project.CustomerName);
         Assert.Equal("Satış Direktörü", project.RequesterName);
+        Assert.Equal("0232 000 00 00", project.RequesterContact);
+        Assert.Equal("Not", project.Notes);
+    }
+
+    [Fact]
+    public async Task Create_OptionalTextOnlySpaces_IsSavedAsEmpty()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+
+        var project = await CreateAsync(analyst, Request(analyst) with { RequesterContact = "   ", Notes = " " });
+
+        Assert.Null(project.RequesterContact);
+        Assert.Null(project.Notes);
+    }
+
+    [Fact]
+    public async Task Create_SavesTheRequestFormFields()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+
+        var project = await CreateAsync(analyst, Request(analyst) with
+        {
+            Source = RequestSource.Affiliated,
+            RequestChannel = RequestChannel.Phone,
+            RequesterContact = "bilgi@ornek.com",
+            Notes = "Toplantıda iletildi.",
+            RequiresOffer = false,
+            RequestDate = new DateOnly(2026, 11, 3),
+        });
+
+        Assert.Equal(RequestSource.Affiliated, project.Source);
+        Assert.Equal(RequestChannel.Phone, project.RequestChannel);
+        Assert.Equal("bilgi@ornek.com", project.RequesterContact);
+        Assert.Equal("Toplantıda iletildi.", project.Notes);
+        Assert.False(project.RequiresOffer);
+        Assert.Equal(new DateOnly(2026, 11, 3), project.RequestDate);
     }
 
     [Fact]
@@ -158,40 +189,43 @@ public class ProjectServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task Create_FirstRequestsOfAYear_AreNumberedFrom001()
+    public async Task Create_ProjectNo_IsOneMoreThanTheHighest()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var year2090 = new FixedYear(2090);
 
-        var first = await CreateAsync(analyst, Request(analyst), year2090);
-        var second = await CreateAsync(analyst, Request(analyst), year2090);
+        var first = await CreateAsync(analyst, Request(analyst));
+        var second = await CreateAsync(analyst, Request(analyst));
 
-        Assert.Equal("ISDLC-2090-001", first.Code);
-        Assert.Equal("ISDLC-2090-002", second.Code);
+        Assert.Equal(long.Parse(first.Code) + 1, long.Parse(second.Code));
     }
 
     [Fact]
-    public async Task Create_AfterCode1000_Gets1001NotA999Successor()
+    public async Task Create_AfterANumberWithMoreDigits_GetsItsSuccessorNotA999Successor()
     {
-        // Ordering by text alone would take "-999" as the highest code and give the taken "-1000" again.
+        // Ordering by text alone would take "999…" as the highest number and give the taken "1000…" again.
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        await InsertProjectAsync(analyst, "1", code: "ISDLC-2091-999");
-        await InsertProjectAsync(analyst, "1", code: "ISDLC-2091-1000");
+        var digits = (await CreateAsync(analyst, Request(analyst))).Code.Length + 1;
+        var nines = new string('9', digits);            // e.g. "999"
+        var power = "1" + new string('0', digits);      // e.g. "1000"
+        await InsertProjectAsync(analyst, "1", code: nines);
+        await InsertProjectAsync(analyst, "1", code: power);
 
-        var project = await CreateAsync(analyst, Request(analyst), new FixedYear(2091));
+        var project = await CreateAsync(analyst, Request(analyst));
 
-        Assert.Equal("ISDLC-2091-1001", project.Code);
+        Assert.Equal(long.Parse(power) + 1, long.Parse(project.Code));
     }
 
     [Fact]
-    public async Task Create_NewYear_StartsAgainFrom001()
+    public async Task Create_RecordsWithOtherCodes_DoNotChangeTheNumbering()
     {
+        // Test records written straight to the database have codes like "T-…"; they are not Proje No values.
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        await CreateAsync(analyst, Request(analyst), new FixedYear(2092));
+        var before = await CreateAsync(analyst, Request(analyst));
+        await InsertProjectAsync(analyst, "1", code: $"ZZ-{Guid.NewGuid():N}"[..19]);
 
-        var nextYear = await CreateAsync(analyst, Request(analyst), new FixedYear(2093));
+        var after = await CreateAsync(analyst, Request(analyst));
 
-        Assert.Equal("ISDLC-2093-001", nextYear.Code);
+        Assert.Equal(long.Parse(before.Code) + 1, long.Parse(after.Code));
     }
 
     [Theory]
@@ -333,10 +367,13 @@ public class ProjectServiceTests(DatabaseFixture database)
         RequestType = request.RequestType,
         CustomerName = request.CustomerName,
         RequesterName = request.RequesterName,
+        RequesterContact = request.RequesterContact,
+        Notes = request.Notes,
+        RequiresOffer = request.RequiresOffer,
         RequiresNda = request.RequiresNda,
         BusinessAnalystId = request.BusinessAnalystId,
         ProjectManagerId = request.ProjectManagerId,
-        StartDate = request.StartDate,
+        RequestDate = request.RequestDate,
         DueDate = request.DueDate,
     };
 
@@ -366,6 +403,64 @@ public class ProjectServiceTests(DatabaseFixture database)
         Assert.Equal(created.CurrentStep, updated.CurrentStep);
         Assert.Equal(created.CreatedBy, updated.CreatedBy);
         Assert.NotNull(updated.UpdatedAt);
+    }
+
+    // ---- Source and offer (decision D1-3) ----
+
+    /// <summary>The update of a record written straight to the database, with only source and offer changed.</summary>
+    private async Task<ProjectDto> UpdateSourceAndOfferAsync(
+        int analystId, int projectId, RequestSource source, bool requiresOffer) =>
+        (await AsAsync(analystId, s => s.UpdateAsync(projectId, UpdateOf(Request(analystId)) with
+        {
+            Source = source,
+            RequiresOffer = requiresOffer,
+        }, CancellationToken.None))).Result;
+
+    [Theory]
+    [InlineData("1")]
+    [InlineData("3")]
+    public async Task Update_SourceAndOffer_BeforeStep4_Change(string stepCode)
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var projectId = await InsertProjectAsync(analyst, stepCode, source: RequestSource.Internal, requiresOffer: true);
+
+        var updated = await UpdateSourceAndOfferAsync(analyst, projectId, RequestSource.External, requiresOffer: false);
+
+        Assert.Equal(RequestSource.External, updated.Source);
+        Assert.False(updated.RequiresOffer);
+    }
+
+    [Theory]
+    [InlineData("4", RequestSource.Internal, true)]  // the step itself: source changes
+    [InlineData("4", RequestSource.External, false)] // the step itself: offer changes
+    [InlineData("10", RequestSource.External, false)]
+    [InlineData("14", RequestSource.Internal, true)]
+    public async Task Update_SourceOrOffer_FromStep4On_Throws409(string stepCode, RequestSource source, bool requiresOffer)
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var projectId = await InsertProjectAsync(analyst, stepCode, source: RequestSource.External, requiresOffer: true);
+
+        var error = await Assert.ThrowsAsync<ConflictException>(
+            () => UpdateSourceAndOfferAsync(analyst, projectId, source, requiresOffer));
+
+        Assert.Equal("Talep kaynağı ve teklif bilgisi 4. adıma gelindikten sonra değiştirilemez.", error.Message);
+    }
+
+    [Fact]
+    public async Task Update_SameSourceAndOfferAfterStep4_OtherFieldsStillChange()
+    {
+        // Sending the same values again is not a change, so the rest of the form can still be saved.
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var projectId = await InsertProjectAsync(analyst, "10", source: RequestSource.External, requiresOffer: true);
+
+        var updated = (await AsAsync(analyst, s => s.UpdateAsync(projectId, UpdateOf(Request(analyst)) with
+        {
+            Source = RequestSource.External,
+            RequiresOffer = true,
+            Notes = "Teklif görüşmesi yapıldı.",
+        }, CancellationToken.None))).Result;
+
+        Assert.Equal("Teklif görüşmesi yapıldı.", updated.Notes);
     }
 
     [Theory]
@@ -495,7 +590,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task List_Search_FindsCodeNameOrCustomerIgnoringCase()
+    public async Task List_Search_FindsProjectNoNameOrCustomerIgnoringCase()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
         var token = Guid.NewGuid().ToString("N")[..10];
@@ -511,7 +606,21 @@ public class ProjectServiceTests(DatabaseFixture database)
 
         Assert.Equal([created.Id], byName.Items.Select(p => p.Id));
         Assert.Contains(byCustomer.Items, p => p.Id == created.Id);
-        Assert.Equal([created.Id], byCode.Items.Select(p => p.Id));
+        Assert.Contains(byCode.Items, p => p.Id == created.Id);
+    }
+
+    [Fact]
+    public async Task List_SearchByProjectNo_MatchesTheWholeNumberOnly()
+    {
+        // "14" finds Proje No 14, not 114 or 140. (Names may still contain the digits; those match by name.)
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var created = await CreateAsync(analyst, Request(analyst, "Numara araması"));
+        var longer = await InsertProjectAsync(analyst, "1", code: created.Code + "0", name: "Başka proje");
+
+        var result = await ListAsync(new ProjectFilter { Search = created.Code, BusinessAnalystId = analyst });
+
+        Assert.Equal([created.Id], result.Items.Select(p => p.Id));
+        Assert.DoesNotContain(result.Items, p => p.Id == longer);
     }
 
     [Fact]
@@ -529,10 +638,12 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_NewestRequestFirst_EvenAfterCode999()
     {
+        // Not plain numbers, so the Proje No sequence of the other tests is not affected; the order rule is the same.
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var code998 = await InsertProjectAsync(analyst, "1", code: "ISDLC-2094-998");
-        var code1000 = await InsertProjectAsync(analyst, "1", code: "ISDLC-2094-1000");
-        var code999 = await InsertProjectAsync(analyst, "1", code: "ISDLC-2094-999");
+        var prefix = $"L{Guid.NewGuid():N}"[..8];
+        var code998 = await InsertProjectAsync(analyst, "1", code: $"{prefix}998");
+        var code1000 = await InsertProjectAsync(analyst, "1", code: $"{prefix}1000");
+        var code999 = await InsertProjectAsync(analyst, "1", code: $"{prefix}999");
 
         var result = await ListAsync(new ProjectFilter { BusinessAnalystId = analyst });
 
@@ -543,9 +654,10 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task List_Paging_ReturnsThePageAndTheTotal()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var prefix = $"P{Guid.NewGuid():N}"[..8];
         for (var i = 1; i <= 5; i++)
         {
-            await InsertProjectAsync(analyst, "1", code: $"ISDLC-2095-{i:D3}");
+            await InsertProjectAsync(analyst, "1", code: $"{prefix}{i:D3}");
         }
 
         var page2 = (await AsAsync(null, s => s.ListAsync(
@@ -553,7 +665,7 @@ public class ProjectServiceTests(DatabaseFixture database)
             CancellationToken.None))).Result;
 
         Assert.Equal(5, page2.TotalCount);
-        Assert.Equal(["ISDLC-2095-003", "ISDLC-2095-002"], page2.Items.Select(p => p.Code));
+        Assert.Equal([$"{prefix}003", $"{prefix}002"], page2.Items.Select(p => p.Code));
     }
 
     [Fact]

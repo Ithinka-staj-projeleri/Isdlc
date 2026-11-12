@@ -108,6 +108,8 @@ public class DashboardService(
         var totalCount = await risks.CountAsync(cancellationToken);
         var items = await risks
             .OrderByDescending(r => r.Probability * r.Impact)
+            // Proje No is a plain number kept as text: shorter first, so 9 comes before 14.
+            .ThenBy(r => r.Project.Code.Length)
             .ThenBy(r => r.Project.Code)
             .ThenBy(r => r.Code.Length)
             .ThenBy(r => r.Code)
@@ -163,6 +165,8 @@ public class DashboardService(
                 WaitingSince = p.StepRecords.Max(r => (DateTime?)r.PerformedAt) ?? p.CreatedAt,
             })
             .OrderBy(x => x.WaitingSince)
+            // Proje No is a plain number kept as text: shorter first, so 9 comes before 14.
+            .ThenBy(x => x.Project.Code.Length)
             .ThenBy(x => x.Project.Code)
             .Take(ListSize)
             .Select(x => new
@@ -237,6 +241,8 @@ public class DashboardService(
                 WaitingSince = p.StepRecords.Max(r => (DateTime?)r.PerformedAt) ?? p.CreatedAt,
             })
             .OrderBy(x => x.WaitingSince)
+            // Proje No is a plain number kept as text: shorter first, so 9 comes before 14.
+            .ThenBy(x => x.Project.Code.Length)
             .ThenBy(x => x.Project.Code)
             .Take(ListSize)
             .Select(x => new
@@ -272,6 +278,8 @@ public class DashboardService(
             .OrderBy(x => x.DueDate != null && x.DueDate < today ? 0 : 1)
             .ThenBy(x => x.DueDate == null ? 1 : 0)
             .ThenBy(x => x.DueDate)
+            // Proje No is a plain number kept as text: shorter first, so 9 comes before 14.
+            .ThenBy(x => x.Project.Code.Length)
             .ThenBy(x => x.Project.Code)
             .ThenBy(x => x.Code.Length)
             .ThenBy(x => x.Code)

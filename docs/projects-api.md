@@ -1,7 +1,7 @@
 # Projects Modülü — API Sözleşmesi
 
 Talep kaydı, proje listesi ve proje detayı. Veri modeli: [data-model.md](data-model.md) → `Project`.
-Durum: **onaylandı** (5 Kasım 2026). Faz 4 değişiklikleri (D1, aşağıda "Talep Kayıt Formu'na uyum"): **taslak**. Sorumlu: Dide.
+Durum: **onaylandı** (5 Kasım 2026). Faz 4 değişiklikleri (D1, aşağıda "Talep Kayıt Formu'na uyum"): **onaylandı ve uygulandı** (12 Kasım 2026). Sorumlu: Dide.
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601
 (`DateOnly` alanları `2026-11-05` biçiminde), hatalar `ProblemDetails`, listeler `items` + `totalCount`,
@@ -84,7 +84,7 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
 | --- | --- |
 | `status` | `ProjectStatus` (`Active`, `Closed`, …) |
 | `phase` | Her kayıt tam olarak bir aşamadadır (karar 3). `Request` → onay bekleyen talepler: aktif ve mevcut adımı akışın proje bölümünden önce (yeni yazılım projesinde bölüm 1–2). `Project` → geri kalan her şey: proje bölümündeki aktif projeler ve bütün kapanmış kayıtlar (talep aşamasında kapanmış olanlar dahil). Yalnızca aktif projeler için `phase=Project&status=Active`. Ayrıntı: [process-api.md](process-api.md) → "Talep mi, proje mi" |
-| `search` | Proje No, proje adı veya talep sahibinde (firma / birim) geçen metin (büyük/küçük harf duyarsız) |
+| `search` | Proje No (birebir: `14`, 114'ü bulmaz) ya da proje adında veya talep sahibinde (firma / birim) geçen metin (büyük/küçük harf duyarsız) |
 | `businessAnalystId` | İş analisti |
 | `page`, `pageSize` | Sayfalama |
 

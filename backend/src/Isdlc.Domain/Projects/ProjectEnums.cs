@@ -5,17 +5,15 @@ public enum RequestSource
     Internal,
     External,
 
-    /// <summary>
-    /// Group companies / related parties (İlişkili şirket). Added for the question bank's third subcategory;
-    /// the request form and its labels come with D1 (docs/phase-4-plan.md).
-    /// </summary>
+    /// <summary>Group companies / related parties (İlişkili şirket).</summary>
     Affiliated,
 }
 
+/// <summary>How the request came in. The company form has only e-mail and phone.</summary>
 public enum RequestChannel
 {
-    Written,
-    Verbal,
+    Email,
+    Phone,
 }
 
 public enum RequestType
