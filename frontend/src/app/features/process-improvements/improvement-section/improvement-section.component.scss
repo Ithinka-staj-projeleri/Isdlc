@@ -1,0 +1,81 @@
+@use '../../../shared/styles/ui' as ui;
+
+.card {
+    @include ui.card;
+    padding: 16px 20px;
+
+    h3 {
+        margin: 0 0 6px;
+    }
+}
+
+.hint {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.field {
+    @include ui.field;
+}
+
+.button {
+    @include ui.button;
+}
+
+.scores,
+.texts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+
+    .full {
+        grid-column: 1 / -1;
+    }
+}
+
+.scores {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+    .scores,
+    .texts {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.result,
+.target {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.target {
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: var(--bg);
+}
+
+textarea.short {
+    min-height: 56px;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.small {
+    font-size: 12px;
+}
+
+.error {
+    color: var(--bad);
+}

@@ -1,0 +1,71 @@
+<!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
+<div class="overlay">
+    <form class="dialog" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <h3>{{ improvement() ? improvement()!.code + ' · öneriyi düzenle' : 'Yeni süreç iyileştirme önerisi' }}</h3>
+
+        <div class="grid">
+            <label class="field full" [class.invalid]="errorFor('title')">
+                Başlık
+                <input formControlName="title" maxlength="200" placeholder="Talep kaydında mükerrer alanlar" />
+                @if (errorFor('title'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field full" [class.invalid]="errorFor('problem')">
+                Sorunun kısa tanımı
+                <textarea formControlName="problem" maxlength="2000"></textarea>
+                @if (errorFor('problem'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('source')">
+                Kaynak
+                <select formControlName="source">
+                    <option [ngValue]="null">Seçin…</option>
+                    @for (s of sources; track s) {
+                    <option [ngValue]="s">{{ sourceLabels[s] }}</option>
+                    }
+                </select>
+                @if (errorFor('source'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('affectedProcess')">
+                Etkilediği süreç
+                <input formControlName="affectedProcess" maxlength="200" placeholder="Talep kaydı" />
+                @if (errorFor('affectedProcess'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field full" [class.invalid]="errorFor('proposedSolution')">
+                Çözüm fikri (isteğe bağlı)
+                <textarea formControlName="proposedSolution" maxlength="2000"></textarea>
+                @if (errorFor('proposedSolution'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('suggestedBy')">
+                Öneriyi getiren
+                <input formControlName="suggestedBy" maxlength="200" placeholder="Ad Soyad" />
+                @if (errorFor('suggestedBy'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('ownerUserId')">
+                Öneriyi yürüten
+                <select formControlName="ownerUserId">
+                    <option [ngValue]="null">Seçin…</option>
+                    @for (user of users(); track user.id) {
+                    <option [ngValue]="user.id">{{ user.fullName }}</option>
+                    }
+                </select>
+                @if (errorFor('ownerUserId'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            @if (!improvement()) {
+            <p class="full hint">Öneri "Planla" bölümünün 1. adımında başlar; değerlendirme ve onay Süreç sekmesinden yürür.</p>
+            }
+        </div>
+
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="cancelled.emit()">Vazgeç</button>
+            <button type="submit" class="button primary" [disabled]="saving()">
+                {{ saving() ? 'Kaydediliyor…' : (improvement() ? 'Kaydet' : 'Öneriyi kaydet') }}
+            </button>
+        </div>
+    </form>
+</div>

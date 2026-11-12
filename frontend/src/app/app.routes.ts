@@ -28,6 +28,8 @@ export const routes: Routes = [
             { path: 'open-issues', loadComponent: () => import('./features/open-issues/open-issues-page.component').then(m => m.OpenIssuesPageComponent) },
             { path: 'meetings', loadComponent: () => import('./features/meetings/meetings-page.component').then(m => m.MeetingsPageComponent) },
             { path: 'notifications', loadComponent: () => import('./features/notifications/notifications-page.component').then(m => m.NotificationsPageComponent) },
+            { path: 'process-improvements/:id', loadComponent: () => import('./features/process-improvements/improvement-detail/improvement-detail.component').then(m => m.ImprovementDetailComponent) },
+            { path: 'process-improvements', loadComponent: () => import('./features/process-improvements/improvement-list/improvement-list.component').then(m => m.ImprovementListComponent) },
             { path: 'process-library', loadComponent: () => import('./features/process/process-library/process-library.component').then(m => m.ProcessLibraryComponent) },
         ],
     },
