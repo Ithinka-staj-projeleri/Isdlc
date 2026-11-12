@@ -131,24 +131,26 @@ yapı birden fazlasına izin verir.
 | Alan | Tür | Not |
 | --- | --- | --- |
 | `Id` | int | |
-| `Code` | string | "ISDLC-2026-014"; yıl + yıl içinde artan 3 haneli sıra, otomatik verilir |
+| `Code` | string | Proje No: düz sıra numarası, metin olarak ("14"); yeni yazılım projesi akışında en büyük numara + 1, otomatik verilir, yıl değişince sıfırlanmaz. Faz 4 (D1) öncesindeki "ISDLC-2026-014" kodları migration ile çevrildi |
 | `Name` | string | |
 | `Description` | string | |
 | `Source` | `RequestSource` | |
 | `RequestChannel` | `RequestChannel` | |
 | `RequestType` | `RequestType` | |
-| `CustomerName` | string | Müşteri veya iç birim adı (MVP'de ayrı tablo yok) |
-| `RequesterName` | string | Talep sahibi kişi veya unvan; sisteme giriş yapan bir kullanıcı değildir |
+| `CustomerName` | string | Talep sahibi: müşteri firma veya iç birim adı (MVP'de ayrı tablo yok) |
+| `RequesterName` | string | Talebi ileten kişi veya unvan; sisteme giriş yapan bir kullanıcı değildir |
+| `RequesterContact` | string? | Faz 4. Talebi iletenin e-postası ya da telefonu; serbest metin, en fazla 200 |
+| `Notes` | string? | Faz 4. Talep kaydındaki notlar, en fazla 2000 |
 | `RequiresNda` | bool | Görüşme öncesi gizlilik sözleşmesi gerekiyor mu |
 | `BusinessAnalystId` | int? (FK → User) | |
 | `ProjectManagerId` | int? (FK → User) | |
 | `Level` | int? | 1–3; seviye belirlenene kadar boş. Yalnızca `Assessment` değiştirir ("Seviyeyi uygula") |
-| `Priority` | `ProjectPriority`? | 3.2'de proje kabul edilirken verilir |
+| `Priority` | `ProjectPriority`? | Proje kabul edilirken verilir |
 | `Status` | `ProjectStatus` | |
 | `ProcessFlowId` | int (FK → ProcessFlow) | Faz 4. Kaydın izlediği akış; açılırken verilir, sonra değişmez |
-| `RequiresOffer` | bool | Faz 4. Talep kaydındaki "teklif hazırlanacak mı"; teklif adımlarının yapılıp yapılmayacağını belirler. Mevcut kayıtlarda `true` |
+| `RequiresOffer` | bool | Faz 4. Talep kaydındaki "teklif hazırlanacak mı"; teklif adımlarının yapılıp yapılmayacağını belirler. `Source` ile birlikte, kayıt akışın bunlara bağlı ilk adımına gelince değiştirilemez (projects-api.md, D1-3) |
 | `CurrentStepId` | int? (FK → ProcessStep) | Proje aktif değilse boş. Faz 4: her zaman kaydın akışındaki bir adım |
-| `StartDate` | DateOnly | |
+| `RequestDate` | DateOnly | Talep tarihi (Faz 4'ten önce `StartDate`). Talebi kayda alan kişi `CreatedById`'dir |
 | `DueDate` | DateOnly? | |
 | `RowVersion` | byte[] | EF Core eşzamanlılık belirteci (SQL Server `rowversion`); bkz. [process-api.md](process-api.md) |
 | + `AuditableEntity` alanları | | |
@@ -434,8 +436,8 @@ QuestionAnswer * ──── 0..1 QuestionOption
 | Enum | Değerler |
 | --- | --- |
 | `UserRole` | `BusinessAnalyst` (İş Analisti), `SoftwareDepartmentManager` (Yazılım Departman Yöneticisi), `ProjectManager` (Proje Yöneticisi), `SoftwareDeveloper` (Yazılım Geliştirici), `TestSpecialist` (Test Uzmanı), `SalesRepresentative` (Satış Temsilcisi) |
-| `RequestSource` | `Internal` (İç), `External` (Dış) |
-| `RequestChannel` | `Written` (Yazılı), `Verbal` (Sözlü) |
+| `RequestSource` | `Internal` (Kurum içi), `External` (Dış, müşteri), `Affiliated` (İlişkili şirket) |
+| `RequestChannel` | `Email` (E-posta), `Phone` (Telefon). Faz 4 öncesindeki `Written` / `Verbal` migration ile çevrildi |
 | `RequestType` | `NewProject` (Yeni yazılım projesi), `AdditionalModule` (Devam eden projeye ek modül), `CompanyProduct` (Şirket ürünü), `Support` (Destek / ticket) |
 | `ProjectPriority` | `Low`, `Medium`, `High` |
 | `ProjectStatus` | `Active` (Aktif), `Closed` (Kapandı), `Rejected` (Reddedildi), `Lost` (Kaybedildi), `Redirected` (Yönlendirildi) |
@@ -478,9 +480,9 @@ QuestionAnswer * ──── 0..1 QuestionOption
 ## Alınan kararlar
 
 1. Kullanıcı başına tek rol (enum). İleride gerekirse rol tablosuna çevrilir.
-2. Talep sahibi bir `User` değildir; `Project.RequesterName` metin alanında tutulur.
+2. Talebi ileten kişi bir `User` değildir; `Project.RequesterName` metin alanında tutulur.
 3. Mevcut adım `Project.CurrentStepId` alanında tutulur; sorgular kolaylaşır.
-4. Müşteri ayrı bir tablo değildir; `Project.CustomerName` metin alanında tutulur.
+4. Talep sahibi (müşteri firma / birim) ayrı bir tablo değildir; `Project.CustomerName` metin alanında tutulur.
 5. Bir karar adımının birden fazla dönüş seçeneği olabilir; seçenekler `ProcessStepJump` tablosunda tutulur.
 6. 2.3 bir adım değildir; yöneticinin her adımda kullanabileceği "Talebi reddet" işlemiyle karşılanır.
 7. `ApproverRole` dolu olan adımı yalnızca o rol kapatabilir (5.1: Satış hazırlar, yönetici onaylar).
@@ -552,7 +554,7 @@ Ekip gerekirse dosyada adım adım değiştirebilir.
 **`backend/src/Isdlc.Infrastructure/Seed/sample-projects.json`** (hazır, yalnızca geliştirme ortamı)
 - 8 örnek proje, hepsi yeni yazılım projesi akışında: 5 `Active` (1, 6, 10, 14, 16. adımlarda), 1 `Closed`,
   1 `Lost` (11: teklif kabul edilmedi), 1 `Rejected` (4: müşteri uygun değil).
-  `ISDLC-2026-015` teklifsiz bir iç taleptir ("doğrudan proje"): 4, 10 ve 11. adımlar onda atlanır.
+  15 numaralı proje teklifsiz bir iç taleptir ("doğrudan proje"): 4, 10 ve 11. adımlar onda atlanır.
 - Kullanıcılara `Id` ile değil e-posta ile bağlanır (`businessAnalystEmail`, `projectManagerEmail`).
 - Aktif projede `currentStepCode`, kapanmış projede `closedAtStepCode` bulunur; `requiresOffer` teklif hazırlanıp hazırlanmayacağıdır.
 - Seviye 5. adımdan sonraki projelerde doludur.
@@ -561,4 +563,4 @@ Ekip gerekirse dosyada adım adım değiştirebilir.
 - Mevcut (veya kapanış) adımından önceki her adım için bir kayıt: karar adımıysa `Yes`, değilse `Completed`. Projede atlanan adımlara kayıt yazılmaz.
 - Kapanmış projelerde kapanış adımı için de bir kayıt: `Closed` ise `Completed` (19), diğerlerinde `No`.
 - `PerformedById`: adımın `ApproverRole`'ü varsa o rolden, yoksa `ResponsibleRole`'den seed'deki ilk kullanıcı.
-- `PerformedAt`: proje `StartDate`'inden başlayarak adım başına bir gün artar, bugünü geçmez.
+- `PerformedAt`: projenin `RequestDate`'inden başlayarak adım başına bir gün artar, bugünü geçmez.

@@ -59,7 +59,7 @@ public class ProcessQueryTests(DatabaseFixture database)
     [Fact]
     public async Task ProjectProcess_ExternalRequestWithAnOffer_SkipsNothing()
     {
-        var process = await ProcessOfAsync("ISDLC-2026-016");
+        var process = await ProcessOfAsync("16");
 
         Assert.Equal(new ProcessFlowSummaryDto(ProcessFlowCodes.NewRequest, "Yeni Yazılım Projesi"), process.Flow);
         Assert.Empty(process.SkippedStepIds);
@@ -68,8 +68,8 @@ public class ProcessQueryTests(DatabaseFixture database)
     [Fact]
     public async Task ProjectProcess_InternalRequestWithoutOffer_SkipsSuitabilityAndOfferSteps()
     {
-        // ISDLC-2026-015: internal, no offer ("doğrudan proje"), waiting on 16.
-        var process = await ProcessOfAsync("ISDLC-2026-015");
+        // Project 15: internal, no offer ("doğrudan proje"), waiting on 16.
+        var process = await ProcessOfAsync("15");
 
         Assert.Equal(
             [await TestProjects.StepIdAsync(database, "4"), await TestProjects.StepIdAsync(database, "10"),
@@ -84,8 +84,8 @@ public class ProcessQueryTests(DatabaseFixture database)
     [Fact]
     public async Task ProjectProcess_ActiveProject_ShowsCurrentStepStagesAndProgress()
     {
-        // ISDLC-2026-016 waits on 10 (stage 2); every one of the 19 steps is done on it.
-        var process = await ProcessOfAsync("ISDLC-2026-016");
+        // Project 16 waits on 10 (stage 2); every one of the 19 steps is done on it.
+        var process = await ProcessOfAsync("16");
 
         Assert.Equal(ProjectStatus.Active, process.Status);
         Assert.Equal("10", process.CurrentStep!.Code);
@@ -100,7 +100,7 @@ public class ProcessQueryTests(DatabaseFixture database)
     [Fact]
     public async Task ProjectProcess_StageStepCounts_AddUpToTheWholeFlow()
     {
-        var process = await ProcessOfAsync("ISDLC-2026-016");
+        var process = await ProcessOfAsync("16");
 
         Assert.Equal(19, process.Stages.Sum(s => s.StepCount));
     }
@@ -108,7 +108,7 @@ public class ProcessQueryTests(DatabaseFixture database)
     [Fact]
     public async Task ProjectProcess_ApprovalStep_AnalystIsBlockedWithTheReason()
     {
-        var actions = (await ProcessOfAsync("ISDLC-2026-016", TestProjects.Analyst)).AvailableActions;
+        var actions = (await ProcessOfAsync("16", TestProjects.Analyst)).AvailableActions;
 
         Assert.False(actions.CanAnswer);
         Assert.False(actions.CanReject);
@@ -118,7 +118,7 @@ public class ProcessQueryTests(DatabaseFixture database)
     [Fact]
     public async Task ProjectProcess_ApprovalStep_ManagerCanAnswerAndReject()
     {
-        var actions = (await ProcessOfAsync("ISDLC-2026-016", TestProjects.Manager)).AvailableActions;
+        var actions = (await ProcessOfAsync("16", TestProjects.Manager)).AvailableActions;
 
         Assert.Equal(new AvailableActionsDto(CanComplete: false, CanAnswer: true, CanReject: true, BlockedReason: null), actions);
     }
@@ -126,7 +126,7 @@ public class ProcessQueryTests(DatabaseFixture database)
     [Fact]
     public async Task ProjectProcess_NobodySignedIn_NothingAllowed()
     {
-        var actions = (await ProcessOfAsync("ISDLC-2026-016", email: null)).AvailableActions;
+        var actions = (await ProcessOfAsync("16", email: null)).AvailableActions;
 
         Assert.Equal("İşlem yapmak için giriş yapılmalıdır.", actions.BlockedReason);
         Assert.False(actions.CanComplete || actions.CanAnswer || actions.CanReject);
@@ -135,7 +135,7 @@ public class ProcessQueryTests(DatabaseFixture database)
     [Fact]
     public async Task ProjectProcess_ClosedProject_IsComplete()
     {
-        var process = await ProcessOfAsync("ISDLC-2026-009");
+        var process = await ProcessOfAsync("9");
 
         Assert.Equal(ProjectStatus.Closed, process.Status);
         Assert.Null(process.CurrentStep);
@@ -147,8 +147,8 @@ public class ProcessQueryTests(DatabaseFixture database)
     [Fact]
     public async Task ProjectProcess_LostProject_StageWhereItStoppedIsStopped()
     {
-        // ISDLC-2026-011 was lost at 11 (stage 2): the customer did not accept the offer.
-        var process = await ProcessOfAsync("ISDLC-2026-011");
+        // Project 11 was lost at 11 (stage 2): the customer did not accept the offer.
+        var process = await ProcessOfAsync("11");
 
         Assert.Equal(ProjectStatus.Lost, process.Status);
         Assert.Equal(52, process.ProgressPercent); // 10 * 100 / 19 = 52
@@ -169,8 +169,8 @@ public class ProcessQueryTests(DatabaseFixture database)
     [Fact]
     public async Task StepRecords_AreNewestFirstAndPaged()
     {
-        // ISDLC-2026-014 waits on 14 and has one record for each of the 13 steps before it.
-        var projectId = await TestProjects.SeedProjectIdAsync(database, "ISDLC-2026-014");
+        // Project 14 waits on 14 and has one record for each of the 13 steps before it.
+        var projectId = await TestProjects.SeedProjectIdAsync(database, "14");
 
         var first = await AsUserAsync(TestProjects.Analyst,
             s => s.GetStepRecordsAsync(projectId, new PageRequest { Page = 1, PageSize = 10 }, default));

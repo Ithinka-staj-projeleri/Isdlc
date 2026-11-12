@@ -16,6 +16,8 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(x => x.Description).HasMaxLength(2000);
         builder.Property(x => x.CustomerName).HasMaxLength(200);
         builder.Property(x => x.RequesterName).HasMaxLength(200);
+        builder.Property(x => x.RequesterContact).HasMaxLength(200);
+        builder.Property(x => x.Notes).HasMaxLength(2000);
         builder.Property(x => x.RowVersion).IsRowVersion();
 
         builder.HasIndex(x => x.Code).IsUnique();

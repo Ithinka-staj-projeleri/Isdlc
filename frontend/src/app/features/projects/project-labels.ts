@@ -30,11 +30,12 @@ export const REQUEST_TYPE_LABELS: Record<RequestType, string> = {
 };
 
 export const REQUEST_SOURCE_LABELS: Record<RequestSource, string> = {
-  Internal: 'İç',
-  External: 'Dış',
+  Internal: 'Kurum içi',
+  External: 'Dış (müşteri)',
+  Affiliated: 'İlişkili şirket',
 };
 
 export const REQUEST_CHANNEL_LABELS: Record<RequestChannel, string> = {
-  Written: 'Yazılı',
-  Verbal: 'Sözlü',
+  Email: 'E-posta',
+  Phone: 'Telefon',
 };
