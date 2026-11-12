@@ -177,7 +177,7 @@ kararlar ve aksiyonların açık konulara aktarılması aynen kalır. Ziyarete �
 | Alan | Formda | Kural |
 | --- | --- | --- |
 | `recordedByUserId` | Tutanağı yazan / notları yazan | Zorunlu, aktif bir kullanıcı. Yeni tutanak formunda giriş yapan kişiyle dolu gelir |
-| `participants` | Katılanlar ve rolleri | **Metin yerine satırlar:** `[{ "name": "Hakan Yıldız", "role": "Depo Müdürü (Demo Lojistik)" }]`. En az 1, en fazla 50 satır; `name` zorunlu (en fazla 200), `role` isteğe bağlı (en fazla 200) |
+| `participants` | Katılanlar ve rolleri | **Metin yerine satırlar:** `[{ "name": "Hakan Yıldız", "role": "Depo Müdürü (Demo Lojistik)" }]`. En az 1, en fazla 30 satır; `name` zorunlu (en fazla 100), `role` isteğe bağlı (en fazla 100). Sırası korunur |
 | `summary` | Toplantı özeti / notlar | İsteğe bağlı, en fazla 4000 karakter |
 | `completedStages` | Tamamlanan aşamalar | İsteğe bağlı, en fazla 2000 karakter. Formda projenin süreç durumundan önerilir (tamamlanan bölümler); kişi değiştirebilir |
 | `ongoingStages` | Devam eden aşamalar | İsteğe bağlı, en fazla 2000 karakter. Formda mevcut bölüm ve adımla önerilir |
@@ -219,7 +219,10 @@ kararlar ve aksiyonların açık konulara aktarılması aynen kalır. Ziyarete �
 { "recordedBy": { "id": 1, "fullName": "Elif Yılmaz" }, "participants": [ { "name": "...", "role": "..." } ] /* … */ }
 ```
 
-**Mevcut kayıtlar:** Migration, eski `Participants` metnini virgülden bölüp satırlara çevirir (rol boş), `RecordedById`
+**Saklama:** Katılımcılar ayrı tabloda değil, tutanağın `Participants` kolonunda JSON listesi olarak tutulur. Böylece güncellemede
+satır silinmez (kayıt silinmez kuralı) ve katılımcı değişiklikleri tutanağın Kayıt Geçmişi'nde tek alan olarak görünür.
+
+**Mevcut kayıtlar:** Migration, eski `Participants` metnini virgülden bölüp sırasıyla satırlara çevirir (rol boş), `RecordedById`
 tutanağı oluşturan kişidir. Diğer yeni alanlar boş kalır.
 
 **Yapay zekâ:** Tutanak taslağı (`minutes`) bu alanlara göre güncellenir: katılımcılar ad ve rol satırları olarak, ayrıca özet
@@ -229,7 +232,7 @@ ve sonraki adımlar önerilir. Ayrı bir PR'da yapılır; o zamana kadar ajanın
 
 **Ekip onayı bekleyen kararlar**
 1. Ziyaret ayrı bir kayıt değil, `CustomerVisit` türünde tutanaktır.
-2. Katılımcılar serbest metin yerine ad + rol satırlarıdır (`MeetingParticipant`). Sistem kullanıcısına bağlanmaz; Talep Sahibi tarafı da yazılabilsin diye ad yazılır.
+2. Katılımcılar serbest metin yerine ad + rol satırlarıdır (`MeetingParticipant`, tutanakta JSON olarak). Sistem kullanıcısına bağlanmaz; Talep Sahibi tarafı da yazılabilsin diye ad yazılır.
 3. Tamamlanan / devam eden aşamalar süreçten **önerilen** serbest metindir; toplantı anındaki durum olarak saklanır, süreç ilerleyince değişmez.
 4. Toplantı formundaki "Konu" ayrı alan olmaz, `agenda`'dır; "İlgili birimler" katılımcıların rolünde yazılır. 004 farklıysa bu madde değişir.
 

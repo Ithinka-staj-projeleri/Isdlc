@@ -22,7 +22,7 @@ ProcessStep  1 ──── * StepRecord          (JumpedToStepId: geri dönüş
 Project      1 ──── * OpenIssue
 Project      1 ──── * Meeting
 Meeting      1 ──── * OpenIssue           (SourceMeetingId: tutanaktan aktarılan karar ve aksiyonlar)
-Meeting      1 ──── * MeetingParticipant  (Faz 4 · E4: katılımcılar, ad ve rol)
+Meeting      ── Participants: MeetingParticipant[] (Faz 4 · E4: ad ve rol, JSON kolon)
 User         1 ──── * OpenIssue           (OwnerUserId: sorumlu ekip üyesi)
 Project      1 ──── * Requirement
 Project      1 ──── * ProjectDocument * ── 1 DocumentType
@@ -237,7 +237,7 @@ Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, ba
 | `Code` | string | `TT-001`, proje içinde artan |
 | `Type` | `MeetingType` | |
 | `Date` | DateOnly | Toplantı tarihi |
-| `Participants` | string | Serbest metin ("Elif Yılmaz, Can Öztürk, Müşteri BT"); en fazla 1000 karakter. *Faz 4 · E4: yerini `MeetingParticipant` satırları alır* |
+| `Participants` | string | Faz 4 · E4 öncesi serbest metin (en fazla 1000 karakter). *Faz 4 · E4: `MeetingParticipant` listesi, JSON olarak (aşağıda)* |
 | `Agenda` | string | En fazla 4000 karakter. Ziyarette "Ana gündem" |
 | `RecordedById` | int (FK → User) | *Faz 4 · E4.* Tutanağı yazan; mevcut kayıtlarda oluşturan kişi |
 | `Summary` | string? | *Faz 4 · E4.* Toplantı özeti / notlar; en fazla 4000 karakter |
@@ -251,17 +251,16 @@ Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, ba
 
 ### `MeetingParticipant` — tutanağın katılımcısı (Faz 4 · E4, taslak)
 
+Ayrı bir tablo değildir: `Meeting.Participants` kolonunda JSON listesi olarak tutulur (`[{ "name": "...", "role": "..." }]`).
+Böylece tutanak güncellenirken satır silinmez ve değişiklik tutanağın denetim kaydında tek alan olarak görünür.
+
 | Alan | Tür | Not |
 | --- | --- | --- |
-| `Id` | int | |
-| `MeetingId` | int (FK → Meeting) | |
-| `Order` | int | Formdaki sıra |
-| `Name` | string | En fazla 200 karakter. Sistem kullanıcısına bağlanmaz (müşteri tarafı da yazılır) |
-| `Role` | string? | Rol / birim / kurum ("Depo Müdürü (Demo Lojistik)"); en fazla 200 karakter |
+| `Name` | string | En fazla 100 karakter. Sistem kullanıcısına bağlanmaz (müşteri tarafı da yazılır) |
+| `Role` | string? | Rol / birim / kurum ("Depo Müdürü (Demo Lojistik)"); en fazla 100 karakter |
 
-- Tutanak başına 1–50 satır. Tutanak güncellenince satırlar gönderilen listeyle değiştirilir.
-- `IAudited` + `IProjectRecord` (`ProjectId` tutanaktan): değişiklikleri projenin Kayıt Geçmişi'nde görünür.
-- Migration, eski `Participants` metnini virgülden bölüp satırlara çevirir; ardından kolon kaldırılır.
+- Tutanak başına 1–30 katılımcı; sırası korunur.
+- Migration, eski `Participants` metnini virgülden bölüp sırasıyla listeye çevirir (rol boş).
 - Ziyaret tutanağı ayrı bir entity değildir; `Type = CustomerVisit` olan `Meeting`'dir. Sözleşme:
   [open-issues-meetings-api.md](open-issues-meetings-api.md) → "Faz 4 · E4".
 
