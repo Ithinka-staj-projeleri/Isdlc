@@ -9,6 +9,9 @@ import {
     REQUIREMENT_PRIORITY_LABELS, REQUIREMENT_STATUS_LABELS, REQUIREMENT_TYPE_LABELS,
 } from '../requirements/models/requirement';
 import { RISK_CATEGORY_LABELS, RISK_STATUS_LABELS } from '../risks/models/risk';
+import {
+    IMPROVEMENT_SOURCE_LABELS, PILOT_RESULT_LABELS,
+} from '../process-improvements/models/process-improvement';
 import { AuditAction, AuditEntityType } from './models/audit-log';
 
 // Turkish text for the audit log. The API sends C# names (entity, field, enum value); the screen shows these.
@@ -22,6 +25,40 @@ export const AUDIT_ENTITY_LABELS: Record<AuditEntityType, string> = {
     ProjectDocument: 'Doküman',
     Risk: 'Risk',
     ProjectAssessment: 'Seviye & Kabul',
+};
+
+/**
+ * Records that appear only in some projects' history (a process improvement proposal's own fields), so they are named
+ * here but not offered as a filter on every project.
+ */
+const OTHER_ENTITY_LABELS: Record<string, string> = {
+    ProcessImprovement: 'Süreç iyileştirme önerisi',
+};
+
+const OTHER_FIELD_LABELS: Record<string, Record<string, string>> = {
+    ProcessImprovement: {
+        Source: 'Kaynak',
+        AffectedProcess: 'Etkilediği süreç',
+        ProposedSolution: 'Çözüm fikri',
+        SuggestedBy: 'Öneriyi getiren',
+        Impact: 'Etki',
+        Frequency: 'Uygulama sıklığı',
+        Ease: 'Uygulama kolaylığı',
+        CurrentState: 'Mevcut durum',
+        RootCause: 'Kök neden',
+        Solution: 'Çözüm',
+        PilotPlan: 'Pilot planı',
+        PilotTarget: 'Pilot hedefi',
+        CostBenefit: 'Fayda / maliyet',
+        PilotActual: 'Gerçekleşen',
+        PilotFeedback: 'Pilot geri bildirimi',
+        PilotResult: 'Pilot sonucu',
+        PilotDecision: 'Pilot kararı',
+    },
+};
+
+const OTHER_VALUE_LABELS: Record<string, Record<string, Record<string, string>>> = {
+    ProcessImprovement: { Source: IMPROVEMENT_SOURCE_LABELS, PilotResult: PILOT_RESULT_LABELS },
 };
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
@@ -143,11 +180,11 @@ const VALUE_LABELS: Partial<Record<AuditEntityType, Record<string, Record<string
 };
 
 export function entityLabel(entityType: string): string {
-    return AUDIT_ENTITY_LABELS[entityType as AuditEntityType] ?? entityType;
+    return AUDIT_ENTITY_LABELS[entityType as AuditEntityType] ?? OTHER_ENTITY_LABELS[entityType] ?? entityType;
 }
 
 export function fieldLabel(entityType: string, field: string): string {
-    return FIELD_LABELS[entityType as AuditEntityType]?.[field] ?? field;
+    return FIELD_LABELS[entityType as AuditEntityType]?.[field] ?? OTHER_FIELD_LABELS[entityType]?.[field] ?? field;
 }
 
 const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -159,7 +196,7 @@ export function displayValue(entityType: string, field: string, value: string | 
         return '—';
     }
 
-    const enumLabel = VALUE_LABELS[entityType as AuditEntityType]?.[field]?.[value];
+    const enumLabel = VALUE_LABELS[entityType as AuditEntityType]?.[field]?.[value] ?? OTHER_VALUE_LABELS[entityType]?.[field]?.[value];
     if (enumLabel) {
         return enumLabel;
     }

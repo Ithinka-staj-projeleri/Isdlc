@@ -1,0 +1,90 @@
+<header class="page-head">
+    <div>
+        <h2>Süreç İyileştirme</h2>
+        <p class="hint">
+            Süreçlerle ilgili iyileştirme önerileri: kayıt, önceliklendirme, çalışma, pilot ve standartlaştırma
+            (Planla · Uygula · Kontrol Et · Önlem Al). Her çalışan öneri getirebilir.
+        </p>
+    </div>
+    <button type="button" class="new-button" (click)="creating.set(true)">+ Yeni öneri</button>
+</header>
+
+<section class="filters">
+    <select aria-label="Durum" [value]="status()" (change)="onStatusChange($any($event.target).value)">
+        @for (option of statusOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+        }
+    </select>
+    <select aria-label="Bölüm" [value]="stageOrder() ?? ''" (change)="onStageChange($any($event.target).value)">
+        <option value="">Tüm bölümler</option>
+        @for (stage of stages; track stage.order) {
+        <option [value]="stage.order">{{ stage.order }}. {{ stage.label }}</option>
+        }
+    </select>
+</section>
+
+@if (improvements.error()) {
+<app-empty-state message="Liste yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
+} @else if (improvements.hasValue()) {
+@let result = improvements.value();
+@if (result.items.length === 0) {
+<app-empty-state message="Bu filtreye uyan öneri yok." />
+} @else {
+<div class="table-wrap" [class.loading]="improvements.isLoading()">
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Başlık</th>
+                <th>Kaynak</th>
+                <th>Etkilediği süreç</th>
+                <th>Öncelik</th>
+                <th>Mevcut adım</th>
+                <th>Durum</th>
+                <th>Yürüten</th>
+                <th>Kayıt</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (item of result.items; track item.id) {
+            <!-- The whole row opens the proposal; the code is also a real link for the keyboard and "open in new tab". -->
+            <tr (click)="open(item.id)">
+                <td class="code">
+                    <a [routerLink]="['/process-improvements', item.id]" (click)="$event.stopPropagation()">{{ item.code }}</a>
+                </td>
+                <td class="wrap">{{ item.title }}</td>
+                <td class="wrap">{{ sourceLabels[item.source] }}</td>
+                <td class="wrap">{{ item.affectedProcess }}</td>
+                <td>
+                    @if (item.priority) {
+                    <app-status-badge [label]="priorityLabels[item.priority] + ' · ' + item.priorityScore" [tone]="priorityTones[item.priority]" />
+                    } @else {
+                    <span class="muted">Puanlanmadı</span>
+                    }
+                </td>
+                <td>
+                    @if (item.currentStep; as step) {
+                    <span class="step">{{ step.code }}</span> {{ step.stageShortTitle }}
+                    } @else {
+                    <span class="muted">—</span>
+                    }
+                </td>
+                <td><app-status-badge [label]="statusLabels[item.status]" [tone]="statusTones[item.status]" /></td>
+                <td>{{ item.owner?.fullName ?? '—' }}</td>
+                <td class="muted">{{ item.createdAt | date: 'dd.MM.yyyy' }}</td>
+            </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@if (result.totalCount > pageSize) {
+<app-pagination [page]="page()" [pageSize]="pageSize" [totalCount]="result.totalCount" (pageChange)="page.set($event)" />
+}
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}
+
+@if (creating()) {
+<app-improvement-form (saved)="onCreated($event)" (cancelled)="creating.set(false)" />
+}
