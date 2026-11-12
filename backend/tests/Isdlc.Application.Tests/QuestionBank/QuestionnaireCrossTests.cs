@@ -25,7 +25,7 @@ public class QuestionnaireCrossTests(DatabaseFixture database)
     private const string InternalApproval = "internal-approval";
 
     /// <summary>Any step the project can wait at; the forms do not depend on the step.</summary>
-    private const string Step = "2.4";
+    private const string Step = "5";
 
     // ---- Helpers ----
 
