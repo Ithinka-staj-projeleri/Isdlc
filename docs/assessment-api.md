@@ -1,172 +1,157 @@
-# Assessment Modülü — API Sözleşmesi
+# Assessment Modülü — API Sözleşmesi (Faz 4 · B2: Seviye & Uygunluk)
 
-Seviye belirleme (akış 2.4, Proje Seviye Belirleme Formu) ve proje kabul puanlaması (akış 3.1, Proje Kabul Değerlendirme
-Formu Bölüm 2/3). Veri modeli: [data-model.md](data-model.md) → `ProjectAssessment`. Durum: **uygulandı** (#96 entity, #97 API, #98 ekran).
-Sorumlu: Baran.
+Şirketin yeni akışındaki iki değerlendirme: **müşteri uygunluğu** (yeni yazılım projesi akışı, 4. adım; yalnızca dış talep) ve
+**doküman seviyesi** (5. adım). İkisi de soru bankasının formlarıyla doldurulur ([question-bank-api.md](question-bank-api.md));
+bu modül formların **sonucunu** hesaplar ve seviyeyi projeye uygular. Sorumlu: Baran. Plan: [phase-4-plan.md](phase-4-plan.md) → B2.
 
-Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, hatalar `ProblemDetails`,
-JSON alanları camelCase. Değerlendirme projenin alt kaynağıdır (`/api/v1/projects/{projectId}/assessment`).
+Durum: **taslak, ekip onayı bekliyor.** Faz 1'deki sürüm (6 soruluk seviye ve 6 ölçütlü kabul puanlaması; #96–#98) bu sözleşmeyle
+**kalkar**; yerine şirketin kendi formları gelir.
 
-## Ne yapar
+Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, hatalar `ProblemDetails`, JSON alanları camelCase.
 
-| Bölüm | Akış | Girdi | Çıktı |
-| --- | --- | --- | --- |
-| Seviye belirleme | 2.4 | 6 soru, her biri 1–3 | Puan (6–18) ve **önerilen seviye** (1–3). "Seviyeyi uygula" ile `Project.Level` olur |
-| Kabul puanlaması | 3.1 | 6 ağırlıklı ölçüt, her biri 1–5 | **Ağırlıklı ortalama** (1,00–5,00) ve **öneri** (kabul / koşullu kabul / ret-erteleme) |
+## Ne değişiyor
 
-Kabul önerisi bir karar değildir: nihai kararı Yazılım Departman Yöneticisi 3.2'de `Process` üzerinden verir.
-Cevaplar yarım bırakılabilir; seviye ve öneri yalnızca bütün sorular cevaplanınca hesaplanır.
-
-## Sorular ve ölçütler
-
-Prototipteki forma göre. Metinler, seçenekler, ağırlıklar ve eşikler **tek yerde** tutulur (`Assessment/AssessmentRules.cs`)
-ve ekran onları `GET /assessment/definition` ile alır; kurumun Seviye Şablon 2 ölçütleri gelince yalnızca orası değişir.
-
-**Seviye soruları** (her biri 1–3):
-
-| Alan | Soru | 1 | 2 | 3 |
-| --- | --- | --- | --- | --- |
-| `effort` | Tahmini efor | ≤ 20 adam-gün | 21–80 adam-gün | > 80 adam-gün |
-| `screensAndModules` | Modül / ekran sayısı | 1–5 ekran, tek modül | 6–20 ekran veya 2–3 modül | > 20 ekran veya 4+ modül |
-| `integrations` | Dış sistem entegrasyonu | Yok | 1–2 servis | 3+ servis / çift yönlü |
-| `userRoles` | Kullanıcı rolü ve kitlesi | Tek rol, iç kullanıcı | 2–4 rol | 5+ rol veya son kullanıcı / vatandaş |
-| `dataSensitivity` | Veri hassasiyeti (KVKK) | Kişisel veri yok | Kişisel veri var | Özel nitelikli kişisel veri / finansal veri |
-| `hardwareDependency` | Donanım / cihaz bağımlılığı | Yok | Standart cihaz (yazıcı, barkod) | Özel cihaz / IoT |
-
-**Önerilen seviye:** efor 3 (> 80 adam-gün) **veya** puan ≥ 14 → Seviye 3; puan 9–13 → Seviye 2; daha azı → Seviye 1.
-
-**Kabul ölçütleri** (her biri 1–5):
-
-| Alan | Ölçüt | Ağırlık |
+| | Faz 1 (kalkıyor) | Faz 4 (bu sözleşme) |
 | --- | --- | --- |
-| `strategicFit` | Stratejik uyum (şirket hedefleri, ürün yol haritası) | %20 |
-| `commercialValue` | Ticari değer / gelir potansiyeli | %20 |
-| `technicalFeasibility` | Teknik uygulanabilirlik ve mevcut yetkinlik | %20 |
-| `resourceAndSchedule` | Kaynak ve takvim uygunluğu | %15 |
-| `customerFit` | Müşteri uygunluğu (ödeme, iletişim, geçmiş) | %15 |
-| `riskLevel` | Risk düzeyi (yüksek puan = düşük risk) | %10 |
+| Seviye | 6 soru, her biri 1–3; puan 6–18 | **Seviye Belirleme Şablonu (008) v3.0**: bölüm 1 "Doküman seviyesi" (dış talepte 13, diğerlerinde 12 soru), 5'er puanlı seçenek, toplam en fazla 60 |
+| Araştırma süresi | yok | Aynı formun bölüm 2'si "Araştırma seviyesi" (13 / 12 soru), toplam en fazla 60 → 1–30 gün |
+| Kabul | 6 ağırlıklı ölçüt, 1–5; Kabul / Koşullu / Ret | **Müşteri Uygunluk Değerlendirme Anket Formu (006) v1.0**: 10 soru, toplam 100 → Uygun / Şartlı uygun / Riskli / Uygun değil. Yalnızca dış talepte |
+| Veri | `ProjectAssessment` tablosu (sütun başına bir cevap) | Soru bankası: `Questionnaire` + `QuestionAnswer` (setler `level`, `customer-fit`) |
+| Ekran | "Seviye & Kabul" sekmesi | "Seviye & Uygunluk" sekmesi; ortak `app-questionnaire` bileşeni + sonuç kartları |
 
-**Ağırlıklı ortalama** = Σ (puan × ağırlık) / 100, iki ondalıkla. **Öneri:** ≥ 3,50 `Accept` (Kabul önerilir);
-2,50–3,49 `Conditional` (Koşullu kabul); < 2,50 `RejectOrPostpone` (Ret / erteleme önerilir).
+## Sonuçlar
 
-## Ortak kurallar
+Soru bankasının ortak kuralları geçerlidir (cevaplar tek tek kaydedilir, alt kategori projenin talep kaynağıdır, yazma yalnızca aktif projede).
+Bu modül `QuestionnaireDto.result` alanını doldurur. Eşikler formun seed dosyasından (`bands`) okunur, koda yazılmaz.
 
-- **Okuma:** giriş yapmış her kullanıcı.
-- **Yazma:** giriş yapmış her aktif kullanıcı, **yalnızca aktif projede** (değilse 409). Proje kayıtlarıyla aynı kural.
-- Bir projenin tek değerlendirmesi vardır; ilk cevap kaydedilince oluşur. Silinmez; cevaplar değiştirilebilir.
-- Cevaplar değişince seviye **kendiliğinden değişmez**: `Project.Level` yalnızca "Seviyeyi uygula" ile değişir.
-  Böylece projenin seviyesi, biri bilerek uygulamadan oynamaz.
-- Seviye projenin her aşamasında yeniden uygulanabilir (ör. 5.4'te kapsam değişip 4.1'e dönüldüğünde).
-- **Eş zamanlı düzenleme:** son kaydeden kazanır. "Seviyeyi uygula" `Project.RowVersion`'a takılır (aynı anda değişen proje → 409).
-- Her değişiklik denetim kaydında görünür: cevaplar `ProjectAssessment` olarak, seviye `Project.Level` olarak.
+### Seviye (`level`)
+
+| Bölüm | Puan | Sonuç (formdan) |
+| --- | --- | --- |
+| 1 · Doküman seviyesi | Seçilen seçeneklerin puan toplamı | 1–20 → Seviye 1 · 21–40 → Seviye 2 · 41–60 → Seviye 3 |
+| 2 · Araştırma seviyesi | Seçilen seçeneklerin puan toplamı | 1–10 → 1 gün · 11–20 → 2 · 21–30 → 5 · 31–40 → 10 · 41–50 → 20 · 51–60 → 30 gün |
+
+- Bir bölümün sonucu, o bölümün **bütün soruları** cevaplanınca çıkar; eksik soru varsa puan gösterilir, sonuç boştur.
+- Bazı seçenekler 0 puandır; toplam ilk aralığın altında kalırsa (0) ilk aralığın sonucu verilir (Seviye 1, 1 gün).
+- **"Seviyeyi uygula"** iki bölümün sonucunu projeye yazar: `Project.Level` ve `Project.ResearchDays`. Cevaplar sonradan değişirse
+  proje kendiliğinden değişmez (Faz 1'deki kural); ekran "önerilen sonuç projedekinden farklı" uyarısı gösterir.
+- Seviye her aşamada yeniden uygulanabilir. Seviyeyi yalnızca bu modül yazar.
+
+### Müşteri uygunluğu (`customer-fit`)
+
+| Puan (0–100) | Sonuç | Formdaki açıklama |
+| --- | --- | --- |
+| 85–100 | `Fit` — Uygun | Yüksek olgunluk düzeyi, projeye doğrudan başlanabilir |
+| 70–84 | `ConditionallyFit` — Şartlı uygun | Belirli konularda ön hazırlık ve danışmanlık gerekebilir |
+| 50–69 | `Risky` — Riskli | Kritik eksikler mevcut, başarısı için aksiyon planı gerekir |
+| 0–49 | `NotFit` — Uygun değil | Altyapı, ilgili veya stratejik uygunluk açısından yetersizlik |
+
+- Puan, 10 sorunun puanlarının toplamıdır; sonuç bütün sorular cevaplanınca çıkar.
+- Sorular yalnızca **dış talep** alt kategorisindedir: kurum içi ve ilişkili şirket projelerinde form boş döner, sekme
+  "Bu talep için müşteri uygunluk anketi doldurulmaz." yazar.
+- Sonuç bir **öneridir**: 4. adımdaki "Müşteri uygun veya şartlı uygun mu?" kararını iş analisti `Process` ekranında verir.
+  Bu modül adımı ilerletmez, karar da sonucu değiştirmez (karar 5).
 
 ## Uç noktalar
 
+Formlar soru bankasının uç noktalarıyla okunur ve doldurulur; bu modül yalnızca seviyeyi uygular.
+
 | İstek | Açıklama | Başarılı cevap |
 | --- | --- | --- |
-| `GET /assessment/definition` | Sorular, seçenekler, ölçütler, ağırlıklar ve eşikler (ekran için) | `200` `AssessmentDefinitionDto` |
-| `GET /projects/{projectId}/assessment` | Projenin değerlendirmesi; hiç cevap yoksa boş alanlarla döner | `200` `ProjectAssessmentDto` |
-| `PUT /projects/{projectId}/assessment/level-answers` | Seviye sorularının cevaplarını kaydet (yarım olabilir) | `200` `ProjectAssessmentDto` |
-| `PUT /projects/{projectId}/assessment/acceptance-scores` | Kabul ölçütlerinin puanlarını kaydet (yarım olabilir) | `200` `ProjectAssessmentDto` |
-| `POST /projects/{projectId}/assessment/apply-level` | Önerilen seviyeyi projeye uygula (`Project.Level`) | `200` `ProjectAssessmentDto` |
+| `GET /projects/{projectId}/questionnaires/level` | Seviye formu; `result` = `LevelResultDto` | `200` `QuestionnaireDto` |
+| `PUT /projects/{projectId}/questionnaires/level/answers/{questionId}` | Seviye sorusunun cevabı | `200` `QuestionnaireDto` |
+| `GET /projects/{projectId}/questionnaires/customer-fit` | Uygunluk anketi; `result` = `CustomerFitResultDto` | `200` `QuestionnaireDto` |
+| `PUT /projects/{projectId}/questionnaires/customer-fit/answers/{questionId}` | Anket sorusunun cevabı | `200` `QuestionnaireDto` |
+| `POST /projects/{projectId}/assessment/apply-level` | Seviye formunun sonucunu projeye yaz (`Level`, `ResearchDays`) | `200` `QuestionnaireDto` (seviye formu) |
+
+**Kalkan uç noktalar:** `GET /assessment/definition`, `GET /projects/{id}/assessment`, `PUT .../assessment/level-answers`,
+`PUT .../assessment/acceptance-scores`. Ekran (B2) ve gösterge paneli (aşağıda) aynı PR'da yeni uç noktalara geçer.
 
 ## DTO'lar
 
 ```jsonc
-// ProjectAssessmentDto
+// QuestionnaireDto.result — seviye formu (setCode "level")
 {
-  "projectId": 1,
-  "level": {
-    "answers": { "effort": 2, "screensAndModules": 2, "integrations": 3, "userRoles": 2, "dataSensitivity": 2, "hardwareDependency": 1 },
-    "answeredCount": 6,          // 0–6
-    "score": 12,                 // bütün sorular cevaplanmadıysa null
-    "suggestedLevel": 2,         // bütün sorular cevaplanmadıysa null
-    "appliedLevel": 2            // Project.Level; uygulanmadıysa null
-  },
-  "acceptance": {
-    "scores": { "strategicFit": 4, "commercialValue": 4, "technicalFeasibility": 3, "resourceAndSchedule": 3, "customerFit": 5, "riskLevel": 3 },
-    "answeredCount": 6,
-    "weightedScore": 3.70,       // bütün ölçütler puanlanmadıysa null
-    "recommendation": "Accept"   // bütün ölçütler puanlanmadıysa null
-  },
-  "updatedBy": { "id": 1, "fullName": "Elif Yılmaz" },   // hiç kaydedilmediyse null
-  "updatedAt": "2026-11-10T09:12:00Z"                    // hiç kaydedilmediyse null
+  "documentLevel": { "score": 23, "maxScore": 60, "answered": 13, "listed": 13, "level": 2 },   // eksik soru varsa level null
+  "research":      { "score": 14, "maxScore": 60, "answered": 10, "listed": 13, "days": null }, // eksik soru varsa days null
+  "appliedLevel": 2,          // Project.Level; uygulanmadıysa null
+  "appliedResearchDays": null // Project.ResearchDays; uygulanmadıysa null
 }
 
-// SaveLevelAnswersDto (PUT .../level-answers) — her alan isteğe bağlı (null = cevaplanmadı), doluysa 1–3
-{ "effort": 2, "screensAndModules": 2, "integrations": 3, "userRoles": 2, "dataSensitivity": 2, "hardwareDependency": null }
+// QuestionnaireDto.result — müşteri uygunluk anketi (setCode "customer-fit")
+{ "score": 78, "maxScore": 100, "answered": 10, "listed": 10, "rating": "ConditionallyFit" }  // eksik soru varsa rating null
 
-// SaveAcceptanceScoresDto (PUT .../acceptance-scores) — her alan isteğe bağlı, doluysa 1–5
-{ "strategicFit": 4, "commercialValue": 4, "technicalFeasibility": 3, "resourceAndSchedule": 3, "customerFit": 5, "riskLevel": 3 }
-
-// POST .../apply-level — gövde yok; seviye her zaman önerilen seviyedir
-
-// AssessmentDefinitionDto — ekranın soruları ve ölçütleri çizmesi için
-{
-  "levelQuestions": [ { "key": "effort", "title": "Tahmini efor",
-                        "options": [ { "value": 1, "label": "≤ 20 adam-gün" }, { "value": 2, "label": "21–80 adam-gün" }, { "value": 3, "label": "> 80 adam-gün" } ] } ],
-  "levelRule": "Efor 80 adam-günü aşıyorsa veya puan 14 ve üstüyse Seviye 3; puan 9–13 Seviye 2; daha azı Seviye 1.",
-  "acceptanceCriteria": [ { "key": "strategicFit", "title": "Stratejik uyum (şirket hedefleri, ürün yol haritası)", "weight": 20 } ],
-  "acceptanceRule": "Ağırlıklı ortalama 3,50 ve üstü kabul; 2,50–3,49 koşullu kabul; 2,50'nin altı ret / erteleme önerisi."
-}
+// POST .../assessment/apply-level — gövde yok; her zaman formun sonucu uygulanır
 ```
 
-| Alan | Kural | Hata mesajı |
+`maxScore`, listelenen soruların en yüksek seçenek puanlarının toplamıdır (formda 60 ve 100).
+
+| Durum | Kural | Hata mesajı |
 | --- | --- | --- |
-| Seviye cevapları | İsteğe bağlı; doluysa 1–3 | "Cevap 1 ile 3 arasında olmalıdır." |
-| Kabul puanları | İsteğe bağlı; doluysa 1–5 | "Puan 1 ile 5 arasında olmalıdır." |
-| `apply-level` | Bütün seviye soruları cevaplanmış olmalı | "Seviyeyi uygulamak için bütün sorular cevaplanmalıdır." |
+| `apply-level` | Seviye formunun iki bölümü de tamamlanmış olmalı | "Seviyeyi uygulamak için bütün sorular cevaplanmalıdır." (400) |
 
 ## Hata durumları
 
 | Durum | Kod | Örnek `detail` |
 | --- | --- | --- |
 | Proje bulunamadı | `404` | "Proje bulunamadı." |
-| Cevap veya puan aralık dışında | `400` | `errors.effort`: "Cevap 1 ile 3 arasında olmalıdır." |
 | Sorular eksikken seviye uygulandı | `400` | "Seviyeyi uygulamak için bütün sorular cevaplanmalıdır." |
 | Proje aktif değil | `409` | "Proje aktif değil; kayıt eklenemez veya değiştirilemez." |
 | Proje aynı anda değiştirildi (seviye uygulanırken) | `409` | Ortak `RowVersion` mesajı |
 
-## Bildirim noktaları
+Cevap kaydındaki hatalar soru bankasınınkilerle aynıdır ([question-bank-api.md](question-bank-api.md) → Hata durumları).
 
-MVP'de yok. Kabul puanlaması bitince yöneticiye ayrıca bildirim gönderilmez: proje 3.2'ye gelince `Process` zaten
-"onayınızı bekliyor" bildirimini gönderiyor ([process-api.md](process-api.md) → Bildirim noktaları).
+## Veri
+
+| Değişiklik | Neden |
+| --- | --- |
+| Yeni soru seti `customer-fit`: `Seed/question-sets/customer-fit.json` (form 006, 10 soru, `External` alt kategorisi, eşikler `bands`'de) | Anket soru bankasında tutulur (question-bank-api.md → karar 8) |
+| `Project.ResearchDays` (`int?`) | Araştırma süresi seviyeyle birlikte uygulanır (karar 3) |
+| `ProjectAssessments` tablosu kaldırılır | Faz 1 formu kalktı (karar 1) |
+| `Level` ve `ResearchDays` değişiklikleri denetim kaydına `Project` olarak yazılır | Mevcut kural |
+
+## Gösterge paneli
+
+"Kabul kararı bekleyen talepler" listesi ([dashboard-api.md](dashboard-api.md) → karar 13) bugün Faz 1 kabul puanlamasını gösteriyor.
+B2'nin API PR'ında, panelin derlenmeye devam etmesi için satırdaki `weightedScore` / `recommendation` yerine uygunluk anketinin
+`score` / `rating` alanları gelir (aynı adımda, 4. adımda bekleyen dış talepler). Listenin geri kalanı Dide'nin D9 işidir. *(Dide)*
 
 ## Kod yerleşimi
 
 | Katman | Dosyalar |
 | --- | --- |
-| `Isdlc.Domain/Assessment/` | `ProjectAssessment`, `AcceptanceRecommendation` |
-| `Isdlc.Application/Assessment/` | `IAssessmentService`, `AssessmentService`, DTO'lar, `AssessmentRules` (sorular, ağırlıklar, seviye ve öneri hesabı; saf kurallar) |
-| `Isdlc.Infrastructure/Assessment/` | `ProjectAssessmentConfiguration` |
-| `Isdlc.Api/Controllers/` | `AssessmentController` (yollar tam yazılır) |
+| `Isdlc.Domain/Assessment/` | `CustomerFitRating` (`ProjectAssessment` ve `AcceptanceRecommendation` kalkar) |
+| `Isdlc.Application/Assessment/` | `IAssessmentService` (`ApplyLevelAsync`), `LevelRules`, `CustomerFitRules` (saf; eşikleri `QuestionSet.Bands`'den okur), sonuç DTO'ları |
+| `Isdlc.Application/QuestionBank/` | `QuestionnaireService`, `result`'u setin kural sınıfından alır (`level` → `LevelRules`, `customer-fit` → `CustomerFitRules`, diğerleri null) |
+| `Isdlc.Infrastructure/Seed/question-sets/` | `customer-fit.json` |
+| `Isdlc.Api/Controllers/` | `AssessmentController` (yalnızca `apply-level`) |
+| `frontend/src/app/features/assessment/` | "Seviye & Uygunluk" sekmesi ve menü sayfası: iki `app-questionnaire` + sonuç kartları + "Seviyeyi uygula" |
 
-## Ekranlar (frontend)
+## Ekranlar
 
-| Ekran | Yer |
+| Ekran | İçerik |
 | --- | --- |
-| Seviye & Kabul (proje detayı sekmesi): seviye sihirbazı, "Seviyeyi uygula", kabul puanlama tablosu ve öneri | `features/assessment` |
-| Menüdeki "Seviye & Kabul" sayfası: proje seçici + aynı bileşen (Açık Konular ve Risk Yönetimi sayfaları gibi) | `features/assessment` |
+| Proje detayı → **Seviye & Uygunluk** sekmesi | Üstte uygunluk anketi (yalnızca dış talepte) ve sonuç kartı: puan / 100, sonuç rozeti, formdaki açıklama. Altta seviye formu (bölüm adları "Doküman seviyesi", "Araştırma seviyesi") ve sonuç kartı: iki bölümün puanı, önerilen seviye ve süre, projedeki değerler, "Seviyeyi projeye uygula" |
+| Menüdeki **Seviye & Uygunluk** sayfası | Proje seçici + aynı sekme (bugünkü "Seviye & Kabul" sayfası gibi) |
 
-Bileşen, `Projects` modülünün (Dide) proje detay sayfasına `projectId` alan bir sekme olarak eklenir; kapanmış projede salt okunurdur.
+## Uygulama sırası (her biri ayrı PR)
 
-## Kapsam dışı
-
-- **Öncelik (`Project.Priority`):** sözleşmeye göre 3.2'de `Process` belirler ([projects-api.md](projects-api.md) → Erva ile alınan kararlar).
-  Şu an Process 3.2'de öncelik almıyor; bu `Process`'in (Erva) işi, `Assessment` önceliğe dokunmaz.
-- **Seviye–doküman matrisi:** takip edilen dokümanlar seviyeye bağlı değildir ([data-model.md](data-model.md) → karar 14).
-- **Müşteri uygunluk formu ve ön fizibilite raporu** (3.1'in diğer dokümanları): `Documents`'ta durum olarak takip edilir.
-- **Gösterge paneli:** "seviyeye göre proje dağılımı, kabul puanı bekleyen talepler" ([dashboard-api.md](dashboard-api.md) → Sonra eklenecekler)
-  bu modül bittikten sonra ayrı bir PR'da.
+1. Bu doküman (ekip onayı)
+2. Seed (`customer-fit.json`), `Project.ResearchDays`, `ProjectAssessments` tablosunun kaldırılması (tek migration)
+3. `LevelRules`, `CustomerFitRules` ve testleri; `result` alanı, `apply-level`; eski uç noktalar ve gösterge paneli satırı
+4. Ekran: "Seviye & Uygunluk" sekmesi ve menü sayfası
 
 ## Ekip onayı bekleyen kararlar
 
-1. **Bir proje, bir değerlendirme:** cevaplar ayrı satırlar yerine `ProjectAssessment` tablosunda sütun olarak tutulur.
-   Sorular sabit olduğu için böylesi basit ve denetim kaydında "Tahmini efor 2 → 3" gibi okunur. Sorular kurumdan değişirse migration gerekir.
-2. **Seviye yalnızca önerilen seviye olarak uygulanır** (prototipteki gibi); analist farklı bir seviye seçemez.
-   Gerekirse sonradan `apply-level`'e "gerekçeli farklı seviye" eklenebilir.
-3. **Cevaplar değişince seviye kendiliğinden değişmez;** yeniden "Seviyeyi uygula" gerekir.
-4. **Yazma yetkisi** proje kayıtlarıyla aynı: her aktif kullanıcı. 2.4 ve 3.1'in sorumlusu İş Analisti olsa da
-   ekranı başkası da doldurabilir.
-5. **Process'e bağlılık yok:** 2.4 ve 3.1 adımları seviye uygulanmadan ya da puanlama bitmeden de tamamlanabilir.
-   İstenirse "2.4 tamamlanmadan önce seviye uygulanmış olmalı" kuralı `Process` ile birlikte sonradan eklenir (Erva).
+1. **Faz 1 formu kalkar ve `ProjectAssessments` tablosu migration'la kaldırılır.** Uygulama henüz canlıda değil; tablodaki kayıtlar
+   geliştirme ve örnek veridir. ("Kayıt silinmez" kuralı kullanıcı işlemleri içindir; kalkan bir özelliğin tablosu için değil.)
+   Alternatif: tablo kalır, hiçbir yerden okunmaz.
+2. **Anketin soru başına puanlaması formda yok:** form yalnızca toplamı (100) ve aralıkları veriyor. Öneri: her soru **0–10** puan
+   (11 seçenek: 0, 1, … 10). Analistlere sorulacak ([phase-4-plan.md](phase-4-plan.md) → Açık konular'a eklenir); cevap gelirse yalnızca
+   `customer-fit.json` değişir, kod değişmez. Not: form 006 "Onaylanmamış Dokümanlar" klasöründe, sürümü v1.0.
+3. **Araştırma süresi de projeye yazılır** (`Project.ResearchDays`), seviyeyle aynı düğmeyle. Proje özetinde ve sonra kaynak planlamada (B6) görünür.
+   Alternatif: yalnızca sekmede gösterilir, saklanmaz.
+4. **Seviye yalnızca formun sonucu olarak uygulanır** (Faz 1'deki gibi); analist farklı bir seviye seçemez. Cevaplar değişince proje kendiliğinden değişmez.
+5. **`Process`'e bağlılık yok:** 4. ve 5. adımlar anket ya da seviye tamamlanmadan da ilerletilebilir; 4. adımdaki Evet/Hayır kararını
+   iş analisti verir. İstenirse "uygun değil sonucunda Evet verilemez" gibi bir kural sonradan `Process` ile eklenir.
+6. **Ek geliştirme (`add-on`) de aynı formları kullanır** (question-bank-api.md → karar 4); uygunluk anketi yine yalnızca dış talepte.
