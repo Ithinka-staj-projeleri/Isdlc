@@ -178,7 +178,10 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Termin | `DueDate` |
 | Toplantı tutanağı | `Meeting` |
 | Toplantı türü | `MeetingType` |
-| Katılımcılar / gündem | `Participants`, `Agenda` |
+| Katılımcılar / gündem | `Participants`, `Agenda` (Faz 4 · E4: katılımcılar ad + rol satırları, `MeetingParticipant`) |
+| Ziyaret tutanağı | Türü `MeetingType.CustomerVisit` olan `Meeting` (`ReturnDate`, `PlannedActivities`, `CompletedActivities`) |
+| Tutanağı yazan / toplantı özeti / sonraki adımlar | `Meeting.RecordedById`, `Summary`, `NextSteps` |
+| Tamamlanan / devam eden aşamalar (tutanakta) | `Meeting.CompletedStages`, `OngoingStages` |
 | Tutanaktan aktarılan kayıt | `OpenIssue.SourceMeetingId` |
 | Bildirim | `Notification` (alıcı başına bir satır; `ReadAt` okunma zamanı). Modüller yalnızca `INotificationService` ile gönderir |
 | Denetim kaydı | `AuditLog` |
