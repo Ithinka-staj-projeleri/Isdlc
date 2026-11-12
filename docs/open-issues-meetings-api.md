@@ -225,8 +225,8 @@ satır silinmez (kayıt silinmez kuralı) ve katılımcı değişiklikleri tutan
 **Mevcut kayıtlar:** Migration, eski `Participants` metnini virgülden bölüp sırasıyla satırlara çevirir (rol boş), `RecordedById`
 tutanağı oluşturan kişidir. Diğer yeni alanlar boş kalır.
 
-**Yapay zekâ:** Tutanak taslağı (`minutes`) bu alanlara göre güncellenir: katılımcılar ad ve rol satırları olarak, ayrıca özet
-ve sonraki adımlar önerilir. Ayrı bir PR'da yapılır; o zamana kadar ajanın virgüllü katılımcı metni formda satırlara bölünür.
+**Yapay zekâ:** Tutanak taslağı (`minutes`) bu alanlara göre güncellendi (`meeting/minutes.v2`): katılımcılar ad ve rol
+satırları olarak, ayrıca özet ve sonraki adımlar önerilir (aşağıda "Yapay zekâ önerileri").
 
 **Uygulama sırası** (her biri ayrı PR): 1) bu sözleşme, 2) entity, migration, servis ve testler, 3) ekran, 4) yapay zekâ taslağının yeni alanları.
 
@@ -266,8 +266,13 @@ formu doldurur, kişi düzenleyip tutanağı yukarıdaki `POST /meetings` ile ka
   "minutes": {
     "type": "AnalysisSession",
     "typeReason": "Gereksinimler ayrıntılı konuşulmuş.",
-    "participants": "Elif Yılmaz, Can Öztürk, Hakan Yıldız (Demo Lojistik)",
+    "participants": [
+      { "name": "Elif Yılmaz", "role": null },
+      { "name": "Hakan Yıldız", "role": "Depo Müdürü (Demo Lojistik)" }
+    ],
     "agenda": "- Mobil stok sayımı\n- Depo listesi",
+    "summary": "Mobil sayım ekranları konuşuldu; tablet desteği ilk fazda yok.",
+    "nextSteps": "- Ekran taslakları depo ekibiyle gözden geçirilecek",
     "warnings": []
   }
 }
@@ -281,7 +286,7 @@ formu doldurur, kişi düzenleyip tutanağı yukarıdaki `POST /meetings` ile ka
 | `decisions` | Sorumlu yoktur: karar, tutanağı kaydeden kişi adına kapalı kaydedilir |
 | `others` | Soru, bağımlılık, varsayım, değişiklik talebi. Tutanak formunda yerleri yok; Açık Konular'dan elle eklenir |
 | `warnings` | Ajanın uyarıları: dayanak notlarda bulunamadı, termin toplantıdan önce, sorumlu yok |
-| `minutes` | Toplantı türü, katılımcılar (virgülle) ve gündem (her konu "- " ile bir satır). Tür bilinmiyorsa, alan boşsa ya da formun sınırını (1000 / 4000) aşıyorsa `null`. Form yalnızca kişinin doldurmadığı alanları doldurur; tür, kişi değiştirmediyse değişir. `warnings`: notlarda geçmeyen katılımcı, katılımcı bulunamadı |
+| `minutes` | Toplantı türü, katılımcılar (ad + rol; rol yalnızca notlarda geçiyorsa), gündem ve sonraki adımlar (her biri "- " ile bir satır), özet. Tür bilinmiyorsa, katılımcı ya da gündem yoksa veya formun sınırını (30 katılımcı, ad 100, gündem 4000 karakter) aşıyorsa `null`. Sınırı aşan rol, özet (4000) ya da sonraki adımlar (2000) yalnızca kendisi boş gelir. Aşamalar önerilmez (süreçten gelir). Form yalnızca kişinin doldurmadığı alanları doldurur; tür, kişi değiştirmediyse değişir. `warnings`: notlarda geçmeyen katılımcı ya da rol |
 
 Hatalar: proje yok `404`, proje aktif değil `409` ("Proje aktif değil; kayıt eklenemez veya değiştirilemez."),
 servis ayarlı değil, çalışmıyor ya da model hata verdi `503` (Türkçe `detail`, ör. "Yapay zekâ servisine şu an ulaşılamıyor.").

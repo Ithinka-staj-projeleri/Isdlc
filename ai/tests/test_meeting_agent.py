@@ -149,8 +149,10 @@ def minutes_answer(**overrides):
     base = {
         "meeting_type": "AnalysisSession",
         "type_reason": "Gereksinimler ayrıntılı konuşulmuş.",
-        "participants": ["Can Öztürk", "Müşteri BT"],
+        "participants": [{"name": "Can Öztürk", "role": None}, {"name": "Müşteri BT", "role": None}],
         "agenda": ["ERP test ortamı", "İş emri durumları"],
+        "summary": "ERP test ortamı ve iş emri durumları konuşuldu.",
+        "next_steps": ["Ekran taslakları hazırlanacak"],
     }
     return json.dumps(base | overrides, ensure_ascii=False)
 
@@ -164,7 +166,7 @@ def test_draftMinutes_UsesItsOwnPromptOnTheSameNotes():
 
     (open_issues_prompt, open_issues_message), (minutes_prompt, minutes_message) = llm.calls
     assert open_issues_prompt != minutes_prompt
-    assert "tutanağının üst bilgilerini" in minutes_prompt
+    assert "tutanağının bilgilerini" in minutes_prompt
     assert open_issues_message == minutes_message
 
 
@@ -175,18 +177,51 @@ def test_draftMinutes_ReturnsMinutesWithMeetingDate():
 
     assert result.minutes.type == MeetingType.ANALYSIS_SESSION
     assert result.minutes.date == date(2026, 11, 4)
-    assert result.minutes.participants == "Can Öztürk, Müşteri BT"
+    assert [(p.name, p.role) for p in result.minutes.participants] == [("Can Öztürk", None), ("Müşteri BT", None)]
     assert result.minutes.agenda == "- ERP test ortamı\n- İş emri durumları"
+    assert result.minutes.summary == "ERP test ortamı ve iş emri durumları konuşuldu."
+    assert result.minutes.next_steps == "- Ekran taslakları hazırlanacak"
     assert result.warnings == []
-    assert result.run.prompt_version == "meeting/minutes.v1"
+    assert result.run.prompt_version == "meeting/minutes.v2"
 
 
 def test_draftMinutes_WarnsAboutParticipantNotInNotes():
-    llm = FakeLlmClient([minutes_answer(participants=["Can Öztürk", "Ayşe Kaya"])])
+    llm = FakeLlmClient([minutes_answer(participants=[{"name": "Can Öztürk"}, {"name": "Ayşe Kaya"}])])
 
     result = MeetingAgent(llm).draft_minutes(MEETING)
 
     assert result.warnings == ["Katılımcı notlarda geçmiyor: Ayşe Kaya"]
+
+
+def test_draftMinutes_KeepsRolesFromTheNotes_WarnsAboutAnInventedRole():
+    llm = FakeLlmClient([minutes_answer(participants=[
+        {"name": " Müşteri BT ", "role": "  "},
+        {"name": "Can Öztürk", "role": "Yazılım Geliştirici"},
+    ])])
+
+    result = MeetingAgent(llm).draft_minutes(MEETING)
+
+    assert [(p.name, p.role) for p in result.minutes.participants] == [
+        ("Müşteri BT", None), ("Can Öztürk", "Yazılım Geliştirici")]
+    assert result.warnings == ["Rol notlarda geçmiyor: Can Öztürk (Yazılım Geliştirici)"]
+
+
+def test_draftMinutes_NoSummaryOrNextSteps_LeavesThemEmpty():
+    llm = FakeLlmClient([minutes_answer(summary="  ", next_steps=[" ", ""])])
+
+    result = MeetingAgent(llm).draft_minutes(MEETING)
+
+    assert result.minutes.summary is None
+    assert result.minutes.next_steps is None
+
+
+def test_draftMinutes_NoParticipants_ReturnsNoMinutes():
+    llm = FakeLlmClient([minutes_answer(participants=[{"name": "  "}])])
+
+    result = MeetingAgent(llm).draft_minutes(MEETING)
+
+    assert result.minutes is None
+    assert "participants" in result.invalid_reason
 
 
 def test_draftMinutes_ReturnsNoMinutesWhenTypeIsInvalid():
@@ -217,6 +252,9 @@ def test_toCreateDto_CombinesMinutesWithDecisionsAndActions():
 
     assert dto["type"] == "AnalysisSession"
     assert dto["date"] == "2026-11-04"
+    assert dto["participants"] == [{"name": "Can Öztürk", "role": None}, {"name": "Müşteri BT", "role": None}]
+    assert dto["recordedByUserId"] is None
+    assert dto["nextSteps"] == "- Ekran taslakları hazırlanacak"
     assert dto["decisions"] == ["İş emri durumları 6 adım"]
     assert dto["actions"] == [
         {"title": "Ekran taslaklarının hazırlanması", "ownerUserId": None, "ownerName": "Can Öztürk", "dueDate": None}

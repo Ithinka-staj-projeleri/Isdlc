@@ -9,7 +9,7 @@ ayrı bir model çağrısıdır.
 
 | Ajan | Görevler | Kayıt |
 | --- | --- | --- |
-| **Toplantı ajanı** | 1. Açık konu önerileri (aksiyon, karar, soru, bağımlılık, varsayım, değişiklik talebi) <br> 2. Tutanak taslağı (tür, katılımcılar, gündem) | Uygulamada ikisi birlikte tutanak formunu doldurur (tür, katılımcılar, gündem yalnızca boşsa). Komut satırında açık konular onaylanınca API'ye yazılır |
+| **Toplantı ajanı** | 1. Açık konu önerileri (aksiyon, karar, soru, bağımlılık, varsayım, değişiklik talebi) <br> 2. Tutanak taslağı (tür, rolleriyle katılımcılar, gündem, özet, sonraki adımlar) | Uygulamada ikisi birlikte tutanak formunu doldurur (taslak alanları yalnızca boşsa). Komut satırında açık konular onaylanınca API'ye yazılır |
 | **Risk ajanı** | 1. Riskleri bulma <br> 2. Olasılık ve etki puanlama (1-5) <br> 3. Önleyici aksiyon | Risks API'si gelene kadar yalnızca çıktı dosyasında |
 
 Ajanlara görevlerin nasıl bölüştürüldüğü: [docs/ai-vision.md → Ajan ve görev](../docs/ai-vision.md#ajan-ve-görev).
@@ -167,7 +167,7 @@ ai/
 │  │  ├─ meeting_agent.py    # toplantı ajanı: suggest_open_issues, draft_minutes
 │  │  └─ risk_agent.py       # risk ajanı: identify, assess, mitigate (run = üçü sırayla)
 │  └─ prompts/
-│     ├─ meeting/            # open_issues.v1.md, minutes.v1.md
+│     ├─ meeting/            # open_issues.v1.md, minutes.v2.md (v1 eski sürüm)
 │     └─ risk/               # identify.v2.md (kategori eklendi; v1 iz için duruyor), assess.v1.md, mitigate.v2.md (uydurma yer tutucu yasağı)
 ├─ tests/
 └─ evals/

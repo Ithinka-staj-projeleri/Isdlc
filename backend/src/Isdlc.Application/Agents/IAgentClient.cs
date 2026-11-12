@@ -34,9 +34,20 @@ public record MeetingAgentResult(
     string ModelName,
     MeetingAgentMinutes? Minutes = null);
 
-/// <summary>The minutes' info as the agent drafts it. Type is a MeetingType name; agenda has one "- " line per topic.</summary>
+/// <summary>
+/// The minutes' info as the agent drafts it. Type is a MeetingType name; agenda and next steps have one "- " line each.
+/// A participant's role is there only when the notes give it.
+/// </summary>
 public record MeetingAgentMinutes(
-    string Type, string? TypeReason, string Participants, string Agenda, IReadOnlyList<string> Warnings);
+    string Type,
+    string? TypeReason,
+    IReadOnlyList<MeetingAgentParticipant> Participants,
+    string Agenda,
+    string? Summary,
+    string? NextSteps,
+    IReadOnlyList<string> Warnings);
+
+public record MeetingAgentParticipant(string Name, string? Role);
 
 /// <summary>One suggestion as the agent returns it. Type is an OpenIssueType name ("Action", "Decision", ...).</summary>
 public record MeetingAgentItem(
