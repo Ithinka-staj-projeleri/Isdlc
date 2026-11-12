@@ -39,8 +39,9 @@ Ortak iskelet: **soru seti → (iş tipi, alt kategori) → bölüm → grup →
 
 - **İş tipi:** formlarda şimdilik yalnızca *Yeni Yazılım Projesi* var. Kodda akışın anahtarıyla (`ProcessFlow.Code`) aynı tutulur:
   `new-software-project` ([process-api.md](process-api.md) → Akışlar). Ek geliştirme akışının anahtarı `add-on`'dur ama formlarda ona ait soru yok
-  (karar 4). Yeni bir iş tipi yeni soru satırı demektir, kod değişmez. Projeler akışını Faz 4 · E1 ile alana kadar formlar
-  `new-software-project` sorularını listeler (`QuestionnaireRules.DefaultWorkType`); E1 gelince form oluşurken projenin akışından alınır.
+  (karar 4). Yeni bir iş tipi yeni soru satırı demektir, kod değişmez. Form oluşurken iş tipi projenin akışından alınır
+  (`QuestionnaireRules.WorkTypeFor`); `add-on` projeleri kendi soruları gelene kadar `new-software-project` sorularını listeler.
+  Formu olmayan akışlarda (süreç iyileştirme, kaynak planlama, faturalama) liste boş döner ve cevap kaydedilemez (404).
 - **Alt kategori:** projenin talep kaynağıdır (`RequestSource`: `Internal` kurum içi, `External` dış / müşteri, `Affiliated` ilişkili şirket;
   `Affiliated` D1 ile eklenir). Formlardaki "TÜM ALT KATEGORİLER" satırları `null` alt kategoriyle tutulur ve her alt kategoride listelenir.
 

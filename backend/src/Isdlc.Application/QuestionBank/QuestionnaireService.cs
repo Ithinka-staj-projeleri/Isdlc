@@ -13,7 +13,7 @@ public class QuestionnaireService(IApplicationDbContext dbContext, ICurrentUserS
 {
     public async Task<QuestionnaireDto> GetAsync(int projectId, string setCode, CancellationToken cancellationToken)
     {
-        var source = await GetProjectSourceAsync(projectId, cancellationToken);
+        var project = await GetProjectAsync(projectId, cancellationToken);
         var set = await dbContext.GetSetAsync(setCode, cancellationToken);
 
         var form = await dbContext.Questionnaires
@@ -26,9 +26,9 @@ public class QuestionnaireService(IApplicationDbContext dbContext, ICurrentUserS
             })
             .SingleOrDefaultAsync(cancellationToken);
 
-        // Before the first save the form follows the project: its request source is the subcategory.
-        var workType = form?.WorkType ?? QuestionnaireRules.DefaultWorkType;
-        var subcategory = form?.Subcategory ?? source;
+        // Before the first save the form follows the project: its flow is the work type, its request source the subcategory.
+        var workType = form?.WorkType ?? project.WorkType;
+        var subcategory = form?.Subcategory ?? project.Source;
         var questions = await dbContext.ListQuestionsAsync(set, workType, subcategory, cancellationToken);
 
         var answers = form is null
@@ -154,19 +154,20 @@ public class QuestionnaireService(IApplicationDbContext dbContext, ICurrentUserS
         }
     }
 
-    private async Task<RequestSource> GetProjectSourceAsync(int projectId, CancellationToken cancellationToken)
+    /// <summary>What a new form takes from the project. 404 when there is no such project.</summary>
+    private async Task<(string WorkType, RequestSource Source)> GetProjectAsync(int projectId, CancellationToken cancellationToken)
     {
         var project = await dbContext.Projects
             .AsNoTracking()
             .Where(p => p.Id == projectId)
-            .Select(p => new { p.Source })
+            .Select(p => new { p.Source, FlowCode = p.ProcessFlow.Code })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
 
-        return project.Source;
+        return (QuestionnaireRules.WorkTypeFor(project.FlowCode), project.Source);
     }
 
-    /// <summary>The project's form for the set; a new one (not yet added) taking the project's request source.</summary>
+    /// <summary>The project's form for the set; a new one (not yet added) taking the project's flow and request source.</summary>
     private async Task<Questionnaire> LoadOrAddAsync(int projectId, QuestionSetRef set, CancellationToken cancellationToken)
     {
         var form = await dbContext.Questionnaires
@@ -174,12 +175,13 @@ public class QuestionnaireService(IApplicationDbContext dbContext, ICurrentUserS
 
         if (form is null)
         {
+            var project = await GetProjectAsync(projectId, cancellationToken);
             form = new Questionnaire
             {
                 ProjectId = projectId,
                 QuestionSetId = set.Id,
-                WorkType = QuestionnaireRules.DefaultWorkType,
-                Subcategory = await GetProjectSourceAsync(projectId, cancellationToken),
+                WorkType = project.WorkType,
+                Subcategory = project.Source,
             };
             dbContext.Questionnaires.Add(form);
         }
