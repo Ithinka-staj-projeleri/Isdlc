@@ -38,7 +38,8 @@ açık konular ve toplantı tutanakları değişmeden çalışır.
 | `Status`, `CurrentStepId`, `StartDate` | Akış; ret 2. ve 4. adımda kaydı `Rejected` yapar |
 | `CustomerName`, `RequesterName`, `Source`… | Kullanılmaz (boş metin / varsayılan) |
 
-Öneriye özgü alanlar 1'e 1 bağlı **`ProcessImprovement`** tablosundadır (`ProjectId` hem birincil hem yabancı anahtar).
+Öneriye özgü alanlar 1'e 1 bağlı **`ProcessImprovement`** tablosundadır (kendi `Id`'si ve benzersiz `ProjectId`;
+denetim kaydı her satırın `Id`'sini kullandığı için birincil anahtar ayrıdır).
 
 ## Alanlar
 
@@ -164,16 +165,16 @@ Hepsi isteğe bağlıdır; boş alan "henüz yazılmadı" demektir. Süreç adı
 
 | Ekran | Yer |
 | --- | --- |
-| Menü → Süreç İyileştirme: liste (kod, başlık, kaynak, öncelik, adım, durum), filtreler, "+ Yeni öneri" | `features/process-improvement` |
+| Menü → Süreç İyileştirme: liste (kod, başlık, kaynak, öncelik, adım, durum), filtreler, "+ Yeni öneri" | `features/process-improvements` |
 | Öneri detayı: Öneri · Önceliklendirme · Çalışma · Pilot · Süreç · Açık Konular · Tutanaklar · Kayıt Geçmişi sekmeleri | Süreç, Açık Konular, Tutanaklar ve Kayıt Geçmişi mevcut bileşenlerdir (`projectId` alır) |
 
 ## Kod yerleşimi
 
 | Katman | Dosyalar |
 | --- | --- |
-| `Isdlc.Domain/ProcessImprovement/` | `ProcessImprovement` (1'e 1 `Project`), `ImprovementSource`, `PilotResult`, `ImprovementPriority` |
-| `Isdlc.Application/ProcessImprovement/` | `IProcessImprovementService`, DTO'lar, `ImprovementRules` (öncelik hesabı; saf) |
-| `Isdlc.Infrastructure/ProcessImprovement/` | `ProcessImprovementConfiguration` |
+| `Isdlc.Domain/ProcessImprovements/` | `ProcessImprovement` (1'e 1 `Project`), `ImprovementSource`, `PilotResult`, `ImprovementPriority` |
+| `Isdlc.Application/ProcessImprovements/` | `IProcessImprovementService`, DTO'lar, `ImprovementRules` (öncelik hesabı; saf) |
+| `Isdlc.Infrastructure/ProcessImprovements/` | `ProcessImprovementConfiguration` |
 | `Isdlc.Api/Controllers/` | `ProcessImprovementsController` |
 
 ## Uygulama sırası (her biri ayrı PR)
