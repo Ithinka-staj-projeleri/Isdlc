@@ -11,7 +11,7 @@ public static class AuditChangeReader
 {
     /// <summary>Fields that point to another record; their ids are turned into names or codes.</summary>
     public static readonly IReadOnlySet<string> UserFields =
-        new HashSet<string> { "OwnerUserId", "BusinessAnalystId", "ProjectManagerId" };
+        new HashSet<string> { "OwnerUserId", "BusinessAnalystId", "ProjectManagerId", "RecordedById" };
 
     public const string StepField = "CurrentStepId";
     public const string MeetingField = "SourceMeetingId";

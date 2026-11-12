@@ -5,12 +5,49 @@
         <h3 id="meeting-title"><span class="code">{{ m.code }}</span> {{ typeLabels[m.type] }}</h3>
 
         <dl class="info">
+            @if (m.returnDate) {
+            <dt>Gidiş – dönüş</dt>
+            <dd>{{ m.date | dateOnly }} – {{ m.returnDate | dateOnly }}</dd>
+            } @else {
             <dt>Tarih</dt>
             <dd>{{ m.date | dateOnly }}</dd>
+            }
+            <dt>Tutanağı yazan</dt>
+            <dd>{{ m.recordedBy.fullName }}</dd>
             <dt>Katılımcılar</dt>
-            <dd>{{ m.participants }}</dd>
-            <dt>Gündem</dt>
+            <dd>
+                <ul class="people">
+                    @for (p of m.participants; track $index) {
+                    <li>{{ p.name }}@if (p.role) { <span class="muted"> · {{ p.role }}</span> }</li>
+                    }
+                </ul>
+            </dd>
+            <dt>{{ m.type === visitType ? 'Ana gündem' : 'Gündem' }}</dt>
             <dd class="agenda">{{ m.agenda }}</dd>
+            @if (m.plannedActivities) {
+            <dt>Planlanan aktiviteler</dt>
+            <dd class="agenda">{{ m.plannedActivities }}</dd>
+            }
+            @if (m.completedActivities) {
+            <dt>Yapılan aktiviteler</dt>
+            <dd class="agenda">{{ m.completedActivities }}</dd>
+            }
+            @if (m.summary) {
+            <dt>{{ m.type === visitType ? 'Notlar' : 'Toplantı özeti' }}</dt>
+            <dd class="agenda">{{ m.summary }}</dd>
+            }
+            @if (m.completedStages) {
+            <dt>Tamamlanan aşamalar</dt>
+            <dd class="agenda">{{ m.completedStages }}</dd>
+            }
+            @if (m.ongoingStages) {
+            <dt>Devam eden aşamalar</dt>
+            <dd class="agenda">{{ m.ongoingStages }}</dd>
+            }
+            @if (m.nextSteps) {
+            <dt>Sonraki adımlar</dt>
+            <dd class="agenda">{{ m.nextSteps }}</dd>
+            }
         </dl>
 
         <h4>Kararlar ({{ m.decisions.length }})</h4>

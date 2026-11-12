@@ -68,6 +68,14 @@ const FIELD_LABELS: Record<AuditEntityType, Record<string, string>> = {
         Date: 'Tarih',
         Participants: 'Katılımcılar',
         Agenda: 'Gündem',
+        RecordedById: 'Tutanağı yazan',
+        Summary: 'Toplantı özeti',
+        CompletedStages: 'Tamamlanan aşamalar',
+        OngoingStages: 'Devam eden aşamalar',
+        NextSteps: 'Sonraki adımlar',
+        ReturnDate: 'Dönüş tarihi',
+        PlannedActivities: 'Planlanan aktiviteler',
+        CompletedActivities: 'Yapılan aktiviteler',
     },
     Requirement: {
         Code: 'Kod',
@@ -153,6 +161,11 @@ export function displayValue(entityType: string, field: string, value: string | 
     if (value === 'true') return 'Evet';
     if (value === 'false') return 'Hayır';
 
+    const people = participantsOf(entityType, field, value);
+    if (people !== null) {
+        return people;
+    }
+
     const dateOnly = DATE_ONLY.exec(value);
     if (dateOnly) {
         return `${dateOnly[3]}.${dateOnly[2]}.${dateOnly[1]}`;
@@ -165,4 +178,27 @@ export function displayValue(entityType: string, field: string, value: string | 
     }
 
     return value;
+}
+
+/**
+ * Minutes' participants are stored as a JSON list: [{"Name":"Elif Yılmaz","Role":"İş Analisti"}].
+ * Shown as "Elif Yılmaz (İş Analisti), Can Öztürk"; older minutes kept plain text, which is shown as it is.
+ */
+function participantsOf(entityType: string, field: string, value: string): string | null {
+    if (entityType !== 'Meeting' || field !== 'Participants' || !value.startsWith('[')) {
+        return null;
+    }
+
+    try {
+        const list = JSON.parse(value) as Record<string, string | null>[];
+        return list
+            .map(p => {
+                const name = p['Name'] ?? p['name'] ?? '';
+                const role = p['Role'] ?? p['role'];
+                return role ? `${name} (${role})` : name;
+            })
+            .join(', ');
+    } catch {
+        return null;
+    }
 }

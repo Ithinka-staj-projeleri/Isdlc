@@ -130,7 +130,8 @@ public class AuditServiceTests(DatabaseFixture database)
                 {
                     Type = MeetingType.AnalysisSession,
                     Date = new DateOnly(2026, 11, 5),
-                    Participants = "Elif Yılmaz, Can Öztürk",
+                    RecordedByUserId = userId,
+                    Participants = [new MeetingParticipantDto { Name = "Elif Yılmaz" }, new MeetingParticipantDto { Name = "Can Öztürk" }],
                     Agenda = "Ekranlar",
                     Actions = [new MeetingActionDto { Title = "Ekran taslakları", OwnerUserId = developerId }],
                 }, CancellationToken.None));
