@@ -103,7 +103,7 @@ Frontend'de `features/` altındaki klasörler aynı modüllerin kebab-case halid
 | Kolon | PascalCase | `ProjectId`, `CreatedAt` |
 | Birincil anahtar | `Id` | `Id` |
 | Yabancı anahtar | `<Entity>Id` | `ProjectId` |
-| Kullanıcıya gösterilen kod | `Code` kolonu | `ISDLC-2026-014`, `RSK-001` |
+| Kullanıcıya gösterilen kod | `Code` kolonu | `14` (Proje No), `RSK-001` |
 | Migration | Ne yaptığını anlatan PascalCase | `AddRisksTable` |
 
 **API**
@@ -141,8 +141,12 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Türkçe | Kodda |
 | --- | --- |
 | Talep / Proje | `Project` |
-| Talep Sahibi | `Requester` (`Project.RequesterName`; sistem kullanıcısı değildir) |
-| Talep kaynağı / kanalı / türü | `RequestSource`, `RequestChannel`, `RequestType` |
+| Proje No | `Project.Code` (düz sıra numarası, metin olarak: `"14"`) |
+| Talep sahibi (firma / birim) | `Project.CustomerName` |
+| Talebi ileten kişi / iletişim bilgisi | `Requester` (`Project.RequesterName`, `Project.RequesterContact`; sistem kullanıcısı değildir) |
+| Talep tarihi / talebi kayda alan | `Project.RequestDate` / `Project.CreatedById` |
+| Talep notları | `Project.Notes` |
+| Talep kaynağı / kanalı / türü | `RequestSource` (`Internal`, `External`, `Affiliated`), `RequestChannel` (`Email`, `Phone`), `RequestType` |
 | Proje durumu | `ProjectStatus` (`Active`, `Closed`, `Rejected`, `Lost`, `Redirected`) |
 | Öncelik | `ProjectPriority` |
 | Kullanıcı | `User` |
