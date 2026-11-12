@@ -134,6 +134,42 @@ public class CreateProjectDtoTests
         Assert.Equal("Teklif hazırlanıp hazırlanmayacağı belirtilmelidir.", error.ErrorMessage);
     }
 
+    [Theory]
+    [InlineData(RequestChannel.Email)]
+    [InlineData(RequestChannel.Phone)]
+    [InlineData(RequestChannel.Meeting)]
+    public void Validate_ChannelOfTheForm_IsValidWithoutOtherText(RequestChannel channel)
+    {
+        Assert.Empty(Validate(Valid() with { RequestChannel = channel, RequestChannelOther = null }));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public void Validate_OtherChannelWithoutText_ReturnsTurkishError(string? other)
+    {
+        // The form's "Diğer: ____" has to be filled in.
+        var dto = Valid() with { RequestChannel = RequestChannel.Other, RequestChannelOther = other };
+
+        var error = SingleError(dto, nameof(CreateProjectDto.RequestChannelOther));
+        Assert.Equal("Diğer talep kanalı yazılmalıdır.", error.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_OtherChannelWithText_IsValid()
+    {
+        Assert.Empty(Validate(Valid() with { RequestChannel = RequestChannel.Other, RequestChannelOther = "WhatsApp" }));
+    }
+
+    [Fact]
+    public void Validate_OtherChannelOver200_ReturnsTurkishError()
+    {
+        var dto = Valid() with { RequestChannel = RequestChannel.Other, RequestChannelOther = new string('a', 201) };
+
+        var error = SingleError(dto, nameof(CreateProjectDto.RequestChannelOther));
+        Assert.Equal("Diğer talep kanalı en fazla 200 karakter olabilir.", error.ErrorMessage);
+    }
+
     [Fact]
     public void Validate_ContactOver200_ReturnsTurkishError()
     {

@@ -310,6 +310,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 Description = seed.Description,
                 Source = seed.Source,
                 RequestChannel = seed.RequestChannel,
+                RequestChannelOther = seed.RequestChannelOther,
                 RequestType = seed.RequestType,
                 CustomerName = seed.CustomerName,
                 RequesterName = seed.RequesterName,

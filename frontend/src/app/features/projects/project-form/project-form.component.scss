@@ -195,3 +195,53 @@
   margin: 0;
   color: var(--muted);
 }
+
+// Labels that are not <span>s inside a <label> ("Proje No ve Adı", read-only fields) look the same.
+.field > label,
+.field > .label {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+// "Proje No ve Adı": the number (given on save) in front of the name, as on the company form.
+.with-prefix {
+  display: flex;
+
+  .prefix {
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-right: 0;
+    border-radius: 6px 0 0 6px;
+    background: var(--bg, #f4f5f7);
+    color: var(--muted);
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    white-space: nowrap;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border-radius: 0 6px 6px 0;
+  }
+}
+
+// "Diğer: ____" next to the channel options.
+.choice .options {
+  align-items: center;
+
+  .other {
+    flex: 1 1 180px;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--fg);
+    font: inherit;
+
+    &.invalid {
+      border-color: var(--bad);
+    }
+  }
+}

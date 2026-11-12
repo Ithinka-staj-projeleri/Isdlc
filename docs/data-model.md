@@ -136,6 +136,7 @@ yapı birden fazlasına izin verir.
 | `Description` | string | |
 | `Source` | `RequestSource` | |
 | `RequestChannel` | `RequestChannel` | |
+| `RequestChannelOther` | string? | Faz 4. Kanal "Diğer" ise ne olduğu; en fazla 200, diğer kanallarda boş |
 | `RequestType` | `RequestType` | |
 | `CustomerName` | string | Talep sahibi: müşteri firma veya iç birim adı (MVP'de ayrı tablo yok) |
 | `RequesterName` | string | Talebi ileten kişi veya unvan; sisteme giriş yapan bir kullanıcı değildir |
@@ -463,8 +464,8 @@ Sözleşme: [process-improvement-api.md](process-improvement-api.md).
 | Enum | Değerler |
 | --- | --- |
 | `UserRole` | `BusinessAnalyst` (İş Analisti), `SoftwareDepartmentManager` (Yazılım Departman Yöneticisi), `ProjectManager` (Proje Yöneticisi), `SoftwareDeveloper` (Yazılım Geliştirici), `TestSpecialist` (Test Uzmanı), `SalesRepresentative` (Satış Temsilcisi) |
-| `RequestSource` | `Internal` (Kurum içi), `External` (Dış, müşteri), `Affiliated` (İlişkili şirket) |
-| `RequestChannel` | `Email` (E-posta), `Phone` (Telefon). Faz 4 öncesindeki `Written` / `Verbal` migration ile çevrildi |
+| `RequestSource` | `Internal` (Kurum içi), `External` (Dış, müşteri), `Affiliated` (İlişkili şirket; soru bankası için, talep formunda yok) |
+| `RequestChannel` | `Email` (E-posta), `Phone` (Telefon), `Meeting` (Toplantı), `Other` (Diğer). Faz 4 öncesindeki `Written` / `Verbal` migration ile çevrildi |
 | `RequestType` | `NewProject` (Yeni yazılım projesi), `AdditionalModule` (Devam eden projeye ek modül), `CompanyProduct` (Şirket ürünü), `Support` (Destek / ticket) |
 | `ProjectPriority` | `Low`, `Medium`, `High` |
 | `ProjectStatus` | `Active` (Aktif), `Closed` (Kapandı), `Rejected` (Reddedildi), `Lost` (Kaybedildi), `Redirected` (Yönlendirildi) |

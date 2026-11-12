@@ -41,8 +41,8 @@ Kararlar: [phase-4-plan.md](phase-4-plan.md) → Alınan kararlar.
 | İletişim (E-posta / Telefon) | `requesterContact` | **Yeni**, isteğe bağlı |
 | Talebi Kayıt Altına Alan Kişi | `createdBy` | Yeni alan yok: talebi sisteme giren İş Analisti zaten tutuluyor |
 | Talep Açıklaması | `description` | — |
-| Talep Kanalı | `requestChannel` | `Written` / `Verbal` yerine `Email` / `Phone` |
-| Talep Kaynağı | `source` | `Internal` / `External` / `Affiliated` (İlişkili şirket, soru bankasının üçüncü alt kategorisi) |
+| Talep Kanalı | `requestChannel`, `requestChannelOther` | `Written` / `Verbal` yerine formdaki dört seçenek: `Email`, `Phone`, `Meeting` (Toplantı), `Other` (Diğer). "Diğer" seçilince ne olduğu `requestChannelOther`'a yazılır |
+| Talep Kaynağı | `source` | Formda iki seçenek: `Internal` (Kurum İçi Talepler), `External` (Dış Talepler (Müşteri)). `Affiliated` (İlişkili şirket) soru bankasının üçüncü alt kategorisi olarak API'de kalır, talep formunda sunulmaz |
 | Notlar | `notes` | **Yeni**, isteğe bağlı |
 | Teklif hazırlanacak mı (akış) | `requiresOffer` | **Yeni** API alanı (entity'de E1'den beri var); zorunlu |
 
@@ -56,6 +56,7 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
 | D1-2 | Talebi kayda alan kişi ayrı alan mı? | Hayır. Talebi yalnızca İş Analisti açar (karar 1); kaydı açan kişi `createdBy` olarak zaten tutuluyor ve detayda "Talebi kayda alan" etiketiyle gösterilir |
 | D1-3 | Talep kaynağı ve teklif bilgisi sonradan değiştirilebilir mi? | Yalnızca kayıt, akışın bu iki bilgiye bağlı **ilk adımına gelmeden** (yeni yazılım projesinde 4. adım). Sonrasında 409: hangi adımların atlandığı bu iki bilgiyle belirlendiği için geçmiş tutarsız olur. Aynı değeri tekrar göndermek hata değildir |
 | D1-4 | Mevcut kayıtlar | Migration çevirir: kod `ISDLC-2026-014` → `14`, kanal `Written` → `Email`, `Verbal` → `Phone` |
+| D1-5 | Form düzeni | Talep formu ve proje detayı, Talep Kayıt Formu'nun alanlarını **aynı sırada ve aynı adlarla** gösterir. Formda olmayan alanlar (teklif, talep türü, NDA, sorumlular, bitiş tarihi) ayrı bir "Süreç Bilgileri" bölümündedir. Kanal kararı (phase-4-plan.md) belgeye göre güncellendi: dört seçenek |
 
 ## Ortak kurallar
 
@@ -116,6 +117,7 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
   "description": "Saha teknisyenlerinin iş emirlerini mobilde alması...",
   "source": "External",
   "requestChannel": "Email",
+  "requestChannelOther": null,                         // yalnızca "Other" kanalında dolu
   "requesterName": "Saha Operasyon Müdürü",          // Talebi ileten kişi
   "requesterContact": "saha.operasyon@ornek.com",     // girilmediyse null
   "notes": null,                                       // girilmediyse null
@@ -140,6 +142,7 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
   "description": "Bayilerin sipariş vermesi ve durumunu takip etmesi.",
   "source": "External",
   "requestChannel": "Email",
+  "requestChannelOther": null,           // "Other" seçilince zorunlu
   "requestType": "NewProject",
   "customerName": "Ege Gıda Dağıtım Ltd.",
   "requesterName": "Satış Direktörü",
@@ -159,6 +162,7 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
 | `name` | Zorunlu, en fazla 200 karakter |
 | `description` | Zorunlu, en fazla 2000 karakter |
 | `source`, `requestChannel`, `requestType` | Zorunlu |
+| `requestChannelOther` | `requestChannel = Other` ise zorunlu, en fazla 200 karakter; diğer kanallarda saklanmaz (`null`) |
 | `customerName`, `requesterName` | Zorunlu, en fazla 200 karakter |
 | `requesterContact` | İsteğe bağlı, en fazla 200 karakter (e-posta ya da telefon; biçim kontrol edilmez) |
 | `notes` | İsteğe bağlı, en fazla 2000 karakter |
@@ -191,6 +195,7 @@ yine olmazsa 409 döner. Açık konulardan farkı: talep formu uzun olduğu içi
 | Proje bulunamadı | `404` | "Proje bulunamadı." |
 | Talebi İş Analisti olmayan biri açmaya çalıştı | `403` | "Talebi yalnızca İş Analisti açabilir." |
 | Alanlar geçersiz | `400` | `errors.name`: "Proje adı zorunludur." |
+| "Diğer" kanalı yazılmadı | `400` | `errors.requestChannelOther`: "Diğer talep kanalı yazılmalıdır." |
 | Teklif bilgisi gönderilmedi | `400` | `errors.requiresOffer`: "Teklif hazırlanıp hazırlanmayacağı belirtilmelidir." |
 | Seçilen kişi uygun değil | `400` | "Seçilen iş analisti aktif bir İş Analisti değil." |
 | Bitiş tarihi talep tarihinden önce | `400` | `errors.dueDate`: "Bitiş tarihi talep tarihinden önce olamaz." |

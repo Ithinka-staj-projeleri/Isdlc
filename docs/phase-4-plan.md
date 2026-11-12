@@ -18,7 +18,8 @@ Ortak kurallar için: [AGENTS.md](../AGENTS.md), ekip ve çalışma kuralları i
 | Konu | Karar |
 | --- | --- |
 | Kapsam | Akışlarda olan her şey MVP'ye girer |
-| Talep kanalı | Yalnızca **E-posta** ve **Telefon** (akış görselindeki "sözlü / yazılı" yerine) |
+| Talep kanalı | Talep Kayıt Formu'ndaki gibi: **E-posta**, **Telefon**, **Toplantı**, **Diğer** (açıklamasıyla). Akış görselindeki "sözlü / yazılı" kullanılmaz |
+| Talep formu | Talep Kayıt Formu'nun alanları aynı sırada ve aynı adlarla; formda olmayan alanlar ayrı bölümde |
 | Proje No | Düz bir sıra numarası (1, 2, 3…). `ISDLC-2026-014` biçimindeki kod kalkar. Proje içi kayıt kodları (`RSK-001`, `GR-001`) aynen kalır |
 | Akışlar | Koda gömülmez, **veri** olarak tutulur. Sonradan 6–7 akış daha gelecek (BT destek, Ar-Ge destek…); yeni akış = yeni seed dosyası |
 | Ek geliştirme | Ana projeye bağlı **ayrı bir kayıt**; kendi süreci, seviyesi, riskleri ve dokümanları olur |
@@ -78,7 +79,7 @@ süreç iyileştirme (E5) Erva'dadır.
 
 | No | İş | Bağımlılık | Kaynak |
 | --- | --- | --- | --- |
-| D1 | **Talepler.** Proje No sayıya döner. Yeni alanlar: talep tarihi, talebi ileten kişi, iletişim (e-posta / telefon), talebi kayda alan, notlar, teklif hazırlanacak mı. Kanal: E-posta / Telefon. Kaynak: Kurum içi / Dış (müşteri) / İlişkili şirket. Mevcut kayıtlar migration ile çevrilir | — | Talep Kayıt Formu (002), Proje Kayıt Listesi (032) |
+| D1 | **Talepler.** Proje No sayıya döner. Yeni alanlar: talep tarihi, talebi ileten kişi, iletişim (e-posta / telefon), talebi kayda alan, notlar, teklif hazırlanacak mı. Kanal: E-posta / Telefon / Toplantı / Diğer. Kaynak: Kurum içi / Dış (müşteri). Mevcut kayıtlar migration ile çevrilir | — | Talep Kayıt Formu (002), Proje Kayıt Listesi (032) |
 | D2 | **Ret / erteleme kaydı.** Karar (ret / erteleme), karar tarihi, kararı veren, gerekçe kategorisi (10 seçenek), açıklama, yeniden değerlendirme tarihi. Yeni durum: `Postponed` (Ertelendi) | D1 | Talep Ret-Erteleme Formu (007) |
 | D3 | **Ek geliştirme kaydı.** Ana projeye bağlı kayıt (`ParentProjectId`), proje içinde sıra numarası (ör. `14 / EG-01`). Proje detayında "Ek Geliştirmeler" sekmesi; ek geliştirme kendi detay sayfasını ve sekmelerini kullanır | D1, E1 | Ek geliştirme akışı |
 | D4 | **Dokümanlar.** 39 dokümanlık liste (kod, tür, kategori, sürüm, bağlı adım). Seviyeye göre Zorunlu / Koşullu / Opsiyonel / Gerekli değil matrisi; ek geliştirme için ayrı matris. Sekmede özet ("4 zorunlu, 3 opsiyonel; tamamlanan 0 / 4"). Kural: zorunlu doküman onaylanmadan bir sonraki aşamaya geçilmez (E1'deki adım ↔ doküman bağlantısını kullanır) | E1, E2 | `__Dokümanlar.xlsx`, Seviye-Doküman Matrisi (004) |

@@ -799,6 +799,10 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("RequestChannelOther")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<DateOnly>("RequestDate")
                         .HasColumnType("date");
 

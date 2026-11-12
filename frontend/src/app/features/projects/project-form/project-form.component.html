@@ -11,7 +11,8 @@
   } @else {
     <h2>Yeni talep</h2>
     <p class="hint">
-      Talep kaydedildiğinde otomatik bir Proje No alır ve sürecin ilk adımında ("Talep alınır ve Proje No verilir") başlar.
+      Talep Kayıt Formu. Kaydedildiğinde otomatik bir Proje No alır ve sürecin ilk adımında ("Talep alınır ve Proje No
+      verilir") başlar.
     </p>
   }
 </header>
@@ -26,83 +27,131 @@
 }
 
 <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <!-- The fields of the company's Talep Kayıt Formu, in its order and words. -->
   <section class="card">
-    <h3>Talep kayıt bilgileri</h3>
+    <h3>Talep Kayıt Bilgileri</h3>
 
-    <label class="field wide">
-      <span>Proje adı *</span>
-      <input formControlName="name" maxlength="200" [class.invalid]="errorFor('name')" />
+    <div class="field wide">
+      <label for="project-name">Proje No ve Adı *</label>
+      <div class="with-prefix">
+        <span class="prefix" title="Proje No">{{ existing()?.code ?? 'Otomatik' }}</span>
+        <input
+          id="project-name"
+          formControlName="name"
+          maxlength="200"
+          placeholder="Proje adı"
+          [class.invalid]="errorFor('name')"
+        />
+      </div>
       @if (errorFor('name')) {
         <small class="error">{{ errorFor('name') }}</small>
       }
-    </label>
+    </div>
 
     <label class="field">
-      <span>Talep tarihi *</span>
+      <span>Talep Tarihi *</span>
       <input type="date" formControlName="requestDate" [class.invalid]="errorFor('requestDate')" />
       @if (errorFor('requestDate')) {
         <small class="error">{{ errorFor('requestDate') }}</small>
       }
     </label>
 
-    @if (existing(); as p) {
-      <div class="field">
-        <span>Talebi kayda alan</span>
+    <label class="field">
+      <span>Talep Sahibi (Firma / Birim) *</span>
+      <input formControlName="customerName" maxlength="200" [class.invalid]="errorFor('customerName')" />
+      @if (errorFor('customerName')) {
+        <small class="error">{{ errorFor('customerName') }}</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Talebi İleten Kişi *</span>
+      <input formControlName="requesterName" maxlength="200" [class.invalid]="errorFor('requesterName')" />
+      @if (errorFor('requesterName')) {
+        <small class="error">{{ errorFor('requesterName') }}</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>İletişim (E-posta / Telefon)</span>
+      <input formControlName="requesterContact" maxlength="200" [class.invalid]="errorFor('requesterContact')" />
+      @if (errorFor('requesterContact')) {
+        <small class="error">{{ errorFor('requesterContact') }}</small>
+      }
+    </label>
+
+    <div class="field">
+      <span class="label">Talebi Kayıt Altına Alan Kişi</span>
+      @if (existing(); as p) {
         <p class="readonly">{{ p.createdBy.fullName }}</p>
-      </div>
-    } @else {
-      <div class="field">
-        <span>Talebi kayda alan</span>
+      } @else {
         <p class="readonly muted">Talebi kaydeden kullanıcı</p>
-      </div>
-    }
+      }
+    </div>
 
     <label class="field wide">
-      <span>Talep açıklaması *</span>
+      <span>Talep Açıklaması *</span>
       <textarea formControlName="description" rows="4" maxlength="2000" [class.invalid]="errorFor('description')"></textarea>
       @if (errorFor('description')) {
         <small class="error">{{ errorFor('description') }}</small>
       }
     </label>
 
-    <label class="field">
-      <span>Talep kanalı *</span>
-      <select formControlName="requestChannel" [class.invalid]="errorFor('requestChannel')">
-        <option [ngValue]="null" disabled>Seçin</option>
+    <fieldset class="field choice wide">
+      <legend>Talep Kanalı *</legend>
+      <div class="options">
         @for (option of channelOptions; track option[0]) {
-          <option [ngValue]="option[0]">{{ option[1] }}</option>
+          <label class="check">
+            <input type="radio" formControlName="requestChannel" [value]="option[0]" />
+            <span>{{ option[1] }}{{ option[0] === 'Other' ? ':' : '' }}</span>
+          </label>
         }
-      </select>
+        @if (form.controls.requestChannel.value === 'Other') {
+          <input
+            class="other"
+            formControlName="requestChannelOther"
+            maxlength="200"
+            aria-label="Diğer talep kanalı"
+            [class.invalid]="otherChannelError()"
+          />
+        }
+      </div>
       @if (errorFor('requestChannel')) {
         <small class="error">{{ errorFor('requestChannel') }}</small>
       }
-    </label>
+      @if (otherChannelError()) {
+        <small class="error">{{ otherChannelError() }}</small>
+      }
+    </fieldset>
 
-    <label class="field">
-      <span>Talep kaynağı *</span>
-      <select formControlName="source" [class.invalid]="errorFor('source')">
-        <option [ngValue]="null" disabled>Seçin</option>
-        @for (option of sourceOptions; track option[0]) {
-          <option [ngValue]="option[0]">{{ option[1] }}</option>
+    <fieldset class="field choice wide">
+      <legend>Talep Kaynağı *</legend>
+      <div class="options">
+        @for (option of sourceOptions(); track option[0]) {
+          <label class="check">
+            <input type="radio" formControlName="source" [value]="option[0]" />
+            <span>{{ option[1] }}</span>
+          </label>
         }
-      </select>
+      </div>
       @if (errorFor('source')) {
         <small class="error">{{ errorFor('source') }}</small>
       }
-    </label>
+    </fieldset>
 
-    <label class="field">
-      <span>Talep türü *</span>
-      <select formControlName="requestType" [class.invalid]="errorFor('requestType')">
-        <option [ngValue]="null" disabled>Seçin</option>
-        @for (option of typeOptions; track option[0]) {
-          <option [ngValue]="option[0]">{{ option[1] }}</option>
-        }
-      </select>
-      @if (errorFor('requestType')) {
-        <small class="error">{{ errorFor('requestType') }}</small>
+    <label class="field wide">
+      <span>Notlar</span>
+      <textarea formControlName="notes" rows="3" maxlength="2000" [class.invalid]="errorFor('notes')"></textarea>
+      @if (errorFor('notes')) {
+        <small class="error">{{ errorFor('notes') }}</small>
       }
     </label>
+  </section>
+
+  <!-- Not on the company form: the flow and the other screens need them. -->
+  <section class="card">
+    <h3>Süreç Bilgileri</h3>
+    <p class="hint wide">Bu alanlar Talep Kayıt Formu'nda yok; süreç akışı ve diğer ekranlar kullanır.</p>
 
     <fieldset class="field choice">
       <legend>Teklif hazırlanacak mı? *</legend>
@@ -121,6 +170,19 @@
       }
     </fieldset>
 
+    <label class="field">
+      <span>Talep türü *</span>
+      <select formControlName="requestType" [class.invalid]="errorFor('requestType')">
+        <option [ngValue]="null" disabled>Seçin</option>
+        @for (option of typeOptions; track option[0]) {
+          <option [ngValue]="option[0]">{{ option[1] }}</option>
+        }
+      </select>
+      @if (errorFor('requestType')) {
+        <small class="error">{{ errorFor('requestType') }}</small>
+      }
+    </label>
+
     @if (conditionsLockedAt(); as stepCode) {
       <p class="hint wide">
         Talep kaynağı ve teklif bilgisi {{ stepCode }}. adıma gelindikten sonra değiştirilemez: hangi adımların atlandığı bu
@@ -131,60 +193,6 @@
         Teklif hazırlanmayacaksa teklif adımları atlanır. Müşteri uygunluğu yalnızca teklif hazırlanacak dış taleplerde yapılır.
       </p>
     }
-  </section>
-
-  <section class="card">
-    <h3>Talep sahibi</h3>
-
-    <label class="field">
-      <span>Talep sahibi (firma / birim) *</span>
-      <input formControlName="customerName" maxlength="200" [class.invalid]="errorFor('customerName')" />
-      @if (errorFor('customerName')) {
-        <small class="error">{{ errorFor('customerName') }}</small>
-      }
-    </label>
-
-    <label class="field">
-      <span>Talebi ileten kişi *</span>
-      <input
-        formControlName="requesterName"
-        maxlength="200"
-        placeholder="Kişi ya da unvan"
-        [class.invalid]="errorFor('requesterName')"
-      />
-      @if (errorFor('requesterName')) {
-        <small class="error">{{ errorFor('requesterName') }}</small>
-      }
-    </label>
-
-    <label class="field">
-      <span>İletişim (e-posta / telefon)</span>
-      <input formControlName="requesterContact" maxlength="200" [class.invalid]="errorFor('requesterContact')" />
-      @if (errorFor('requesterContact')) {
-        <small class="error">{{ errorFor('requesterContact') }}</small>
-      }
-    </label>
-
-    <label class="check wide">
-      <input type="checkbox" formControlName="requiresNda" />
-      <span>Görüşme öncesi gizlilik sözleşmesi (NDA) gerekiyor</span>
-    </label>
-  </section>
-
-  <section class="card">
-    <h3>Notlar</h3>
-
-    <label class="field wide">
-      <span>Notlar</span>
-      <textarea formControlName="notes" rows="3" maxlength="2000" [class.invalid]="errorFor('notes')"></textarea>
-      @if (errorFor('notes')) {
-        <small class="error">{{ errorFor('notes') }}</small>
-      }
-    </label>
-  </section>
-
-  <section class="card">
-    <h3>Sorumlular ve hedef tarih</h3>
 
     <label class="field">
       <span>İş analisti</span>
@@ -218,6 +226,11 @@
       @if (dueDateError()) {
         <small class="error">{{ dueDateError() }}</small>
       }
+    </label>
+
+    <label class="check">
+      <input type="checkbox" formControlName="requiresNda" />
+      <span>Görüşme öncesi gizlilik sözleşmesi (NDA) gerekiyor</span>
     </label>
   </section>
 
