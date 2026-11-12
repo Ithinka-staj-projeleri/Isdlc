@@ -163,6 +163,76 @@ Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enu
 - Tutanak detayında ve listedeki sayılarda türü `Decision` olan kayıtlar karar, diğerleri aksiyon sayılır;
   `openActionCount` kapanmamış aksiyonlardır.
 
+### Faz 4 · E4: toplantı ve ziyaret tutanakları
+
+Durum: **taslak, ekip onayı bekliyor.** Sorumlu: Erva. Plan: [phase-4-plan.md](phase-4-plan.md) → E4.
+Kaynak: Toplantı Tutanağı (004) ve Ziyaret Tutanağı (005). Taslak, bu formların önceki sürümleri
+(ITH.FRM.08 Toplantı / Ziyaret Tutanağı) ve plandaki alan listesiyle yazıldı; 004 ve 005 ile karşılaştırılıp kesinleşir.
+
+**Ziyaret tutanağı ayrı bir kayıt değildir:** türü `CustomerVisit` (Müşteri Ziyareti) olan tutanaktır. Kod (`TT-001`), liste,
+kararlar ve aksiyonların açık konulara aktarılması aynen kalır. Ziyarete özgü alanlar yalnızca bu türde girilir.
+
+**Yeni alanlar**
+
+| Alan | Formda | Kural |
+| --- | --- | --- |
+| `recordedByUserId` | Tutanağı yazan / notları yazan | Zorunlu, aktif bir kullanıcı. Yeni tutanak formunda giriş yapan kişiyle dolu gelir |
+| `participants` | Katılanlar ve rolleri | **Metin yerine satırlar:** `[{ "name": "Hakan Yıldız", "role": "Depo Müdürü (Demo Lojistik)" }]`. En az 1, en fazla 50 satır; `name` zorunlu (en fazla 200), `role` isteğe bağlı (en fazla 200) |
+| `summary` | Toplantı özeti / notlar | İsteğe bağlı, en fazla 4000 karakter |
+| `completedStages` | Tamamlanan aşamalar | İsteğe bağlı, en fazla 2000 karakter. Formda projenin süreç durumundan önerilir (tamamlanan bölümler); kişi değiştirebilir |
+| `ongoingStages` | Devam eden aşamalar | İsteğe bağlı, en fazla 2000 karakter. Formda mevcut bölüm ve adımla önerilir |
+| `nextSteps` | Sonraki adımlar | İsteğe bağlı, en fazla 2000 karakter |
+| `returnDate` | Dönüş tarihi (ziyaret) | Yalnızca ziyarette; `date` (gidiş tarihi) ile aynı ya da sonra. Ziyarette zorunlu |
+| `plannedActivities` | Planlanan aktiviteler (ziyaret) | Yalnızca ziyarette, isteğe bağlı, en fazla 4000 karakter |
+| `completedActivities` | Yapılan aktiviteler (ziyaret) | Yalnızca ziyarette, isteğe bağlı, en fazla 4000 karakter |
+
+- `date` ziyarette **gidiş tarihi** olarak gösterilir; `agenda` ziyarette "Ana gündem"dir.
+- Ziyaret alanları başka türde gönderilirse `400`: "Dönüş tarihi ve aktiviteler yalnızca müşteri ziyaretinde girilir."
+  Tür ziyaretten başka bir türe çevrilirken bu alanlar boş gönderilir.
+- Formdaki "Firma" projenin müşterisidir (`Project.CustomerName`); ayrıca tutulmaz. Ziyaret formundaki "Açık konular"
+  tutanağın aksiyonlarıdır (Açık Konular'a aktarılır), "Notlar" `summary`'dir.
+- Listede `participants` yerine `participantNames` döner ("Elif Yılmaz, Can Öztürk, Hakan Yıldız"); ziyarette `returnDate` de döner.
+
+```jsonc
+// CreateMeetingDto (POST) — UpdateMeetingDto (PUT) aynı alanları decisions ve actions olmadan alır
+{
+  "type": "CustomerVisit",
+  "date": "2026-11-18",                                   // ziyarette gidiş tarihi
+  "returnDate": "2026-11-19",
+  "recordedByUserId": 1,
+  "participants": [
+    { "name": "Elif Yılmaz", "role": "İş Analisti" },
+    { "name": "Hakan Yıldız", "role": "Depo Müdürü (Demo Lojistik)" }
+  ],
+  "agenda": "Depoda mevcut sayım sürecinin yerinde incelenmesi",
+  "summary": "Sayım kâğıtla yapılıyor; farklar ay sonunda Excel'de eşleştiriliyor.",
+  "completedStages": "Talep ve ön analiz",
+  "ongoingStages": "Teklif ve anlaşma — 7. adım: Kapsam ve efor",
+  "nextSteps": "Ekran taslakları depo ekibiyle gözden geçirilecek.",
+  "plannedActivities": "- Sayım sürecini izleme\n- Depo listesinin alınması",
+  "completedActivities": "- Sayım süreci izlendi\n- Depo listesi bir hafta içinde gelecek",
+  "decisions": [ "İlk fazda tablet desteği olmayacak." ],
+  "actions": [ { "title": "Depo listesi", "ownerUserId": null, "ownerName": "Hakan Yıldız", "dueDate": "2026-11-26" } ]
+}
+
+// MeetingDto — yukarıdaki alanlar ve
+{ "recordedBy": { "id": 1, "fullName": "Elif Yılmaz" }, "participants": [ { "name": "...", "role": "..." } ] /* … */ }
+```
+
+**Mevcut kayıtlar:** Migration, eski `Participants` metnini virgülden bölüp satırlara çevirir (rol boş), `RecordedById`
+tutanağı oluşturan kişidir. Diğer yeni alanlar boş kalır.
+
+**Yapay zekâ:** Tutanak taslağı (`minutes`) bu alanlara göre güncellenir: katılımcılar ad ve rol satırları olarak, ayrıca özet
+ve sonraki adımlar önerilir. Ayrı bir PR'da yapılır; o zamana kadar ajanın virgüllü katılımcı metni formda satırlara bölünür.
+
+**Uygulama sırası** (her biri ayrı PR): 1) bu sözleşme, 2) entity, migration, servis ve testler, 3) ekran, 4) yapay zekâ taslağının yeni alanları.
+
+**Ekip onayı bekleyen kararlar**
+1. Ziyaret ayrı bir kayıt değil, `CustomerVisit` türünde tutanaktır.
+2. Katılımcılar serbest metin yerine ad + rol satırlarıdır (`MeetingParticipant`). Sistem kullanıcısına bağlanmaz; Talep Sahibi tarafı da yazılabilsin diye ad yazılır.
+3. Tamamlanan / devam eden aşamalar süreçten **önerilen** serbest metindir; toplantı anındaki durum olarak saklanır, süreç ilerleyince değişmez.
+4. Toplantı formundaki "Konu" ayrı alan olmaz, `agenda`'dır; "İlgili birimler" katılımcıların rolünde yazılır. 004 farklıysa bu madde değişir.
+
 ## Yapay zekâ önerileri (`Agents`)
 
 Yeni tutanak formundaki "Yapay zekâ ile karar ve aksiyonları çıkar" butonu için. Hiçbir şey kaydedilmez; öneriler

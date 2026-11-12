@@ -64,7 +64,7 @@ Bu bölüm Erva'nın alanıydı. Erva'nın başka işleri olduğu için Faz 4'te
 | E1 | **Akış altyapısı.** `Flow` kavramı: aşama ve adımlar bir akışa bağlanır, her kayıt hangi akışı izlediğini bilir. Adım atlama koşulları (iç/dış talep, teklif var/yok, seviye), geri dönüşler, adım ↔ doküman bağlantısı (Yardımcı / Talimat / Form / Çıktı), kaydın hangi adımdan sonra "proje" sayılacağı. `ProjectService` ve `DashboardService`'teki "aşama 1–3 taleptir" sabiti kalkar | — | Akış görselleri |
 | E2 | **Beş akışın seed'i:** yeni yazılım projesi, ek geliştirme, süreç iyileştirme, kaynak planlama, faturalama. Eski 13 aşamalı akış geçersizdir ve kaldırılır; veritabanı yeni akışlarla baştan kurulur (canlı veri yok). Örnek projeler ve testler (`TestProjects.CreateAsync(db, "4.7")` gibi) yeni adım kodlarına çevrilir | E1 | Akış görselleri |
 | E3 | **Talep Analizi sekmesi** (proje detayı): iş tipi ve talep kaynağına göre soru listesi, cevap, açık konu, durum. "Açık" kalan soru tek tıkla Açık Konular'a aktarılır | B1 | Talep Anlama Soru Listesi (003) |
-| E4 | **Toplantı ve ziyaret tutanakları:** notları yazan, katılımcı rolü, toplantı özeti, tamamlanan / devam eden aşamalar, sonraki adımlar. Ziyaret türünde gidiş-dönüş tarihi, planlanan ve yapılan aktiviteler | — | Toplantı Tutanağı (004), Ziyaret Tutanağı (005) |
+| E4 | **Toplantı ve ziyaret tutanakları** (Erva'ya geçti, 12 Kasım; sözleşme: [open-issues-meetings-api.md](open-issues-meetings-api.md) → Faz 4 · E4)**:** notları yazan, katılımcı rolü, toplantı özeti, tamamlanan / devam eden aşamalar, sonraki adımlar. Ziyaret türünde gidiş-dönüş tarihi, planlanan ve yapılan aktiviteler | — | Toplantı Tutanağı (004), Ziyaret Tutanağı (005) |
 | E5 | **Süreç İyileştirme menüsü:** öneri kaydı (kaynak: retrospektif / hata-şikâyet / çalışan önerisi / yönetim hedefi), önceliklendirme, çalışma dokümanı alanları (mevcut durum, kök neden, çözüm, pilot planı), pilot değerlendirme (hedef ↔ gerçekleşen) | E1, E2 | Süreç iyileştirme akışı (formlar 040–042 klasörde yok) |
 | E6 | **Demo senaryosu** yeni akışlarla baştan yazılır ve denenir | Hepsi | `docs/demo-scenario.md` |
 
@@ -110,7 +110,8 @@ Dalga 4                        D5 doküman kütüphanesi · D9 gösterge paneli 
 ```
 
 - **E1 kritik yoldur.** Dide sözleşmeyi (`docs/process-api.md` güncellemesi) ilk PR olarak açar; herkes onu okuyup kendi işini ona göre tasarlar.
-- E ve D işlerinin ikisi de Dide'de olduğu için Dide'nin sırası: E1 → D1 → E2 → D3 → E4 → D2; kalanlar dalga sırasıyla.
+- E ve D işlerinin ikisi de Dide'de olduğu için Dide'nin sırası: E1 → D1 → E2 → D3 → D2; kalanlar dalga sırasıyla.
+- **E4'ü Erva yapar** (Meetings modülü ve tutanak ajanı onda); Dide'nin sırasından çıktı.
 - **B1 ikinci kritik iştir;** E3, D7, B2 ve B4 onu bekler. Baran sözleşmeyi erken paylaşır.
 - **Migration çakışması:** Dalga 1'de üç kişi de migration üretecek. Kural aynı: PR'dan hemen önce main'i alıp üretin, PR başına tek migration.
 

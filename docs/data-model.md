@@ -3,7 +3,7 @@
 Faz 0'ın temel entity'leri (`ProcessStage`, `ProcessStep`, `User`, `Project`, `StepRecord`), denetim kaydı
 ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
 Kaynak: "ISDLC Analiz Merkezi" prototipi.
-Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **uygulandı**; `Notification` (Faz 3) **uygulandı**; soru bankası (Faz 4 · B1) **taslak, ekip onayı bekliyor.**
+Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **uygulandı**; `Notification` (Faz 3) **uygulandı**; soru bankası (Faz 4 · B1) **taslak, ekip onayı bekliyor**; tutanak ve ziyaret alanları (Faz 4 · E4) **taslak, ekip onayı bekliyor.**
 
 İsimlendirme AGENTS.md'ye uyar: entity tekil, tablo çoğul; `?` alanın boş bırakılabileceğini (nullable) gösterir.
 
@@ -22,6 +22,7 @@ ProcessStep  1 ──── * StepRecord          (JumpedToStepId: geri dönüş
 Project      1 ──── * OpenIssue
 Project      1 ──── * Meeting
 Meeting      1 ──── * OpenIssue           (SourceMeetingId: tutanaktan aktarılan karar ve aksiyonlar)
+Meeting      1 ──── * MeetingParticipant  (Faz 4 · E4: katılımcılar, ad ve rol)
 User         1 ──── * OpenIssue           (OwnerUserId: sorumlu ekip üyesi)
 Project      1 ──── * Requirement
 Project      1 ──── * ProjectDocument * ── 1 DocumentType
@@ -236,9 +237,33 @@ Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, ba
 | `Code` | string | `TT-001`, proje içinde artan |
 | `Type` | `MeetingType` | |
 | `Date` | DateOnly | Toplantı tarihi |
-| `Participants` | string | Serbest metin ("Elif Yılmaz, Can Öztürk, Müşteri BT"); en fazla 1000 karakter |
-| `Agenda` | string | En fazla 4000 karakter |
+| `Participants` | string | Serbest metin ("Elif Yılmaz, Can Öztürk, Müşteri BT"); en fazla 1000 karakter. *Faz 4 · E4: yerini `MeetingParticipant` satırları alır* |
+| `Agenda` | string | En fazla 4000 karakter. Ziyarette "Ana gündem" |
+| `RecordedById` | int (FK → User) | *Faz 4 · E4.* Tutanağı yazan; mevcut kayıtlarda oluşturan kişi |
+| `Summary` | string? | *Faz 4 · E4.* Toplantı özeti / notlar; en fazla 4000 karakter |
+| `CompletedStages` | string? | *Faz 4 · E4.* Tamamlanan aşamalar; en fazla 2000 karakter. Formda süreçten önerilir, toplantı anındaki hâliyle saklanır |
+| `OngoingStages` | string? | *Faz 4 · E4.* Devam eden aşamalar; en fazla 2000 karakter |
+| `NextSteps` | string? | *Faz 4 · E4.* Sonraki adımlar; en fazla 2000 karakter |
+| `ReturnDate` | DateOnly? | *Faz 4 · E4.* Yalnızca `CustomerVisit`: dönüş tarihi, `Date` (gidiş) ile aynı ya da sonra; ziyarette zorunlu |
+| `PlannedActivities` | string? | *Faz 4 · E4.* Yalnızca `CustomerVisit`; en fazla 4000 karakter |
+| `CompletedActivities` | string? | *Faz 4 · E4.* Yalnızca `CustomerVisit`; en fazla 4000 karakter |
 | + `AuditableEntity` alanları | | |
+
+### `MeetingParticipant` — tutanağın katılımcısı (Faz 4 · E4, taslak)
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `MeetingId` | int (FK → Meeting) | |
+| `Order` | int | Formdaki sıra |
+| `Name` | string | En fazla 200 karakter. Sistem kullanıcısına bağlanmaz (müşteri tarafı da yazılır) |
+| `Role` | string? | Rol / birim / kurum ("Depo Müdürü (Demo Lojistik)"); en fazla 200 karakter |
+
+- Tutanak başına 1–50 satır. Tutanak güncellenince satırlar gönderilen listeyle değiştirilir.
+- `IAudited` + `IProjectRecord` (`ProjectId` tutanaktan): değişiklikleri projenin Kayıt Geçmişi'nde görünür.
+- Migration, eski `Participants` metnini virgülden bölüp satırlara çevirir; ardından kolon kaldırılır.
+- Ziyaret tutanağı ayrı bir entity değildir; `Type = CustomerVisit` olan `Meeting`'dir. Sözleşme:
+  [open-issues-meetings-api.md](open-issues-meetings-api.md) → "Faz 4 · E4".
 
 - Toplantının **kararları ve aksiyonları tutanakta ayrıca metin olarak tutulmaz**; tutanak kaydedilirken
   `OpenIssue` olarak oluşturulur ve `SourceMeetingId` ile tutanağa bağlanır:
