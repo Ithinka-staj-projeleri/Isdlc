@@ -85,7 +85,7 @@ public class AuditChangeReaderTests
     [Fact]
     public void ReferenceFields_AreTheOnesTheContractLists()
     {
-        Assert.Equal(["BusinessAnalystId", "OwnerUserId", "ProjectManagerId"], AuditChangeReader.UserFields.Order());
+        Assert.Equal(["BusinessAnalystId", "OwnerUserId", "ProjectManagerId", "RecordedById"], AuditChangeReader.UserFields.Order());
         Assert.Equal("CurrentStepId", AuditChangeReader.StepField);
         Assert.Equal("SourceMeetingId", AuditChangeReader.MeetingField);
         Assert.Equal("DocumentTypeId", AuditChangeReader.DocumentTypeField);

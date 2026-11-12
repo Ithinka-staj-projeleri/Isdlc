@@ -125,7 +125,9 @@ OPEN_ISSUES = json.dumps({"summary": "Ekran taslakları konuşuldu.", "items": [
     "due_date": "2026-11-13", "evidence": "Ekran taslaklarını Can Öztürk cuma gününe kadar hazırlayacak."}]},
     ensure_ascii=False)
 MINUTES = json.dumps({"meeting_type": "AnalysisSession", "type_reason": "Ekranlar ayrıntılı konuşulmuş.",
-                      "participants": ["Elif Yılmaz", "Can Öztürk"], "agenda": ["Ekran taslakları", "Takvim"]},
+                      "participants": [{"name": "Elif Yılmaz", "role": None}, {"name": "Can Öztürk", "role": None}],
+                      "agenda": ["Ekran taslakları", "Takvim"], "summary": "Ekran taslakları konuşuldu.",
+                      "next_steps": ["Taslaklar müşteriye gönderilecek"]},
                      ensure_ascii=False)
 MEETING_BODY = {"projectCode": "ISDLC-2026-014", "meetingDate": "2026-11-10", "notes": MEETING_NOTES}
 
@@ -139,8 +141,10 @@ def test_meetingSuggestions_ReturnsOpenIssuesAndMinutesDraft():
     assert body["minutes"] == {
         "type": "AnalysisSession",
         "typeReason": "Ekranlar ayrıntılı konuşulmuş.",
-        "participants": "Elif Yılmaz, Can Öztürk",
+        "participants": [{"name": "Elif Yılmaz", "role": None}, {"name": "Can Öztürk", "role": None}],
         "agenda": "- Ekran taslakları\n- Takvim",
+        "summary": "Ekran taslakları konuşuldu.",
+        "nextSteps": "- Taslaklar müşteriye gönderilecek",
         "warnings": [],
     }
     assert body["minutesRun"]["task"] == "meeting.minutes"
@@ -155,7 +159,7 @@ def test_meetingSuggestions_MinutesTaskFails_StillReturnsOpenIssues():
 
 
 def test_meetingSuggestions_UnknownMeetingType_ReturnsNoMinutes():
-    bad = json.dumps({"meeting_type": "Party", "type_reason": "", "participants": ["Elif"], "agenda": ["Konu"]})
+    bad = json.dumps({"meeting_type": "Party", "type_reason": "", "participants": [{"name": "Elif"}], "agenda": ["Konu"]})
 
     response = client(OPEN_ISSUES, bad).post("/v1/meeting/suggestions", json=MEETING_BODY)
 

@@ -41,7 +41,7 @@ Değiştirilmez, silinmez, elle eklenmez.
 | --- | --- |
 | `changes[].field` | C# alan adı (`Status`, `DueDate`). Türkçe karşılığı ekranda: `features/audit/audit-labels.ts` |
 | `changes[].oldValue` / `newValue` | Metin. Enum değeri adıyla (`"Closed"`), tarih `"2026-11-12"`, zaman ISO 8601, `"true"`/`"false"`. `null`: boş ya da (yeni kayıtta) eski değer yok |
-| Okunur değerler | Başka kayda işaret eden alanlar backend'de çevrilir: `OwnerUserId`, `BusinessAnalystId`, `ProjectManagerId` → kişi adı; `CurrentStepId` → adım kodu (`1.2`); `SourceMeetingId` → tutanak kodu; `DocumentTypeId` → doküman adı. Kayıt bulunamazsa sayı olarak kalır |
+| Okunur değerler | Başka kayda işaret eden alanlar backend'de çevrilir: `OwnerUserId`, `BusinessAnalystId`, `ProjectManagerId`, `RecordedById` → kişi adı; tutanağın `Participants` listesi "Ad (Rol), Ad" olarak gösterilir; `CurrentStepId` → adım kodu (`1.2`); `SourceMeetingId` → tutanak kodu; `DocumentTypeId` → doküman adı. Kayıt bulunamazsa sayı olarak kalır |
 | Yer almayan | `ProjectId` (her satırda aynı), ve AuditLog'a hiç yazılmayan alanlar (`Id`, `RowVersion`, `PasswordHash`, `CreatedAt/By`, `UpdatedAt/By`) |
 
 Süreç adımları (`StepRecord`) loglanmaz; ama adım değişince proje güncellendiği için geçmişte

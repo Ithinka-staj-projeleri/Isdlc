@@ -206,8 +206,10 @@ def print_minutes(result: MinutesResult, open_issues: OpenIssuesResult) -> None:
     minutes = result.minutes
     print(f"Tür: {MEETING_TYPE_LABELS_TR[minutes.type]}   ({minutes.type_reason or '-'})")
     print(f"Tarih: {minutes.date}")
-    print(f"Katılımcılar: {minutes.participants}")
+    print("Katılımcılar: " + ", ".join(f"{p.name} ({p.role})" if p.role else p.name for p in minutes.participants))
     print(f"Gündem:\n{minutes.agenda}")
+    print(f"Özet: {minutes.summary or '-'}")
+    print(f"Sonraki adımlar:\n{minutes.next_steps or '-'}")
     decisions = open_issues.of_type(OpenIssueType.DECISION)
     actions = open_issues.of_type(OpenIssueType.ACTION)
     print(f"Kararlar: {len(decisions)}, aksiyonlar: {len(actions)} (açık konu önerilerinden alınır)")

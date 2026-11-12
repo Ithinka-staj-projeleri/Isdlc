@@ -9,7 +9,11 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
 {
     public void Configure(EntityTypeBuilder<Project> builder)
     {
-        builder.ToTable(t => t.HasCheckConstraint("CK_Projects_Level", "[Level] BETWEEN 1 AND 3"));
+        builder.ToTable(t =>
+        {
+            t.HasCheckConstraint("CK_Projects_Level", "[Level] BETWEEN 1 AND 3");
+            t.HasCheckConstraint("CK_Projects_ResearchDays", "[ResearchDays] BETWEEN 1 AND 30");
+        });
 
         builder.Property(x => x.Code).HasMaxLength(20);
         builder.Property(x => x.Name).HasMaxLength(200);

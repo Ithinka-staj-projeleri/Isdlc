@@ -30,22 +30,32 @@ public class MeetingService(
         var query = dbContext.Meetings.AsNoTracking().Where(m => m.ProjectId == projectId);
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var items = await query
+        var rows = await query
             .OrderByDescending(m => m.Date)
             .ThenByDescending(m => m.Code.Length)
             .ThenByDescending(m => m.Code)
             .ApplyPaging(pageRequest)
-            .Select(m => new MeetingListItemDto(
+            .Select(m => new
+            {
                 m.Id,
                 m.Code,
                 m.Type,
                 m.Date,
+                m.ReturnDate,
                 m.Participants,
-                dbContext.OpenIssues.Count(x => x.SourceMeetingId == m.Id && x.Type == OpenIssueType.Decision),
-                dbContext.OpenIssues.Count(x => x.SourceMeetingId == m.Id && x.Type != OpenIssueType.Decision),
-                dbContext.OpenIssues.Count(x => x.SourceMeetingId == m.Id && x.Type != OpenIssueType.Decision
-                    && x.Status != OpenIssueStatus.Closed)))
+                DecisionCount = dbContext.OpenIssues.Count(x => x.SourceMeetingId == m.Id && x.Type == OpenIssueType.Decision),
+                ActionCount = dbContext.OpenIssues.Count(x => x.SourceMeetingId == m.Id && x.Type != OpenIssueType.Decision),
+                OpenActionCount = dbContext.OpenIssues.Count(x => x.SourceMeetingId == m.Id && x.Type != OpenIssueType.Decision
+                    && x.Status != OpenIssueStatus.Closed),
+            })
             .ToListAsync(cancellationToken);
+
+        // Participants are stored as JSON, so their names are joined here rather than in SQL.
+        var items = rows
+            .Select(m => new MeetingListItemDto(
+                m.Id, m.Code, m.Type, m.Date, m.ReturnDate, MeetingRules.NamesOf(m.Participants),
+                m.DecisionCount, m.ActionCount, m.OpenActionCount))
+            .ToList();
 
         return new PagedResult<MeetingListItemDto>(items, totalCount);
     }
@@ -64,8 +74,16 @@ public class MeetingService(
                 m.Code,
                 m.Type,
                 m.Date,
+                m.ReturnDate,
+                RecordedBy = new UserSummaryDto(m.RecordedBy.Id, m.RecordedBy.FullName),
                 m.Participants,
                 m.Agenda,
+                m.Summary,
+                m.CompletedStages,
+                m.OngoingStages,
+                m.NextSteps,
+                m.PlannedActivities,
+                m.CompletedActivities,
                 CreatedBy = dbContext.Users
                     .Where(u => u.Id == m.CreatedById)
                     .Select(u => new UserSummaryDto(u.Id, u.FullName))
@@ -91,8 +109,16 @@ public class MeetingService(
             meeting.Code,
             meeting.Type,
             meeting.Date,
-            meeting.Participants,
+            meeting.ReturnDate,
+            meeting.RecordedBy,
+            meeting.Participants.Select(p => new MeetingParticipantDto { Name = p.Name, Role = p.Role }).ToList(),
             meeting.Agenda,
+            meeting.Summary,
+            meeting.CompletedStages,
+            meeting.OngoingStages,
+            meeting.NextSteps,
+            meeting.PlannedActivities,
+            meeting.CompletedActivities,
             records.Where(x => x.Type == OpenIssueType.Decision).ToList(),
             records.Where(x => x.Type != OpenIssueType.Decision).ToList(),
             meeting.CreatedBy,
@@ -106,6 +132,7 @@ public class MeetingService(
         var userId = RequireSignedIn();
         var project = await dbContext.GetWritableProjectAsync(projectId, cancellationToken);
 
+        await CheckContentAsync(request, cancellationToken);
         var decisions = CleanDecisions(request.Decisions);
         var actions = request.Actions ?? [];
         for (var i = 0; i < actions.Count; i++)
@@ -192,6 +219,7 @@ public class MeetingService(
                 m => m.ProjectId == projectId && m.Id == meetingId, cancellationToken)
             ?? throw new NotFoundException("Toplantı tutanağı bulunamadı.");
 
+        await CheckContentAsync(request, cancellationToken);
         ApplyContent(meeting, request);
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -205,13 +233,37 @@ public class MeetingService(
     private int RequireSignedIn() =>
         currentUser.UserId ?? throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
 
-    private static void ApplyContent(Meeting meeting, UpdateMeetingDto request)
+    /// <summary>400 for what the attributes cannot check: the visit fields and who wrote the minutes.</summary>
+    private async Task CheckContentAsync(UpdateMeetingDto request, CancellationToken cancellationToken)
     {
         // [Required] on the DTO guarantees these values.
+        MeetingRules.CheckVisitFields(
+            request.Type!.Value, request.Date!.Value, request.ReturnDate, request.PlannedActivities, request.CompletedActivities);
+
+        var recordedById = request.RecordedByUserId!.Value;
+        if (!await dbContext.Users.AnyAsync(u => u.Id == recordedById && u.IsActive, cancellationToken))
+        {
+            throw new BusinessRuleException("Tutanağı yazan aktif bir kullanıcı olmalıdır.");
+        }
+    }
+
+    private static void ApplyContent(Meeting meeting, UpdateMeetingDto request)
+    {
+        // [Required] on the DTO and CheckContentAsync guarantee these values.
         meeting.Type = request.Type!.Value;
         meeting.Date = request.Date!.Value;
-        meeting.Participants = request.Participants!.Trim();
+        meeting.RecordedById = request.RecordedByUserId!.Value;
+        meeting.Participants = MeetingRules.ToParticipants(request.Participants!);
         meeting.Agenda = request.Agenda!.Trim();
+        meeting.Summary = OpenIssueRules.Clean(request.Summary);
+        meeting.CompletedStages = OpenIssueRules.Clean(request.CompletedStages);
+        meeting.OngoingStages = OpenIssueRules.Clean(request.OngoingStages);
+        meeting.NextSteps = OpenIssueRules.Clean(request.NextSteps);
+
+        var isVisit = MeetingRules.IsVisit(meeting.Type);
+        meeting.ReturnDate = isVisit ? request.ReturnDate : null;
+        meeting.PlannedActivities = isVisit ? OpenIssueRules.Clean(request.PlannedActivities) : null;
+        meeting.CompletedActivities = isVisit ? OpenIssueRules.Clean(request.CompletedActivities) : null;
     }
 
     /// <summary>Skips blank lines and checks the length of the others (400 names the line).</summary>

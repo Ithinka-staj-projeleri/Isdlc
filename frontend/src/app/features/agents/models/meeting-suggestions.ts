@@ -1,4 +1,4 @@
-import { MeetingType } from '../../meetings/models/meeting';
+import { MeetingParticipant, MeetingType } from '../../meetings/models/meeting';
 import { OpenIssueType } from '../../open-issues/models/open-issue';
 
 /** GET /api/v1/agents/status */
@@ -26,10 +26,13 @@ export interface MinutesDraft {
     type: MeetingType;
     /** Why the model chose this type. */
     typeReason: string | null;
-    /** Comma separated, as the form takes it. */
-    participants: string;
+    /** In the order the notes give them; a role only when the notes say it. */
+    participants: MeetingParticipant[];
     /** One "- " line per topic. */
     agenda: string;
+    summary: string | null;
+    /** One "- " line per step. */
+    nextSteps: string | null;
     warnings: string[];
 }
 

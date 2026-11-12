@@ -50,11 +50,11 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
     // ---- Question bank ----
 
     [Fact]
-    public async Task ListSets_ReturnsTheFourForms()
+    public async Task ListSets_ReturnsTheFiveForms()
     {
         var sets = await BankAsync(s => s.ListSetsAsync(default));
 
-        Assert.Equal(["internal-approval", "level", "request-analysis", "risk-analysis"], sets.Select(s => s.Code).Order());
+        Assert.Equal(["customer-fit", "internal-approval", "level", "request-analysis", "risk-analysis"], sets.Select(s => s.Code).Order());
         Assert.Equal(AnswerMode.QuestionOptions, sets.Single(s => s.Code == Level).AnswerMode);
     }
 

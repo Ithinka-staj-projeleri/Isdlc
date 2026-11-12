@@ -88,7 +88,14 @@ public class HttpAgentClient(
             body.InvalidCount,
             body.Run?.ModelName ?? string.Empty,
             body.Minutes is { Type: not null } m
-                ? new MeetingAgentMinutes(m.Type, m.TypeReason, m.Participants ?? string.Empty, m.Agenda ?? string.Empty, m.Warnings ?? [])
+                ? new MeetingAgentMinutes(
+                    m.Type,
+                    m.TypeReason,
+                    (m.Participants ?? []).Select(p => new MeetingAgentParticipant(p.Name ?? string.Empty, p.Role)).ToList(),
+                    m.Agenda ?? string.Empty,
+                    m.Summary,
+                    m.NextSteps,
+                    m.Warnings ?? [])
                 : null);
     }
 
@@ -201,7 +208,15 @@ public class HttpAgentClient(
         string? Summary, List<ServiceItem>? Items, int InvalidCount, ServiceRun? Run, ServiceMinutes? Minutes);
 
     private record ServiceMinutes(
-        string? Type, string? TypeReason, string? Participants, string? Agenda, List<string>? Warnings);
+        string? Type,
+        string? TypeReason,
+        List<ServiceParticipant>? Participants,
+        string? Agenda,
+        string? Summary,
+        string? NextSteps,
+        List<string>? Warnings);
+
+    private record ServiceParticipant(string? Name, string? Role);
 
     private record ServiceItem(
         string? Type, string? Title, string? Description, string? OwnerName, DateOnly? DueDate, string? Evidence, List<string>? Warnings);

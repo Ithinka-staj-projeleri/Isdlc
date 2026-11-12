@@ -3,6 +3,7 @@ using Isdlc.Application.Agents.Dtos;
 using Isdlc.Application.Common;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Application.Meetings.Dtos;
 using Isdlc.Application.OpenIssues;
 using Isdlc.Application.Risks;
 using Isdlc.Domain.Meetings;
@@ -82,8 +83,9 @@ public class AgentService(
     }
 
     /// <summary>
-    /// The minutes' info only when it would pass the minutes form's own rules (known type, required fields,
-    /// 1000 / 4000 characters); otherwise the person fills it in as before.
+    /// The minutes' info only when it would pass the minutes form's own rules (known type, 1–30 participants with
+    /// names up to 100 characters, an agenda up to 4000); otherwise the person fills it in as before.
+    /// A role, summary or next steps over its limit is dropped on its own: the rest of the draft is still useful.
     /// </summary>
     private static MinutesDraftDto? MinutesDraftOf(MeetingAgentMinutes? minutes)
     {
@@ -92,16 +94,37 @@ public class AgentService(
             return null;
         }
 
-        var participants = minutes.Participants.Trim();
+        var participants = minutes.Participants
+            .Select(p => (Name: p.Name.Trim(), Role: OpenIssueRules.Clean(p.Role)))
+            .Where(p => p.Name.Length > 0)
+            .ToList();
         var agenda = minutes.Agenda.Trim();
-        if (participants.Length is 0 or > MeetingSuggestionLimits.MaxParticipants
-            || agenda.Length is 0 or > MeetingSuggestionLimits.MaxAgenda)
+        if (participants.Count is 0 or > MeetingParticipant.MaxCount
+            || participants.Any(p => p.Name.Length > MeetingParticipant.MaxNameLength)
+            || agenda.Length is 0 or > Meeting.MaxAgendaLength)
         {
             return null;
         }
 
-        return new MinutesDraftDto(type, OpenIssueRules.Clean(minutes.TypeReason), participants, agenda, minutes.Warnings);
+        return new MinutesDraftDto(
+            type,
+            OpenIssueRules.Clean(minutes.TypeReason),
+            participants
+                .Select(p => new MeetingParticipantDto
+                {
+                    Name = p.Name,
+                    Role = p.Role is { Length: <= MeetingParticipant.MaxRoleLength } ? p.Role : null,
+                })
+                .ToList(),
+            agenda,
+            WithinLimit(minutes.Summary, Meeting.MaxSummaryLength),
+            WithinLimit(minutes.NextSteps, Meeting.MaxNextStepsLength),
+            minutes.Warnings);
     }
+
+    /// <summary>Trimmed text, or null when it is empty or longer than the form accepts.</summary>
+    private static string? WithinLimit(string? text, int limit) =>
+        OpenIssueRules.Clean(text) is { } value && value.Length <= limit ? value : null;
 
     public async Task<RiskSuggestionsDto> SuggestRisksAsync(
         int projectId, SuggestRisksDto request, CancellationToken cancellationToken)
