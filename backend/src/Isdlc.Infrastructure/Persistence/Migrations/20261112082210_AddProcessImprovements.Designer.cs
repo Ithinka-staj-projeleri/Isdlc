@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Isdlc.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(IsdlcDbContext))]
-    [Migration("20261112081830_AddProcessImprovements")]
+    [Migration("20261112082210_AddProcessImprovements")]
     partial class AddProcessImprovements
     {
         /// <inheritdoc />
@@ -317,6 +317,14 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<string>("CompletedActivities")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("CompletedStages")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -326,13 +334,35 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
+                    b.Property<string>("NextSteps")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("OngoingStages")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<string>("Participants")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasMaxLength(10000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlannedActivities")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<int>("ProjectId")
                         .HasColumnType("int");
+
+                    b.Property<int>("RecordedById")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly?>("ReturnDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -348,6 +378,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
+
+                    b.HasIndex("RecordedById");
 
                     b.HasIndex("UpdatedById");
 
@@ -905,6 +937,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<bool>("RequiresOffer")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("ResearchDays")
+                        .HasColumnType("int");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -949,6 +984,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.ToTable("Projects", t =>
                         {
                             t.HasCheckConstraint("CK_Projects_Level", "[Level] BETWEEN 1 AND 3");
+
+                            t.HasCheckConstraint("CK_Projects_ResearchDays", "[ResearchDays] BETWEEN 1 AND 30");
                         });
                 });
 
@@ -1511,12 +1548,20 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Isdlc.Domain.Identity.User", "RecordedBy")
+                        .WithMany()
+                        .HasForeignKey("RecordedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Project");
+
+                    b.Navigation("RecordedBy");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Notifications.Notification", b =>
