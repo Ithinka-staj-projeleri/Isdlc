@@ -142,3 +142,5 @@ Dalga 4                        D5 doküman kütüphanesi · D9 gösterge paneli 
    Yönetici onayı yalnızca teklif (10. adım) ve kapsam-efor (Proje Yöneticisi onayı) için mi aranacak?
 6. **Ek geliştirmenin soru setleri:** dört formda (seviye, talep analizi, risk analizi, iç onay) yalnızca "Yeni Yazılım Projesi" iş tipi var.
    Ek geliştirme için ayrı sorular mı hazırlanacak? Gelene kadar ek geliştirme, yeni proje sorularını kullanır ([question-bank-api.md](question-bank-api.md), karar 4).
+7. **Müşteri uygunluk anketinin puanlaması:** form 006 (v1.0, onaylanmamış) 10 soru ve toplam 100 puanlık aralıklar veriyor ama soru başına
+   puanı tanımlamıyor. Öneri: her soru 0–10 ([assessment-api.md](assessment-api.md), karar 2). Form onaylandı mı, puanlama böyle mi?
