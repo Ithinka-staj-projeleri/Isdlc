@@ -702,6 +702,118 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.ToTable("StepRecords");
                 });
 
+            modelBuilder.Entity("Isdlc.Domain.ProcessImprovements.ProcessImprovement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AffectedProcess")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CostBenefit")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CurrentState")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int?>("Ease")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Frequency")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Impact")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PilotActual")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PilotDecision")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("PilotFeedback")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("PilotPlan")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("PilotResult")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PilotTarget")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProposedSolution")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("RootCause")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Solution")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SuggestedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedById")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ProjectId")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("ProcessImprovements", t =>
+                        {
+                            t.HasCheckConstraint("CK_ProcessImprovements_Ease", "[Ease] IS NULL OR [Ease] BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("CK_ProcessImprovements_Frequency", "[Frequency] IS NULL OR [Frequency] BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("CK_ProcessImprovements_Impact", "[Impact] IS NULL OR [Impact] BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("CK_ProcessImprovements_ScoresTogether", "([Impact] IS NULL AND [Frequency] IS NULL AND [Ease] IS NULL) OR ([Impact] IS NOT NULL AND [Frequency] IS NOT NULL AND [Ease] IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("Isdlc.Domain.Projects.Project", b =>
                 {
                     b.Property<int>("Id")
@@ -1549,6 +1661,28 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("PerformedBy");
 
                     b.Navigation("ProcessStep");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.ProcessImprovements.ProcessImprovement", b =>
+                {
+                    b.HasOne("Isdlc.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Projects.Project", "Project")
+                        .WithOne()
+                        .HasForeignKey("Isdlc.Domain.ProcessImprovements.ProcessImprovement", "ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Project");
                 });

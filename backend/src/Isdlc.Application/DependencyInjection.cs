@@ -10,6 +10,7 @@ using Isdlc.Application.OpenIssues;
 using Isdlc.Application.Process;
 using Isdlc.Application.Projects;
 using Isdlc.Application.QuestionBank;
+using Isdlc.Application.ProcessImprovements;
 using Isdlc.Application.Requirements;
 using Isdlc.Application.Risks;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IAssessmentService, AssessmentService>();
         services.AddScoped<IQuestionBankService, QuestionBankService>();
         services.AddScoped<IQuestionnaireService, QuestionnaireService>();
+        services.AddScoped<IProcessImprovementService, ProcessImprovementService>();
 
         // Modules send through INotificationService; the inbox reads and marks the signed-in user's own notifications.
         services.AddScoped<INotificationService, NotificationService>();
