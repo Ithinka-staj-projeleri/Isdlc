@@ -7,6 +7,7 @@ using Isdlc.Domain.Meetings;
 using Isdlc.Domain.Notifications;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
+using Isdlc.Domain.ProcessImprovements;
 using Isdlc.Domain.Projects;
 using Isdlc.Domain.QuestionBank;
 using Isdlc.Domain.Requirements;
@@ -39,6 +40,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
     public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
     public DbSet<Questionnaire> Questionnaires => Set<Questionnaire>();
     public DbSet<QuestionAnswer> QuestionAnswers => Set<QuestionAnswer>();
+    public DbSet<ProcessImprovement> ProcessImprovements => Set<ProcessImprovement>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

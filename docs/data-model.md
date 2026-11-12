@@ -442,7 +442,8 @@ Sözleşme: [process-improvement-api.md](process-improvement-api.md).
 
 | Alan | Tür | Not |
 | --- | --- | --- |
-| `ProjectId` | int (PK, FK → Project) | Kaydın kendisi; akışı `process-improvement` olmalıdır |
+| `Id` | int | |
+| `ProjectId` | int (FK → Project, benzersiz) | Kaydın kendisi; akışı `process-improvement` olmalıdır |
 | `Source` | `ImprovementSource` | Önerinin kaynağı |
 | `AffectedProcess` | string | En fazla 200 |
 | `ProposedSolution` | string? | Öneriyle gelen çözüm fikri; en fazla 2000 |
