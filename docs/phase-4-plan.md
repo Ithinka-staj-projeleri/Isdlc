@@ -57,16 +57,22 @@ Her satır en az bir PR'dır. Modül içi sıra aynı kalır: önce sözleşme (
 
 ### Dide — Süreç
 
-Bu bölüm Erva'nın alanıydı. Erva'nın başka işleri olduğu için Faz 4'te Dide yapar.
+Bu bölüm Erva'nın alanıydı. Erva'nın başka işleri olduğu için Faz 4'te Dide yapar; yalnızca tutanaklar (E4) ve
+süreç iyileştirme (E5) Erva'dadır.
 
 | No | İş | Bağımlılık | Kaynak |
 | --- | --- | --- | --- |
 | E1 | **Akış altyapısı.** `Flow` kavramı: aşama ve adımlar bir akışa bağlanır, her kayıt hangi akışı izlediğini bilir. Adım atlama koşulları (iç/dış talep, teklif var/yok, seviye), geri dönüşler, adım ↔ doküman bağlantısı (Yardımcı / Talimat / Form / Çıktı), kaydın hangi adımdan sonra "proje" sayılacağı. `ProjectService` ve `DashboardService`'teki "aşama 1–3 taleptir" sabiti kalkar | — | Akış görselleri |
 | E2 | **Beş akışın seed'i:** yeni yazılım projesi, ek geliştirme, süreç iyileştirme, kaynak planlama, faturalama. Eski 13 aşamalı akış geçersizdir ve kaldırılır; veritabanı yeni akışlarla baştan kurulur (canlı veri yok). Örnek projeler ve testler (`TestProjects.CreateAsync(db, "4.7")` gibi) yeni adım kodlarına çevrilir | E1 | Akış görselleri |
 | E3 | **Talep Analizi sekmesi** (proje detayı): iş tipi ve talep kaynağına göre soru listesi, cevap, açık konu, durum. "Açık" kalan soru tek tıkla Açık Konular'a aktarılır | B1 | Talep Anlama Soru Listesi (003) |
+| E6 | **Demo senaryosu** yeni akışlarla baştan yazılır ve denenir | Hepsi | `docs/demo-scenario.md` |
+
+### Erva — Tutanaklar, süreç iyileştirme
+
+| No | İş | Bağımlılık | Kaynak |
+| --- | --- | --- | --- |
 | E4 | **Toplantı ve ziyaret tutanakları:** notları yazan, katılımcı rolü, toplantı özeti, tamamlanan / devam eden aşamalar, sonraki adımlar. Ziyaret türünde gidiş-dönüş tarihi, planlanan ve yapılan aktiviteler | — | Toplantı Tutanağı (004), Ziyaret Tutanağı (005) |
 | E5 | **Süreç İyileştirme menüsü:** öneri kaydı (kaynak: retrospektif / hata-şikâyet / çalışan önerisi / yönetim hedefi), önceliklendirme, çalışma dokümanı alanları (mevcut durum, kök neden, çözüm, pilot planı), pilot değerlendirme (hedef ↔ gerçekleşen) | E1, E2 | Süreç iyileştirme akışı (formlar 040–042 klasörde yok) |
-| E6 | **Demo senaryosu** yeni akışlarla baştan yazılır ve denenir | Hepsi | `docs/demo-scenario.md` |
 
 ### Dide — Talepler, projeler, dokümanlar, gereksinimler
 
@@ -97,7 +103,8 @@ Bu bölüm Erva'nın alanıydı. Erva'nın başka işleri olduğu için Faz 4'te
 ### Çapraz testler
 
 Kural aynı kalır (PLANNING.md → Birlikte çalışma kuralları): Erva → Baran'ın, Baran → Dide'nin işleri.
-Faz 4'te Erva'nın işi olmadığı için E ve D işlerinin çapraz testlerini kimin yazacağı ekipçe kararlaştırılır.
+Erva'nın Faz 4 işleri (E4, E5) Dide'nin önceki modülleriyle aynı kural altındadır: testlerini Dide yazar.
+Dide'nin üstlendiği süreç işleri (E1–E3, E6) ve D işleri kurala göre Baran'dadır.
 Özellikle akış altyapısının (E1) dallanmaları ve soru bankasının (B1) hesapları saf kural sınıfı olarak her kombinasyonda test edilir.
 
 ## 5. Sıra
@@ -110,7 +117,8 @@ Dalga 4                        D5 doküman kütüphanesi · D9 gösterge paneli 
 ```
 
 - **E1 kritik yoldur.** Dide sözleşmeyi (`docs/process-api.md` güncellemesi) ilk PR olarak açar; herkes onu okuyup kendi işini ona göre tasarlar.
-- E ve D işlerinin ikisi de Dide'de olduğu için Dide'nin sırası: E1 → D1 → E2 → D3 → E4 → D2; kalanlar dalga sırasıyla.
+- Dide'nin sırası: E1 → D1 → E2 → D3 → D2; kalanlar dalga sırasıyla.
+- Erva'nın sırası: E4 → E5. E5'in beklediği E1 ve E2 birleşti; E5 ayrıca süreç iyileştirme formlarını bekler (Bölüm 7).
 - **B1 ikinci kritik iştir;** E3, D7, B2 ve B4 onu bekler. Baran sözleşmeyi erken paylaşır.
 - **Migration çakışması:** Dalga 1'de üç kişi de migration üretecek. Kural aynı: PR'dan hemen önce main'i alıp üretin, PR başına tek migration.
 
@@ -121,7 +129,7 @@ Dalga 4                        D5 doküman kütüphanesi · D9 gösterge paneli 
 | `AGENTS.md` Bölüm 3 | Kaynak Planlama ve Faturalama "sonraki sürüm" listesinden çıkar; Süreç İyileştirme eklenir. İlk PR'da Dide |
 | `AGENTS.md` Bölüm 6 | Yeni kavramlar (`Flow`, ek geliştirme, soru bankası, iyileştirme önerisi, haftalık plan, aylık fatura dönemi) kodu yazan kişi tarafından, kod PR'ından önce eklenir |
 | `docs/data-model.md` | Her entity değişikliğinde sahibi günceller |
-| Menü (`sidebar.component.ts`) | Yeni menü: Süreç İyileştirme (Dide), Doküman Kütüphanesi (Dide), Kaynak Planlama ve Faturalama (Baran). Küçük ve ayrı PR'lar |
+| Menü (`sidebar.component.ts`) | Yeni menü: Süreç İyileştirme (Erva), Doküman Kütüphanesi (Dide), Kaynak Planlama ve Faturalama (Baran). Küçük ve ayrı PR'lar |
 
 ## 7. Açık konular (analistlere sorulacak)
 

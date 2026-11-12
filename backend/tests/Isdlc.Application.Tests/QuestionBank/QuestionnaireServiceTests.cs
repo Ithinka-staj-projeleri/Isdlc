@@ -3,6 +3,7 @@ using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.QuestionBank;
 using Isdlc.Application.QuestionBank.Dtos;
 using Isdlc.Application.Tests.Common;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Isdlc.Domain.QuestionBank;
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +101,31 @@ public class QuestionnaireServiceTests(DatabaseFixture database)
         Assert.All(form.Questions, item => Assert.Null(item.Answer));
         Assert.Equal(0, form.Summary.Answered);
         Assert.Null(form.Result);
+    }
+
+    [Fact]
+    public async Task Get_AddOnProject_ListsTheNewSoftwareProjectQuestions()
+    {
+        var projectId = await TestProjects.CreateAsync(database, null, flowCode: ProcessFlowCodes.AddOn);
+
+        var form = await GetAsync(projectId);
+
+        Assert.Equal(ProcessFlowCodes.NewRequest, form.WorkType);
+        Assert.Equal(45, form.Summary.Listed);
+    }
+
+    [Fact]
+    public async Task Get_FlowWithoutForms_ListsNoQuestions_AndAnswersAreRefused()
+    {
+        var projectId = await TestProjects.CreateAsync(database, null, flowCode: ProcessFlowCodes.ProcessImprovement);
+        var riskQuestion = (await BankAsync(s => s.ListQuestionsAsync(Risk, new QuestionFilter { Subcategory = RequestSource.Internal }, default)))[0];
+
+        var form = await GetAsync(projectId);
+
+        Assert.Equal(ProcessFlowCodes.ProcessImprovement, form.WorkType);
+        Assert.Empty(form.Questions);
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            AnswerAsync(projectId, riskQuestion.Id, new SaveAnswerDto { OptionId = riskQuestion.Options[0].Id }));
     }
 
     [Fact]

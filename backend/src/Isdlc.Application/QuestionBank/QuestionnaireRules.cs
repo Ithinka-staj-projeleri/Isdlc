@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.QuestionBank.Dtos;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Isdlc.Domain.QuestionBank;
 
@@ -12,11 +13,14 @@ namespace Isdlc.Application.QuestionBank;
 /// </summary>
 public static class QuestionnaireRules
 {
+    /// <summary>The only work type the forms have questions for so far (ProcessFlow.Code).</summary>
+    public const string DefaultWorkType = ProcessFlowCodes.NewRequest;
+
     /// <summary>
-    /// The only work type the forms have so far (ProcessFlow.Code). Projects get their flow with Faz 4 · E1;
-    /// until then every form lists the new software project questions (also for add-on work, decision 4).
+    /// The work type whose questions a project's form lists: the project's flow. Add-on work has no questions of its own
+    /// yet, so it uses the new software project questions (decision 4, phase-4-plan.md → Açık konular 6).
     /// </summary>
-    public const string DefaultWorkType = "new-software-project";
+    public static string WorkTypeFor(string flowCode) => flowCode == ProcessFlowCodes.AddOn ? DefaultWorkType : flowCode;
 
     /// <summary>Active questions of the work type, for the subcategory or for every subcategory (null).</summary>
     public static Expression<Func<Question, bool>> ListedIn(string workType, RequestSource subcategory) =>

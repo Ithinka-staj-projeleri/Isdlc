@@ -22,7 +22,7 @@ entity, API ve ekranını uçtan uca yazar.
 | **1 — Çekirdek** | `Process` | `Projects` | `Identity` |
 | **2 — Proje kayıtları** | `OpenIssues` + `Meetings` | `Requirements` + `Documents` | `Assessment` + `Risks` |
 | **3 — Bitiriş** | `Audit` ekranı + uçtan uca demo senaryosu | `Dashboard` | `Notifications` |
-| **4 — Şirket akışları** | — (başka işleri var) | Akış altyapısı, akış seed'leri, talep analizi, tutanaklar, süreç iyileştirme, demo; talepler, ek geliştirme, dokümanlar, gereksinimler, kapsam ve efor, gösterge paneli | Soru bankası, seviye ve uygunluk, risk, ekip, kaynak planlama, faturalama |
+| **4 — Şirket akışları** | Toplantı ve ziyaret tutanakları, süreç iyileştirme | Akış altyapısı, akış seed'leri, talep analizi, demo; talepler, ek geliştirme, dokümanlar, gereksinimler, kapsam ve efor, gösterge paneli | Soru bankası, seviye ve uygunluk, risk, ekip, kaynak planlama, faturalama |
 
 ### Faz 0 — Ortak temel
 
