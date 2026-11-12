@@ -22,13 +22,23 @@ export const MEETING_TYPE_LABELS: Record<MeetingType, string> = {
     ProjectEvaluation: 'Proje Değerlendirme',
 };
 
+/** Someone at the meeting; role is free text (role, unit or company). */
+export interface MeetingParticipant {
+    name: string;
+    role: string | null;
+}
+
 /** A row of GET /api/v1/projects/{projectId}/meetings (newest first). */
 export interface MeetingListItem {
     id: number;
     code: string;
     type: MeetingType;
+    /** The departure date of a visit. */
     date: string;
-    participants: string;
+    /** Visits only. */
+    returnDate: string | null;
+    /** "Elif Yılmaz, Can Öztürk" */
+    participantNames: string;
     decisionCount: number;
     actionCount: number;
     openActionCount: number;
@@ -41,8 +51,16 @@ export interface Meeting {
     code: string;
     type: MeetingType;
     date: string;
-    participants: string;
+    returnDate: string | null;
+    recordedBy: UserSummary;
+    participants: MeetingParticipant[];
     agenda: string;
+    summary: string | null;
+    completedStages: string | null;
+    ongoingStages: string | null;
+    nextSteps: string | null;
+    plannedActivities: string | null;
+    completedActivities: string | null;
     decisions: OpenIssueListItem[];
     actions: OpenIssueListItem[];
     createdBy: UserSummary;
@@ -50,13 +68,27 @@ export interface Meeting {
     updatedAt: string | null;
 }
 
-/** PUT body: the minutes only. Decisions and actions are managed on the Open Issues screen. */
+/**
+ * PUT body: the minutes only. Decisions and actions are managed on the Open Issues screen.
+ * returnDate and the activities only for a customer visit (null otherwise).
+ */
 export interface UpdateMeeting {
     type: MeetingType;
     date: string;
-    participants: string;
+    returnDate: string | null;
+    recordedByUserId: number;
+    participants: MeetingParticipant[];
     agenda: string;
+    summary: string | null;
+    completedStages: string | null;
+    ongoingStages: string | null;
+    nextSteps: string | null;
+    plannedActivities: string | null;
+    completedActivities: string | null;
 }
+
+/** A customer visit has its own fields (return date, activities); other minutes do not. */
+export const VISIT_TYPE: MeetingType = 'CustomerVisit';
 
 /** An action of new minutes. Send exactly one of ownerUserId and ownerName. */
 export interface MeetingAction {

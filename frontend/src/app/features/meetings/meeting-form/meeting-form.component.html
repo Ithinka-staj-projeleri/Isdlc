@@ -18,21 +18,89 @@
             </label>
 
             <label class="field" [class.invalid]="errorFor('date')">
-                Tarih
+                {{ isVisit() ? 'Gidiş tarihi' : 'Tarih' }}
                 <input type="date" formControlName="date" />
                 @if (errorFor('date'); as error) { <span class="error">{{ error }}</span> }
             </label>
 
-            <label class="field full" [class.invalid]="errorFor('participants')">
-                Katılımcılar
-                <input formControlName="participants" maxlength="1000" placeholder="Ad Soyad, kurum" />
-                @if (errorFor('participants'); as error) { <span class="error">{{ error }}</span> }
+            @if (isVisit()) {
+            <label class="field" [class.invalid]="errorFor('returnDate')">
+                Dönüş tarihi
+                <input type="date" formControlName="returnDate" [min]="form.controls.date.value" />
+                @if (errorFor('returnDate'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+            }
+
+            <label class="field" [class.invalid]="errorFor('recordedByUserId')">
+                Tutanağı yazan
+                <select formControlName="recordedByUserId">
+                    <option [ngValue]="null">Seçin…</option>
+                    @for (user of users(); track user.id) {
+                    <option [ngValue]="user.id">{{ user.fullName }}</option>
+                    }
+                </select>
+                @if (errorFor('recordedByUserId'); as error) { <span class="error">{{ error }}</span> }
             </label>
 
+            <fieldset class="full participants" formArrayName="participants" [class.invalid]="errorFor('participants')">
+                <legend>Katılımcılar</legend>
+                @for (row of participants.controls; track row; let i = $index) {
+                <div class="participant" [formGroupName]="i">
+                    <input formControlName="name" maxlength="100" placeholder="Ad Soyad" [attr.aria-label]="(i + 1) + '. katılımcının adı'" />
+                    <input formControlName="role" maxlength="100" placeholder="Rol / birim / kurum (isteğe bağlı)" [attr.aria-label]="(i + 1) + '. katılımcının rolü'" />
+                    <button type="button" class="button small" (click)="removeParticipant(i)" [attr.aria-label]="(i + 1) + '. katılımcıyı kaldır'">Kaldır</button>
+                    @if (participantError(i); as error) { <span class="error">{{ error }}</span> }
+                </div>
+                }
+                <button type="button" class="button small" (click)="addParticipant()" [disabled]="participants.length >= maxParticipants">+ Katılımcı ekle</button>
+                @if (errorFor('participants'); as error) { <span class="error">{{ error }}</span> }
+            </fieldset>
+
             <label class="field full" [class.invalid]="errorFor('agenda')">
-                Gündem
+                {{ isVisit() ? 'Ana gündem' : 'Gündem' }}
                 <textarea formControlName="agenda" maxlength="4000"></textarea>
                 @if (errorFor('agenda'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            @if (isVisit()) {
+            <label class="field full" [class.invalid]="errorFor('plannedActivities')">
+                Planlanan aktiviteler (isteğe bağlı)
+                <textarea formControlName="plannedActivities" maxlength="4000"></textarea>
+                @if (errorFor('plannedActivities'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+            <label class="field full" [class.invalid]="errorFor('completedActivities')">
+                Yapılan aktiviteler (isteğe bağlı)
+                <textarea formControlName="completedActivities" maxlength="4000"></textarea>
+                @if (errorFor('completedActivities'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+            }
+
+            <label class="field full" [class.invalid]="errorFor('summary')">
+                {{ isVisit() ? 'Notlar' : 'Toplantı özeti' }} (isteğe bağlı)
+                <textarea formControlName="summary" maxlength="4000"></textarea>
+                @if (errorFor('summary'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('completedStages')">
+                Tamamlanan aşamalar (isteğe bağlı)
+                <textarea class="short" formControlName="completedStages" maxlength="2000"></textarea>
+                @if (errorFor('completedStages'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('ongoingStages')">
+                Devam eden aşamalar (isteğe bağlı)
+                <textarea class="short" formControlName="ongoingStages" maxlength="2000"></textarea>
+                @if (errorFor('ongoingStages'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            @if (meetingId() === null) {
+            <p class="full hint">Aşamalar projenin şu anki süreç durumundan önerildi; tutanakta yazdığınız gibi saklanır.</p>
+            }
+
+            <label class="field full" [class.invalid]="errorFor('nextSteps')">
+                Sonraki adımlar (isteğe bağlı)
+                <textarea class="short" formControlName="nextSteps" maxlength="2000"></textarea>
+                @if (errorFor('nextSteps'); as error) { <span class="error">{{ error }}</span> }
             </label>
 
             @if (meetingId() === null) {

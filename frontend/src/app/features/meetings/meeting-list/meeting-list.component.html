@@ -25,9 +25,9 @@
             <span class="code">{{ meeting.code }}</span>
             <b>{{ typeLabels[meeting.type] }}</b>
             <span class="spacer"></span>
-            <span class="muted">{{ meeting.date | dateOnly }}</span>
+            <span class="muted">{{ meeting.date | dateOnly }}@if (meeting.returnDate && meeting.returnDate !== meeting.date) { – {{ meeting.returnDate | dateOnly }} }</span>
         </span>
-        <span class="participants">{{ meeting.participants }}</span>
+        <span class="participants">{{ meeting.participantNames }}</span>
         <span class="counts">
             <span>{{ meeting.decisionCount }} karar</span>
             <span>{{ meeting.actionCount }} aksiyon</span>

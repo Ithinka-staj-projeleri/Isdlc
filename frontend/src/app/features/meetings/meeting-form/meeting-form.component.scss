@@ -40,6 +40,27 @@
     font-size: 13px;
 }
 
+textarea.short {
+    min-height: 60px;
+}
+
+fieldset.participants {
+    @include ui.field;
+}
+
+.participant {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 8px;
+    width: 100%;
+
+    .error {
+        grid-column: 1 / -1;
+    }
+}
+
+
+fieldset.participants,
 fieldset.actions {
     display: flex;
     flex-direction: column;

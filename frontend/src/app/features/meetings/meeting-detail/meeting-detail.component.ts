@@ -6,7 +6,7 @@ import { DateOnlyPipe } from '../../../shared/pipes/date-only.pipe';
 import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
 import { OPEN_ISSUE_STATUS_LABELS, OpenIssueStatus } from '../../open-issues/models/open-issue';
 import { MeetingService } from '../meeting.service';
-import { MEETING_TYPE_LABELS } from '../models/meeting';
+import { MEETING_TYPE_LABELS, VISIT_TYPE } from '../models/meeting';
 
 const STATUS_TONES: Record<OpenIssueStatus, BadgeTone> = { Open: 'info', InProgress: 'warn', Closed: 'neutral' };
 
@@ -28,6 +28,7 @@ export class MeetingDetailComponent {
     readonly closed = output<void>();
 
     protected readonly typeLabels = MEETING_TYPE_LABELS;
+    protected readonly visitType = VISIT_TYPE;
     protected readonly statusLabels = OPEN_ISSUE_STATUS_LABELS;
     protected readonly statusTones = STATUS_TONES;
 

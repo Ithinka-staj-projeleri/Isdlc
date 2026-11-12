@@ -14,7 +14,8 @@ public record MeetingListItemDto(
     string Code,
     MeetingType Type,
     DateOnly Date,
-    string Participants,
+    DateOnly? ReturnDate,
+    string ParticipantNames,
     int DecisionCount,
     int ActionCount,
     int OpenActionCount);
@@ -26,15 +27,37 @@ public record MeetingDto(
     string Code,
     MeetingType Type,
     DateOnly Date,
-    string Participants,
+    DateOnly? ReturnDate,
+    UserSummaryDto RecordedBy,
+    IReadOnlyList<MeetingParticipantDto> Participants,
     string Agenda,
+    string? Summary,
+    string? CompletedStages,
+    string? OngoingStages,
+    string? NextSteps,
+    string? PlannedActivities,
+    string? CompletedActivities,
     IReadOnlyList<OpenIssueListItemDto> Decisions,
     IReadOnlyList<OpenIssueListItemDto> Actions,
     UserSummaryDto CreatedBy,
     DateTime CreatedAt,
     DateTime? UpdatedAt);
 
-/// <summary>PUT .../meetings/{id} — the minutes only; decisions and actions are managed as open issues.</summary>
+/// <summary>Someone at the meeting. Role is free text: role, unit or company.</summary>
+public record MeetingParticipantDto
+{
+    [Required(ErrorMessage = "Katılımcının adı zorunludur.")]
+    [MaxLength(MeetingParticipant.MaxNameLength, ErrorMessage = "Katılımcının adı en fazla 100 karakter olabilir.")]
+    public string? Name { get; init; }
+
+    [MaxLength(MeetingParticipant.MaxRoleLength, ErrorMessage = "Rol en fazla 100 karakter olabilir.")]
+    public string? Role { get; init; }
+}
+
+/// <summary>
+/// PUT .../meetings/{id} — the minutes only; decisions and actions are managed as open issues.
+/// ReturnDate and the activities are for a customer visit only (MeetingRules).
+/// </summary>
 public record UpdateMeetingDto
 {
     // Nullable so a missing value is an error instead of silently becoming the default.
@@ -44,13 +67,37 @@ public record UpdateMeetingDto
     [Required(ErrorMessage = "Toplantı tarihi zorunludur.")]
     public DateOnly? Date { get; init; }
 
-    [Required(ErrorMessage = "Katılımcılar zorunludur.")]
-    [MaxLength(1000, ErrorMessage = "Katılımcılar en fazla 1000 karakter olabilir.")]
-    public string? Participants { get; init; }
+    public DateOnly? ReturnDate { get; init; }
+
+    [Required(ErrorMessage = "Tutanağı yazan kişi seçilmelidir.")]
+    public int? RecordedByUserId { get; init; }
+
+    [Required(ErrorMessage = "En az bir katılımcı girilmelidir.")]
+    [MinLength(1, ErrorMessage = "En az bir katılımcı girilmelidir.")]
+    [MaxLength(MeetingParticipant.MaxCount, ErrorMessage = "En fazla 30 katılımcı girilebilir.")]
+    public IReadOnlyList<MeetingParticipantDto>? Participants { get; init; }
 
     [Required(ErrorMessage = "Gündem zorunludur.")]
-    [MaxLength(4000, ErrorMessage = "Gündem en fazla 4000 karakter olabilir.")]
+    [MaxLength(Meeting.MaxAgendaLength, ErrorMessage = "Gündem en fazla 4000 karakter olabilir.")]
     public string? Agenda { get; init; }
+
+    [MaxLength(Meeting.MaxSummaryLength, ErrorMessage = "Toplantı özeti en fazla 4000 karakter olabilir.")]
+    public string? Summary { get; init; }
+
+    [MaxLength(Meeting.MaxStagesLength, ErrorMessage = "Tamamlanan aşamalar en fazla 2000 karakter olabilir.")]
+    public string? CompletedStages { get; init; }
+
+    [MaxLength(Meeting.MaxStagesLength, ErrorMessage = "Devam eden aşamalar en fazla 2000 karakter olabilir.")]
+    public string? OngoingStages { get; init; }
+
+    [MaxLength(Meeting.MaxNextStepsLength, ErrorMessage = "Sonraki adımlar en fazla 2000 karakter olabilir.")]
+    public string? NextSteps { get; init; }
+
+    [MaxLength(Meeting.MaxActivitiesLength, ErrorMessage = "Planlanan aktiviteler en fazla 4000 karakter olabilir.")]
+    public string? PlannedActivities { get; init; }
+
+    [MaxLength(Meeting.MaxActivitiesLength, ErrorMessage = "Yapılan aktiviteler en fazla 4000 karakter olabilir.")]
+    public string? CompletedActivities { get; init; }
 }
 
 /// <summary>POST .../meetings — the decisions and actions become open issues of the project.</summary>
