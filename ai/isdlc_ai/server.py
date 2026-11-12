@@ -4,7 +4,7 @@
 
 Endpoints:
     GET  /health                    is the service up, is a model configured
-    POST /v1/meeting/suggestions    open issues and a minutes draft (type, participants, agenda) from meeting notes
+    POST /v1/meeting/suggestions    open issues and a minutes draft (type, participants, agenda, summary, next steps) from meeting notes
     POST /v1/risk/suggestions       risks found in a text, scored and with a preventive action (nothing is saved)
     POST /v1/risk/assessment        probability, impact and preventive action for one risk a person typed
 
@@ -67,11 +67,18 @@ class RunDto(CamelModel):
     output_tokens: int | None
 
 
+class ParticipantDto(CamelModel):
+    name: str
+    role: str | None
+
+
 class MinutesDraft(CamelModel):
     type: str  # MeetingType value
     type_reason: str | None
-    participants: str  # comma separated, as the minutes form takes it
+    participants: list[ParticipantDto]  # in the order the notes give them; role only when the notes say it
     agenda: str  # one "- " line per topic
+    summary: str | None
+    next_steps: str | None  # one "- " line per step
     warnings: list[str]
 
 
@@ -81,7 +88,8 @@ class MeetingSuggestionsResponse(CamelModel):
     # Items the model returned that did not pass validation; not shown, only counted.
     invalid_count: int
     run: RunDto
-    # Type, participants and agenda for the minutes form; null when that task failed (the items above still count).
+    # Type, participants, agenda, summary and next steps for the minutes form; null when that task failed
+    # (the items above still count).
     minutes: MinutesDraft | None = None
     minutes_run: RunDto | None = None
 
@@ -174,8 +182,10 @@ def create_app(settings: Settings | None = None, llm_factory: Callable[[], LlmCl
                 minutes = MinutesDraft(
                     type=draft.minutes.type.value,
                     type_reason=draft.minutes.type_reason,
-                    participants=draft.minutes.participants,
+                    participants=[ParticipantDto(name=p.name, role=p.role) for p in draft.minutes.participants],
                     agenda=draft.minutes.agenda,
+                    summary=draft.minutes.summary,
+                    next_steps=draft.minutes.next_steps,
                     warnings=draft.warnings,
                 )
             else:

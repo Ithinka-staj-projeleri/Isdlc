@@ -262,27 +262,38 @@ public class AgentServiceTests(DatabaseFixture database)
         Assert.Equal(name, action.OwnerName);
     }
 
-    // ---- Minutes draft (type, participants, agenda) ----
+    // ---- Minutes draft (type, participants with roles, agenda, summary, next steps) ----
 
     private static FakeAgentClient WithMinutes(MeetingAgentMinutes? minutes) =>
         new() { Result = new MeetingAgentResult("Özet", [], 0, "gemini-test", minutes) };
 
+    private static readonly MeetingAgentParticipant[] TwoPeople =
+        [new("Elif Yılmaz", "İş Analisti"), new("Can Öztürk", null)];
+
     private static MeetingAgentMinutes Minutes(
-        string type = "AnalysisSession", string participants = "Elif Yılmaz, Can Öztürk", string agenda = "- Ekranlar") =>
-        new(type, " Ekranlar konuşulmuş. ", participants, agenda, ["Katılımcı notlarda geçmiyor: Müşteri BT"]);
+        string type = "AnalysisSession",
+        IReadOnlyList<MeetingAgentParticipant>? participants = null,
+        string agenda = "- Ekranlar",
+        string? summary = " Ekran taslakları konuşuldu. ",
+        string? nextSteps = "- Taslaklar müşteriye gönderilecek") =>
+        new(type, " Ekranlar konuşulmuş. ", participants ?? TwoPeople, agenda, summary, nextSteps,
+            ["Katılımcı notlarda geçmiyor: Müşteri BT"]);
 
     [Fact]
-    public async Task Suggest_MinutesDraft_IsPassedOnWithTheMeetingType()
+    public async Task Suggest_MinutesDraft_IsPassedOnWithTheMeetingTypeAndRoles()
     {
         var projectId = await TestProjects.CreateAsync(database, "14");
 
-        var result = await SuggestAsync(WithMinutes(Minutes(participants: "  Elif Yılmaz, Can Öztürk  ")), projectId);
+        var result = await SuggestAsync(WithMinutes(Minutes(participants:
+            [new("  Elif Yılmaz ", " İş Analisti "), new("Can Öztürk", "  "), new("   ", "Boş ad")])), projectId);
 
         var minutes = Assert.IsType<MinutesDraftDto>(result.Minutes);
         Assert.Equal(MeetingType.AnalysisSession, minutes.Type);
         Assert.Equal("Ekranlar konuşulmuş.", minutes.TypeReason);
-        Assert.Equal("Elif Yılmaz, Can Öztürk", minutes.Participants);
+        Assert.Equal([("Elif Yılmaz", "İş Analisti"), ("Can Öztürk", null)], minutes.Participants.Select(p => (p.Name, p.Role)));
         Assert.Equal("- Ekranlar", minutes.Agenda);
+        Assert.Equal("Ekran taslakları konuşuldu.", minutes.Summary);
+        Assert.Equal("- Taslaklar müşteriye gönderilecek", minutes.NextSteps);
         Assert.Equal(["Katılımcı notlarda geçmiyor: Müşteri BT"], minutes.Warnings);
     }
 
@@ -297,28 +308,52 @@ public class AgentServiceTests(DatabaseFixture database)
     }
 
     [Theory]
-    [InlineData("Party", "Elif Yılmaz", "- Konu")]
-    [InlineData("42", "Elif Yılmaz", "- Konu")]
-    [InlineData("Review", "  ", "- Konu")]
-    [InlineData("Review", "Elif Yılmaz", "")]
-    public async Task Suggest_MinutesDraftTheFormWouldReject_IsDropped(string type, string participants, string agenda)
+    [InlineData("Party", "- Konu")]
+    [InlineData("42", "- Konu")]
+    [InlineData("Review", "")]
+    [InlineData("Review", "   ")]
+    public async Task Suggest_MinutesDraftWithUnknownTypeOrNoAgenda_IsDropped(string type, string agenda)
     {
         var projectId = await TestProjects.CreateAsync(database, "14");
 
-        var result = await SuggestAsync(WithMinutes(Minutes(type, participants, agenda)), projectId);
+        var result = await SuggestAsync(WithMinutes(Minutes(type, agenda: agenda)), projectId);
 
         Assert.Null(result.Minutes);
     }
 
     [Fact]
-    public async Task Suggest_MinutesDraftLongerThanTheFormAllows_IsDropped()
+    public async Task Suggest_MinutesDraftTheFormWouldReject_IsDropped()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "14");
+        MeetingAgentParticipant[] Many(int count) => Enumerable.Range(1, count).Select(i => new MeetingAgentParticipant($"Kişi {i}", null)).ToArray();
+
+        var nobody = await SuggestAsync(WithMinutes(Minutes(participants: [new("  ", "Rol")])), projectId);
+        var tooManyPeople = await SuggestAsync(WithMinutes(Minutes(participants: Many(31))), projectId);
+        var tooLongName = await SuggestAsync(WithMinutes(Minutes(participants: [new(new string('a', 101), null)])), projectId);
+        var tooLongAgenda = await SuggestAsync(WithMinutes(Minutes(agenda: new string('a', 4001))), projectId);
+        var thirty = await SuggestAsync(WithMinutes(Minutes(participants: Many(30))), projectId);
+
+        Assert.Null(nobody.Minutes);
+        Assert.Null(tooManyPeople.Minutes);
+        Assert.Null(tooLongName.Minutes);
+        Assert.Null(tooLongAgenda.Minutes);
+        Assert.Equal(30, thirty.Minutes!.Participants.Count);
+    }
+
+    [Fact]
+    public async Task Suggest_TooLongRoleSummaryOrNextSteps_AreDroppedOnTheirOwn()
     {
         var projectId = await TestProjects.CreateAsync(database, "14");
 
-        var tooManyPeople = await SuggestAsync(WithMinutes(Minutes(participants: new string('a', 1001))), projectId);
-        var tooLongAgenda = await SuggestAsync(WithMinutes(Minutes(agenda: new string('a', 4001))), projectId);
+        var result = await SuggestAsync(WithMinutes(Minutes(
+            participants: [new("Elif Yılmaz", new string('r', 101))],
+            summary: new string('s', 4001),
+            nextSteps: new string('n', 2001))), projectId);
 
-        Assert.Null(tooManyPeople.Minutes);
-        Assert.Null(tooLongAgenda.Minutes);
+        var minutes = Assert.IsType<MinutesDraftDto>(result.Minutes);
+        Assert.Null(Assert.Single(minutes.Participants).Role);
+        Assert.Null(minutes.Summary);
+        Assert.Null(minutes.NextSteps);
+        Assert.Equal("- Ekranlar", minutes.Agenda);
     }
 }

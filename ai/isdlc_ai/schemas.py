@@ -48,22 +48,37 @@ class MeetingType(StrEnum):
     PROJECT_EVALUATION = "ProjectEvaluation"
 
 
+class MeetingParticipant(BaseModel):
+    """Someone at the meeting. Same limits as MeetingParticipantDto."""
+
+    name: str = Field(min_length=1, max_length=100)
+    role: str | None = Field(default=None, max_length=100)
+
+
 class MeetingMinutesSuggestion(BaseModel):
-    """Meeting minutes the agent drafts. Same limits as CreateMeetingDto (docs/open-issues-meetings-api.md)."""
+    """Meeting minutes the agent drafts. Same limits as CreateMeetingDto (docs/open-issues-meetings-api.md → Faz 4 · E4)."""
 
     type: MeetingType
     date: date
-    participants: str = Field(min_length=1, max_length=1000)
+    participants: list[MeetingParticipant] = Field(min_length=1, max_length=30)
     agenda: str = Field(min_length=1, max_length=4000)
+    summary: str | None = Field(default=None, max_length=4000)
+    next_steps: str | None = Field(default=None, max_length=2000)
     type_reason: str | None = Field(default=None, description="Why the model chose this meeting type")
 
     def to_create_dto(self, decisions: list[OpenIssueSuggestion], actions: list[OpenIssueSuggestion]) -> dict:
-        """Body for POST /api/v1/projects/{projectId}/meetings. Decisions and actions come from the open issues task."""
+        """
+        Body for POST /api/v1/projects/{projectId}/meetings. Decisions and actions come from the open issues task.
+        Who wrote the minutes is picked by the person in the form, so recordedByUserId is left empty here.
+        """
         return {
             "type": self.type.value,
             "date": self.date.isoformat(),
-            "participants": self.participants,
+            "recordedByUserId": None,
+            "participants": [p.model_dump() for p in self.participants],
             "agenda": self.agenda,
+            "summary": self.summary,
+            "nextSteps": self.next_steps,
             "decisions": [decision.title for decision in decisions],
             "actions": [
                 {

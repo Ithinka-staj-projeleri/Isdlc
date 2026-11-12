@@ -2,7 +2,7 @@
 
 Tasks (each is its own prompt and model call):
     suggest_open_issues   actions, decisions, questions... for the Open Issues list
-    draft_minutes         meeting type, participants and agenda for the minutes
+    draft_minutes         meeting type, participants with roles, agenda, summary and next steps for the minutes
 
 The agent never saves anything. A person reviews the suggestions; only accepted ones go to the API.
 """
@@ -33,17 +33,24 @@ class OpenIssuesLlmOutput(BaseModel):
     items: list[LlmOpenIssue]
 
 
+class LlmParticipant(BaseModel):
+    name: str
+    role: str | None = Field(default=None, description="Role, title, unit or company; only when the notes say it")
+
+
 class MinutesLlmOutput(BaseModel):
     meeting_type: str = Field(
         description="One of: RequestInterview, AnalysisSession, KickOff, Review, Internal, CustomerVisit, Handover, ProjectEvaluation"
     )
     type_reason: str
-    participants: list[str]
+    participants: list[LlmParticipant]
     agenda: list[str]
+    summary: str = ""
+    next_steps: list[str] = Field(default_factory=list)
 
 
 OPEN_ISSUES = Task("meeting.open_issues", "meeting/open_issues.v1", OpenIssuesLlmOutput)
-MINUTES = Task("meeting.minutes", "meeting/minutes.v1", MinutesLlmOutput)
+MINUTES = Task("meeting.minutes", "meeting/minutes.v2", MinutesLlmOutput)
 
 
 @dataclass
@@ -103,24 +110,34 @@ class MeetingAgent:
         task_run = run_task(self._llm, MINUTES, _user_message(meeting))
         output = task_run.output
 
-        participants = [p.strip() for p in output.participants if p.strip()]
+        # A blank role is no role; a minutes draft without participants fails validation (the form needs one).
+        participants = [
+            {"name": p.name.strip(), "role": (p.role or "").strip() or None}
+            for p in output.participants
+            if p.name.strip()
+        ]
         agenda = [a.strip() for a in output.agenda if a.strip()]
+        next_steps = [n.strip() for n in output.next_steps if n.strip()]
         try:
             minutes = MeetingMinutesSuggestion(
                 type=output.meeting_type,
                 date=meeting.meeting_date,
-                participants=", ".join(participants),
+                participants=participants,
                 agenda="\n".join(f"- {topic}" for topic in agenda),
+                summary=output.summary.strip() or None,
+                next_steps="\n".join(f"- {step}" for step in next_steps) or None,
                 type_reason=output.type_reason or None,
             )
         except ValidationError as error:
             return MinutesResult(None, [], task_run.info, invalid_reason=short_reason(error))
 
         warnings = [
-            f"Katılımcı notlarda geçmiyor: {person}" for person in participants if not found_in(person, meeting.notes)
+            f"Katılımcı notlarda geçmiyor: {p.name}" for p in minutes.participants if not found_in(p.name, meeting.notes)
+        ] + [
+            f"Rol notlarda geçmiyor: {p.name} ({p.role})"
+            for p in minutes.participants
+            if p.role and not found_in(p.role, meeting.notes)
         ]
-        if not participants:
-            warnings.append("Notlarda katılımcı bulunamadı; kaydetmeden önce girilmeli.")
         return MinutesResult(minutes, warnings, task_run.info)
 
 

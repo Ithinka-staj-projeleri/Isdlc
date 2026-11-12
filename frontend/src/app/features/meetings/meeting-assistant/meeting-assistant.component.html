@@ -23,7 +23,7 @@
 
         @if (r.minutes; as m) {
         <p>
-            <b>Tür ({{ meetingTypeLabels[m.type] }}), katılımcılar ve gündem de önerildi.</b>
+            <b>Tutanak bilgileri de önerildi: tür ({{ meetingTypeLabels[m.type] }}), katılımcılar, gündem@if (m.summary) {, özet}@if (m.nextSteps) {, sonraki adımlar}.</b>
             Yalnızca sizin doldurmadığınız alanlar dolduruldu.
         </p>
         @if (m.typeReason) { <p class="muted">{{ m.typeReason }}</p> }

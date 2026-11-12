@@ -121,8 +121,13 @@ export class MeetingFormComponent implements OnInit {
     private agentDecisionLines: string[] = [];
 
     /** The info fields as the AI assistant last filled them; a field still showing that value may be replaced again. */
-    private agentInfo: { type: MeetingType | null; participants: string | null; agenda: string | null } =
-        { type: null, participants: null, agenda: null };
+    private agentInfo: {
+        type: MeetingType | null;
+        participants: string | null;
+        agenda: string | null;
+        summary: string | null;
+        nextSteps: string | null;
+    } = { type: null, participants: null, agenda: null, summary: null, nextSteps: null };
 
     protected get actions(): FormArray<FormGroup> {
         return this.form.controls.actions;
@@ -198,9 +203,13 @@ export class MeetingFormComponent implements OnInit {
         this.serverErrors.set({});
     }
 
-    /** Names in the rows, "Elif Yılmaz, Can Öztürk", to compare with what the AI assistant filled before. */
-    private participantNames(): string {
-        return this.participants.controls.map(c => (c.value.name as string).trim()).filter(n => n).join(', ');
+    /** The rows as text, "Elif Yılmaz (İş Analisti), Can Öztürk", to compare with what the AI assistant filled before. */
+    private participantsText(): string {
+        return this.participants.controls
+            .map(c => ({ name: (c.value.name as string).trim(), role: (c.value.role as string).trim() }))
+            .filter(p => p.name)
+            .map(p => (p.role ? `${p.name} (${p.role})` : p.name))
+            .join(', ');
     }
 
     /** An empty row, or one filled from an AI suggestion (then it also keeps the evidence and warnings to show). */
@@ -244,9 +253,9 @@ export class MeetingFormComponent implements OnInit {
     }
 
     /**
-     * Type, participants and agenda from the AI draft, only where the person has not written anything:
-     * no names in the rows, a type left as it was, or a value the assistant itself put there before.
-     * The draft's participants come as "Ad, Ad (Kurum)" and become rows without a role.
+     * Type, participants, agenda, summary and next steps from the AI draft, only where the person has not written
+     * anything: no names in the rows, a type left as it was, an empty field, or a value the assistant itself put
+     * there before. Stages are not drafted: they come from the process.
      */
     private applyMinutesDraft(suggestions: MeetingSuggestions): void {
         const draft = suggestions.minutes;
@@ -254,23 +263,30 @@ export class MeetingFormComponent implements OnInit {
             return;
         }
 
-        const { type, agenda } = this.form.controls;
+        const { type } = this.form.controls;
         if (type.pristine || type.value === this.agentInfo.type) {
             type.setValue(draft.type);
             this.agentInfo.type = draft.type;
         }
 
-        const names = this.participantNames();
-        if (!names || names === this.agentInfo.participants) {
+        const rows = this.participantsText();
+        if (!rows || rows === this.agentInfo.participants) {
             this.participants.clear();
-            draft.participants.split(',').map(n => n.trim()).filter(n => n).slice(0, MAX_PARTICIPANTS)
-                .forEach(name => this.addParticipant({ name, role: null }));
-            this.agentInfo.participants = this.participantNames();
+            draft.participants.slice(0, MAX_PARTICIPANTS).forEach(p => this.addParticipant(p));
+            this.agentInfo.participants = this.participantsText();
         }
 
-        if (!agenda.value.trim() || agenda.value === this.agentInfo.agenda) {
-            agenda.setValue(draft.agenda);
-            this.agentInfo.agenda = draft.agenda;
+        this.fillIfUntouched('agenda', draft.agenda);
+        this.fillIfUntouched('summary', draft.summary);
+        this.fillIfUntouched('nextSteps', draft.nextSteps);
+    }
+
+    /** Sets a text field from the draft when it is empty or still shows what the assistant put there last time. */
+    private fillIfUntouched(field: 'agenda' | 'summary' | 'nextSteps', value: string | null): void {
+        const control = this.form.controls[field];
+        if (value && (!control.value.trim() || control.value === this.agentInfo[field])) {
+            control.setValue(value);
+            this.agentInfo[field] = value;
         }
     }
 

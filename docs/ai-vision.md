@@ -235,7 +235,8 @@ MVP'ye ajan eklenmez; ama şu kurallar ileride ajan eklemeyi kolaylaştırır:
 
 Denemenin ilk ürünü. Yeni tutanak formunda ham toplantı notları yazılır, "Yapay zekâ ile karar ve aksiyonları çıkar"
 butonu önerileri forma doldurur; kişi düzenleyip tutanağı normal şekilde kaydeder. Aynı istekte ajanın ikinci görevi
-(tutanak taslağı) toplantı türünü, katılımcıları ve gündemi önerir; form bunları yalnızca kişi doldurmadıysa yazar.
+(tutanak taslağı) toplantı türünü, rolleriyle katılımcıları, gündemi, özeti ve sonraki adımları önerir; form bunları
+yalnızca kişi doldurmadıysa yazar.
 Taslak görevi başarısız olursa kararlar ve aksiyonlar yine gelir.
 
 ```
@@ -291,7 +292,7 @@ Denemede iki ajan ve beş görev var:
 | Ajan | Görev | Prompt | Çıktı | Kayıt |
 | --- | --- | --- | --- | --- |
 | Toplantı | Açık konu önerileri | `meeting/open_issues.v1` | `CreateOpenIssueDto` | Komut satırında onaylanır, API'ye yazılır |
-| Toplantı | Tutanak taslağı (tür, katılımcılar, gündem) | `meeting/minutes.v1` | `CreateMeetingDto` önizlemesi; kararlar ve aksiyonlar ilk görevden gelir | Uygulamada: tutanak formunun boş alanlarını doldurur |
+| Toplantı | Tutanak taslağı (tür, rolleriyle katılımcılar, gündem, özet, sonraki adımlar) | `meeting/minutes.v2` | `CreateMeetingDto` önizlemesi; kararlar ve aksiyonlar ilk görevden gelir | Uygulamada: tutanak formunun boş alanlarını doldurur |
 | Risk | Riskleri bulma | `risk/identify.v2` | Risk başlığı, açıklama, kategori, dayanak | Uygulamada: risk formuna aktarılır |
 | Risk | Olasılık ve etki puanlama (1-5) | `risk/assess.v1` | Puan ve gerekçe; skor kodda hesaplanır | Uygulamada: risk formuna aktarılır |
 | Risk | Önleyici aksiyon | `risk/mitigate.v2` | Aksiyon metni | Uygulamada: risk formuna aktarılır |
