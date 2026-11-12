@@ -1,0 +1,173 @@
+@if (readOnly()) {
+<p class="note">Proje aktif olmadığı için form yalnızca görüntülenebilir.</p>
+}
+
+@if (form.error()) {
+<app-empty-state message="Form yüklenemedi." />
+} @else if (form.value(); as f) {
+<section class="card head" aria-label="Form bilgileri">
+    <div class="title">
+        <h3>{{ f.set.name }}</h3>
+        <span class="muted small">{{ f.set.sourceDocument }} · v{{ f.set.version }}</span>
+    </div>
+
+    <div class="fields">
+        <label class="field">
+            Alt kategori
+            <select [value]="f.subcategory" [disabled]="readOnly() || savingId() !== null"
+                (change)="setSubcategory($any($event.target).value)">
+                @for (s of subcategories; track s) {
+                <option [value]="s">{{ subcategoryLabels[s] }}</option>
+                }
+            </select>
+        </label>
+        <label class="field grow">
+            Katılanlar
+            <input type="text" maxlength="1000" [value]="f.participants ?? ''" [disabled]="readOnly()"
+                placeholder="Değerlendirmeye katılanlar" (blur)="setParticipants($any($event.target).value)" />
+        </label>
+        <label class="field">
+            Tarih
+            <input type="date" [value]="f.assessedOn ?? ''" [disabled]="readOnly()"
+                (change)="setAssessedOn($any($event.target).value)" />
+        </label>
+    </div>
+</section>
+
+<section class="summary" aria-label="Özet">
+    @if (f.summary.isComplete) {
+    <app-status-badge label="Tamamlandı" tone="ok" />
+    } @else {
+    <app-status-badge [label]="f.summary.requiredUnanswered + ' zorunlu soru bekliyor'" tone="warn" />
+    }
+    <span><b>{{ f.summary.answered }}</b> / {{ f.summary.listed }} cevaplandı</span>
+    @if (f.set.answerMode === 'SharedOptions') {
+    <span class="chips">
+        @for (o of f.questions[0]?.question?.options ?? []; track o.id) {
+        @if (o.meaning) {
+        <span class="chip" [attr.data-meaning]="o.meaning">{{ o.label }}: {{ countOf(f.summary, o.meaning) }}</span>
+        }
+        }
+    </span>
+    }
+    @if (f.summary.missingNote > 0) {
+    <span class="warn">{{ f.summary.missingNote }} cevapta açıklama eksik</span>
+    }
+    <label class="toggle">
+        <input type="checkbox" [checked]="onlyOpen()" (change)="toggleOnlyOpen()" />
+        Yalnızca cevaplanmamışlar
+    </label>
+</section>
+
+@if (f.questions.length === 0) {
+<app-empty-state message="Bu proje için listelenecek soru yok." />
+} @else if (sections().length === 0) {
+<app-empty-state message="Cevaplanmamış soru kalmadı." />
+}
+
+@for (s of sections(); track $index) {
+<section class="card section">
+    @if (s.section) {
+    <h3 class="section-title">{{ sectionTitles()[s.section] ?? s.section }}</h3>
+    }
+    @for (g of s.groups; track $index) {
+    @if (g.group) {
+    <h4 class="group-title">{{ g.group }}</h4>
+    }
+    @for (item of g.items; track item.question.id) {
+    @let q = item.question;
+    @let chosen = chosenOption(item);
+    <div class="question" role="group" [attr.aria-label]="'Soru ' + q.no" [class.busy]="isSaving(q.id)">
+        <div class="question-head">
+            <span class="no">{{ q.no }}</span>
+            <div class="question-text">
+                @if (q.topic) {
+                <div class="topic">{{ q.topic }}</div>
+                }
+                <div>{{ q.text }}</div>
+            </div>
+            @if (q.requirement) {
+            <span class="requirement" [class.required]="q.requirement === 'Required'">{{ requirementLabels[q.requirement] }}</span>
+            }
+        </div>
+
+        @if (q.expectedInfo || q.riskDescription || q.suggestedAction || q.reference) {
+        <details class="help">
+            <summary>Ayrıntılar</summary>
+            @if (q.expectedInfo) {
+            <p><b>Beklenen bilgi / çıktı:</b> {{ q.expectedInfo }}</p>
+            }
+            @if (q.riskDescription) {
+            <p><b>Olası risk:</b> {{ q.riskDescription }}</p>
+            }
+            @if (q.suggestedAction) {
+            <p><b>Öngörülen aksiyon:</b> {{ q.suggestedAction }}</p>
+            }
+            @if (q.reference) {
+            <p class="muted"><b>Kaynak:</b> {{ q.reference }}</p>
+            }
+        </details>
+        }
+
+        <div class="options">
+            @for (o of q.options; track o.id) {
+            <button type="button" class="option" [class.on]="chosen?.id === o.id" [attr.data-meaning]="o.meaning"
+                [attr.aria-pressed]="chosen?.id === o.id" [disabled]="readOnly() || isSaving(q.id)"
+                (click)="choose(item, o.id)">
+                {{ o.label }}@if (o.points !== null) {<span class="points"> · {{ o.points }}</span>}
+            </button>
+            }
+        </div>
+
+        @if (chosen?.isScored) {
+        <div class="levels">
+            <span class="levels-group" role="group" aria-label="Olasılık">
+                Olasılık
+                @for (n of levels; track n) {
+                <button type="button" class="option score" [class.on]="item.answer?.probability === n"
+                    [attr.aria-pressed]="item.answer?.probability === n" [attr.aria-label]="'Olasılık ' + n"
+                    [disabled]="readOnly() || isSaving(q.id)" (click)="setLevel(item, 'probability', n)">{{ n }}</button>
+                }
+            </span>
+            <span class="levels-group" role="group" aria-label="Şiddet">
+                Şiddet
+                @for (n of levels; track n) {
+                <button type="button" class="option score" [class.on]="item.answer?.severity === n"
+                    [attr.aria-pressed]="item.answer?.severity === n" [attr.aria-label]="'Şiddet ' + n"
+                    [disabled]="readOnly() || isSaving(q.id)" (click)="setLevel(item, 'severity', n)">{{ n }}</button>
+                }
+            </span>
+            <span class="muted">Derece: <b>{{ degreeOf(item.answer) ?? '—' }}</b></span>
+        </div>
+        }
+
+        @if (hasText()) {
+        <label class="field">
+            Paydaş yanıtı
+            <textarea rows="2" maxlength="4000" [value]="item.answer?.text ?? ''" [disabled]="readOnly() || isSaving(q.id)"
+                (blur)="editText(item, 'text', $any($event.target).value)"></textarea>
+        </label>
+        }
+
+        @if (chosen || item.answer?.note) {
+        <label class="field" [class.invalid]="isMissingNote(item)">
+            Not / açıklama
+            <textarea rows="2" maxlength="2000" [value]="item.answer?.note ?? ''" [disabled]="readOnly() || isSaving(q.id)"
+                (blur)="editText(item, 'note', $any($event.target).value)"></textarea>
+            @if (isMissingNote(item)) {
+            <span class="error">Bu cevap için açıklama beklenir.</span>
+            }
+        </label>
+        }
+
+        @if (item.answer?.updatedBy; as by) {
+        <div class="muted small">{{ by.fullName }} · {{ item.answer?.updatedAt | localDate }}</div>
+        }
+    </div>
+    }
+    }
+</section>
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}
