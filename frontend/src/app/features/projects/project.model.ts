@@ -7,7 +7,7 @@ import { UserSummary } from '../../shared/models/user-summary';
 /** Shared with other modules (shared/models/project-status). */
 export type { ProjectStatus } from '../../shared/models/project-status';
 export type RequestSource = 'Internal' | 'External' | 'Affiliated';
-export type RequestChannel = 'Email' | 'Phone';
+export type RequestChannel = 'Email' | 'Phone' | 'Meeting' | 'Other';
 export type RequestType = 'NewProject' | 'AdditionalModule' | 'CompanyProduct' | 'Support';
 export type ProjectPriority = 'Low' | 'Medium' | 'High';
 
@@ -49,6 +49,8 @@ export interface Project extends ProjectListItem {
   description: string;
   source: RequestSource;
   requestChannel: RequestChannel;
+  /** What "Diğer" means; only for the Other channel. */
+  requestChannelOther: string | null;
   /** Talebi ileten kişi. */
   requesterName: string;
   requesterContact: string | null;
@@ -73,6 +75,7 @@ export interface ProjectInput {
   description: string;
   source: RequestSource;
   requestChannel: RequestChannel;
+  requestChannelOther: string | null;
   requestType: RequestType;
   customerName: string;
   requesterName: string;

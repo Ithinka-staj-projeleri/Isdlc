@@ -59,6 +59,7 @@ public record ProjectDto(
     string Description,
     RequestSource Source,
     RequestChannel RequestChannel,
+    string? RequestChannelOther, // only for RequestChannel.Other
     RequestType RequestType,
     string CustomerName,
     string RequesterName,
@@ -99,6 +100,10 @@ public record CreateProjectDto : IValidatableObject
     [Required(ErrorMessage = "Talep kanalı zorunludur.")]
     public RequestChannel? RequestChannel { get; init; }
 
+    /// <summary>Required when the channel is "Diğer"; ignored for the other channels.</summary>
+    [MaxLength(200, ErrorMessage = "Diğer talep kanalı en fazla 200 karakter olabilir.")]
+    public string? RequestChannelOther { get; init; }
+
     [Required(ErrorMessage = "Talep türü zorunludur.")]
     public RequestType? RequestType { get; init; }
 
@@ -137,6 +142,12 @@ public record CreateProjectDto : IValidatableObject
     /// <summary>Rules that involve more than one field (shared by create and update).</summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        if (RequestChannel == Domain.Projects.RequestChannel.Other && string.IsNullOrWhiteSpace(RequestChannelOther))
+        {
+            yield return new ValidationResult(
+                "Diğer talep kanalı yazılmalıdır.", [nameof(RequestChannelOther)]);
+        }
+
         if (RequestDate is { } requested && DueDate is { } due && due < requested)
         {
             yield return new ValidationResult(

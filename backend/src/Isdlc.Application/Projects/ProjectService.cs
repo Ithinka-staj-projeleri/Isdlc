@@ -184,6 +184,9 @@ public class ProjectService(
         project.Description = request.Description!.Trim();
         project.Source = request.Source!.Value;
         project.RequestChannel = request.RequestChannel!.Value;
+        project.RequestChannelOther = project.RequestChannel == RequestChannel.Other
+            ? TrimToNull(request.RequestChannelOther)
+            : null;
         project.RequestType = request.RequestType!.Value;
         project.CustomerName = request.CustomerName!.Trim();
         project.RequesterName = request.RequesterName!.Trim();
@@ -322,6 +325,7 @@ public class ProjectService(
             p.Description,
             p.Source,
             p.RequestChannel,
+            p.RequestChannelOther,
             p.RequestType,
             p.CustomerName,
             p.RequesterName,

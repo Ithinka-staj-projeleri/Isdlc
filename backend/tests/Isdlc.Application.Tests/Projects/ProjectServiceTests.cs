@@ -152,6 +152,42 @@ public class ProjectServiceTests(DatabaseFixture database)
     }
 
     [Fact]
+    public async Task Create_OtherChannel_KeepsItsTextTrimmed()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+
+        var project = await CreateAsync(analyst, Request(analyst) with
+        {
+            RequestChannel = RequestChannel.Other,
+            RequestChannelOther = "  Fuar standı  ",
+        });
+
+        Assert.Equal(RequestChannel.Other, project.RequestChannel);
+        Assert.Equal("Fuar standı", project.RequestChannelOther);
+    }
+
+    [Fact]
+    public async Task Update_ChannelNoLongerOther_DropsTheOtherText()
+    {
+        // The text belongs to "Diğer" only; it is not kept behind another channel.
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var created = await CreateAsync(analyst, Request(analyst) with
+        {
+            RequestChannel = RequestChannel.Other,
+            RequestChannelOther = "Fuar standı",
+        });
+
+        var updated = (await AsAsync(analyst, s => s.UpdateAsync(created.Id, UpdateOf(Request(analyst)) with
+        {
+            RequestChannel = RequestChannel.Meeting,
+            RequestChannelOther = "Fuar standı",
+        }, CancellationToken.None))).Result;
+
+        Assert.Equal(RequestChannel.Meeting, updated.RequestChannel);
+        Assert.Null(updated.RequestChannelOther);
+    }
+
+    [Fact]
     public async Task Create_SavesTheRequestFormFields()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
@@ -364,6 +400,7 @@ public class ProjectServiceTests(DatabaseFixture database)
         Description = request.Description,
         Source = request.Source,
         RequestChannel = request.RequestChannel,
+        RequestChannelOther = request.RequestChannelOther,
         RequestType = request.RequestType,
         CustomerName = request.CustomerName,
         RequesterName = request.RequesterName,

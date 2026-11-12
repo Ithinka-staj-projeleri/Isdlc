@@ -71,61 +71,55 @@
         <app-audit-log [projectId]="p.id" />
       }
       @default {
+        <!-- The fields of the company's Talep Kayıt Formu, in its order and words. -->
         <div class="card">
-          <h3>Talep kayıt bilgileri</h3>
-          <p class="description">{{ p.description }}</p>
+          <h3>Talep Kayıt Bilgileri</h3>
           <dl>
-            <dt>Proje No</dt>
-            <dd>{{ p.code }}</dd>
-            <dt>Talep tarihi</dt>
+            <dt>Proje No ve Adı</dt>
+            <dd>{{ p.code }} · {{ p.name }}</dd>
+            <dt>Talep Tarihi</dt>
             <dd>{{ p.requestDate | dateOnly }}</dd>
-            <dt>Talebi kayda alan</dt>
+            <dt>Talep Sahibi (Firma / Birim)</dt>
+            <dd>{{ p.customerName }}</dd>
+            <dt>Talebi İleten Kişi</dt>
+            <dd>{{ p.requesterName }}</dd>
+            <dt>İletişim (E-posta / Telefon)</dt>
+            <dd>{{ p.requesterContact ?? '—' }}</dd>
+            <dt>Talebi Kayıt Altına Alan Kişi</dt>
             <dd>{{ p.createdBy.fullName }} · {{ p.createdAt | localDate }}</dd>
-            <dt>Talep kanalı</dt>
-            <dd>{{ channelLabels[p.requestChannel] }}</dd>
-            <dt>Talep kaynağı</dt>
+            <dt>Talep Açıklaması</dt>
+            <dd class="description">{{ p.description }}</dd>
+            <dt>Talep Kanalı</dt>
+            <dd>
+              {{ channelLabels[p.requestChannel] }}{{ p.requestChannel === 'Other' && p.requestChannelOther ? ': ' + p.requestChannelOther : '' }}
+            </dd>
+            <dt>Talep Kaynağı</dt>
             <dd>{{ sourceLabels[p.source] }}</dd>
-            <dt>Talep türü</dt>
-            <dd>{{ typeLabels[p.requestType] }}</dd>
+            <dt>Notlar</dt>
+            <dd class="description">{{ p.notes ?? '—' }}</dd>
+          </dl>
+        </div>
+
+        <!-- Not on the company form: the flow and the other screens need them. -->
+        <div class="card">
+          <h3>Süreç Bilgileri</h3>
+          <dl>
             <dt>Teklif</dt>
             <dd>{{ p.requiresOffer ? 'Hazırlanacak' : 'Hazırlanmayacak (doğrudan proje)' }}</dd>
+            <dt>Talep türü</dt>
+            <dd>{{ typeLabels[p.requestType] }}</dd>
             <dt>Seviye</dt>
             <dd>{{ p.level ?? 'Belirlenmedi' }}</dd>
             <dt>Öncelik</dt>
             <dd>{{ p.priority ? priorityLabels[p.priority] : 'Belirlenmedi' }}</dd>
-          </dl>
-        </div>
-
-        <div class="card">
-          <h3>Talep sahibi</h3>
-          <dl>
-            <dt>Talep sahibi (firma / birim)</dt>
-            <dd>{{ p.customerName }}</dd>
-            <dt>Talebi ileten kişi</dt>
-            <dd>{{ p.requesterName }}</dd>
-            <dt>İletişim</dt>
-            <dd>{{ p.requesterContact ?? '—' }}</dd>
-            <dt>Gizlilik sözleşmesi (NDA)</dt>
-            <dd>{{ p.requiresNda ? 'Gerekiyor' : 'Gerekmiyor' }}</dd>
-          </dl>
-        </div>
-
-        @if (p.notes) {
-          <div class="card">
-            <h3>Notlar</h3>
-            <p class="description">{{ p.notes }}</p>
-          </div>
-        }
-
-        <div class="card">
-          <h3>Sorumlular ve hedef tarih</h3>
-          <dl>
             <dt>İş analisti</dt>
             <dd>{{ p.businessAnalyst?.fullName ?? 'Atanmadı' }}</dd>
             <dt>Proje yöneticisi</dt>
             <dd>{{ p.projectManager?.fullName ?? 'Atanmadı' }}</dd>
             <dt>Bitiş</dt>
             <dd>{{ (p.dueDate | dateOnly) || '—' }}</dd>
+            <dt>Gizlilik sözleşmesi (NDA)</dt>
+            <dd>{{ p.requiresNda ? 'Gerekiyor' : 'Gerekmiyor' }}</dd>
             <dt>Son güncelleme</dt>
             <dd>{{ (p.updatedAt | localDate) || '—' }}</dd>
           </dl>

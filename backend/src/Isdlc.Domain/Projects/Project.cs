@@ -21,6 +21,10 @@ public class Project : AuditableEntity, IAudited
     public string Description { get; set; } = string.Empty;
     public RequestSource Source { get; set; }
     public RequestChannel RequestChannel { get; set; }
+
+    /// <summary>What "Diğer" means; set only when RequestChannel is Other.</summary>
+    public string? RequestChannelOther { get; set; }
+
     public RequestType RequestType { get; set; }
 
     /// <summary>Talep sahibi: the customer company or internal unit (no separate table in the MVP).</summary>

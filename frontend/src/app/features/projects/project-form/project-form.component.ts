@@ -14,7 +14,12 @@ import { fieldErrorsOf } from '../../../core/http/problem-details';
 import { UserLookup, UserSummary } from '../../../shared/models/user-summary';
 import { ProcessFlow, ProcessStep } from '../../process/models/process-stage';
 import { ProcessService } from '../../process/process.service';
-import { REQUEST_CHANNEL_LABELS, REQUEST_SOURCE_LABELS, REQUEST_TYPE_LABELS } from '../project-labels';
+import {
+  REQUEST_CHANNEL_LABELS,
+  REQUEST_FORM_SOURCE_OPTIONS,
+  REQUEST_SOURCE_LABELS,
+  REQUEST_TYPE_LABELS,
+} from '../project-labels';
 import { ProjectInput, RequestChannel, RequestSource, RequestType } from '../project.model';
 import { ProjectService } from '../project.service';
 
@@ -27,6 +32,13 @@ const dueNotBeforeRequest: ValidatorFn = (group: AbstractControl): ValidationErr
   const requested = group.get('requestDate')?.value as string | null;
   const due = group.get('dueDate')?.value as string | null;
   return requested && due && due < requested ? { dueBeforeRequest: true } : null;
+};
+
+/** "Diğer: ____" has to be filled in when the channel is Other (same as the API). */
+const otherChannelText: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
+  const channel = group.get('requestChannel')?.value as RequestChannel | null;
+  const other = (group.get('requestChannelOther')?.value as string | null) ?? '';
+  return channel === 'Other' && other.trim() === '' ? { otherChannelMissing: true } : null;
 };
 
 /** Today in the user's time zone as "yyyy-MM-dd" (the form suggests it as the request date). */
@@ -72,6 +84,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     maxlength: 'Talebi ileten kişi en fazla 200 karakter olabilir.',
   },
   requesterContact: { maxlength: 'İletişim bilgisi en fazla 200 karakter olabilir.' },
+  requestChannelOther: { maxlength: 'Diğer talep kanalı en fazla 200 karakter olabilir.' },
   notes: { maxlength: 'Notlar en fazla 2000 karakter olabilir.' },
   requestDate: { required: 'Talep tarihi zorunludur.' },
 };
@@ -94,7 +107,6 @@ export class ProjectFormComponent {
   private readonly _projectService = inject(ProjectService);
   private readonly _processService = inject(ProcessService);
 
-  readonly sourceOptions = Object.entries(REQUEST_SOURCE_LABELS) as [RequestSource, string][];
   readonly channelOptions = Object.entries(REQUEST_CHANNEL_LABELS) as [RequestChannel, string][];
   readonly typeOptions = Object.entries(REQUEST_TYPE_LABELS) as [RequestType, string][];
 
@@ -115,6 +127,17 @@ export class ProjectFormComponent {
   // which would stop the whole screen from updating. Read it only when there is a value.
   readonly existing = computed(() => (this._existing.hasValue() ? this._existing.value() : undefined));
   readonly loadFailed = computed(() => !!this._existing.error());
+
+  /**
+   * The form's two sources. A record opened with another source (İlişkili şirket, e.g. through the API) keeps it
+   * as a third option, so editing it does not silently change it.
+   */
+  readonly sourceOptions = computed<[RequestSource, string][]>(() => {
+    const source = this.existing()?.source;
+    return source && !REQUEST_FORM_SOURCE_OPTIONS.some(([value]) => value === source)
+      ? [...REQUEST_FORM_SOURCE_OPTIONS, [source, REQUEST_SOURCE_LABELS[source]]]
+      : REQUEST_FORM_SOURCE_OPTIONS;
+  });
 
   /** A closed, rejected, lost or redirected project keeps its information (API: 409). */
   readonly locked = computed(() => !!this.existing() && this.existing()!.status !== 'Active');
@@ -153,6 +176,7 @@ export class ProjectFormComponent {
       requestDate: this._fb.control<string | null>(today(), Validators.required),
       description: this._fb.nonNullable.control('', [Validators.required, notBlank, Validators.maxLength(2000)]),
       requestChannel: this._fb.control<RequestChannel | null>(null, Validators.required),
+      requestChannelOther: this._fb.nonNullable.control('', Validators.maxLength(200)),
       source: this._fb.control<RequestSource | null>(null, Validators.required),
       requestType: this._fb.control<RequestType | null>(null, Validators.required),
       // No default: "no offer" skips steps of the flow, so the analyst has to choose.
@@ -166,7 +190,7 @@ export class ProjectFormComponent {
       projectManagerId: this._fb.control<number | null>(null),
       dueDate: this._fb.control<string | null>(null),
     },
-    { validators: dueNotBeforeRequest },
+    { validators: [dueNotBeforeRequest, otherChannelText] },
   );
 
   readonly saving = signal(false);
@@ -184,6 +208,7 @@ export class ProjectFormComponent {
         requestDate: project.requestDate,
         description: project.description,
         requestChannel: project.requestChannel,
+        requestChannelOther: project.requestChannelOther ?? '',
         source: project.source,
         requestType: project.requestType,
         requiresOffer: project.requiresOffer,
@@ -229,6 +254,17 @@ export class ProjectFormComponent {
 
     const firstError = Object.keys(control.errors)[0];
     return MESSAGES[field]?.[firstError] ?? 'Geçersiz değer.';
+  }
+
+  /** "Diğer" without its text: a form rule shown under the text box. */
+  otherChannelError(): string | null {
+    const other = this.form.controls.requestChannelOther;
+    if (other.errors?.['server'] || other.errors?.['maxlength']) {
+      return this.errorFor('requestChannelOther');
+    }
+    return this.form.errors?.['otherChannelMissing'] && (other.touched || this._submitted())
+      ? 'Diğer talep kanalı yazılmalıdır.'
+      : null;
   }
 
   /** The two-date rule belongs to the form, but it is shown under the due date. */
@@ -284,6 +320,7 @@ export class ProjectFormComponent {
       requestDate: value.requestDate!,
       description: value.description.trim(),
       requestChannel: value.requestChannel!,
+      requestChannelOther: value.requestChannel === 'Other' ? textOrNull(value.requestChannelOther) : null,
       source: value.source!,
       requestType: value.requestType!,
       requiresOffer: value.requiresOffer!,

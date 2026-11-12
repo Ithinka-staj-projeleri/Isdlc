@@ -82,6 +82,7 @@ internal static class SeedFiles
         string Description,
         RequestSource Source,
         RequestChannel RequestChannel,
+        string? RequestChannelOther,
         RequestType RequestType,
         string CustomerName,
         string RequesterName,
