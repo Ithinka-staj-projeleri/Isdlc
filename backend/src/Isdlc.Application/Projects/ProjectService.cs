@@ -48,8 +48,9 @@ public class ProjectService(
         // A flow without a project stage never turns its records into projects (docs/process-api.md → "Talep mi, proje mi").
         if (filter.Phase == ProjectPhase.Request)
         {
+            // A postponed request waits on its step, so it stays among the requests ("Ertelendi").
             query = query.Where(p =>
-                p.Status == ProjectStatus.Active
+                (p.Status == ProjectStatus.Active || p.Status == ProjectStatus.Postponed)
                 && p.CurrentStep != null
                 && (p.ProcessFlow.ProjectStageOrder == null
                     || p.CurrentStep.ProcessStage.Order < p.ProcessFlow.ProjectStageOrder));
@@ -57,7 +58,7 @@ public class ProjectService(
         else if (filter.Phase == ProjectPhase.Project)
         {
             query = query.Where(p =>
-                p.Status != ProjectStatus.Active
+                (p.Status != ProjectStatus.Active && p.Status != ProjectStatus.Postponed)
                 || (p.CurrentStep != null
                     && p.ProcessFlow.ProjectStageOrder != null
                     && p.CurrentStep.ProcessStage.Order >= p.ProcessFlow.ProjectStageOrder));

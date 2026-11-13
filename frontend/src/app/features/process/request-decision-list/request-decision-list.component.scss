@@ -1,0 +1,47 @@
+@use '../../../shared/styles/ui' as ui;
+
+:host {
+    @include ui.card;
+    display: block;
+    margin-top: 16px;
+    padding: 16px 20px;
+}
+
+h3 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+}
+
+dl {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 6px 16px;
+    margin: 0;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+
+    &:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+    }
+
+    @media (max-width: 640px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+dt,
+.muted {
+    color: var(--muted);
+}
+
+dd {
+    margin: 0;
+}
+
+.note {
+    white-space: pre-line;
+}

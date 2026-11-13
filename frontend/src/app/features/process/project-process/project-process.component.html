@@ -16,7 +16,12 @@
     }
 </div>
 
-@if (p.status !== 'Active') {
+@if (p.status === 'Postponed') {
+<p class="ended postponed">
+    Talep ertelendi; {{ p.currentStep?.code }}. adımda bekliyor. Yazılım Departman Yöneticisi değerlendirmeye geri alınca
+    bu adımdan devam eder.
+</p>
+} @else if (p.status !== 'Active') {
 <p class="ended" [class.closed]="p.status === 'Closed'">
     @if (p.status === 'Closed') { Süreç tamamlandı; proje kapatıldı. }
     @else { Süreç sona erdi: {{ statusLabels[p.status] }}. }
@@ -67,7 +72,7 @@
                     </div>
 
                     @if (state === 'current') {
-                    <app-step-actions [projectId]="p.projectId" [step]="step" [actions]="p.availableActions"
+                    <app-step-actions [projectId]="p.projectId" [step]="step" [actions]="p.availableActions" [flowKind]="p.flow.kind"
                         (updated)="onUpdated($event)" (failed)="onFailed()" />
                     }
                 </div>
@@ -77,6 +82,10 @@
     </section>
     }
 </div>
+
+@if (decisions.hasValue() && decisions.value().length) {
+<app-request-decision-list [decisions]="decisions.value()" />
+}
 
 <section class="card history">
     <h3>Süreç geçmişi</h3>

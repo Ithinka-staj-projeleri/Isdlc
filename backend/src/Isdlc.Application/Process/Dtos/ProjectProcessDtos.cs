@@ -1,3 +1,4 @@
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 
 namespace Isdlc.Application.Process.Dtos;
@@ -9,12 +10,12 @@ public record ProjectProcessDto(
     ProcessFlowSummaryDto Flow,
     IReadOnlyList<int> SkippedStepIds, // steps of the flow whose conditions do not hold for this project
     ProjectStatus Status,
-    ProcessStepDto? CurrentStep, // null when the project is not active
+    ProcessStepDto? CurrentStep, // the step it is on (also while postponed); null when the project is closed
     int ProgressPercent,
     IReadOnlyList<ProcessStageProgressDto> Stages,
     AvailableActionsDto AvailableActions);
 
-public record ProcessFlowSummaryDto(string Code, string Name);
+public record ProcessFlowSummaryDto(string Code, string Name, ProcessFlowKind Kind);
 
 public record ProcessStageProgressDto(
     int StageId,
@@ -37,4 +38,6 @@ public record AvailableActionsDto(
     bool CanComplete,
     bool CanAnswer,
     bool CanReject,
+    bool CanPostpone, // a request (before the project stage) can be put on hold
+    bool CanResume,   // a postponed request can be taken back
     string? BlockedReason); // why the user cannot act on the current step; null when they can

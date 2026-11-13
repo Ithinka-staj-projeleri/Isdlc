@@ -26,6 +26,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
     public DbSet<ProcessStep> ProcessSteps => Set<ProcessStep>();
     public DbSet<ProcessStepJump> ProcessStepJumps => Set<ProcessStepJump>();
     public DbSet<StepRecord> StepRecords => Set<StepRecord>();
+    public DbSet<RequestDecision> RequestDecisions => Set<RequestDecision>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<OpenIssue> OpenIssues => Set<OpenIssue>();
     public DbSet<Meeting> Meetings => Set<Meeting>();

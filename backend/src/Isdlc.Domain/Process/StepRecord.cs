@@ -24,7 +24,7 @@ public class StepRecord : AuditableEntity
     public int? JumpedToStepId { get; set; }
     public ProcessStep? JumpedToStep { get; set; }
 
-    /// <summary>Required for Rejected (the reason).</summary>
+    /// <summary>For Rejected and Postponed: the explanation of the decision (RequestDecision.Explanation).</summary>
     public string? Note { get; set; }
 
     public int PerformedById { get; set; }

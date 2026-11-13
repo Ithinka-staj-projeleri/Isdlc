@@ -12,6 +12,7 @@ public static class ProjectStatusNames
         ProjectStatus.Rejected => "Reddedildi",
         ProjectStatus.Lost => "Kaybedildi",
         ProjectStatus.Redirected => "Yönlendirildi",
+        ProjectStatus.Postponed => "Ertelendi",
         _ => status.ToString(),
     };
 }

@@ -16,7 +16,8 @@ import { ProjectService } from '../project.service';
 export type ProjectListMode = 'requests' | 'projects';
 
 /** The "Durum" choice on the Projeler page: active projects, everything, or one closed status. */
-type ProjectView = 'active' | 'all' | Exclude<ProjectStatus, 'Active'>;
+// A postponed request is a waiting request, so it is on the Talepler page, not here.
+type ProjectView = 'active' | 'all' | Exclude<ProjectStatus, 'Active' | 'Postponed'>;
 
 const PAGE_SIZE = 20;
 

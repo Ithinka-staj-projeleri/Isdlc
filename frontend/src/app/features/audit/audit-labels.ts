@@ -12,6 +12,7 @@ import { RISK_CATEGORY_LABELS, RISK_STATUS_LABELS } from '../risks/models/risk';
 import {
     IMPROVEMENT_SOURCE_LABELS, PILOT_RESULT_LABELS,
 } from '../process-improvements/models/process-improvement';
+import { DECISION_REASON_LABELS, REQUEST_DECISION_LABELS } from '../process/models/request-decision';
 import { AuditAction, AuditEntityType } from './models/audit-log';
 
 // Turkish text for the audit log. The API sends C# names (entity, field, enum value); the screen shows these.
@@ -33,9 +34,19 @@ export const AUDIT_ENTITY_LABELS: Record<AuditEntityType, string> = {
  */
 const OTHER_ENTITY_LABELS: Record<string, string> = {
     ProcessImprovement: 'Süreç iyileştirme önerisi',
+    RequestDecision: 'Talep ret / erteleme formu',
 };
 
 const OTHER_FIELD_LABELS: Record<string, Record<string, string>> = {
+    RequestDecision: {
+        Decision: 'Karar',
+        DecisionDate: 'Karar tarihi',
+        DecidedBy: 'Kararı veren',
+        Reasons: 'Gerekçe kategorisi',
+        ReasonOther: 'Diğer gerekçe',
+        Explanation: 'Gerekçe açıklaması',
+        ReevaluationDate: 'Yeniden değerlendirme tarihi',
+    },
     ProcessImprovement: {
         Source: 'Kaynak',
         AffectedProcess: 'Etkilediği süreç',
@@ -59,6 +70,7 @@ const OTHER_FIELD_LABELS: Record<string, Record<string, string>> = {
 
 const OTHER_VALUE_LABELS: Record<string, Record<string, Record<string, string>>> = {
     ProcessImprovement: { Source: IMPROVEMENT_SOURCE_LABELS, PilotResult: PILOT_RESULT_LABELS },
+    RequestDecision: { Decision: REQUEST_DECISION_LABELS },
 };
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
@@ -204,6 +216,11 @@ export function displayValue(entityType: string, field: string, value: string | 
     if (value === 'true') return 'Evet';
     if (value === 'false') return 'Hayır';
 
+    const reasons = reasonsOf(entityType, field, value);
+    if (reasons !== null) {
+        return reasons;
+    }
+
     const people = participantsOf(entityType, field, value);
     if (people !== null) {
         return people;
@@ -227,6 +244,20 @@ export function displayValue(entityType: string, field: string, value: string | 
  * Minutes' participants are stored as a JSON list: [{"Name":"Elif Yılmaz","Role":"İş Analisti"}].
  * Shown as "Elif Yılmaz (İş Analisti), Can Öztürk"; older minutes kept plain text, which is shown as it is.
  */
+/** A decision's reasons are stored as a list of names: ["BudgetConstraint","Prioritization"]. */
+function reasonsOf(entityType: string, field: string, value: string): string | null {
+    if (entityType !== 'RequestDecision' || field !== 'Reasons' || !value.startsWith('[')) {
+        return null;
+    }
+
+    try {
+        const list = JSON.parse(value) as string[];
+        return list.map(reason => DECISION_REASON_LABELS[reason as keyof typeof DECISION_REASON_LABELS] ?? reason).join(', ');
+    } catch {
+        return null;
+    }
+}
+
 function participantsOf(entityType: string, field: string, value: string): string | null {
     if (entityType !== 'Meeting' || field !== 'Participants' || !value.startsWith('[')) {
         return null;

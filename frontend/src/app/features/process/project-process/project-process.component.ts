@@ -10,6 +10,7 @@ import { ProcessStage, ProcessStep, conditionLabels } from '../models/process-st
 import { ProcessStageState, ProjectProcess, STEP_ACTION_LABELS, StepRecord } from '../models/project-process';
 import { ProcessService } from '../process.service';
 import { StepActionsComponent } from '../step-actions/step-actions.component';
+import { RequestDecisionListComponent } from '../request-decision-list/request-decision-list.component';
 
 type StepState = 'done' | 'current' | 'stopped' | 'pending' | 'skipped';
 
@@ -31,7 +32,7 @@ const STAGE_STATE_LABELS: Record<ProcessStageState, string> = {
  */
 @Component({
     selector: 'app-project-process',
-    imports: [EmptyStateComponent, StatusBadgeComponent, LocalDatePipe, StepActionsComponent],
+    imports: [EmptyStateComponent, StatusBadgeComponent, LocalDatePipe, StepActionsComponent, RequestDecisionListComponent],
     templateUrl: './project-process.component.html',
     styleUrl: './project-process.component.scss',
 })
@@ -71,6 +72,12 @@ export class ProjectProcessComponent {
         new Set(this.process.hasValue() ? this.process.value().skippedStepIds : []));
 
     protected readonly conditionLabels = conditionLabels;
+
+    /** The filled-in Talep Ret / Erteleme Formları, newest first. */
+    protected readonly decisions = rxResource({
+        params: () => ({ projectId: this.projectId() }),
+        stream: ({ params }) => this.processService.getRequestDecisions(params.projectId),
+    });
 
     protected readonly records = rxResource({
         params: () => ({ projectId: this.projectId() }),
@@ -134,7 +141,12 @@ export class ProjectProcessComponent {
     }
 
     protected statusTone(process: ProjectProcess): BadgeTone {
-        return process.status === 'Active' ? 'info' : process.status === 'Closed' ? 'ok' : 'bad';
+        switch (process.status) {
+            case 'Active': return 'info';
+            case 'Closed': return 'ok';
+            case 'Postponed': return 'warn';
+            default: return 'bad';
+        }
     }
 
     /** Badge for what was last done on a step. */
@@ -146,6 +158,10 @@ export class ProjectProcessComponent {
                 return { label: 'Cevap: Hayır' + (record.jumpedToStepCode ? ` → ${record.jumpedToStepCode}` : ''), tone: 'bad' };
             case 'Rejected':
                 return { label: 'Reddedildi', tone: 'bad' };
+            case 'Postponed':
+                return { label: 'Ertelendi', tone: 'warn' };
+            case 'Resumed':
+                return { label: 'Değerlendirmeye geri alındı', tone: 'info' };
             default:
                 return { label: 'Tamamlandı', tone: 'ok' };
         }
@@ -160,6 +176,7 @@ export class ProjectProcessComponent {
         this.process.set(process);
         this.pickedStage.set(null);
         this.records.reload();
+        this.decisions.reload();
         this.processChanged.emit();
     }
 

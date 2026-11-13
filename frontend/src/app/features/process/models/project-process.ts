@@ -1,15 +1,18 @@
 import { ProjectStatus } from '../../../shared/models/project-status';
 import { UserSummary } from '../../../shared/models/user-summary';
-import { ProcessStep } from './process-stage';
+import { ProcessFlowKind, ProcessStep } from './process-stage';
+import { RequestDecisionForm } from './request-decision';
 
 export type ProcessStageState = 'Completed' | 'Current' | 'Pending' | 'Stopped';
-export type StepAction = 'Completed' | 'Yes' | 'No' | 'Rejected';
+export type StepAction = 'Completed' | 'Yes' | 'No' | 'Rejected' | 'Postponed' | 'Resumed';
 
 export const STEP_ACTION_LABELS: Record<StepAction, string> = {
     Completed: 'Tamamlandı',
     Yes: 'Evet',
     No: 'Hayır',
     Rejected: 'Reddedildi',
+    Postponed: 'Ertelendi',
+    Resumed: 'Değerlendirmeye geri alındı',
 };
 
 /** GET /api/v1/projects/{projectId}/process — where the project stands and what the signed-in user can do. */
@@ -17,11 +20,11 @@ export interface ProjectProcess {
     projectId: number;
     projectCode: string;
     /** The flow the project follows. */
-    flow: { code: string; name: string };
+    flow: { code: string; name: string; kind: ProcessFlowKind };
     /** Steps of the flow whose conditions do not hold for this project; they are skipped. */
     skippedStepIds: number[];
     status: ProjectStatus;
-    /** null when the project is not active. */
+    /** The step it is on (also while postponed); null when the project is closed. */
     currentStep: ProcessStep | null;
     progressPercent: number;
     stages: ProcessStageProgress[];
@@ -41,6 +44,10 @@ export interface AvailableActions {
     canComplete: boolean;
     canAnswer: boolean;
     canReject: boolean;
+    /** A request (before the project stage) can be put on hold. */
+    canPostpone: boolean;
+    /** A postponed request can be taken back. */
+    canResume: boolean;
     /** Why the user cannot act on the current step; null when they can. */
     blockedReason: string | null;
 }
@@ -64,4 +71,6 @@ export interface AnswerStep {
     answer: 'Yes' | 'No';
     jumpTargetStepId: number | null;
     note: string | null;
+    /** The Talep Ret / Erteleme Formu; required for a "No" that closes a request. */
+    closingDecision?: RequestDecisionForm | null;
 }

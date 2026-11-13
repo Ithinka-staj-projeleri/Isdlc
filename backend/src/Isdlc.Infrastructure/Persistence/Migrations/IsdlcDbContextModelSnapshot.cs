@@ -995,6 +995,76 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Isdlc.Domain.Projects.RequestDecision", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DecidedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateOnly>("DecisionDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Explanation")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReasonOther")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.PrimitiveCollection<string>("Reasons")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateOnly?>("ReevaluationDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("StepRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedById")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("StepRecordId")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedById");
+
+                    b.HasIndex("ProjectId", "DecisionDate");
+
+                    b.ToTable("RequestDecisions");
+                });
+
             modelBuilder.Entity("Isdlc.Domain.QuestionBank.Question", b =>
                 {
                     b.Property<int>("Id")
@@ -1789,6 +1859,36 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("ProcessFlow");
 
                     b.Navigation("ProjectManager");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.Projects.RequestDecision", b =>
+                {
+                    b.HasOne("Isdlc.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Projects.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Process.StepRecord", "StepRecord")
+                        .WithMany()
+                        .HasForeignKey("StepRecordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Project");
+
+                    b.Navigation("StepRecord");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.QuestionBank.Question", b =>

@@ -60,9 +60,18 @@ public static class ProcessProgress
         return status == ProjectStatus.Active ? ProcessStageState.Current : ProcessStageState.Stopped;
     }
 
+    /// <param name="inRequestPhase">The record is a request (before its flow's project stage), so it can be postponed.</param>
     public static AvailableActionsDto GetAvailableActions(
-        ProjectStatus status, StepPermissionInfo? currentStep, UserRole? userRole)
+        ProjectStatus status, StepPermissionInfo? currentStep, UserRole? userRole, bool inRequestPhase = false)
     {
+        if (status == ProjectStatus.Postponed)
+        {
+            return userRole is { } role && CanReject(role)
+                ? new AvailableActionsDto(false, false, false, false, CanResume: true,
+                    "Talep ertelendi; değerlendirmeye geri alınınca bu adımdan devam eder.")
+                : Blocked("Talep ertelendi; Yazılım Departman Yöneticisi değerlendirmeye geri alınca devam eder.");
+        }
+
         if (status != ProjectStatus.Active)
         {
             return Blocked("Proje aktif değil; süreçte işlem yapılamaz.");
@@ -79,16 +88,19 @@ public static class ProcessProgress
         }
 
         var canReject = CanReject(userRole.Value);
+        var canPostpone = canReject && inRequestPhase;
 
         if (!CanActOnStep(currentStep, userRole.Value))
         {
-            return new AvailableActionsDto(false, false, canReject, GetBlockedReason(currentStep));
+            return new AvailableActionsDto(false, false, canReject, canPostpone, false, GetBlockedReason(currentStep));
         }
 
         return new AvailableActionsDto(
             CanComplete: !currentStep.IsDecision,
             CanAnswer: currentStep.IsDecision,
             CanReject: canReject,
+            CanPostpone: canPostpone,
+            CanResume: false,
             BlockedReason: null);
     }
 
@@ -100,7 +112,7 @@ public static class ProcessProgress
     public static bool CanActOnStep(StepPermissionInfo step, UserRole userRole) =>
         userRole == (step.ApproverRole ?? step.ResponsibleRole);
 
-    /// <summary>Only the Software Department Manager can reject a request.</summary>
+    /// <summary>Only the Software Department Manager can reject, postpone or take back a request.</summary>
     public static bool CanReject(UserRole userRole) => userRole == UserRole.SoftwareDepartmentManager;
 
     /// <summary>Why the user cannot complete or answer the step; null when they can.</summary>
@@ -111,10 +123,14 @@ public static class ProcessProgress
     public static string? WhyCannotReject(StepPermissionInfo step, UserRole userRole) =>
         CanReject(userRole) ? null : "Talebi yalnızca Yazılım Departman Yöneticisi reddedebilir.";
 
+    /// <summary>Why the user cannot postpone or take back the request; null when they can.</summary>
+    public static string? WhyCannotDecide(StepPermissionInfo step, UserRole userRole) =>
+        CanReject(userRole) ? null : "Talebi yalnızca Yazılım Departman Yöneticisi erteleyebilir ya da değerlendirmeye geri alabilir.";
+
     /// <summary>Message for a user who cannot act on the step.</summary>
     public static string GetBlockedReason(StepPermissionInfo step) => step.ApproverRole is { } approver
         ? $"Bu adım {approver.ToDisplayName()} tarafından onaylanır."
         : $"Bu adım {step.ResponsibleRole.ToDisplayName()} tarafından yapılır.";
 
-    private static AvailableActionsDto Blocked(string reason) => new(false, false, false, reason);
+    private static AvailableActionsDto Blocked(string reason) => new(false, false, false, false, false, reason);
 }

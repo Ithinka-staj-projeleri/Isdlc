@@ -246,7 +246,7 @@ public class ProcessCommandTests(DatabaseFixture database)
         await using var manager = await SignInAsync(TestProjects.Manager);
 
         var error = await Assert.ThrowsAsync<ConflictException>(async () => await manager.Service.RejectAsync(
-            projectId, new RejectProjectDto { ExpectedStepId = 1, Reason = "Gerekçe" }, default));
+            projectId, new RejectProjectDto { ExpectedStepId = 1, Decision = TestDecisions.Form() }, default));
 
         Assert.Equal("Proje aktif değil; süreçte işlem yapılamaz.", error.Message);
     }
@@ -374,7 +374,13 @@ public class ProcessCommandTests(DatabaseFixture database)
         await using var user = await SignInAsync(answeredBy);
 
         var result = await user.Service.AnswerStepAsync(projectId,
-            new AnswerStepDto { ExpectedStepId = await Step(stepCode, flowCode), Answer = StepAnswer.No }, default);
+            new AnswerStepDto
+            {
+                ExpectedStepId = await Step(stepCode, flowCode),
+                Answer = StepAnswer.No,
+                // Required to close a request (D2); the process improvement flow ignores it.
+                ClosingDecision = TestDecisions.Form(),
+            }, default);
 
         Assert.Equal(outcome, result.Status);
         Assert.Null(result.CurrentStep);
@@ -496,7 +502,7 @@ public class ProcessCommandTests(DatabaseFixture database)
         await using var manager = await SignInAsync(TestProjects.Manager);
 
         var result = await manager.Service.RejectAsync(projectId,
-            new RejectProjectDto { ExpectedStepId = await Step("14"), Reason = "  Bir aydır cevap alınamadı.  " }, default);
+            new RejectProjectDto { ExpectedStepId = await Step("14"), Decision = TestDecisions.Form("  Bir aydır cevap alınamadı.  ") }, default);
 
         Assert.Equal(ProjectStatus.Rejected, result.Status);
         Assert.Null(result.CurrentStep);
@@ -518,7 +524,7 @@ public class ProcessCommandTests(DatabaseFixture database)
         await using var user = await SignInAsync(email);
 
         var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await user.Service.RejectAsync(projectId,
-            new RejectProjectDto { ExpectedStepId = await Step("14"), Reason = "Gerekçe" }, default));
+            new RejectProjectDto { ExpectedStepId = await Step("14"), Decision = TestDecisions.Form() }, default));
 
         Assert.Equal("Talebi yalnızca Yazılım Departman Yöneticisi reddedebilir.", error.Message);
         Assert.Equal(ProjectStatus.Active, (await TestProjects.GetAsync(database, projectId)).Status);

@@ -53,4 +53,16 @@ public interface IProcessService
     /// 403 not the manager, 400 missing reason.
     /// </summary>
     Task<ProjectProcessDto> RejectAsync(int projectId, RejectProjectDto request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Puts a request on hold with the Talep Ret / Erteleme Formu (Software Department Manager only; 400 after the
+    /// request stages). It keeps its current step; nothing can be done on it until it is taken back.
+    /// </summary>
+    Task<ProjectProcessDto> PostponeAsync(int projectId, PostponeProjectDto request, CancellationToken cancellationToken);
+
+    /// <summary>Takes a postponed request back (Software Department Manager only): it is active again on its step.</summary>
+    Task<ProjectProcessDto> ResumeAsync(int projectId, ResumeProjectDto request, CancellationToken cancellationToken);
+
+    /// <summary>The project's filled-in Talep Ret / Erteleme Formları, newest first. 404 when the project does not exist.</summary>
+    Task<IReadOnlyList<RequestDecisionDto>> GetRequestDecisionsAsync(int projectId, CancellationToken cancellationToken);
 }

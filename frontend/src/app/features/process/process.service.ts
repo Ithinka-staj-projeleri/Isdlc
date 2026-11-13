@@ -4,6 +4,7 @@ import { Observable, shareReplay, tap } from 'rxjs';
 import { PagedResult } from '../../shared/models/paged-result';
 import { ProcessFlow, ProcessFlowListItem } from './models/process-stage';
 import { AnswerStep, ProjectProcess, StepRecord } from './models/project-process';
+import { RequestDecision, RequestDecisionForm } from './models/request-decision';
 
 /**
  * Process API. Contract: docs/process-api.md
@@ -52,9 +53,26 @@ export class ProcessService {
         return this.http.post<ProjectProcess>(`${this.url(projectId)}/process/answer`, body);
     }
 
-    /** Only the Software Department Manager; the reason is required. */
-    reject(projectId: number, expectedStepId: number, reason: string): Observable<ProjectProcess> {
-        return this.http.post<ProjectProcess>(`${this.url(projectId)}/process/reject`, { expectedStepId, reason });
+    /** Only the Software Department Manager; with the Talep Ret / Erteleme Formu. */
+    reject(projectId: number, expectedStepId: number, decision: RequestDecisionForm): Observable<ProjectProcess> {
+        return this.http.post<ProjectProcess>(`${this.url(projectId)}/process/reject`, { expectedStepId, decision });
+    }
+
+    /** Only the Software Department Manager, only a request; it waits on its step until taken back. */
+    postpone(
+        projectId: number, expectedStepId: number, decision: RequestDecisionForm, reevaluationDate: string,
+    ): Observable<ProjectProcess> {
+        return this.http.post<ProjectProcess>(`${this.url(projectId)}/process/postpone`, { expectedStepId, decision, reevaluationDate });
+    }
+
+    /** Only the Software Department Manager: a postponed request continues on its step. */
+    resume(projectId: number, expectedStepId: number, note: string | null): Observable<ProjectProcess> {
+        return this.http.post<ProjectProcess>(`${this.url(projectId)}/process/resume`, { expectedStepId, note });
+    }
+
+    /** The project's Talep Ret / Erteleme Formları, newest first. */
+    getRequestDecisions(projectId: number): Observable<RequestDecision[]> {
+        return this.http.get<RequestDecision[]>(`${this.url(projectId)}/request-decisions`);
     }
 
     private url(projectId: number): string {

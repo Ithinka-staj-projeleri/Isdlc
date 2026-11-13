@@ -69,6 +69,11 @@ h3 {
         background: #dcf1e3;
         color: var(--ok);
     }
+
+    &.postponed {
+        background: #fbefd9;
+        color: var(--warn);
+    }
 }
 
 .layout {
@@ -283,3 +288,4 @@ h3 {
         }
     }
 }
+

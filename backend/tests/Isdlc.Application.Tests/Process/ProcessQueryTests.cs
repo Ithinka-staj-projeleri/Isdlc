@@ -61,7 +61,7 @@ public class ProcessQueryTests(DatabaseFixture database)
     {
         var process = await ProcessOfAsync("16");
 
-        Assert.Equal(new ProcessFlowSummaryDto(ProcessFlowCodes.NewRequest, "Yeni Yazılım Projesi"), process.Flow);
+        Assert.Equal(new ProcessFlowSummaryDto(ProcessFlowCodes.NewRequest, "Yeni Yazılım Projesi", ProcessFlowKind.Request), process.Flow);
         Assert.Empty(process.SkippedStepIds);
     }
 
@@ -116,11 +116,15 @@ public class ProcessQueryTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task ProjectProcess_ApprovalStep_ManagerCanAnswerAndReject()
+    public async Task ProjectProcess_ApprovalStep_ManagerCanAnswerRejectAndPostpone()
     {
+        // 16 waits on 10 (stage 2): still a request, so it can also be postponed.
         var actions = (await ProcessOfAsync("16", TestProjects.Manager)).AvailableActions;
 
-        Assert.Equal(new AvailableActionsDto(CanComplete: false, CanAnswer: true, CanReject: true, BlockedReason: null), actions);
+        Assert.Equal(
+            new AvailableActionsDto(
+                CanComplete: false, CanAnswer: true, CanReject: true, CanPostpone: true, CanResume: false, BlockedReason: null),
+            actions);
     }
 
     [Fact]

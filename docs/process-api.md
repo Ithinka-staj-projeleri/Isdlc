@@ -82,7 +82,21 @@ Türü `Request` olmayan akışların kayıtları iki listede de görünmez.
 Bugün `ProjectService` ve `DashboardService` içindeki "aşama 1–3 taleptir" sabiti (`LastRequestStageOrder = 3`) bu kurala
 çevrilir.
 
-## Uç noktalar
+## Ret / erteleme kararı (Faz 4, D2)
+
+Kaynak: şirketin Talep Ret / Erteleme Formu (ISDLC-Form-Analiz-007, v1.0). Formun "Talep bilgileri" (Proje No ve adı, talep tarihi,
+talep sahibi) projede zaten var; form kaydı yalnızca karar, gerekçe ve erteleme bilgilerini tutar (`RequestDecision`).
+
+| # | Konu | Karar |
+| --- | --- | --- |
+| D2-1 | Form nerede doldurulur? | (1) Yönetici "Talebi reddet" dediğinde, (2) "Talebi ertele" dediğinde, (3) talebi kapatan "Hayır" cevabında: yeni projede 4 (müşteri uygun değil → Reddedildi) ve 11 (teklif kabul edilmedi → Kaybedildi). (3)'te karar her zaman "Ret"tir. Süreç iyileştirme gibi talep olmayan akışlarda kapatan "Hayır" form istemez |
+| D2-2 | Gerekçe kategorisi | Formdaki 10 seçenekten **bir veya daha fazlası** seçilir (kullanıcı kararı). "Diğer" seçilirse açıklaması zorunludur |
+| D2-3 | Kararı veren | Serbest metin (kişi ya da kurul); ekran formu dolduran kullanıcının adını önerir. Formu kimin doldurduğu ayrıca kayıtlıdır |
+| D2-4 | Erteleme ne yapar? | Kayıt yeni `Postponed` (Ertelendi) durumuna geçer ve **mevcut adımında bekler**; süreçte işlem yapılamaz. Yönetici "Değerlendirmeye geri al" deyince `Active` olur ve aynı adımdan devam eder. Ertelenen talep Talepler listesinde kalır |
+| D2-5 | Neler ertelenebilir? | Yalnızca **talep**: talep akışındaki bir kayıt, akışın proje bölümünden önce (yeni projede bölüm 1–2; ek geliştirmenin proje bölümü olmadığı için her adımı). Projeye dönüşmüş kayıt ertelenmez, reddedilir (400) |
+| D2-6 | Kim yapar? | Ret, erteleme ve geri alma yalnızca Yazılım Departman Yöneticisi (403). Talebi kapatan "Hayır"ı adımın kendi rolü verir (4: İş Analisti, 11: Satış) |
+| D2-7 | Kayıtlar | Form, kararın süreç kaydıyla (`StepRecord`: `Rejected`, `Postponed` ya da kapatan `No`) birlikte, tek kayıtta yazılır ve değişmez. Bir talebin birden çok formu olabilir (ertelendi, geri alındı, sonra reddedildi). Gerekçe açıklaması süreç kaydının notu olarak da görünür |
+
 
 | İstek | Açıklama | Başarılı cevap |
 | --- | --- | --- |
@@ -93,7 +107,10 @@ Bugün `ProjectService` ve `DashboardService` içindeki "aşama 1–3 taleptir" 
 | `GET /api/v1/projects/{projectId}/step-records` | Süreç geçmişi (sayfalı) | `200` `PagedResult<StepRecordDto>` |
 | `POST /api/v1/projects/{projectId}/process/complete` | Karar olmayan mevcut adımı tamamlar | `200` `ProjectProcessDto` |
 | `POST /api/v1/projects/{projectId}/process/answer` | Mevcut karar adımına Evet/Hayır cevabı verir | `200` `ProjectProcessDto` |
-| `POST /api/v1/projects/{projectId}/process/reject` | Talebi yönetici kararıyla reddeder | `200` `ProjectProcessDto` |
+| `POST /api/v1/projects/{projectId}/process/reject` | Talebi yönetici kararıyla reddeder (Talep Ret / Erteleme Formu ile) | `200` `ProjectProcessDto` |
+| `POST /api/v1/projects/{projectId}/process/postpone` | Talebi erteler: `Postponed`, aynı adımda bekler (D2) | `200` `ProjectProcessDto` |
+| `POST /api/v1/projects/{projectId}/process/resume` | Ertelenen talebi değerlendirmeye geri alır: `Active`, aynı adımdan devam (D2) | `200` `ProjectProcessDto` |
+| `GET /api/v1/projects/{projectId}/request-decisions` | Projenin Talep Ret / Erteleme Formları, en yeni önce (D2) | `200` `RequestDecisionDto[]` |
 
 İşlem uç noktaları (`POST`) güncel süreç durumunu döndürür; ekranın ayrıca `GET` yapmasına gerek kalmaz.
 
@@ -167,6 +184,8 @@ Bugün `ProjectService` ve `DashboardService` içindeki "aşama 1–3 taleptir" 
     "canComplete": false,
     "canAnswer": true,
     "canReject": false,
+    "canPostpone": false,  // D2: yalnızca yönetici, yalnızca talep aşamasında
+    "canResume": false,    // D2: ertelenmiş talepte yalnızca yönetici
     "blockedReason": null
   }
 }
@@ -210,8 +229,31 @@ Sıralama: en yeni kayıt önce.
 // AnswerStepDto — POST .../process/answer
 { "expectedStepId": 27, "answer": "No", "jumpTargetStepId": 17, "note": "Yalnızca fiyat revize edilecek." }
 
+// RequestDecisionFormDto — Talep Ret / Erteleme Formu (reject, postpone ve talebi kapatan "Hayır" içinde)
+{
+  "decisionDate": "2026-11-13",
+  "decidedBy": "Yazılım Departman Yöneticisi",      // kişi ya da kurul
+  "reasons": ["CapacityShortage", "Prioritization"], // en az bir; "Other" ise reasonOther zorunlu
+  "reasonOther": null,
+  "explanation": "Ekip yıl sonuna kadar müşteri projelerinde."
+}
+
 // RejectProjectDto — POST .../process/reject
-{ "expectedStepId": 5, "reason": "Bir aydır talep sahibinden cevap alınamadı (2.3)." }
+{ "expectedStepId": 5, "decision": { /* RequestDecisionFormDto */ } }
+
+// PostponeProjectDto — POST .../process/postpone
+{ "expectedStepId": 3, "decision": { /* RequestDecisionFormDto */ }, "reevaluationDate": "2027-01-15" }
+
+// ResumeProjectDto — POST .../process/resume
+{ "expectedStepId": 3, "note": "Kapasite açıldı." }
+
+// AnswerStepDto — talebi kapatan "Hayır" (yeni proje 4 ve 11)
+{ "expectedStepId": 4, "answer": "No", "closingDecision": { /* RequestDecisionFormDto */ } }
+
+// RequestDecisionDto — GET .../request-decisions
+{ "id": 7, "decision": "Postpone", "decisionDate": "2026-11-13", "decidedBy": "Yazılım Departman Yöneticisi",
+  "reasons": ["CapacityShortage"], "reasonOther": null, "explanation": "…", "reevaluationDate": "2027-01-15",
+  "stepCode": "3", "recordedBy": { "id": 2, "fullName": "Mehmet Kaya" }, "recordedAt": "2026-11-13T10:00:00Z" }
 ```
 
 | Alan | Kural |
@@ -220,7 +262,9 @@ Sıralama: en yeni kayıt önce.
 | `answer` | Zorunlu. `StepAnswer` enum'u: `Yes`, `No`. Gönderilmezse 400 (sessizce `Yes` sayılmaz) |
 | `jumpTargetStepId` | Yalnızca `answer = No` ve adımın dönüş seçenekleri varken zorunlu ve `currentStep.noJumps[].targetStepId` değerlerinden biri olmalı; aksi halde gönderilmez |
 | `note` | İsteğe bağlı, en fazla 1000 karakter. Baştaki ve sondaki boşluklar kırpılır; boşsa kaydedilmez |
-| `reason` | Zorunlu (yalnızca boşluk da kabul edilmez), en fazla 1000 karakter; kırpılarak `StepRecord.Note` alanına yazılır |
+| `decision` (reject, postpone) | Zorunlu. `decisionDate` zorunlu; `decidedBy` zorunlu, en fazla 200; `reasons` en az bir (tekrar eden bir kez sayılır); `reasonOther` "Other" seçiliyse zorunlu, en fazla 200, değilse saklanmaz; `explanation` zorunlu, en fazla 2000, kırpılarak `StepRecord.Note`'a da yazılır |
+| `reevaluationDate` (postpone) | Zorunlu; `decisionDate`'ten sonra olmalı |
+| `closingDecision` (answer) | Talep akışında kapatan "Hayır"da zorunlu (400: "Talep kapanacağı için Talep Ret / Erteleme Formu doldurulmalıdır …"); diğer cevaplarda dikkate alınmaz |
 
 **Kontrollerin sırası** (üç işlemde aynı): proje var mı (404) → aktif mi (409) → `expectedStepId` mevcut adım mı (409)
 → kullanıcı bu işlemi yapabilir mi (403) → istek bu adıma uygun mu (400) → kaydet (`RowVersion` çakışması 409).
@@ -232,7 +276,7 @@ Sıralama: en yeni kayıt önce.
 | Okuma uç noktaları | Giriş yapmış her kullanıcı |
 | `complete` / `answer` — `ApproverRole` dolu adım | Yalnızca `ApproverRole` rolündeki kullanıcı |
 | `complete` / `answer` — diğer adımlar | Yalnızca adımın `ResponsibleRole` rolündeki kullanıcı |
-| `reject` | Yalnızca `SoftwareDepartmentManager` |
+| `reject`, `postpone`, `resume` | Yalnızca `SoftwareDepartmentManager` (`postpone` ayrıca yalnızca talep aşamasında; D2-5) |
 
 > **Ekip kararı bekleniyor:** Prototipte onay adımları dışında herkes her adımı işleyebiliyordu.
 > Uygulanan kural daha sıkı (yalnızca sorumlu rol). Daha esnek bir kural istenirse
@@ -302,7 +346,9 @@ public interface INotificationService
 | --- | --- | --- |
 | Proje `ApproverRole`'ü olan bir adıma geldi (3.2, 4.5, 5.1) | O roldeki kullanıcılar | "ISDLC-2026-016 · 4.5 onayınızı bekliyor." |
 | "Hayır" ile önceki bir adıma dönüldü | Projenin iş analisti | "ISDLC-2026-016 · 4.7 adımından 4.1 adımına dönüldü." |
-| Proje kapandı (`Closed`, `Rejected`, `Lost`, `Redirected`) | Projenin iş analisti ve proje yöneticisi (atanmışsa) | "ISDLC-2026-011 kapandı: Kaybedildi." |
+| Proje kapandı (`Closed`, `Rejected`, `Lost`, `Redirected`) | Projenin iş analisti ve proje yöneticisi (atanmışsa) | "11 kapandı: Kaybedildi." |
+| Talep ertelendi (D2) | Projenin iş analisti ve proje yöneticisi | "19 ertelendi; yeniden değerlendirme tarihi 15.01.2027." |
+| Ertelenen talep değerlendirmeye geri alındı (D2) | Projenin iş analisti ve proje yöneticisi | "19 yeniden değerlendirmeye alındı; 3. adımdan devam ediyor." |
 
 Bildirimler kayıt başarıyla kaydedildikten sonra gönderilir. Kullanıcı bildirimi üst bardaki zilde görür;
 kendi yaptığı işlem için bildirim almaz.
