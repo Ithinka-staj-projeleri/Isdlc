@@ -32,6 +32,7 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.HasOne(x => x.ProjectManager).WithMany().HasForeignKey(x => x.ProjectManagerId);
         builder.HasOne(x => x.CurrentStep).WithMany().HasForeignKey(x => x.CurrentStepId);
         builder.HasOne(x => x.ProcessFlow).WithMany(x => x.Projects).HasForeignKey(x => x.ProcessFlowId);
+        builder.HasOne(x => x.ParentProject).WithMany().HasForeignKey(x => x.ParentProjectId);
 
         builder.ConfigureAuditFields();
     }

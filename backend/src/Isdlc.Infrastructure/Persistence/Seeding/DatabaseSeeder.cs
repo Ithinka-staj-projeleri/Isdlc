@@ -282,17 +282,32 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         }
 
         var file = Read<SampleProjectsFile>("sample-projects.json");
-        var flow = await db.ProcessFlows.SingleAsync(f => f.Code == ProcessFlowCodes.NewRequest, cancellationToken);
-        var steps = await db.ProcessSteps
-            .Where(s => s.ProcessFlowId == flow.Id)
-            .OrderBy(s => s.Order)
-            .ToListAsync(cancellationToken);
-        var stepsByCode = steps.ToDictionary(s => s.Code);
+        // New projects follow the new software project flow; add-ons (with a parent) the add-on flow.
+        var flows = await db.ProcessFlows
+            .Where(f => f.Code == ProcessFlowCodes.NewRequest || f.Code == ProcessFlowCodes.AddOn)
+            .ToDictionaryAsync(f => f.Code, cancellationToken);
+        var stepsByFlow = (await db.ProcessSteps
+                .Where(s => s.ProcessFlowId == flows[ProcessFlowCodes.NewRequest].Id
+                    || s.ProcessFlowId == flows[ProcessFlowCodes.AddOn].Id)
+                .OrderBy(s => s.Order)
+                .ToListAsync(cancellationToken))
+            .GroupBy(s => s.ProcessFlowId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var projectsByCode = new Dictionary<string, Project>();
         var users = await db.Users.OrderBy(u => u.Id).ToListAsync(cancellationToken);
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
         foreach (var seed in file.Projects)
         {
+            var parent = seed.ParentCode is null
+                ? null
+                : projectsByCode.GetValueOrDefault(seed.ParentCode)
+                    ?? throw new InvalidOperationException(
+                        $"Sample project {seed.Code}: parent {seed.ParentCode} must be listed before it.");
+            var flow = flows[parent is null ? ProcessFlowCodes.NewRequest : ProcessFlowCodes.AddOn];
+            var steps = stepsByFlow[flow.Id];
+            var stepsByCode = steps.ToDictionary(s => s.Code);
+
             var businessAnalyst = FindUser(users, seed.BusinessAnalystEmail, seed.Code);
             var projectManager = FindUser(users, seed.ProjectManagerEmail, seed.Code);
             var createdById = businessAnalyst?.Id ?? FirstUserWithRole(users, UserRole.BusinessAnalyst).Id;
@@ -323,6 +338,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 Priority = seed.Priority,
                 Status = seed.Status,
                 ProcessFlowId = flow.Id,
+                ParentProject = parent,
                 RequiresOffer = seed.RequiresOffer,
                 CurrentStepId = isActive ? markerStep.Id : null,
                 RequestDate = seed.RequestDate,
@@ -364,6 +380,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             }
 
             db.Projects.Add(project);
+            projectsByCode[seed.Code] = project;
         }
 
         await db.SaveChangesAsync(cancellationToken);

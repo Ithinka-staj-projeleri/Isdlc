@@ -1,0 +1,47 @@
+@use '../../../shared/styles/ui' as ui;
+
+:host {
+  display: block;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.note {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.button {
+  @include ui.button;
+  text-decoration: none;
+}
+
+.table-wrap {
+  @include ui.card;
+  overflow-x: auto;
+}
+
+table {
+  @include ui.table;
+
+  tbody tr {
+    cursor: pointer;
+
+    &:hover {
+      background: var(--bg);
+    }
+  }
+}
+
+.code,
+.step {
+  @include ui.code;
+  white-space: nowrap;
+}

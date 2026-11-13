@@ -35,6 +35,12 @@ const dueNotBeforeRequest: ValidatorFn = (group: AbstractControl): ValidationErr
   return requested && due && due < requested ? { dueBeforeRequest: true } : null;
 };
 
+/** An add-on needs its project (same as the API). */
+const addOnHasProject: ValidatorFn = (group: AbstractControl): ValidationErrors | null =>
+  group.get('requestType')?.value === 'AdditionalModule' && !group.get('parentProjectId')?.value
+    ? { parentProjectMissing: true }
+    : null;
+
 /** "Diğer: ____" has to be filled in when the channel is Other (same as the API). */
 const otherChannelText: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
   const channel = group.get('requestChannel')?.value as RequestChannel | null;
@@ -110,7 +116,15 @@ export class ProjectFormComponent {
   private readonly _auth = inject(AuthService);
 
   readonly channelOptions = Object.entries(REQUEST_CHANNEL_LABELS) as [RequestChannel, string][];
-  readonly typeOptions = Object.entries(REQUEST_TYPE_LABELS) as [RequestType, string][];
+  /**
+   * Talep türü on the edit form. New project and add-on are different records on different flows, so a new project
+   * cannot become an add-on (and the other way round); the type of an add-on is fixed.
+   */
+  readonly typeOptions = computed(() =>
+    (Object.entries(REQUEST_TYPE_LABELS) as [RequestType, string][]).filter(
+      ([type]) => (type === 'AdditionalModule') === !!this.existing()?.parentProject,
+    ),
+  );
 
   /** Set on /projects/:projectId/edit; absent on /requests/new. */
   readonly projectId = toSignal(
@@ -118,6 +132,19 @@ export class ProjectFormComponent {
     { requireSync: true },
   );
   readonly isEdit = computed(() => this.projectId() !== null);
+
+  /** /requests/new?parentProjectId=14 (from a project's "Ek Geliştirmeler" tab) opens an add-on of that project. */
+  private readonly _parentFromLink = toSignal(
+    this._route.queryParamMap.pipe(map((params) => Number(params.get('parentProjectId')) || null)),
+    { requireSync: true },
+  );
+
+  /** Projects an add-on can be opened on, for the "İlgili proje" list. Loaded only for a new request. */
+  private readonly _parents = rxResource({
+    params: () => (this.isEdit() ? undefined : true),
+    stream: () => this._projectService.list({ acceptsAddOns: true, pageSize: 100 }).pipe(map((page) => page.items)),
+  });
+  readonly parents = computed(() => (this._parents.hasValue() ? this._parents.value() : []));
 
   /** The project being edited. Not loaded for a new request (params undefined = idle). */
   private readonly _existing = rxResource({
@@ -183,6 +210,7 @@ export class ProjectFormComponent {
       // A new request shows only the company form; the fields below start with what fits a new request in Talepler
       // and can be changed on the edit form (the offer only until step 4).
       requestType: this._fb.control<RequestType | null>('NewProject', Validators.required),
+      parentProjectId: this._fb.control<number | null>(null),
       // "Offer" skips nothing, so it is the safe start; "no offer" is set on the edit form before step 4.
       requiresOffer: this._fb.control<boolean | null>(true, Validators.required),
       customerName: this._fb.nonNullable.control('', [Validators.required, notBlank, Validators.maxLength(200)]),
@@ -197,11 +225,28 @@ export class ProjectFormComponent {
       projectManagerId: this._fb.control<number | null>(null),
       dueDate: this._fb.control<string | null>(null),
     },
-    { validators: [dueNotBeforeRequest, otherChannelText] },
+    { validators: [dueNotBeforeRequest, otherChannelText, addOnHasProject] },
   );
 
   readonly saving = signal(false);
   private readonly _submitted = signal(false);
+
+  /** Follows the form, so the template can show the add-on fields. */
+  readonly requestType = toSignal(this.form.controls.requestType.valueChanges, {
+    initialValue: this.form.controls.requestType.value,
+  });
+  readonly isAddOn = computed(() => this.requestType() === 'AdditionalModule');
+  private readonly _parentId = toSignal(this.form.controls.parentProjectId.valueChanges, { initialValue: null });
+
+  /** What "Proje No" shows before saving: the number comes on save; an add-on shows its project's number. */
+  readonly codePreview = computed(() => {
+    const existing = this.existing();
+    if (existing) {
+      return existing.code;
+    }
+    const parent = this.isAddOn() ? this.parents().find((p) => p.id === Number(this._parentId())) : undefined;
+    return parent ? `${parent.code} / EG-…` : 'Otomatik';
+  });
 
   constructor() {
     // Edit: fill the form once the project has loaded; lock it if the project is no longer active.
@@ -218,6 +263,7 @@ export class ProjectFormComponent {
         requestChannelOther: project.requestChannelOther ?? '',
         source: project.source,
         requestType: project.requestType,
+        parentProjectId: project.parentProject?.id ?? null,
         requiresOffer: project.requiresOffer,
         customerName: project.customerName,
         requesterName: project.requesterName,
@@ -230,6 +276,27 @@ export class ProjectFormComponent {
       });
       if (project.status !== 'Active') {
         this.form.disable();
+      }
+    });
+
+    // An add-on keeps its type; its project is shown, not edited.
+    effect(() => {
+      if (this.existing()?.parentProject) {
+        this.form.controls.requestType.disable();
+      }
+    });
+
+    // Opened from a project's "Ek Geliştirmeler" tab: an add-on of that project.
+    const parentFromLink = this._parentFromLink();
+    if (!this.isEdit() && parentFromLink) {
+      this.form.patchValue({ requestType: 'AdditionalModule', parentProjectId: parentFromLink });
+    }
+
+    // Choosing the project fills in the talep sahibi of that project, if it is still empty.
+    effect(() => {
+      const parent = this.parents().find((p) => p.id === Number(this._parentId()));
+      if (this.isAddOn() && parent && !this.form.controls.customerName.value.trim()) {
+        this.form.controls.customerName.setValue(parent.customerName);
       }
     });
 
@@ -271,6 +338,17 @@ export class ProjectFormComponent {
     }
     return this.form.errors?.['otherChannelMissing'] && (other.touched || this._submitted())
       ? 'Diğer talep kanalı yazılmalıdır.'
+      : null;
+  }
+
+  /** An add-on without its project: a form rule shown under the project list. */
+  parentProjectError(): string | null {
+    const parent = this.form.controls.parentProjectId;
+    if (parent.errors?.['server']) {
+      return parent.errors['server'] as string;
+    }
+    return this.form.errors?.['parentProjectMissing'] && (parent.touched || this._submitted())
+      ? 'Ek geliştirmenin ait olduğu proje seçilmelidir.'
       : null;
   }
 
@@ -330,6 +408,9 @@ export class ProjectFormComponent {
       requestChannelOther: value.requestChannel === 'Other' ? textOrNull(value.requestChannelOther) : null,
       source: value.source!,
       requestType: value.requestType!,
+      // A <select> gives text; the API wants a number or null. Only an add-on has a project.
+      parentProjectId:
+        value.requestType === 'AdditionalModule' && value.parentProjectId ? Number(value.parentProjectId) : null,
       requiresOffer: value.requiresOffer!,
       customerName: value.customerName.trim(),
       requesterName: value.requesterName.trim(),

@@ -11,8 +11,8 @@
   } @else {
     <h2>Yeni talep</h2>
     <p class="hint">
-      Talep Kayıt Formu. Kaydedildiğinde otomatik bir Proje No alır ve sürecin ilk adımında ("Talep alınır ve Proje No
-      verilir") başlar.
+      Talep Kayıt Formu. Yeni yazılım projesi kaydedildiğinde otomatik bir Proje No alır; ek geliştirme, ait olduğu
+      projenin numarasıyla (ör. 14 / EG-01) ek geliştirme akışında başlar.
     </p>
   }
 </header>
@@ -27,6 +27,53 @@
 }
 
 <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <!-- Which flow the request follows: a new project, or an add-on of an existing project (docs/projects-api.md, D3). -->
+  @if (!isEdit()) {
+    <section class="card">
+      <h3>Talep Konusu</h3>
+
+      <fieldset class="field choice wide">
+        <legend>Talep neyle ilgili? *</legend>
+        <div class="options">
+          <label class="check">
+            <input type="radio" formControlName="requestType" value="NewProject" />
+            <span>Yeni yazılım projesi</span>
+          </label>
+          <label class="check">
+            <input type="radio" formControlName="requestType" value="AdditionalModule" />
+            <span>Mevcut projeye ek geliştirme</span>
+          </label>
+        </div>
+      </fieldset>
+
+      @if (isAddOn()) {
+        <label class="field wide">
+          <span>İlgili proje *</span>
+          <select formControlName="parentProjectId" [class.invalid]="parentProjectError()">
+            <option [ngValue]="null" disabled>Proje Kayıt Listesi'nden seçin</option>
+            @for (parent of parents(); track parent.id) {
+              <option [ngValue]="parent.id">{{ parent.code }} · {{ parent.name }} ({{ parent.customerName }})</option>
+            }
+          </select>
+          @if (parentProjectError()) {
+            <small class="error">{{ parentProjectError() }}</small>
+          }
+          <small class="muted">Yalnızca kabul edilmiş ya da tamamlanmış yeni yazılım projeleri listelenir.</small>
+        </label>
+      }
+    </section>
+  } @else if (existing()?.parentProject; as parent) {
+    <section class="card">
+      <h3>Talep Konusu</h3>
+      <div class="field wide">
+        <span class="label">Ek geliştirme · ait olduğu proje</span>
+        <p class="readonly">
+          <a [routerLink]="['/projects', parent.id]">{{ parent.code }} · {{ parent.name }}</a>
+        </p>
+      </div>
+    </section>
+  }
+
   <!-- The fields of the company's Talep Kayıt Formu, in its order and words. -->
   <section class="card">
     <h3>Talep Kayıt Bilgileri</h3>
@@ -34,7 +81,7 @@
     <div class="field wide">
       <label for="project-name">Proje No ve Adı *</label>
       <div class="with-prefix">
-        <span class="prefix" title="Proje No">{{ existing()?.code ?? 'Otomatik' }}</span>
+        <span class="prefix" title="Proje No">{{ codePreview() }}</span>
         <input
           id="project-name"
           formControlName="name"
@@ -175,7 +222,7 @@
       <span>Talep türü *</span>
       <select formControlName="requestType" [class.invalid]="errorFor('requestType')">
         <option [ngValue]="null" disabled>Seçin</option>
-        @for (option of typeOptions; track option[0]) {
+        @for (option of typeOptions(); track option[0]) {
           <option [ngValue]="option[0]">{{ option[1] }}</option>
         }
       </select>

@@ -44,9 +44,18 @@ export interface ProjectListItem {
   dueDate: string | null;
 }
 
+/** The project an add-on (ek geliştirme) belongs to. */
+export interface ParentProject {
+  id: number;
+  code: string;
+  name: string;
+}
+
 /** Project detail (GET /api/v1/projects/{id}). */
 export interface Project extends ProjectListItem {
   description: string;
+  /** Set only for an add-on (ek geliştirme); its code is then "14 / EG-01". */
+  parentProject: ParentProject | null;
   source: RequestSource;
   requestChannel: RequestChannel;
   /** What "Diğer" means; only for the Other channel. */
@@ -77,6 +86,8 @@ export interface ProjectInput {
   requestChannel: RequestChannel;
   requestChannelOther: string | null;
   requestType: RequestType;
+  /** Ek geliştirme: the project it belongs to; required exactly when requestType is AdditionalModule. Never changes. */
+  parentProjectId: number | null;
   customerName: string;
   requesterName: string;
   requesterContact: string | null;
@@ -96,6 +107,10 @@ export interface ProjectFilter {
   phase?: ProjectPhase;
   search?: string;
   businessAnalystId?: number;
+  /** Only the add-ons of this project. */
+  parentProjectId?: number;
+  /** Only projects an add-on can be opened on (accepted or closed new software projects). */
+  acceptsAddOns?: boolean;
   page?: number;
   pageSize?: number;
 }

@@ -152,6 +152,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Öncelik | `ProjectPriority` |
 | Kullanıcı | `User` |
 | Rol | `UserRole` (kullanıcı başına tek rol) |
+| Ek geliştirme (devam eden projeye ek modül / geliştirme) ve ait olduğu proje | `Project` (`RequestType.AdditionalModule`, `Project.ParentProjectId`; kodu `14 / EG-01`) |
 | İş akışı (yeni yazılım projesi, ek geliştirme, süreç iyileştirme, kaynak planlama, faturalama) | `ProcessFlow` (`Project.ProcessFlowId`; türü `ProcessFlowKind`: `Request`, `Improvement`, `ResourcePlanning`, `Billing`) |
 | Aşama (akıştaki "bölüm") | `ProcessStage` |
 | Adım | `ProcessStep` |

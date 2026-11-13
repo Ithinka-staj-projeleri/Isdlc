@@ -20,6 +20,18 @@ public class ProjectService(
     /// <summary>The first try plus 3 retries when another request took the same Proje No at the same moment.</summary>
     private const int MaxCodeAttempts = 4;
 
+    /// <summary>
+    /// Projects an add-on can be opened on: new software projects that have been accepted (active in a project stage)
+    /// or are closed. A waiting request, a rejected, lost or redirected one, and an add-on itself cannot have add-ons.
+    /// </summary>
+    private static readonly Expression<Func<Project, bool>> AcceptsAddOns = p =>
+        p.ProcessFlow.Code == ProcessFlowCodes.NewRequest
+        && (p.Status == ProjectStatus.Closed
+            || (p.Status == ProjectStatus.Active
+                && p.CurrentStep != null
+                && p.ProcessFlow.ProjectStageOrder != null
+                && p.CurrentStep.ProcessStage.Order >= p.ProcessFlow.ProjectStageOrder));
+
     public async Task<PagedResult<ProjectListItemDto>> ListAsync(
         ProjectFilter filter, PageRequest pageRequest, CancellationToken cancellationToken)
     {
@@ -53,11 +65,14 @@ public class ProjectService(
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            // Proje No must match exactly ("14" does not find 114); the database collation ignores case, so "portal"
-            // also finds "Portal".
+            // Proje No must match exactly ("14" does not find 114) and also finds the project's add-ons ("14 / EG-01");
+            // the database collation ignores case, so "portal" also finds "Portal".
             var search = filter.Search.Trim();
             query = query.Where(p =>
-                p.Code == search || p.Name.Contains(search) || p.CustomerName.Contains(search));
+                p.Code == search
+                || (p.ParentProject != null && p.ParentProject.Code == search)
+                || p.Name.Contains(search)
+                || p.CustomerName.Contains(search));
         }
 
         if (filter.BusinessAnalystId is { } analystId)
@@ -65,11 +80,24 @@ public class ProjectService(
             query = query.Where(p => p.BusinessAnalystId == analystId);
         }
 
+        if (filter.ParentProjectId is { } parentId)
+        {
+            query = query.Where(p => p.ParentProjectId == parentId);
+        }
+
+        if (filter.AcceptsAddOns == true)
+        {
+            query = query.Where(AcceptsAddOns);
+        }
+
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query
-            // Newest request first. Longer numbers first, so "1000" comes before "999".
-            .OrderByDescending(p => p.Code.Length)
+            // Newest project first, by Proje No; an add-on sits with its project ("14 / EG-02", "14 / EG-01", "14").
+            // Longer numbers first, so "1000" comes before "999".
+            .OrderByDescending(p => (p.ParentProject != null ? p.ParentProject.Code : p.Code).Length)
+            .ThenByDescending(p => p.ParentProject != null ? p.ParentProject.Code : p.Code)
+            .ThenByDescending(p => p.Code.Length)
             .ThenByDescending(p => p.Code)
             .ApplyPaging(pageRequest)
             .Select(p => new ProjectListItemDto(
@@ -116,9 +144,13 @@ public class ProjectService(
 
         await ValidatePeopleAsync(request.BusinessAnalystId, request.ProjectManagerId, cancellationToken);
 
+        // An add-on (ek geliştirme) belongs to a project and follows the add-on flow; every other request is a new project.
+        var parent = request.ParentProjectId is { } parentId ? await FindAddOnParentAsync(parentId, cancellationToken) : null;
+        var flowCode = parent is null ? ProcessFlowCodes.NewRequest : ProcessFlowCodes.AddOn;
+
         // Agreed with Process: a new request starts Active at the first step of its flow whose conditions hold.
         var flowId = await dbContext.ProcessFlows
-            .Where(f => f.Code == ProcessFlowCodes.NewRequest)
+            .Where(f => f.Code == flowCode)
             .Select(f => f.Id)
             .SingleAsync(cancellationToken);
         var flowSteps = await dbContext.ProcessSteps
@@ -127,14 +159,18 @@ public class ProjectService(
                 s.Id, s.Order, new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel)))
             .ToListAsync(cancellationToken);
 
-        var project = new Project { Status = ProjectStatus.Active, ProcessFlowId = flowId };
+        var project = new Project { Status = ProjectStatus.Active, ProcessFlowId = flowId, ParentProjectId = parent?.Id };
         ApplyContent(project, request);
         project.CurrentStepId = StepConditions.FirstStepId(
                 flowSteps, new ConditionContext(project.Source, project.RequiresOffer, project.Level))
-            ?? throw new InvalidOperationException($"Flow {ProcessFlowCodes.NewRequest} has no step for this request.");
+            ?? throw new InvalidOperationException($"Flow {flowCode} has no step for this request.");
         dbContext.Projects.Add(project);
 
-        await SaveWithNewCodeAsync(project, flowId, cancellationToken);
+        await SaveWithNewCodeAsync(project, parent is null
+            ? async () => ProjectCodes.Format(ProjectCodes.NextNumber(await HighestCodeAsync(flowId, cancellationToken)))
+            : async () => ProjectCodes.FormatAddOn(
+                parent.Code, ProjectCodes.NextAddOnNumber(await HighestAddOnCodeAsync(parent.Id, cancellationToken))),
+            cancellationToken);
         await NotifyAssignedPeopleAsync(project, previousAnalystId: null, previousManagerId: null, userId, cancellationToken);
 
         return await GetAsync(project.Id, cancellationToken);
@@ -152,6 +188,14 @@ public class ProjectService(
         if (project.Status != ProjectStatus.Active)
         {
             throw new ConflictException("Proje aktif değil; bilgileri değiştirilemez.");
+        }
+
+        // The record stays what it was opened as: a new project or an add-on of the same project.
+        if (request.ParentProjectId != project.ParentProjectId)
+        {
+            throw new BusinessRuleException(project.ParentProjectId is null
+                ? "Yeni yazılım projesi sonradan ek geliştirmeye çevrilemez."
+                : "Ek geliştirmenin ait olduğu proje değiştirilemez.");
         }
 
         await ValidatePeopleAsync(request.BusinessAnalystId, request.ProjectManagerId, cancellationToken);
@@ -231,6 +275,32 @@ public class ProjectService(
         }
     }
 
+    private sealed record AddOnParent(int Id, string Code);
+
+    /// <summary>The project an add-on is opened on; 400 when it does not exist or cannot have add-ons.</summary>
+    private async Task<AddOnParent> FindAddOnParentAsync(int parentId, CancellationToken cancellationToken)
+    {
+        var parent = await dbContext.Projects
+            .AsNoTracking()
+            .Where(p => p.Id == parentId)
+            .Select(p => new { p.Id, p.Code, FlowCode = p.ProcessFlow.Code })
+            .SingleOrDefaultAsync(cancellationToken)
+            ?? throw new BusinessRuleException("Ek geliştirmenin ait olduğu proje bulunamadı.");
+
+        if (parent.FlowCode != ProcessFlowCodes.NewRequest)
+        {
+            throw new BusinessRuleException("Ek geliştirme yalnızca bir yeni yazılım projesine açılabilir.");
+        }
+
+        if (!await dbContext.Projects.Where(p => p.Id == parentId).AnyAsync(AcceptsAddOns, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "Ek geliştirme yalnızca kabul edilmiş (Projeler'deki) ya da tamamlanmış bir projeye açılabilir.");
+        }
+
+        return new AddOnParent(parent.Id, parent.Code);
+    }
+
     /// <summary>An assigned person must be an active user with the matching role (400).</summary>
     private async Task ValidatePeopleAsync(
         int? businessAnalystId, int? projectManagerId, CancellationToken cancellationToken)
@@ -250,15 +320,16 @@ public class ProjectService(
         dbContext.Users.AnyAsync(u => u.Id == userId && u.IsActive && u.Role == role, cancellationToken);
 
     /// <summary>
-    /// Gives the project the next Proje No and saves it. Numbers come from "highest + 1", so two requests
-    /// saved at the same moment can pick the same number; the unique index stops the second one, which then
-    /// tries again with a new number. The user is never asked to resend the form.
+    /// Gives the record the next code and saves it. Codes come from "highest + 1", so two requests saved at the
+    /// same moment can pick the same code; the unique index stops the second one, which then tries again with a
+    /// new number. The user is never asked to resend the form.
     /// </summary>
-    private async Task SaveWithNewCodeAsync(Project project, int flowId, CancellationToken cancellationToken)
+    private async Task SaveWithNewCodeAsync(
+        Project project, Func<Task<string>> nextCode, CancellationToken cancellationToken)
     {
         for (var attempt = 1; ; attempt++)
         {
-            project.Code = ProjectCodes.Format(ProjectCodes.NextNumber(await HighestCodeAsync(flowId, cancellationToken)));
+            project.Code = await nextCode();
 
             try
             {
@@ -296,6 +367,16 @@ public class ProjectService(
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    /// <summary>The highest add-on code of the project. Longer codes first, so "EG-100" comes before "EG-99".</summary>
+    private Task<string?> HighestAddOnCodeAsync(int parentId, CancellationToken cancellationToken) =>
+        dbContext.Projects
+            .AsNoTracking()
+            .Where(p => p.ParentProjectId == parentId)
+            .OrderByDescending(p => p.Code.Length)
+            .ThenByDescending(p => p.Code)
+            .Select(p => p.Code)
+            .FirstOrDefaultAsync(cancellationToken);
+
     private Task<bool> IsCodeTakenAsync(string code, CancellationToken cancellationToken) =>
         dbContext.Projects.AsNoTracking().AnyAsync(p => p.Code == code, cancellationToken);
 
@@ -323,6 +404,9 @@ public class ProjectService(
             p.Code,
             p.Name,
             p.Description,
+            p.ParentProject != null
+                ? new ParentProjectDto(p.ParentProject.Id, p.ParentProject.Code, p.ParentProject.Name)
+                : null,
             p.Source,
             p.RequestChannel,
             p.RequestChannelOther,

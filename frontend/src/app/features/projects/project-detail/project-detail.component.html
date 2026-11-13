@@ -5,7 +5,7 @@
   <app-empty-state message="Proje yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
 } @else if (loaded(); as p) {
   <header class="page-head">
-    <a [routerLink]="backLink().path" class="back">← {{ backLink().label }}</a>
+    <a [routerLink]="backLink().path" [queryParams]="backLink().query" class="back">← {{ backLink().label }}</a>
 
     <div class="title">
       <span class="code" title="Proje No">No {{ p.code }}</span>
@@ -18,6 +18,11 @@
     </div>
 
     <p class="meta">
+      @if (p.parentProject; as parent) {
+        <span>
+          Ek geliştirme · Proje: <a [routerLink]="['/projects', parent.id]"><b>{{ parent.code }} · {{ parent.name }}</b></a>
+        </span>
+      }
       @if (p.currentStep; as step) {
         <span>Mevcut adım: <b class="step">{{ step.code }}</b> {{ step.stageShortTitle }}</span>
       }
@@ -27,7 +32,7 @@
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Proje bölümleri">
-    @for (t of tabs; track t.key) {
+    @for (t of tabs(); track t.key) {
       <button
         type="button"
         role="tab"
@@ -47,6 +52,9 @@
       @case ('process') {
         <!-- After a step is completed, answered or rejected, reload so the summary shows the new step and status. -->
         <app-project-process [projectId]="p.id" (processChanged)="project.reload()" />
+      }
+      @case ('add-ons') {
+        <app-add-on-list [projectId]="p.id" [acceptsAddOns]="acceptsAddOns()" />
       }
       @case ('assessment') {
         <!-- After the level is applied, reload so "Genel Bilgiler" shows the new level. -->
@@ -77,6 +85,10 @@
           <dl>
             <dt>Proje No ve Adı</dt>
             <dd>{{ p.code }} · {{ p.name }}</dd>
+            @if (p.parentProject; as parent) {
+              <dt>Ait olduğu proje</dt>
+              <dd><a [routerLink]="['/projects', parent.id]">{{ parent.code }} · {{ parent.name }}</a> (ek geliştirme)</dd>
+            }
             <dt>Talep Tarihi</dt>
             <dd>{{ p.requestDate | dateOnly }}</dd>
             <dt>Talep Sahibi (Firma / Birim)</dt>

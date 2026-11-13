@@ -57,6 +57,13 @@ public class Project : AuditableEntity, IAudited
 
     public ProjectStatus Status { get; set; } = ProjectStatus.Active;
 
+    /// <summary>
+    /// Ek geliştirme: the project this add-on belongs to (a new software project). Empty for every other record.
+    /// Set when the record is opened; never changes. An add-on follows the add-on flow.
+    /// </summary>
+    public int? ParentProjectId { get; set; }
+    public Project? ParentProject { get; set; }
+
     /// <summary>The flow the record follows. Set when the record is opened; never changes.</summary>
     public int ProcessFlowId { get; set; }
     public ProcessFlow ProcessFlow { get; set; } = null!;

@@ -24,7 +24,7 @@ export const PROJECT_PRIORITY_LABELS: Record<ProjectPriority, string> = {
 
 export const REQUEST_TYPE_LABELS: Record<RequestType, string> = {
   NewProject: 'Yeni yazılım projesi',
-  AdditionalModule: 'Ek modül',
+  AdditionalModule: 'Ek geliştirme',
   CompanyProduct: 'Şirket ürünü',
   Support: 'Destek',
 };

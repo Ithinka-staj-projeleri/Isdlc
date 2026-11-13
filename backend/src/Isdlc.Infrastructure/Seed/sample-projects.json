@@ -2,6 +2,7 @@
   "projects": [
     {
       "code": "14",
+      "parentCode": null,
       "name": "Saha Servis Mobil Uygulaması",
       "description": "Saha teknisyenlerinin iş emirlerini mobilde alması, fotoğraflı servis formu doldurması ve ERP ile senkronizasyonu.",
       "source": "External",
@@ -25,6 +26,7 @@
     },
     {
       "code": "15",
+      "parentCode": null,
       "name": "İK İzin Yönetim Modülü",
       "description": "Personel izin talebi, yönetici onayı ve bakiye takibi.",
       "source": "Internal",
@@ -48,6 +50,7 @@
     },
     {
       "code": "16",
+      "parentCode": null,
       "name": "B2B Sipariş Portalı",
       "description": "Bayilerin fiyat listesi görüntülemesi, sipariş vermesi ve sipariş durumunu takip etmesi.",
       "source": "External",
@@ -71,6 +74,7 @@
     },
     {
       "code": "17",
+      "parentCode": null,
       "name": "Depo Barkod Entegrasyonu",
       "description": "El terminali ile mal kabul ve sevkiyat okutmalarının WMS'e aktarılması.",
       "source": "External",
@@ -94,6 +98,7 @@
     },
     {
       "code": "18",
+      "parentCode": null,
       "name": "Satınalma Onay Akışı",
       "description": "Satınalma taleplerinin tutara göre çok seviyeli onaylanması.",
       "source": "Internal",
@@ -117,6 +122,7 @@
     },
     {
       "code": "9",
+      "parentCode": null,
       "name": "Kalite Doküman Yönetimi",
       "description": "ISO dokümanlarının sürüm ve onay yönetimi.",
       "source": "Internal",
@@ -140,6 +146,7 @@
     },
     {
       "code": "11",
+      "parentCode": null,
       "name": "Bayi Puan Kampanyası",
       "description": "Bayi alımlarına göre puan ve ödül yönetimi.",
       "source": "External",
@@ -163,6 +170,7 @@
     },
     {
       "code": "12",
+      "parentCode": null,
       "name": "Ziyaretçi Kayıt Sistemi",
       "description": "Bina girişinde ziyaretçi kaydı, kart basımı ve ev sahibine bildirim.",
       "source": "External",
@@ -183,6 +191,31 @@
       "closedAtStepCode": "4",
       "requestDate": "2026-09-10",
       "dueDate": null
+    },
+    {
+      "code": "14 / EG-01",
+      "parentCode": "14",
+      "name": "Servis Formuna Müşteri İmzası",
+      "description": "Mobil servis formuna, iş bitiminde müşterinin ekrana imza atabileceği bir alan eklenmesi ve imzanın ERP'ye aktarılması.",
+      "source": "External",
+      "requestChannel": "Phone",
+      "requestChannelOther": null,
+      "requestType": "AdditionalModule",
+      "customerName": "Anadolu Enerji A.Ş. (örnek)",
+      "requesterName": "Saha Operasyon Müdürü",
+      "requesterContact": "saha.operasyon@ornek.com",
+      "notes": null,
+      "requiresNda": false,
+      "requiresOffer": true,
+      "businessAnalystEmail": "elif.yilmaz@isdlc.local",
+      "projectManagerEmail": "ayse.demir@isdlc.local",
+      "level": 2,
+      "priority": null,
+      "status": "Active",
+      "currentStepCode": "5",
+      "closedAtStepCode": null,
+      "requestDate": "2026-11-04",
+      "dueDate": "2026-12-15"
     }
   ]
 }

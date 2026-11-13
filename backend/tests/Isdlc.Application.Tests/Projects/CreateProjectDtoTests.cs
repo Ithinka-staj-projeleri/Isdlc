@@ -171,6 +171,31 @@ public class CreateProjectDtoTests
     }
 
     [Fact]
+    public void Validate_AddOnWithoutProject_ReturnsTurkishErrorOnParentProjectId()
+    {
+        var dto = Valid() with { RequestType = RequestType.AdditionalModule, ParentProjectId = null };
+
+        var error = SingleError(dto, nameof(CreateProjectDto.ParentProjectId));
+        Assert.Equal("Ek geliştirmenin ait olduğu proje seçilmelidir.", error.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_ProjectWithAnotherRequestType_ReturnsTurkishErrorOnRequestType()
+    {
+        // A request that belongs to a project is an add-on, whatever type was chosen.
+        var dto = Valid() with { RequestType = RequestType.NewProject, ParentProjectId = 14 };
+
+        var error = SingleError(dto, nameof(CreateProjectDto.RequestType));
+        Assert.Equal("Bir projeye bağlı talep ek geliştirmedir; talep türü \"Ek geliştirme\" olmalıdır.", error.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_AddOnWithProject_IsValid()
+    {
+        Assert.Empty(Validate(Valid() with { RequestType = RequestType.AdditionalModule, ParentProjectId = 14 }));
+    }
+
+    [Fact]
     public void Validate_ContactOver200_ReturnsTurkishError()
     {
         var error = SingleError(Valid() with { RequesterContact = new string('a', 201) }, nameof(CreateProjectDto.RequesterContact));

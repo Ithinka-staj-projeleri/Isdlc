@@ -76,8 +76,10 @@ internal static class SeedFiles
 
     public record SampleProjectsFile(List<ProjectSeed> Projects);
 
+    /// <summary>A sample record. With ParentCode it is an add-on of that project (listed before it) on the add-on flow.</summary>
     public record ProjectSeed(
         string Code,
+        string? ParentCode,
         string Name,
         string Description,
         RequestSource Source,

@@ -58,7 +58,20 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
 | D1-4 | Mevcut kayıtlar | Migration çevirir: kod `ISDLC-2026-014` → `14`, kanal `Written` → `Email`, `Verbal` → `Phone` |
 | D1-5 | Form düzeni | Talep formu ve proje detayı, Talep Kayıt Formu'nun alanlarını **aynı sırada ve aynı adlarla** gösterir. Formda olmayan alanlar (teklif, talep türü, NDA, sorumlular, bitiş tarihi) **yeni talep formunda gösterilmez**; düzenleme ekranında ve detayda ayrı bir "Süreç Bilgileri" bölümündedir. Yeni talepte ekran şunları gönderir: talep türü `NewProject`, teklif `true` (hiçbir adım atlanmaz; "teklif yok" 4. adıma kadar düzenlemede seçilir), iş analisti talebi açan İş Analisti, diğerleri boş. API kuralları değişmez. Kanal kararı (phase-4-plan.md) belgeye göre güncellendi: dört seçenek |
 
-## Ortak kurallar
+## Ek geliştirme (Faz 4, D3)
+
+Kaynak: ek geliştirme akışının 1. adımı — "Talep alınır ve projeyle ilişkilendirilir. Proje Kayıt Listesi'nden talebin
+ait olduğu proje bulunur." Talep, yeni projeyle **aynı formdan** girer; fark, hangi projeye ait olduğunun seçilmesidir.
+
+| # | Konu | Karar |
+| --- | --- | --- |
+| D3-1 | Nereden açılır? | Talepler → Yeni talep. Formun başında "Talep neyle ilgili?": **Yeni yazılım projesi** / **Mevcut projeye ek geliştirme**. Ek geliştirmede "İlgili proje" seçilir. Projenin "Ek Geliştirmeler" sekmesindeki "Yeni ek geliştirme" düğmesi aynı formu o proje seçili açar (`/requests/new?parentProjectId=14`) |
+| D3-2 | Ne kaydedilir? | Ana projeye bağlı **ayrı bir kayıt** (`Project.ParentProjectId`), `add-on` akışının ilk adımında. Kendi süreci, seviyesi, riskleri, dokümanları ve sekmeleri olur. Talep türü `AdditionalModule` (ekranda "Ek geliştirme") |
+| D3-3 | Numarası | Ana projenin Proje No'su + proje içinde sıra: `14 / EG-01`, `14 / EG-02`. Yeni Proje No almaz; Proje No sırasını etkilemez. Sıra 99'dan sonra büyümeye devam eder (`EG-100`) |
+| D3-4 | Hangi projeye açılabilir? | Yalnızca **yeni yazılım projesine**, ve proje **kabul edilmişse** (aktif ve proje bölümünde, yani Projeler'de) ya da **tamamlanmışsa** (`Closed`). Talep aşamasındaki, reddedilmiş, kaybedilmiş, yönlendirilmiş bir kayda ve bir ek geliştirmenin kendisine açılamaz (400) |
+| D3-5 | Sonradan değişir mi? | Hayır. Yeni proje ek geliştirmeye, ek geliştirme yeni projeye çevrilemez; ait olduğu proje değiştirilemez (400) |
+| D3-6 | Nerede görünür? | Talepler / Projeler listesinde ana projesinin hemen önünde (`14 / EG-02`, `14 / EG-01`, `14`); ana projenin "Ek Geliştirmeler" sekmesinde; Proje No ile arama ana projeyi ve ek geliştirmelerini bulur. Ek geliştirme akışının proje bölümü olmadığı için aktif ek geliştirme Talepler'de, kapanmışı Projeler'de durur |
+
 
 - **Okuma:** giriş yapmış her kullanıcı.
 - **Talep açma:** yalnızca aktif bir **İş Analisti** (karar 1). Diğer roller 403 alır.
@@ -85,11 +98,13 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
 | --- | --- |
 | `status` | `ProjectStatus` (`Active`, `Closed`, …) |
 | `phase` | Her kayıt tam olarak bir aşamadadır (karar 3). `Request` → onay bekleyen talepler: aktif ve mevcut adımı akışın proje bölümünden önce (yeni yazılım projesinde bölüm 1–2). `Project` → geri kalan her şey: proje bölümündeki aktif projeler ve bütün kapanmış kayıtlar (talep aşamasında kapanmış olanlar dahil). Yalnızca aktif projeler için `phase=Project&status=Active`. Ayrıntı: [process-api.md](process-api.md) → "Talep mi, proje mi" |
-| `search` | Proje No (birebir: `14`, 114'ü bulmaz) ya da proje adında veya talep sahibinde (firma / birim) geçen metin (büyük/küçük harf duyarsız) |
+| `search` | Proje No (birebir: `14`, 114'ü bulmaz; ek geliştirmeleri `14 / EG-01` de bulunur) ya da proje adında veya talep sahibinde (firma / birim) geçen metin (büyük/küçük harf duyarsız) |
 | `businessAnalystId` | İş analisti |
+| `parentProjectId` | Yalnızca bu projenin ek geliştirmeleri ("Ek Geliştirmeler" sekmesi) |
+| `acceptsAddOns` | `true`: yalnızca ek geliştirme açılabilecek projeler (formdaki "İlgili proje" listesi; karar D3-4) |
 | `page`, `pageSize` | Sayfalama |
 
-**Sıralama:** en yeni talep önce (Proje No azalan).
+**Sıralama:** en yeni proje önce (Proje No azalan); ek geliştirmeler ana projesinin hemen önünde, yeniden eskiye.
 
 ## DTO'lar
 
@@ -115,6 +130,7 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
 // ProjectDto = ProjectListItemDto alanları +
 {
   "description": "Saha teknisyenlerinin iş emirlerini mobilde alması...",
+  "parentProject": null,                               // ek geliştirmede { "id": 1, "code": "14", "name": "…" }
   "source": "External",
   "requestChannel": "Email",
   "requestChannelOther": null,                         // yalnızca "Other" kanalında dolu
@@ -144,6 +160,7 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
   "requestChannel": "Email",
   "requestChannelOther": null,           // "Other" seçilince zorunlu
   "requestType": "NewProject",
+  "parentProjectId": null,               // ek geliştirmede ait olduğu proje (requestType: "AdditionalModule")
   "customerName": "Ege Gıda Dağıtım Ltd.",
   "requesterName": "Satış Direktörü",
   "requesterContact": "0232 000 00 00",   // isteğe bağlı
@@ -162,6 +179,7 @@ Formda olmayan `requestType`, `requiresNda`, `businessAnalystId`, `projectManage
 | `name` | Zorunlu, en fazla 200 karakter |
 | `description` | Zorunlu, en fazla 2000 karakter |
 | `source`, `requestChannel`, `requestType` | Zorunlu |
+| `parentProjectId` | `requestType = AdditionalModule` ise zorunlu, değilse boş olmalı (400). Proje karar D3-4'e uymalı. PUT'ta mevcut değerle aynı gönderilir (D3-5) |
 | `requestChannelOther` | `requestChannel = Other` ise zorunlu, en fazla 200 karakter; diğer kanallarda saklanmaz (`null`) |
 | `customerName`, `requesterName` | Zorunlu, en fazla 200 karakter |
 | `requesterContact` | İsteğe bağlı, en fazla 200 karakter (e-posta ya da telefon; biçim kontrol edilmez) |
@@ -197,6 +215,9 @@ yine olmazsa 409 döner. Açık konulardan farkı: talep formu uzun olduğu içi
 | Alanlar geçersiz | `400` | `errors.name`: "Proje adı zorunludur." |
 | "Diğer" kanalı yazılmadı | `400` | `errors.requestChannelOther`: "Diğer talep kanalı yazılmalıdır." |
 | Teklif bilgisi gönderilmedi | `400` | `errors.requiresOffer`: "Teklif hazırlanıp hazırlanmayacağı belirtilmelidir." |
+| Ek geliştirmede proje seçilmedi | `400` | `errors.parentProjectId`: "Ek geliştirmenin ait olduğu proje seçilmelidir." |
+| Ek geliştirme açılamayacak proje | `400` | "Ek geliştirme yalnızca kabul edilmiş (Projeler'deki) ya da tamamlanmış bir projeye açılabilir." |
+| Ek geliştirmenin projesi değişti / türü çevrildi | `400` | "Ek geliştirmenin ait olduğu proje değiştirilemez." |
 | Seçilen kişi uygun değil | `400` | "Seçilen iş analisti aktif bir İş Analisti değil." |
 | Bitiş tarihi talep tarihinden önce | `400` | `errors.dueDate`: "Bitiş tarihi talep tarihinden önce olamaz." |
 | Proje aktif değil (güncelleme) | `409` | "Proje aktif değil; bilgileri değiştirilemez." |
@@ -226,7 +247,7 @@ yine olmazsa 409 döner. Açık konulardan farkı: talep formu uzun olduğu içi
 | --- | --- | --- |
 | Proje listesi | `features/projects/project-list` | Filtreler, arama, sayfalama |
 | Talep formu (yeni / düzenle) | `features/projects/project-form` | Talep Kayıt Formu'nun sırasıyla; doğrulama hataları alan altında. Kaynak ve teklif bilgisi değiştirilemiyorsa alan kilitli ve nedeni yazılı |
-| Proje detayı | `features/projects/project-detail` | Üstte özet, altta sekmeler |
+| Proje detayı | `features/projects/project-detail` | Üstte özet, altta sekmeler. Ek geliştirmede ait olduğu proje üstte bağlantı olarak görünür |
 
 **Proje detayı sekmeleri:** her sekme `projectId` alan ayrı bir bileşendir; sahibi kendi modülünü yazar.
 
@@ -234,6 +255,7 @@ yine olmazsa 409 döner. Açık konulardan farkı: talep formu uzun olduğu içi
 | --- | --- | --- |
 | Genel Bilgiler | `Projects` | Dide |
 | Süreç | `app-project-process` | Dide (Faz 4) |
+| Ek Geliştirmeler (yalnızca yeni yazılım projesinde) | `features/projects/add-on-list` | Dide (D3) |
 | Açık Konular | `features/open-issues` | Erva |
 | Toplantı Tutanakları | `features/meetings` | Erva |
 | Seviye & Kabul, Risk, Gereksinimler, Dokümanlar, Kayıt | Faz 2–3 | Modül sahibi |
@@ -243,5 +265,6 @@ yine olmazsa 409 döner. Açık konulardan farkı: talep formu uzun olduğu içi
 1. **Proje No nereden başlayacak?** Şirketin Proje Kayıt Listesi'nde (032) numara verilmiş projeler varsa uygulamanın
    numaraları onlarla çakışır. Şimdilik 1'den başlar; analistlerden mevcut son numara öğrenilirse başlangıç numarası
    ayar olarak eklenir.
-2. **Talep türü (`requestType`)** formda yok. Ek geliştirme ayrı bir akış ve kayıt olduğu için (D3) `AdditionalModule`
-   değeri gereksizleşebilir; D3'te ele alınır.
+2. **Talep türü (`requestType`)**: D3'te `NewProject` / `AdditionalModule` hangi akışa girileceğini belirler. `CompanyProduct` ve
+   `Support` bugün yeni yazılım projesi akışına girer; BT destek gibi akışlar gelince kendi akışlarına bağlanır.
+3. **Ek geliştirme numarası** (`14 / EG-01`): akış görselinde biçim yazmıyor; analistlere teyit ettirilecek (phase-4-plan.md → Açık konular 4).
