@@ -43,8 +43,8 @@ Uygulamadaki akışlar, şirketin paylaştığı **beş akıştan** ibarettir (k
 
 | Kayıt nereden açılır | Akış |
 | --- | --- |
-| Talepler → Yeni talep (`POST /projects`) | `new-software-project` |
-| Proje detayı → Ek Geliştirmeler → Yeni (D3) | `add-on` |
+| Talepler → Yeni talep → "Yeni yazılım projesi" (`POST /projects`) | `new-software-project` |
+| Talepler → Yeni talep → "Mevcut projeye ek geliştirme" (ya da projenin Ek Geliştirmeler sekmesi → Yeni; D3) | `add-on` |
 | Süreç İyileştirme → Yeni öneri (E5) | `process-improvement` |
 | Kaynak Planlama → Yeni hafta (B6) | `resource-planning` |
 | Faturalama → Yeni ay (B7) | `billing` |

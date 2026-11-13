@@ -38,4 +38,25 @@ public class ProjectCodesTests
     {
         Assert.Equal(1, ProjectCodes.NextNumber(highestCode));
     }
+
+    [Theory]
+    [InlineData("14", 1, "14 / EG-01")]
+    [InlineData("14", 12, "14 / EG-12")]
+    [InlineData("1000", 100, "1000 / EG-100")] // keeps growing after 99
+    public void FormatAddOn_ProjectNoAndNumber_IsProjectNoSlashEg(string parentCode, int number, string expected)
+    {
+        Assert.Equal(expected, ProjectCodes.FormatAddOn(parentCode, number));
+    }
+
+    [Theory]
+    [InlineData(null, 1)] // the project's first add-on
+    [InlineData("14 / EG-01", 2)]
+    [InlineData("14 / EG-99", 100)]
+    [InlineData("14 / EG-100", 101)]
+    [InlineData("14", 1)]
+    [InlineData("14 / EG-", 1)]
+    public void NextAddOnNumber_HighestAddOnCode_IsOneMore(string? highestAddOnCode, int expected)
+    {
+        Assert.Equal(expected, ProjectCodes.NextAddOnNumber(highestAddOnCode));
+    }
 }

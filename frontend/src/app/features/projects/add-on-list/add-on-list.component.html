@@ -1,0 +1,57 @@
+<div class="toolbar">
+  <p class="note">
+    Bu projeye bağlı ek geliştirmeler. Her biri kendi süreci, seviyesi, riskleri ve dokümanlarıyla ayrı bir kayıttır.
+  </p>
+  @if (canAdd()) {
+    <a class="button primary" routerLink="/requests/new" [queryParams]="{ parentProjectId: projectId() }">
+      Yeni ek geliştirme
+    </a>
+  }
+</div>
+
+@if (!acceptsAddOns()) {
+  <p class="note">Ek geliştirme, proje kabul edildikten (Projeler'e geçtikten) ya da tamamlandıktan sonra açılabilir.</p>
+}
+
+@if (addOns.error()) {
+  <app-empty-state message="Ek geliştirmeler yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
+} @else if (addOns.isLoading() && items().length === 0) {
+  <app-empty-state message="Yükleniyor…" />
+} @else if (items().length === 0) {
+  <app-empty-state message="Bu projede henüz ek geliştirme yok." />
+} @else {
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Proje No</th>
+          <th>Ek geliştirme</th>
+          <th>Mevcut adım</th>
+          <th>Durum</th>
+          <th>Seviye</th>
+          <th>İş analisti</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id) {
+          <tr (click)="open(item.id)">
+            <td class="code">
+              <a [routerLink]="['/projects', item.id]" (click)="$event.stopPropagation()">{{ item.code }}</a>
+            </td>
+            <td>{{ item.name }}</td>
+            <td>
+              @if (item.currentStep; as step) {
+                <span class="step">{{ step.code }}</span> {{ step.stageShortTitle }}
+              } @else {
+                —
+              }
+            </td>
+            <td><app-status-badge [label]="statusLabels[item.status]" [tone]="statusTones[item.status]" /></td>
+            <td>{{ item.level ?? '—' }}</td>
+            <td>{{ item.businessAnalyst?.fullName ?? 'Atanmadı' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

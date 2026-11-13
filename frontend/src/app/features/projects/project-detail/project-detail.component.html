@@ -5,7 +5,7 @@
   <app-empty-state message="Proje yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
 } @else if (loaded(); as p) {
   <header class="page-head">
-    <a [routerLink]="backLink().path" class="back">← {{ backLink().label }}</a>
+    <a [routerLink]="backLink().path" [queryParams]="backLink().query" class="back">← {{ backLink().label }}</a>
 
     <div class="title">
       <span class="code" title="Proje No">No {{ p.code }}</span>
@@ -18,6 +18,11 @@
     </div>
 
     <p class="meta">
+      @if (p.parentProject; as parent) {
+        <span>
+          Ek geliştirme · Proje: <a [routerLink]="['/projects', parent.id]"><b>{{ parent.code }} · {{ parent.name }}</b></a>
+        </span>
+      }
       @if (p.currentStep; as step) {
         <span>Mevcut adım: <b class="step">{{ step.code }}</b> {{ step.stageShortTitle }}</span>
       }
@@ -27,7 +32,7 @@
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Proje bölümleri">
-    @for (t of tabs; track t.key) {
+    @for (t of tabs(); track t.key) {
       <button
         type="button"
         role="tab"
@@ -47,6 +52,9 @@
       @case ('process') {
         <!-- After a step is completed, answered or rejected, reload so the summary shows the new step and status. -->
         <app-project-process [projectId]="p.id" (processChanged)="project.reload()" />
+      }
+      @case ('add-ons') {
+        <app-add-on-list [projectId]="p.id" [acceptsAddOns]="acceptsAddOns()" />
       }
       @case ('assessment') {
         <!-- After the level is applied, reload so "Genel Bilgiler" shows the new level. -->
@@ -71,61 +79,59 @@
         <app-audit-log [projectId]="p.id" />
       }
       @default {
+        <!-- The fields of the company's Talep Kayıt Formu, in its order and words. -->
         <div class="card">
-          <h3>Talep kayıt bilgileri</h3>
-          <p class="description">{{ p.description }}</p>
+          <h3>Talep Kayıt Bilgileri</h3>
           <dl>
-            <dt>Proje No</dt>
-            <dd>{{ p.code }}</dd>
-            <dt>Talep tarihi</dt>
+            <dt>Proje No ve Adı</dt>
+            <dd>{{ p.code }} · {{ p.name }}</dd>
+            @if (p.parentProject; as parent) {
+              <dt>Ait olduğu proje</dt>
+              <dd><a [routerLink]="['/projects', parent.id]">{{ parent.code }} · {{ parent.name }}</a> (ek geliştirme)</dd>
+            }
+            <dt>Talep Tarihi</dt>
             <dd>{{ p.requestDate | dateOnly }}</dd>
-            <dt>Talebi kayda alan</dt>
+            <dt>Talep Sahibi (Firma / Birim)</dt>
+            <dd>{{ p.customerName }}</dd>
+            <dt>Talebi İleten Kişi</dt>
+            <dd>{{ p.requesterName }}</dd>
+            <dt>İletişim (E-posta / Telefon)</dt>
+            <dd>{{ p.requesterContact ?? '—' }}</dd>
+            <dt>Talebi Kayıt Altına Alan Kişi</dt>
             <dd>{{ p.createdBy.fullName }} · {{ p.createdAt | localDate }}</dd>
-            <dt>Talep kanalı</dt>
-            <dd>{{ channelLabels[p.requestChannel] }}</dd>
-            <dt>Talep kaynağı</dt>
+            <dt>Talep Açıklaması</dt>
+            <dd class="description">{{ p.description }}</dd>
+            <dt>Talep Kanalı</dt>
+            <dd>
+              {{ channelLabels[p.requestChannel] }}{{ p.requestChannel === 'Other' && p.requestChannelOther ? ': ' + p.requestChannelOther : '' }}
+            </dd>
+            <dt>Talep Kaynağı</dt>
             <dd>{{ sourceLabels[p.source] }}</dd>
-            <dt>Talep türü</dt>
-            <dd>{{ typeLabels[p.requestType] }}</dd>
+            <dt>Notlar</dt>
+            <dd class="description">{{ p.notes ?? '—' }}</dd>
+          </dl>
+        </div>
+
+        <!-- Not on the company form: the flow and the other screens need them. -->
+        <div class="card">
+          <h3>Süreç Bilgileri</h3>
+          <dl>
             <dt>Teklif</dt>
             <dd>{{ p.requiresOffer ? 'Hazırlanacak' : 'Hazırlanmayacak (doğrudan proje)' }}</dd>
+            <dt>Talep türü</dt>
+            <dd>{{ typeLabels[p.requestType] }}</dd>
             <dt>Seviye</dt>
             <dd>{{ p.level ?? 'Belirlenmedi' }}</dd>
             <dt>Öncelik</dt>
             <dd>{{ p.priority ? priorityLabels[p.priority] : 'Belirlenmedi' }}</dd>
-          </dl>
-        </div>
-
-        <div class="card">
-          <h3>Talep sahibi</h3>
-          <dl>
-            <dt>Talep sahibi (firma / birim)</dt>
-            <dd>{{ p.customerName }}</dd>
-            <dt>Talebi ileten kişi</dt>
-            <dd>{{ p.requesterName }}</dd>
-            <dt>İletişim</dt>
-            <dd>{{ p.requesterContact ?? '—' }}</dd>
-            <dt>Gizlilik sözleşmesi (NDA)</dt>
-            <dd>{{ p.requiresNda ? 'Gerekiyor' : 'Gerekmiyor' }}</dd>
-          </dl>
-        </div>
-
-        @if (p.notes) {
-          <div class="card">
-            <h3>Notlar</h3>
-            <p class="description">{{ p.notes }}</p>
-          </div>
-        }
-
-        <div class="card">
-          <h3>Sorumlular ve hedef tarih</h3>
-          <dl>
             <dt>İş analisti</dt>
             <dd>{{ p.businessAnalyst?.fullName ?? 'Atanmadı' }}</dd>
             <dt>Proje yöneticisi</dt>
             <dd>{{ p.projectManager?.fullName ?? 'Atanmadı' }}</dd>
             <dt>Bitiş</dt>
             <dd>{{ (p.dueDate | dateOnly) || '—' }}</dd>
+            <dt>Gizlilik sözleşmesi (NDA)</dt>
+            <dd>{{ p.requiresNda ? 'Gerekiyor' : 'Gerekmiyor' }}</dd>
             <dt>Son güncelleme</dt>
             <dd>{{ (p.updatedAt | localDate) || '—' }}</dd>
           </dl>

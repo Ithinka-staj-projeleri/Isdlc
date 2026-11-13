@@ -15,6 +15,7 @@ import { OpenIssueListComponent } from '../../open-issues/open-issue-list/open-i
 import { ProjectProcessComponent } from '../../process/project-process/project-process.component';
 import { RequirementListComponent } from '../../requirements/requirement-list/requirement-list.component';
 import { RiskListComponent } from '../../risks/risk-list/risk-list.component';
+import { AddOnListComponent } from '../add-on-list/add-on-list.component';
 import {
   PROJECT_PRIORITY_LABELS,
   PROJECT_STATUS_LABELS,
@@ -25,7 +26,17 @@ import {
 } from '../project-labels';
 import { ProjectService } from '../project.service';
 
-type DetailTab = 'general' | 'process' | 'assessment' | 'requirements' | 'documents' | 'risks' | 'open-issues' | 'meetings' | 'history';
+type DetailTab =
+  | 'general'
+  | 'process'
+  | 'add-ons'
+  | 'assessment'
+  | 'requirements'
+  | 'documents'
+  | 'risks'
+  | 'open-issues'
+  | 'meetings'
+  | 'history';
 
 /** In the new software project flow stages 1–2 are the request phase ("Talepler"); 3–4 the project phase ("Projeler"). */
 const LAST_REQUEST_STAGE = 2;
@@ -51,6 +62,7 @@ const LAST_REQUEST_STAGE = 2;
     ProjectAssessmentComponent,
     DocumentListComponent,
     AuditLogComponent,
+    AddOnListComponent,
   ],
   templateUrl: './project-detail.component.html',
   styleUrl: './project-detail.component.scss',
@@ -67,9 +79,10 @@ export class ProjectDetailComponent {
   readonly sourceLabels = REQUEST_SOURCE_LABELS;
   readonly channelLabels = REQUEST_CHANNEL_LABELS;
 
-  readonly tabs: { key: DetailTab; label: string }[] = [
+  private static readonly ALL_TABS: { key: DetailTab; label: string }[] = [
     { key: 'general', label: 'Genel Bilgiler' },
     { key: 'process', label: 'Süreç' },
+    { key: 'add-ons', label: 'Ek Geliştirmeler' },
     { key: 'assessment', label: 'Seviye & Kabul' },
     { key: 'requirements', label: 'Gereksinimler' },
     { key: 'documents', label: 'Dokümanlar' },
@@ -78,6 +91,11 @@ export class ProjectDetailComponent {
     { key: 'meetings', label: 'Toplantı Tutanakları' },
     { key: 'history', label: 'Kayıt Geçmişi' },
   ];
+
+  /** An add-on has no add-ons of its own, so it has no "Ek Geliştirmeler" tab. */
+  readonly tabs = computed(() =>
+    ProjectDetailComponent.ALL_TABS.filter((t) => t.key !== 'add-ons' || !this.loaded()?.parentProject),
+  );
 
   readonly projectId = toSignal(this._route.paramMap.pipe(map((params) => Number(params.get('projectId')))), {
     requireSync: true,
@@ -102,12 +120,28 @@ export class ProjectDetailComponent {
     return cause instanceof HttpErrorResponse && cause.status === 404;
   });
 
-  /** Back to the list the project belongs to. */
+  /** Back to the list the project belongs to; an add-on goes back to its project's "Ek Geliştirmeler" tab. */
   readonly backLink = computed(() => {
+    const parent = this.loaded()?.parentProject;
+    if (parent) {
+      return { path: `/projects/${parent.id}`, label: `${parent.code} · ${parent.name}`, query: { tab: 'add-ons' } };
+    }
     const stageOrder = this.loaded()?.currentStep?.stageOrder;
     return stageOrder !== undefined && stageOrder <= LAST_REQUEST_STAGE
-      ? { path: '/requests', label: 'Talepler' }
-      : { path: '/projects', label: 'Projeler' };
+      ? { path: '/requests', label: 'Talepler', query: {} }
+      : { path: '/projects', label: 'Projeler', query: {} };
+  });
+
+  /**
+   * Whether an add-on can be opened on this project now: a new software project that has been accepted (past the
+   * request stages) or is closed. The API checks the same rule.
+   */
+  readonly acceptsAddOns = computed(() => {
+    const p = this.loaded();
+    if (!p || p.parentProject) {
+      return false;
+    }
+    return p.status === 'Closed' || (p.status === 'Active' && (p.currentStep?.stageOrder ?? 0) > LAST_REQUEST_STAGE);
   });
 
   /** Open issues and meetings can only be changed while the project is active. */

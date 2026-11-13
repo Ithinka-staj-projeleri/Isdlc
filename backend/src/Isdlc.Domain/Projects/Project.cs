@@ -21,6 +21,10 @@ public class Project : AuditableEntity, IAudited
     public string Description { get; set; } = string.Empty;
     public RequestSource Source { get; set; }
     public RequestChannel RequestChannel { get; set; }
+
+    /// <summary>What "Diğer" means; set only when RequestChannel is Other.</summary>
+    public string? RequestChannelOther { get; set; }
+
     public RequestType RequestType { get; set; }
 
     /// <summary>Talep sahibi: the customer company or internal unit (no separate table in the MVP).</summary>
@@ -52,6 +56,13 @@ public class Project : AuditableEntity, IAudited
     public ProjectPriority? Priority { get; set; }
 
     public ProjectStatus Status { get; set; } = ProjectStatus.Active;
+
+    /// <summary>
+    /// Ek geliştirme: the project this add-on belongs to (a new software project). Empty for every other record.
+    /// Set when the record is opened; never changes. An add-on follows the add-on flow.
+    /// </summary>
+    public int? ParentProjectId { get; set; }
+    public Project? ParentProject { get; set; }
 
     /// <summary>The flow the record follows. Set when the record is opened; never changes.</summary>
     public int ProcessFlowId { get; set; }

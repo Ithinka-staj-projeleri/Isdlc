@@ -147,11 +147,12 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Talebi ileten kişi / iletişim bilgisi | `Requester` (`Project.RequesterName`, `Project.RequesterContact`; sistem kullanıcısı değildir) |
 | Talep tarihi / talebi kayda alan | `Project.RequestDate` / `Project.CreatedById` |
 | Talep notları | `Project.Notes` |
-| Talep kaynağı / kanalı / türü | `RequestSource` (`Internal`, `External`, `Affiliated`), `RequestChannel` (`Email`, `Phone`), `RequestType` |
+| Talep kaynağı / kanalı / türü | `RequestSource` (`Internal`, `External`, `Affiliated`), `RequestChannel` (`Email`, `Phone`, `Meeting`, `Other` + `Project.RequestChannelOther`), `RequestType` |
 | Proje durumu | `ProjectStatus` (`Active`, `Closed`, `Rejected`, `Lost`, `Redirected`) |
 | Öncelik | `ProjectPriority` |
 | Kullanıcı | `User` |
 | Rol | `UserRole` (kullanıcı başına tek rol) |
+| Ek geliştirme (devam eden projeye ek modül / geliştirme) ve ait olduğu proje | `Project` (`RequestType.AdditionalModule`, `Project.ParentProjectId`; kodu `14 / EG-01`) |
 | İş akışı (yeni yazılım projesi, ek geliştirme, süreç iyileştirme, kaynak planlama, faturalama) | `ProcessFlow` (`Project.ProcessFlowId`; türü `ProcessFlowKind`: `Request`, `Improvement`, `ResourcePlanning`, `Billing`) |
 | Aşama (akıştaki "bölüm") | `ProcessStage` |
 | Adım | `ProcessStep` |

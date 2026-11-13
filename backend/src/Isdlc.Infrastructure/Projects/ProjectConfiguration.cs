@@ -21,6 +21,7 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(x => x.CustomerName).HasMaxLength(200);
         builder.Property(x => x.RequesterName).HasMaxLength(200);
         builder.Property(x => x.RequesterContact).HasMaxLength(200);
+        builder.Property(x => x.RequestChannelOther).HasMaxLength(200);
         builder.Property(x => x.Notes).HasMaxLength(2000);
         builder.Property(x => x.RowVersion).IsRowVersion();
 
@@ -31,6 +32,7 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.HasOne(x => x.ProjectManager).WithMany().HasForeignKey(x => x.ProjectManagerId);
         builder.HasOne(x => x.CurrentStep).WithMany().HasForeignKey(x => x.CurrentStepId);
         builder.HasOne(x => x.ProcessFlow).WithMany(x => x.Projects).HasForeignKey(x => x.ProcessFlowId);
+        builder.HasOne(x => x.ParentProject).WithMany().HasForeignKey(x => x.ParentProjectId);
 
         builder.ConfigureAuditFields();
     }

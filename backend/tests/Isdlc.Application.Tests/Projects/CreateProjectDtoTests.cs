@@ -134,6 +134,67 @@ public class CreateProjectDtoTests
         Assert.Equal("Teklif hazırlanıp hazırlanmayacağı belirtilmelidir.", error.ErrorMessage);
     }
 
+    [Theory]
+    [InlineData(RequestChannel.Email)]
+    [InlineData(RequestChannel.Phone)]
+    [InlineData(RequestChannel.Meeting)]
+    public void Validate_ChannelOfTheForm_IsValidWithoutOtherText(RequestChannel channel)
+    {
+        Assert.Empty(Validate(Valid() with { RequestChannel = channel, RequestChannelOther = null }));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public void Validate_OtherChannelWithoutText_ReturnsTurkishError(string? other)
+    {
+        // The form's "Diğer: ____" has to be filled in.
+        var dto = Valid() with { RequestChannel = RequestChannel.Other, RequestChannelOther = other };
+
+        var error = SingleError(dto, nameof(CreateProjectDto.RequestChannelOther));
+        Assert.Equal("Diğer talep kanalı yazılmalıdır.", error.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_OtherChannelWithText_IsValid()
+    {
+        Assert.Empty(Validate(Valid() with { RequestChannel = RequestChannel.Other, RequestChannelOther = "WhatsApp" }));
+    }
+
+    [Fact]
+    public void Validate_OtherChannelOver200_ReturnsTurkishError()
+    {
+        var dto = Valid() with { RequestChannel = RequestChannel.Other, RequestChannelOther = new string('a', 201) };
+
+        var error = SingleError(dto, nameof(CreateProjectDto.RequestChannelOther));
+        Assert.Equal("Diğer talep kanalı en fazla 200 karakter olabilir.", error.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_AddOnWithoutProject_ReturnsTurkishErrorOnParentProjectId()
+    {
+        var dto = Valid() with { RequestType = RequestType.AdditionalModule, ParentProjectId = null };
+
+        var error = SingleError(dto, nameof(CreateProjectDto.ParentProjectId));
+        Assert.Equal("Ek geliştirmenin ait olduğu proje seçilmelidir.", error.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_ProjectWithAnotherRequestType_ReturnsTurkishErrorOnRequestType()
+    {
+        // A request that belongs to a project is an add-on, whatever type was chosen.
+        var dto = Valid() with { RequestType = RequestType.NewProject, ParentProjectId = 14 };
+
+        var error = SingleError(dto, nameof(CreateProjectDto.RequestType));
+        Assert.Equal("Bir projeye bağlı talep ek geliştirmedir; talep türü \"Ek geliştirme\" olmalıdır.", error.ErrorMessage);
+    }
+
+    [Fact]
+    public void Validate_AddOnWithProject_IsValid()
+    {
+        Assert.Empty(Validate(Valid() with { RequestType = RequestType.AdditionalModule, ParentProjectId = 14 }));
+    }
+
     [Fact]
     public void Validate_ContactOver200_ReturnsTurkishError()
     {

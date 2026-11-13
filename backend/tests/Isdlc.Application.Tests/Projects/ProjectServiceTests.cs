@@ -5,6 +5,7 @@ using Isdlc.Application.Projects;
 using Isdlc.Application.Projects.Dtos;
 using Isdlc.Application.Tests.Common;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -149,6 +150,42 @@ public class ProjectServiceTests(DatabaseFixture database)
 
         Assert.Null(project.RequesterContact);
         Assert.Null(project.Notes);
+    }
+
+    [Fact]
+    public async Task Create_OtherChannel_KeepsItsTextTrimmed()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+
+        var project = await CreateAsync(analyst, Request(analyst) with
+        {
+            RequestChannel = RequestChannel.Other,
+            RequestChannelOther = "  Fuar standı  ",
+        });
+
+        Assert.Equal(RequestChannel.Other, project.RequestChannel);
+        Assert.Equal("Fuar standı", project.RequestChannelOther);
+    }
+
+    [Fact]
+    public async Task Update_ChannelNoLongerOther_DropsTheOtherText()
+    {
+        // The text belongs to "Diğer" only; it is not kept behind another channel.
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var created = await CreateAsync(analyst, Request(analyst) with
+        {
+            RequestChannel = RequestChannel.Other,
+            RequestChannelOther = "Fuar standı",
+        });
+
+        var updated = (await AsAsync(analyst, s => s.UpdateAsync(created.Id, UpdateOf(Request(analyst)) with
+        {
+            RequestChannel = RequestChannel.Meeting,
+            RequestChannelOther = "Fuar standı",
+        }, CancellationToken.None))).Result;
+
+        Assert.Equal(RequestChannel.Meeting, updated.RequestChannel);
+        Assert.Null(updated.RequestChannelOther);
     }
 
     [Fact]
@@ -356,6 +393,207 @@ public class ProjectServiceTests(DatabaseFixture database)
         Assert.Null(project.CurrentStep);
     }
 
+    // ---- Add-ons (ek geliştirme, D3) ----
+
+    /// <summary>A project an add-on can be opened on: a new software project in a project stage (step 12, stage 3).</summary>
+    private async Task<(int Id, string Code)> AcceptedProjectAsync(
+        int analystId, string? stepCode = "12", ProjectStatus status = ProjectStatus.Active)
+    {
+        // Short codes: an add-on adds " / EG-01" and codes are at most 20 characters.
+        var code = $"A{Guid.NewGuid():N}"[..8];
+        return (await InsertProjectAsync(analystId, stepCode, status, code), code);
+    }
+
+    private static CreateProjectDto AddOnRequest(int analystId, int parentId) =>
+        Request(analystId, "Butona yeni alan") with { RequestType = RequestType.AdditionalModule, ParentProjectId = parentId };
+
+    private async Task<string> FlowCodeOfAsync(int projectId)
+    {
+        await using var scope = database.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        return await db.Projects.Where(p => p.Id == projectId).Select(p => p.ProcessFlow.Code).SingleAsync();
+    }
+
+    [Fact]
+    public async Task Create_AddOn_FollowsTheAddOnFlowUnderItsProjectsNumber()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst);
+
+        var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+
+        Assert.Equal($"{parent.Code} / EG-01", addOn.Code);
+        Assert.Equal(new ParentProjectDto(parent.Id, parent.Code, "Liste testi"), addOn.ParentProject);
+        Assert.Equal(RequestType.AdditionalModule, addOn.RequestType);
+        Assert.Equal(ProcessFlowCodes.AddOn, await FlowCodeOfAsync(addOn.Id));
+        Assert.Equal("1", addOn.CurrentStep?.Code);
+    }
+
+    [Fact]
+    public async Task Create_SecondAddOn_GetsTheNextNumberOfThatProject()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst);
+        var other = await AcceptedProjectAsync(analyst);
+        await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+        await CreateAsync(analyst, AddOnRequest(analyst, other.Id));
+
+        var second = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+
+        Assert.Equal($"{parent.Code} / EG-02", second.Code);
+    }
+
+    [Fact]
+    public async Task Create_AddOn_DoesNotTakeAProjectNo()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst);
+        var before = await CreateAsync(analyst, Request(analyst));
+        await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+
+        var after = await CreateAsync(analyst, Request(analyst));
+
+        Assert.Equal(long.Parse(before.Code) + 1, long.Parse(after.Code));
+    }
+
+    [Fact]
+    public async Task Create_AddOnOfAClosedProject_IsAllowed()
+    {
+        // A delivered project still gets add-ons.
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst, stepCode: null, ProjectStatus.Closed);
+
+        var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+
+        Assert.Equal(parent.Id, addOn.ParentProject?.Id);
+    }
+
+    [Theory]
+    [InlineData("1", ProjectStatus.Active)]   // still a waiting request
+    [InlineData("10", ProjectStatus.Active)]  // offer stage: not accepted yet
+    [InlineData(null, ProjectStatus.Rejected)]
+    [InlineData(null, ProjectStatus.Lost)]
+    [InlineData(null, ProjectStatus.Redirected)]
+    public async Task Create_AddOnOfAProjectNotAcceptedOrClosed_Throws400(string? stepCode, ProjectStatus status)
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst, stepCode, status);
+
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(
+            () => CreateAsync(analyst, AddOnRequest(analyst, parent.Id)));
+
+        Assert.Equal("Ek geliştirme yalnızca kabul edilmiş (Projeler'deki) ya da tamamlanmış bir projeye açılabilir.", error.Message);
+    }
+
+    [Fact]
+    public async Task Create_AddOnOfAnAddOn_Throws400()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst);
+        var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(
+            () => CreateAsync(analyst, AddOnRequest(analyst, addOn.Id)));
+
+        Assert.Equal("Ek geliştirme yalnızca bir yeni yazılım projesine açılabilir.", error.Message);
+    }
+
+    [Fact]
+    public async Task Create_AddOnOfAMissingProject_Throws400()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(
+            () => CreateAsync(analyst, AddOnRequest(analyst, int.MaxValue)));
+
+        Assert.Equal("Ek geliştirmenin ait olduğu proje bulunamadı.", error.Message);
+    }
+
+    [Fact]
+    public async Task Update_AddOnOfAnotherProject_Throws400()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst);
+        var other = await AcceptedProjectAsync(analyst);
+        var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(() => AsAsync(analyst, s => s.UpdateAsync(
+            addOn.Id, UpdateOf(AddOnRequest(analyst, other.Id)), CancellationToken.None)));
+
+        Assert.Equal("Ek geliştirmenin ait olduğu proje değiştirilemez.", error.Message);
+    }
+
+    [Fact]
+    public async Task Update_NewProjectIntoAnAddOn_Throws400()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst);
+        var created = await CreateAsync(analyst, Request(analyst));
+
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(() => AsAsync(analyst, s => s.UpdateAsync(
+            created.Id, UpdateOf(AddOnRequest(analyst, parent.Id)), CancellationToken.None)));
+
+        Assert.Equal("Yeni yazılım projesi sonradan ek geliştirmeye çevrilemez.", error.Message);
+    }
+
+    [Fact]
+    public async Task Update_AddOnWithItsOwnProject_ChangesTheInformation()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst);
+        var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+
+        var updated = (await AsAsync(analyst, s => s.UpdateAsync(
+            addOn.Id, UpdateOf(AddOnRequest(analyst, parent.Id)) with { Name = "İmza alanı" },
+            CancellationToken.None))).Result;
+
+        Assert.Equal("İmza alanı", updated.Name);
+        Assert.Equal(addOn.Code, updated.Code);
+    }
+
+    [Fact]
+    public async Task List_ParentProjectId_ListsOnlyThatProjectsAddOnsNewestFirst()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst);
+        var other = await AcceptedProjectAsync(analyst);
+        var first = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+        var second = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+        await CreateAsync(analyst, AddOnRequest(analyst, other.Id));
+
+        var result = await ListAsync(new ProjectFilter { ParentProjectId = parent.Id });
+
+        Assert.Equal([second.Id, first.Id], result.Items.Select(p => p.Id));
+    }
+
+    [Fact]
+    public async Task List_AcceptsAddOns_ListsOnlyAcceptedOrClosedNewProjects()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var accepted = await AcceptedProjectAsync(analyst);
+        var closed = await AcceptedProjectAsync(analyst, stepCode: null, ProjectStatus.Closed);
+        await AcceptedProjectAsync(analyst, "1");                               // waiting request
+        await AcceptedProjectAsync(analyst, stepCode: null, ProjectStatus.Rejected);
+        await CreateAsync(analyst, AddOnRequest(analyst, accepted.Id));         // an add-on itself
+
+        var result = await ListAsync(new ProjectFilter { AcceptsAddOns = true, BusinessAnalystId = analyst });
+
+        Assert.Equal(new[] { accepted.Id, closed.Id }.Order(), result.Items.Select(p => p.Id).Order());
+    }
+
+    [Fact]
+    public async Task List_SearchByProjectNo_AlsoFindsItsAddOns()
+    {
+        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var parent = await AcceptedProjectAsync(analyst);
+        var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
+
+        var result = await ListAsync(new ProjectFilter { Search = parent.Code });
+
+        // The add-on is listed right before its project.
+        Assert.Equal([addOn.Id, parent.Id], result.Items.Select(p => p.Id));
+    }
+
     // ---- Update ----
 
     private static UpdateProjectDto UpdateOf(CreateProjectDto request) => new()
@@ -364,7 +602,9 @@ public class ProjectServiceTests(DatabaseFixture database)
         Description = request.Description,
         Source = request.Source,
         RequestChannel = request.RequestChannel,
+        RequestChannelOther = request.RequestChannelOther,
         RequestType = request.RequestType,
+        ParentProjectId = request.ParentProjectId,
         CustomerName = request.CustomerName,
         RequesterName = request.RequesterName,
         RequesterContact = request.RequesterContact,

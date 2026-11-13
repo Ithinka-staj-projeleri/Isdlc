@@ -896,6 +896,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<int?>("ParentProjectId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Priority")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -910,6 +913,10 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("RequestChannelOther")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateOnly>("RequestDate")
                         .HasColumnType("date");
@@ -969,6 +976,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("CurrentStepId");
+
+                    b.HasIndex("ParentProjectId");
 
                     b.HasIndex("ProcessFlowId");
 
@@ -1750,6 +1759,11 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CurrentStepId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Isdlc.Domain.Projects.Project", "ParentProject")
+                        .WithMany()
+                        .HasForeignKey("ParentProjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Isdlc.Domain.Process.ProcessFlow", "ProcessFlow")
                         .WithMany("Projects")
                         .HasForeignKey("ProcessFlowId")
@@ -1769,6 +1783,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("BusinessAnalyst");
 
                     b.Navigation("CurrentStep");
+
+                    b.Navigation("ParentProject");
 
                     b.Navigation("ProcessFlow");
 

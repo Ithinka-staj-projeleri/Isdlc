@@ -136,6 +136,7 @@ yapı birden fazlasına izin verir.
 | `Description` | string | |
 | `Source` | `RequestSource` | |
 | `RequestChannel` | `RequestChannel` | |
+| `RequestChannelOther` | string? | Faz 4. Kanal "Diğer" ise ne olduğu; en fazla 200, diğer kanallarda boş |
 | `RequestType` | `RequestType` | |
 | `CustomerName` | string | Talep sahibi: müşteri firma veya iç birim adı (MVP'de ayrı tablo yok) |
 | `RequesterName` | string | Talebi ileten kişi veya unvan; sisteme giriş yapan bir kullanıcı değildir |
@@ -149,6 +150,7 @@ yapı birden fazlasına izin verir.
 | `Priority` | `ProjectPriority`? | Proje kabul edilirken verilir |
 | `Status` | `ProjectStatus` | |
 | `ProcessFlowId` | int (FK → ProcessFlow) | Faz 4. Kaydın izlediği akış; açılırken verilir, sonra değişmez |
+| `ParentProjectId` | int? (FK → Project) | Faz 4 (D3). Ek geliştirmenin ait olduğu yeni yazılım projesi; diğer kayıtlarda boş. Doluysa kayıt `add-on` akışını izler ve `Code`'u `14 / EG-01` biçimindedir. Sonra değişmez |
 | `RequiresOffer` | bool | Faz 4. Talep kaydındaki "teklif hazırlanacak mı"; teklif adımlarının yapılıp yapılmayacağını belirler. `Source` ile birlikte, kayıt akışın bunlara bağlı ilk adımına gelince değiştirilemez (projects-api.md, D1-3) |
 | `CurrentStepId` | int? (FK → ProcessStep) | Proje aktif değilse boş. Faz 4: her zaman kaydın akışındaki bir adım |
 | `RequestDate` | DateOnly | Talep tarihi (Faz 4'ten önce `StartDate`). Talebi kayda alan kişi `CreatedById`'dir |
@@ -465,9 +467,9 @@ Sözleşme: [process-improvement-api.md](process-improvement-api.md).
 | Enum | Değerler |
 | --- | --- |
 | `UserRole` | `BusinessAnalyst` (İş Analisti), `SoftwareDepartmentManager` (Yazılım Departman Yöneticisi), `ProjectManager` (Proje Yöneticisi), `SoftwareDeveloper` (Yazılım Geliştirici), `TestSpecialist` (Test Uzmanı), `SalesRepresentative` (Satış Temsilcisi) |
-| `RequestSource` | `Internal` (Kurum içi), `External` (Dış, müşteri), `Affiliated` (İlişkili şirket) |
-| `RequestChannel` | `Email` (E-posta), `Phone` (Telefon). Faz 4 öncesindeki `Written` / `Verbal` migration ile çevrildi |
-| `RequestType` | `NewProject` (Yeni yazılım projesi), `AdditionalModule` (Devam eden projeye ek modül), `CompanyProduct` (Şirket ürünü), `Support` (Destek / ticket) |
+| `RequestSource` | `Internal` (Kurum içi), `External` (Dış, müşteri), `Affiliated` (İlişkili şirket; soru bankası için, talep formunda yok) |
+| `RequestChannel` | `Email` (E-posta), `Phone` (Telefon), `Meeting` (Toplantı), `Other` (Diğer). Faz 4 öncesindeki `Written` / `Verbal` migration ile çevrildi |
+| `RequestType` | `NewProject` (Yeni yazılım projesi), `AdditionalModule` (Ek geliştirme; `ParentProjectId` ile, D3), `CompanyProduct` (Şirket ürünü), `Support` (Destek / ticket) |
 | `ProjectPriority` | `Low`, `Medium`, `High` |
 | `ProjectStatus` | `Active` (Aktif), `Closed` (Kapandı), `Rejected` (Reddedildi), `Lost` (Kaybedildi), `Redirected` (Yönlendirildi) |
 | `ProcessFlowKind` | *(Faz 4)* `Request` (Talep / proje), `Improvement` (Süreç iyileştirme), `ResourcePlanning` (Kaynak planlama), `Billing` (Faturalama) |

@@ -133,3 +133,8 @@ dl {
 .center {
   text-align: center;
 }
+
+// Long texts (açıklama, notlar) inside the field list keep their line breaks but not the paragraph spacing.
+dl dd.description {
+  margin: 0;
+}

@@ -24,10 +24,19 @@ export const PROJECT_PRIORITY_LABELS: Record<ProjectPriority, string> = {
 
 export const REQUEST_TYPE_LABELS: Record<RequestType, string> = {
   NewProject: 'Yeni yazılım projesi',
-  AdditionalModule: 'Ek modül',
+  AdditionalModule: 'Ek geliştirme',
   CompanyProduct: 'Şirket ürünü',
   Support: 'Destek',
 };
+
+/**
+ * The source options of the company's Talep Kayıt Formu, in its words. İlişkili şirket is not on the form
+ * (the question bank uses it), so the request form offers only these two.
+ */
+export const REQUEST_FORM_SOURCE_OPTIONS: [RequestSource, string][] = [
+  ['Internal', 'Kurum İçi Talepler'],
+  ['External', 'Dış Talepler (Müşteri)'],
+];
 
 export const REQUEST_SOURCE_LABELS: Record<RequestSource, string> = {
   Internal: 'Kurum içi',
@@ -38,4 +47,6 @@ export const REQUEST_SOURCE_LABELS: Record<RequestSource, string> = {
 export const REQUEST_CHANNEL_LABELS: Record<RequestChannel, string> = {
   Email: 'E-posta',
   Phone: 'Telefon',
+  Meeting: 'Toplantı',
+  Other: 'Diğer',
 };
