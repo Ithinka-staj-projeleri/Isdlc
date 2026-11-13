@@ -167,13 +167,32 @@ yapı birden fazlasına izin verir.
 | `ProcessStepId` | int (FK → ProcessStep) | |
 | `Action` | `StepAction` | |
 | `JumpedToStepId` | int? (FK → ProcessStep) | Yalnızca geri dönen "Hayır" kayıtlarında dolu |
-| `Note` | string? | `Rejected` işleminde gerekçe zorunludur |
+| `Note` | string? | `Rejected` ve `Postponed` kayıtlarında karar formunun gerekçe açıklaması |
 | `PerformedById` | int (FK → User) | |
 | `PerformedAt` | DateTime (UTC) | |
 | + `AuditableEntity` alanları | | |
 
 Aynı proje ve adım için birden fazla kayıt olabilir; bu, akıştaki geri dönüşleri (ör. 4.7 → 4.1) destekler.
 Kayıtlar değiştirilmez ve silinmez; süreç geçmişi bu tablodan okunur.
+
+### `RequestDecision` — Talep Ret / Erteleme Formu (Faz 4 · D2)
+
+Şirketin formu (ISDLC-Form-Analiz-007). Talebi reddeden, erteleyen ya da kapatan süreç kaydıyla birlikte yazılır, değişmez.
+Kurallar: [process-api.md](process-api.md) → "Ret / erteleme kararı".
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `ProjectId` | int (FK → Project) | |
+| `StepRecordId` | int (FK → StepRecord), benzersiz | Kararın süreç kaydı (`Rejected`, `Postponed` ya da talebi kapatan `No`) |
+| `Decision` | `RequestDecisionKind` | `Reject` (Ret), `Postpone` (Erteleme) |
+| `DecisionDate` | DateOnly | Karar tarihi |
+| `DecidedBy` | string | Kararı veren kişi ya da kurul (serbest metin), en fazla 200 |
+| `Reasons` | `DecisionReason` listesi | Bir veya daha fazla gerekçe kategorisi; JSON listesi olarak saklanır (`["BudgetConstraint"]`), en fazla 500 |
+| `ReasonOther` | string? | "Diğer" seçildiyse açıklaması, en fazla 200 |
+| `Explanation` | string | Gerekçe açıklaması, en fazla 2000 |
+| `ReevaluationDate` | DateOnly? | Yeniden değerlendirme tarihi; yalnızca ertelemede |
+| + `AuditableEntity` alanları | | |
 
 ### `AuditLog` — proje verisindeki her değişiklik
 
@@ -471,9 +490,11 @@ Sözleşme: [process-improvement-api.md](process-improvement-api.md).
 | `RequestChannel` | `Email` (E-posta), `Phone` (Telefon), `Meeting` (Toplantı), `Other` (Diğer). Faz 4 öncesindeki `Written` / `Verbal` migration ile çevrildi |
 | `RequestType` | `NewProject` (Yeni yazılım projesi), `AdditionalModule` (Ek geliştirme; `ParentProjectId` ile, D3), `CompanyProduct` (Şirket ürünü), `Support` (Destek / ticket) |
 | `ProjectPriority` | `Low`, `Medium`, `High` |
-| `ProjectStatus` | `Active` (Aktif), `Closed` (Kapandı), `Rejected` (Reddedildi), `Lost` (Kaybedildi), `Redirected` (Yönlendirildi) |
+| `ProjectStatus` | `Active` (Aktif), `Closed` (Kapandı), `Rejected` (Reddedildi), `Lost` (Kaybedildi), `Redirected` (Yönlendirildi), `Postponed` (Ertelendi; D2: mevcut adımında bekler) |
 | `ProcessFlowKind` | *(Faz 4)* `Request` (Talep / proje), `Improvement` (Süreç iyileştirme), `ResourcePlanning` (Kaynak planlama), `Billing` (Faturalama) |
-| `StepAction` | `Completed` (Tamamlandı), `Yes` (Evet), `No` (Hayır), `Rejected` (Yönetici kararıyla reddedildi) |
+| `StepAction` | `Completed` (Tamamlandı), `Yes` (Evet), `No` (Hayır), `Rejected` (Yönetici kararıyla reddedildi), `Postponed` (Ertelendi), `Resumed` (Değerlendirmeye geri alındı) |
+| `RequestDecisionKind` | `Reject` (Ret), `Postpone` (Erteleme) |
+| `DecisionReason` | `StrategicMisfit` (Stratejik uyumsuzluk), `InsufficientValue` (Yetersiz iş değeri / fayda), `BudgetConstraint` (Bütçe kısıtı), `CapacityShortage` (Kaynak / kapasite yetersizliği), `TechnicalInfeasibility` (Teknik uygulanabilirlik), `LegalNonCompliance` (Yasal / mevzuat uyumu), `UnacceptableRisk` (Kabul edilemez risk), `Prioritization` (Önceliklendirme), `InsufficientInformation` (Yetersiz / belirsiz talep bilgisi), `Other` (Diğer) |
 | `AuditAction` | `Created` (Oluşturuldu), `Updated` (Güncellendi), `Deleted` (Silindi) |
 | `OpenIssueType` | `Question` (Soru), `Action` (Aksiyon), `Decision` (Karar), `ChangeRequest` (Değişiklik Talebi), `Dependency` (Bağımlılık), `Assumption` (Varsayım) |
 | `OpenIssueStatus` | `Open` (Açık), `InProgress` (Devam ediyor), `Closed` (Kapandı) |

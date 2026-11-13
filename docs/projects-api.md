@@ -97,7 +97,7 @@ ait olduğu proje bulunur." Talep, yeni projeyle **aynı formdan** girer; fark, 
 | Parametre | Açıklama |
 | --- | --- |
 | `status` | `ProjectStatus` (`Active`, `Closed`, …) |
-| `phase` | Her kayıt tam olarak bir aşamadadır (karar 3). `Request` → onay bekleyen talepler: aktif ve mevcut adımı akışın proje bölümünden önce (yeni yazılım projesinde bölüm 1–2). `Project` → geri kalan her şey: proje bölümündeki aktif projeler ve bütün kapanmış kayıtlar (talep aşamasında kapanmış olanlar dahil). Yalnızca aktif projeler için `phase=Project&status=Active`. Ayrıntı: [process-api.md](process-api.md) → "Talep mi, proje mi" |
+| `phase` | Her kayıt tam olarak bir aşamadadır (karar 3). `Request` → onay bekleyen talepler: aktif ya da ertelenmiş (`Postponed`, D2) ve mevcut adımı akışın proje bölümünden önce (yeni yazılım projesinde bölüm 1–2). `Project` → geri kalan her şey: proje bölümündeki aktif projeler ve bütün kapanmış kayıtlar (talep aşamasında kapanmış olanlar dahil). Yalnızca aktif projeler için `phase=Project&status=Active`. Ayrıntı: [process-api.md](process-api.md) → "Talep mi, proje mi" |
 | `search` | Proje No (birebir: `14`, 114'ü bulmaz; ek geliştirmeleri `14 / EG-01` de bulunur) ya da proje adında veya talep sahibinde (firma / birim) geçen metin (büyük/küçük harf duyarsız) |
 | `businessAnalystId` | İş analisti |
 | `parentProjectId` | Yalnızca bu projenin ek geliştirmeleri ("Ek Geliştirmeler" sekmesi) |

@@ -73,16 +73,16 @@ public class ProcessService(
                 p.Status,
                 p.CurrentStepId,
                 p.ProcessFlowId,
-                Flow = new ProcessFlowSummaryDto(p.ProcessFlow.Code, p.ProcessFlow.Name),
+                Flow = new ProcessFlowSummaryDto(p.ProcessFlow.Code, p.ProcessFlow.Name, p.ProcessFlow.Kind),
+                p.ProcessFlow.ProjectStageOrder,
                 Context = new ConditionContext(p.Source, p.RequiresOffer, p.Level),
             })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
 
-        var isActive = project.Status == ProjectStatus.Active;
-
-        // Active: the current step. Otherwise: the step where the project was closed (last record).
-        var referenceStepId = isActive
+        // Active or postponed: the current step. Closed: the step where the project was closed (last record).
+        var hasCurrentStep = project.CurrentStepId is not null;
+        var referenceStepId = hasCurrentStep
             ? project.CurrentStepId
             : await dbContext.StepRecords
                 .AsNoTracking()
@@ -105,7 +105,7 @@ public class ProcessService(
                 })
                 .SingleOrDefaultAsync(cancellationToken);
 
-        var currentStep = isActive && project.CurrentStepId is not null
+        var currentStep = hasCurrentStep
             ? await dbContext.ProcessSteps
                 .AsNoTracking()
                 .Where(s => s.Id == project.CurrentStepId)
@@ -156,7 +156,13 @@ public class ProcessService(
                     ProcessProgress.GetStageState(project.Status, stage.Order, referenceStep?.StageOrder)))
                 .ToList(),
             ProcessProgress.GetAvailableActions(
-                project.Status, isActive ? referenceStep?.Permission : null, userRole));
+                project.Status,
+                hasCurrentStep ? referenceStep?.Permission : null,
+                userRole,
+                // Only a request can be postponed: a record of a request flow before its project stage.
+                inRequestPhase: project.Flow.Kind == ProcessFlowKind.Request
+                    && referenceStep is not null
+                    && (project.ProjectStageOrder is null || referenceStep.StageOrder < project.ProjectStageOrder)));
     }
 
     public async Task<PagedResult<StepRecordDto>> GetStepRecordsAsync(
@@ -227,6 +233,7 @@ public class ProcessService(
         var answer = request.Answer!.Value;
         ProcessTransition transition;
         StepRef? targetStep;
+        RequestDecision? closingDecision = null;
 
         if (answer == StepAnswer.Yes)
         {
@@ -252,13 +259,23 @@ public class ProcessService(
             }
 
             transition = ProcessTransitions.AfterNo(step.Id, step.NoOutcome, request.JumpTargetStepId);
+
+            // A "No" that closes a request (yeni proje 4: not suitable, 11: offer not accepted) is recorded with the
+            // Talep Ret / Erteleme Formu, like a rejection. Other flows (e.g. process improvement) close without it.
+            if (step.NoOutcome is not null && await IsRequestFlowAsync(project.ProcessFlowId, cancellationToken))
+            {
+                closingDecision = request.ClosingDecision is { } form
+                    ? NewDecision(project, RequestDecisionKind.Reject, form, reevaluationDate: null)
+                    : throw new BusinessRuleException(
+                        "Talep kapanacağı için Talep Ret / Erteleme Formu doldurulmalıdır (karar tarihi, kararı veren, gerekçe).");
+            }
             targetStep = transition.JumpedToStepId is { } jumpedTo
                 ? await LoadStepRefAsync(jumpedTo, cancellationToken)
                 : null;
         }
 
         var action = answer == StepAnswer.Yes ? StepAction.Yes : StepAction.No;
-        await SaveTransitionAsync(project, step, user, action, request.Note, transition, cancellationToken);
+        await SaveTransitionAsync(project, step, user, action, request.Note, transition, cancellationToken, closingDecision);
         await NotifyAfterTransitionAsync(project, step, transition, targetStep, cancellationToken);
 
         return await GetProjectProcessAsync(projectId, cancellationToken);
@@ -270,15 +287,114 @@ public class ProcessService(
         var (project, step, user) = await LoadForCommandAsync(
             projectId, request.ExpectedStepId, ProcessProgress.WhyCannotReject, cancellationToken);
 
-        // The record is written on the step the request was on, with the reason as its note.
+        // The record is written on the step the request was on, with the explanation as its note, and the form with it.
+        var decision = NewDecision(project, RequestDecisionKind.Reject, request.Decision!, reevaluationDate: null);
         var transition = ProcessTransitions.AfterRejected();
-        await SaveTransitionAsync(project, step, user, StepAction.Rejected, request.Reason, transition, cancellationToken);
+        await SaveTransitionAsync(
+            project, step, user, StepAction.Rejected, decision.Explanation, transition, cancellationToken, decision);
         await NotifyAfterTransitionAsync(project, step, transition, null, cancellationToken);
 
         return await GetProjectProcessAsync(projectId, cancellationToken);
     }
 
-    // ---- Shared by the commands (complete, answer, reject) ----
+    public async Task<ProjectProcessDto> PostponeAsync(
+        int projectId, PostponeProjectDto request, CancellationToken cancellationToken)
+    {
+        var (project, step, user) = await LoadForCommandAsync(
+            projectId, request.ExpectedStepId, ProcessProgress.WhyCannotDecide, cancellationToken);
+
+        // A project that has passed the request stages is rejected, not postponed (the form is for requests).
+        var inRequestPhase = await dbContext.ProcessSteps
+            .AsNoTracking()
+            .Where(s => s.Id == step.Id)
+            .Select(s => s.ProcessFlow.Kind == ProcessFlowKind.Request
+                && (s.ProcessFlow.ProjectStageOrder == null || s.ProcessStage.Order < s.ProcessFlow.ProjectStageOrder))
+            .SingleAsync(cancellationToken);
+        if (!inRequestPhase)
+        {
+            throw new BusinessRuleException("Yalnızca talep aşamasındaki bir kayıt ertelenebilir; projeye dönüşmüş kayıt reddedilebilir.");
+        }
+
+        var decision = NewDecision(project, RequestDecisionKind.Postpone, request.Decision!, request.ReevaluationDate);
+        var transition = ProcessTransitions.AfterPostponed(step.Id);
+        await SaveTransitionAsync(
+            project, step, user, StepAction.Postponed, decision.Explanation, transition, cancellationToken, decision);
+        await NotifyTeamAsync(project,
+            $"{project.Code} ertelendi; yeniden değerlendirme tarihi {decision.ReevaluationDate:dd.MM.yyyy}.", cancellationToken);
+
+        return await GetProjectProcessAsync(projectId, cancellationToken);
+    }
+
+    public async Task<ProjectProcessDto> ResumeAsync(
+        int projectId, ResumeProjectDto request, CancellationToken cancellationToken)
+    {
+        var (project, step, user) = await LoadForCommandAsync(
+            projectId, request.ExpectedStepId, ProcessProgress.WhyCannotDecide, cancellationToken,
+            expectedStatus: ProjectStatus.Postponed);
+
+        var transition = ProcessTransitions.AfterResumed(step.Id);
+        await SaveTransitionAsync(project, step, user, StepAction.Resumed, request.Note, transition, cancellationToken);
+        await NotifyTeamAsync(project,
+            $"{project.Code} yeniden değerlendirmeye alındı; {step.Code}. adımdan devam ediyor.", cancellationToken);
+
+        return await GetProjectProcessAsync(projectId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<RequestDecisionDto>> GetRequestDecisionsAsync(
+        int projectId, CancellationToken cancellationToken)
+    {
+        if (!await dbContext.Projects.AnyAsync(p => p.Id == projectId, cancellationToken))
+        {
+            throw new NotFoundException("Proje bulunamadı.");
+        }
+
+        // Newest first. Reasons are read as a list column, so the rows are mapped after loading.
+        var decisions = await dbContext.RequestDecisions
+            .AsNoTracking()
+            .Where(d => d.ProjectId == projectId)
+            .OrderByDescending(d => d.StepRecord.PerformedAt)
+            .ThenByDescending(d => d.Id)
+            .Select(d => new
+            {
+                d.Id, d.Decision, d.DecisionDate, d.DecidedBy, d.Reasons, d.ReasonOther, d.Explanation, d.ReevaluationDate,
+                StepCode = d.StepRecord.ProcessStep.Code,
+                RecordedBy = new UserSummaryDto(d.StepRecord.PerformedBy.Id, d.StepRecord.PerformedBy.FullName),
+                d.StepRecord.PerformedAt,
+            })
+            .ToListAsync(cancellationToken);
+
+        return decisions
+            .Select(d => new RequestDecisionDto(
+                d.Id, d.Decision, d.DecisionDate, d.DecidedBy, d.Reasons, d.ReasonOther, d.Explanation,
+                d.ReevaluationDate, d.StepCode, d.RecordedBy, d.PerformedAt))
+            .ToList();
+    }
+
+    // ---- Shared by the commands (complete, answer, reject, postpone, resume) ----
+
+    private Task<bool> IsRequestFlowAsync(int flowId, CancellationToken cancellationToken) =>
+        dbContext.ProcessFlows.AnyAsync(f => f.Id == flowId && f.Kind == ProcessFlowKind.Request, cancellationToken);
+
+    /// <summary>The filled-in Talep Ret / Erteleme Formu; required fields are guaranteed by the DTO's attributes.</summary>
+    private static RequestDecision NewDecision(
+        Project project, RequestDecisionKind kind, RequestDecisionFormDto form, DateOnly? reevaluationDate)
+    {
+        var reasons = form.Reasons!.Distinct().ToList();
+        return new RequestDecision
+        {
+            ProjectId = project.Id,
+            Decision = kind,
+            DecisionDate = form.DecisionDate!.Value,
+            DecidedBy = form.DecidedBy!.Trim(),
+            Reasons = reasons,
+            // The text belongs to "Diğer" only.
+            ReasonOther = reasons.Contains(DecisionReason.Other) && !string.IsNullOrWhiteSpace(form.ReasonOther)
+                ? form.ReasonOther.Trim()
+                : null,
+            Explanation = form.Explanation!.Trim(),
+            ReevaluationDate = kind == RequestDecisionKind.Postpone ? reevaluationDate : null,
+        };
+    }
 
     private record CurrentStepInfo(
         int Id, string Code, int Order, bool IsDecision, ProjectStatus? NoOutcome, StepPermissionInfo Permission);
@@ -328,14 +444,18 @@ public class ProcessService(
     /// </summary>
     private async Task<(Project Project, CurrentStepInfo Step, ActingUser User)> LoadForCommandAsync(
         int projectId, int expectedStepId, Func<StepPermissionInfo, UserRole, string?> whyForbidden,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, ProjectStatus expectedStatus = ProjectStatus.Active)
     {
         var project = await dbContext.Projects.SingleOrDefaultAsync(p => p.Id == projectId, cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
 
-        if (project.Status != ProjectStatus.Active || project.CurrentStepId is null)
+        if (project.Status != expectedStatus || project.CurrentStepId is null)
         {
-            throw new ConflictException("Proje aktif değil; süreçte işlem yapılamaz.");
+            throw new ConflictException(expectedStatus == ProjectStatus.Postponed
+                ? "Talep ertelenmiş değil; değerlendirmeye geri alınacak bir şey yok."
+                : project.Status == ProjectStatus.Postponed
+                    ? "Talep ertelendi; önce değerlendirmeye geri alınmalıdır."
+                    : "Proje aktif değil; süreçte işlem yapılamaz.");
         }
 
         if (project.CurrentStepId != expectedStepId)
@@ -378,9 +498,9 @@ public class ProcessService(
     /// </summary>
     private async Task SaveTransitionAsync(
         Project project, CurrentStepInfo step, ActingUser user, StepAction action, string? note,
-        ProcessTransition transition, CancellationToken cancellationToken)
+        ProcessTransition transition, CancellationToken cancellationToken, RequestDecision? decision = null)
     {
-        dbContext.StepRecords.Add(new StepRecord
+        var record = new StepRecord
         {
             ProjectId = project.Id,
             ProcessStepId = step.Id,
@@ -389,7 +509,14 @@ public class ProcessService(
             Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
             PerformedById = user.Id,
             PerformedAt = timeProvider.GetUtcNow().UtcDateTime,
-        });
+        };
+        dbContext.StepRecords.Add(record);
+
+        if (decision is not null)
+        {
+            decision.StepRecord = record;
+            dbContext.RequestDecisions.Add(decision);
+        }
 
         project.Status = transition.Status;
         project.CurrentStepId = transition.CurrentStepId;
@@ -436,7 +563,11 @@ public class ProcessService(
         }
     }
 
-    private async Task NotifyClosedAsync(Project project, CancellationToken cancellationToken)
+    private Task NotifyClosedAsync(Project project, CancellationToken cancellationToken) =>
+        NotifyTeamAsync(project, $"{project.Code} kapandı: {project.Status.ToDisplayName()}.", cancellationToken);
+
+    /// <summary>Tells the project's analyst and project manager (not the person who acted; NotificationService skips them).</summary>
+    private async Task NotifyTeamAsync(Project project, string message, CancellationToken cancellationToken)
     {
         var userIds = new[] { project.BusinessAnalystId, project.ProjectManagerId }
             .OfType<int>()
@@ -445,8 +576,7 @@ public class ProcessService(
 
         if (userIds.Count > 0)
         {
-            await notifications.NotifyUsersAsync(
-                userIds, project.Id, $"{project.Code} kapandı: {project.Status.ToDisplayName()}.", cancellationToken);
+            await notifications.NotifyUsersAsync(userIds, project.Id, message, cancellationToken);
         }
     }
 }

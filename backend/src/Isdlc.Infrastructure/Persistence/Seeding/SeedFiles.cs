@@ -100,5 +100,19 @@ internal static class SeedFiles
         string? CurrentStepCode,
         string? ClosedAtStepCode,
         DateOnly RequestDate,
-        DateOnly? DueDate);
+        DateOnly? DueDate,
+        DecisionSeed? Decision);
+
+    /// <summary>
+    /// The Talep Ret / Erteleme Formu of a rejected, lost or postponed sample project; it belongs to the record that
+    /// closed or postponed the project.
+    /// </summary>
+    public record DecisionSeed(
+        RequestDecisionKind Decision,
+        DateOnly DecisionDate,
+        string DecidedBy,
+        List<DecisionReason> Reasons,
+        string? ReasonOther,
+        string Explanation,
+        DateOnly? ReevaluationDate);
 }

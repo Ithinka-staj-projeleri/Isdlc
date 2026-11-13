@@ -1,0 +1,25 @@
+<h3>Talep Ret / Erteleme Formları</h3>
+@for (d of decisions(); track d.id) {
+<dl>
+    <dt>Karar</dt>
+    <dd><b>{{ decisionLabels[d.decision] }}</b> · {{ d.stepCode }}. adımda</dd>
+    <dt>Karar Tarihi</dt>
+    <dd>{{ d.decisionDate | dateOnly }}</dd>
+    <dt>Kararı Veren (Kişi / Kurul)</dt>
+    <dd>{{ d.decidedBy }}</dd>
+    <dt>Gerekçe Kategorisi</dt>
+    <dd>
+        @for (reason of d.reasons; track reason; let last = $last) {
+        {{ reasonLabels[reason] }}{{ reason === 'Other' && d.reasonOther ? ': ' + d.reasonOther : '' }}{{ last ? '' : ', ' }}
+        }
+    </dd>
+    <dt>Gerekçe Açıklaması</dt>
+    <dd class="note">{{ d.explanation }}</dd>
+    @if (d.reevaluationDate) {
+    <dt>Yeniden Değerlendirme Tarihi</dt>
+    <dd>{{ d.reevaluationDate | dateOnly }}</dd>
+    }
+    <dt>Formu dolduran</dt>
+    <dd class="muted">{{ d.recordedBy.fullName }} · {{ d.recordedAt | localDate }}</dd>
+</dl>
+}

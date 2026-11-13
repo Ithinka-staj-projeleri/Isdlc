@@ -166,7 +166,18 @@
       "status": "Lost",
       "closedAtStepCode": "11",
       "requestDate": "2026-08-06",
-      "dueDate": null
+      "dueDate": null,
+      "decision": {
+        "decision": "Reject",
+        "decisionDate": "2026-08-06",
+        "decidedBy": "Satış Temsilcisi (müşteri görüşmesi)",
+        "reasons": [
+          "BudgetConstraint"
+        ],
+        "reasonOther": null,
+        "explanation": "Müşteri teklifi bütçe dışında buldu ve kabul etmedi.",
+        "reevaluationDate": null
+      }
     },
     {
       "code": "12",
@@ -190,7 +201,55 @@
       "status": "Rejected",
       "closedAtStepCode": "4",
       "requestDate": "2026-09-10",
-      "dueDate": null
+      "dueDate": null,
+      "decision": {
+        "decision": "Reject",
+        "decisionDate": "2026-09-10",
+        "decidedBy": "Yazılım Departman Yöneticisi",
+        "reasons": [
+          "StrategicMisfit",
+          "InsufficientValue"
+        ],
+        "reasonOther": null,
+        "explanation": "Müşteri uygunluk anketinde \"Uygun değil\" çıktı; talep şirketin ürün yol haritasıyla örtüşmüyor.",
+        "reevaluationDate": null
+      }
+    },
+    {
+      "code": "19",
+      "parentCode": null,
+      "name": "Kantin Kart Sistemi",
+      "description": "Çalışanların kantin harcamalarını personel kartıyla yapması ve aylık bordroya yansıtılması.",
+      "source": "Internal",
+      "requestChannel": "Email",
+      "requestChannelOther": null,
+      "requestType": "NewProject",
+      "customerName": "İnsan Kaynakları Birimi",
+      "requesterName": "İK Müdürü",
+      "requesterContact": "ik@ornek.com",
+      "notes": null,
+      "requiresNda": false,
+      "requiresOffer": false,
+      "businessAnalystEmail": null,
+      "projectManagerEmail": null,
+      "level": null,
+      "priority": null,
+      "status": "Postponed",
+      "currentStepCode": "3",
+      "requestDate": "2026-10-20",
+      "dueDate": null,
+      "decision": {
+        "decision": "Postpone",
+        "decisionDate": "2026-10-23",
+        "decidedBy": "Yazılım Departman Yöneticisi",
+        "reasons": [
+          "CapacityShortage",
+          "Prioritization"
+        ],
+        "reasonOther": null,
+        "explanation": "Ekip yıl sonuna kadar müşteri projelerinde; talep ocak ayında yeniden değerlendirilecek.",
+        "reevaluationDate": "2027-01-15"
+      }
     },
     {
       "code": "14 / EG-01",

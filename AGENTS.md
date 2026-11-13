@@ -148,7 +148,8 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Talep tarihi / talebi kayda alan | `Project.RequestDate` / `Project.CreatedById` |
 | Talep notları | `Project.Notes` |
 | Talep kaynağı / kanalı / türü | `RequestSource` (`Internal`, `External`, `Affiliated`), `RequestChannel` (`Email`, `Phone`, `Meeting`, `Other` + `Project.RequestChannelOther`), `RequestType` |
-| Proje durumu | `ProjectStatus` (`Active`, `Closed`, `Rejected`, `Lost`, `Redirected`) |
+| Proje durumu | `ProjectStatus` (`Active`, `Closed`, `Rejected`, `Lost`, `Redirected`, `Postponed` = Ertelendi) |
+| Talep Ret / Erteleme Formu (karar, karar tarihi, kararı veren, gerekçe kategorileri, açıklama, yeniden değerlendirme tarihi) | `RequestDecision` (`RequestDecisionKind`: `Reject`, `Postpone`; `DecisionReason`; `DecidedBy`, `ReevaluationDate`) |
 | Öncelik | `ProjectPriority` |
 | Kullanıcı | `User` |
 | Rol | `UserRole` (kullanıcı başına tek rol) |
@@ -160,7 +161,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Teklif hazırlanacak mı | `Project.RequiresOffer` |
 | "Hayır" cevabında dönülecek adım | `ProcessStepJump` |
 | Adımda yapılan işlem | `StepRecord` |
-| İşlem türü (Tamamlandı, Evet, Hayır, Reddedildi) | `StepAction` |
+| İşlem türü (Tamamlandı, Evet, Hayır, Reddedildi, Ertelendi, Değerlendirmeye geri alındı) | `StepAction` (`Postponed`, `Resumed` dahil) |
 | Oluşturan / güncelleyen bilgisi | `AuditableEntity` (`CreatedAt`, `CreatedById`, `UpdatedAt`, `UpdatedById`) |
 | Seviye | `Level` (`Project.Level`, 1–3; yalnızca `Assessment` uygular) |
 | Seviye belirleme ve kabul puanlaması | `ProjectAssessment` (seviye cevapları 1–3, kabul puanları 1–5) |

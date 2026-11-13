@@ -49,6 +49,12 @@ public static class ProcessTransitions
     /// <summary>The manager rejected the request: it is closed as Rejected, whatever step it was on.</summary>
     public static ProcessTransition AfterRejected() => new(ProjectStatus.Rejected, null);
 
+    /// <summary>The manager postponed the request: it waits on the same step.</summary>
+    public static ProcessTransition AfterPostponed(int currentStepId) => new(ProjectStatus.Postponed, currentStepId);
+
+    /// <summary>A postponed request is taken back: it is active again on the step it waited on.</summary>
+    public static ProcessTransition AfterResumed(int currentStepId) => new(ProjectStatus.Active, currentStepId);
+
     /// <summary>
     /// Checks the chosen return step of a "No" answer. Returns the error message, or null when it is valid.
     /// A step with return options needs one of them; a step without options must not get one.

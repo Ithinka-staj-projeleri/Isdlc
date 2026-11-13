@@ -1,0 +1,69 @@
+<form class="decision" (ngSubmit)="submit()" novalidate>
+    <h4>{{ title() }}</h4>
+
+    <fieldset>
+        <legend>Karar Bilgileri</legend>
+        <div class="row">
+            <label class="field">
+                Karar Tarihi *
+                <input type="date" name="decisionDate" [ngModel]="decisionDate()" (ngModelChange)="decisionDate.set($event)"
+                    [class.invalid]="shown().decisionDate" [disabled]="busy()" />
+                @if (shown().decisionDate; as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field grow">
+                Kararı Veren (Kişi / Kurul) *
+                <input name="decidedBy" maxlength="200" [ngModel]="decidedBy()" (ngModelChange)="decidedBy.set($event)"
+                    [class.invalid]="shown().decidedBy" [disabled]="busy()" />
+                @if (shown().decidedBy; as error) { <span class="error">{{ error }}</span> }
+            </label>
+        </div>
+    </fieldset>
+
+    <fieldset [class.invalid]="shown().reasons">
+        <legend>Gerekçe Kategorisi * <span class="muted">(birden fazla seçilebilir)</span></legend>
+        <ul class="reasons">
+            @for (reason of reasons; track reason.value) {
+            <li>
+                <label class="check">
+                    <input type="checkbox" [name]="'reason-' + reason.value" [ngModel]="chosen().has(reason.value)"
+                        (ngModelChange)="toggle(reason.value, $event)" [disabled]="busy()" />
+                    <span><b>{{ reason.label }}</b>@if (reason.description) {: {{ reason.description }}}</span>
+                </label>
+                @if (reason.value === 'Other' && chosen().has('Other')) {
+                <input class="other" name="reasonOther" maxlength="200" aria-label="Diğer gerekçe"
+                    [ngModel]="reasonOther()" (ngModelChange)="reasonOther.set($event)"
+                    [class.invalid]="shown().reasonOther" [disabled]="busy()" />
+                @if (shown().reasonOther; as error) { <span class="error">{{ error }}</span> }
+                }
+            </li>
+            }
+        </ul>
+        @if (shown().reasons; as error) { <span class="error">{{ error }}</span> }
+    </fieldset>
+
+    <label class="field">
+        Gerekçe Açıklaması *
+        <textarea name="explanation" rows="3" maxlength="2000" [ngModel]="explanation()"
+            (ngModelChange)="explanation.set($event)" [class.invalid]="shown().explanation" [disabled]="busy()"></textarea>
+        @if (shown().explanation; as error) { <span class="error">{{ error }}</span> }
+    </label>
+
+    @if (mode() === 'postpone') {
+    <fieldset>
+        <legend>Erteleme Bilgileri</legend>
+        <label class="field">
+            Yeniden Değerlendirme Tarihi *
+            <input type="date" name="reevaluationDate" [ngModel]="reevaluationDate()"
+                (ngModelChange)="reevaluationDate.set($event)" [class.invalid]="shown().reevaluationDate"
+                [disabled]="busy()" />
+            @if (shown().reevaluationDate; as error) { <span class="error">{{ error }}</span> }
+        </label>
+    </fieldset>
+    }
+
+    <div class="buttons">
+        <button type="button" class="button" [disabled]="busy()" (click)="cancelled.emit()">Vazgeç</button>
+        <button type="submit" class="button no" [disabled]="busy()">{{ submitLabel() }}</button>
+    </div>
+</form>

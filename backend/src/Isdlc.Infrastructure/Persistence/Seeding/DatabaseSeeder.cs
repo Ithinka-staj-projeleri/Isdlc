@@ -312,10 +312,11 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             var projectManager = FindUser(users, seed.ProjectManagerEmail, seed.Code);
             var createdById = businessAnalyst?.Id ?? FirstUserWithRole(users, UserRole.BusinessAnalyst).Id;
 
-            var isActive = seed.Status == ProjectStatus.Active;
-            var stepCode = (isActive ? seed.CurrentStepCode : seed.ClosedAtStepCode)
+            // Active and postponed records wait on a step; closed ones were closed on one.
+            var keepsStep = seed.Status is ProjectStatus.Active or ProjectStatus.Postponed;
+            var stepCode = (keepsStep ? seed.CurrentStepCode : seed.ClosedAtStepCode)
                 ?? throw new InvalidOperationException(
-                    $"Sample project {seed.Code}: {(isActive ? "currentStepCode" : "closedAtStepCode")} is missing.");
+                    $"Sample project {seed.Code}: {(keepsStep ? "currentStepCode" : "closedAtStepCode")} is missing.");
             var markerStep = FindStep(stepsByCode, stepCode, $"sample project {seed.Code}");
 
             var project = new Project
@@ -340,14 +341,15 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 ProcessFlowId = flow.Id,
                 ParentProject = parent,
                 RequiresOffer = seed.RequiresOffer,
-                CurrentStepId = isActive ? markerStep.Id : null,
+                CurrentStepId = keepsStep ? markerStep.Id : null,
                 RequestDate = seed.RequestDate,
                 DueDate = seed.DueDate,
                 CreatedAt = ToUtc(seed.RequestDate),
                 CreatedById = createdById,
             };
 
-            // History: one record per step before the marker step; closed projects also get the closing step.
+            // History: one record per step before the marker step; closed projects also get the closing step and
+            // postponed ones the postponement.
             // Steps whose conditions do not hold for the project are skipped, as the flow itself does.
             var context = new ConditionContext(seed.Source, seed.RequiresOffer, seed.Level);
             var history = steps
@@ -356,19 +358,28 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                     new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel), context))
                 .Select(s => (Step: s, Action: s.IsDecision ? StepAction.Yes : StepAction.Completed))
                 .ToList();
-            if (!isActive)
+            if (seed.Status == ProjectStatus.Postponed)
+            {
+                history.Add((markerStep, StepAction.Postponed));
+            }
+            else if (!keepsStep)
             {
                 history.Add((markerStep, seed.Status == ProjectStatus.Closed ? StepAction.Completed : StepAction.No));
             }
+
+            StepRecord? lastRecord = null;
 
             for (var i = 0; i < history.Count; i++)
             {
                 var (step, action) = history[i];
                 // One day per step from the start date, never in the future, always increasing.
                 var performedAt = Min(ToUtc(seed.RequestDate).AddDays(i), now.AddMinutes(i - history.Count));
-                var performedById = FirstUserWithRole(users, step.ApproverRole ?? step.ResponsibleRole).Id;
+                // Postponing is the manager's; everything else is the step's own role.
+                var performedById = action == StepAction.Postponed
+                    ? FirstUserWithRole(users, UserRole.SoftwareDepartmentManager).Id
+                    : FirstUserWithRole(users, step.ApproverRole ?? step.ResponsibleRole).Id;
 
-                project.StepRecords.Add(new StepRecord
+                lastRecord = new StepRecord
                 {
                     ProcessStepId = step.Id,
                     Action = action,
@@ -376,6 +387,31 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                     PerformedAt = performedAt,
                     CreatedAt = performedAt,
                     CreatedById = performedById,
+                };
+                project.StepRecords.Add(lastRecord);
+            }
+
+            // The Talep Ret / Erteleme Formu belongs to the record that closed or postponed the project.
+            if (seed.Decision is { } decision)
+            {
+                var decisionRecord = lastRecord is not null && !keepsStep || seed.Status == ProjectStatus.Postponed
+                    ? lastRecord!
+                    : throw new InvalidOperationException(
+                        $"Sample project {seed.Code}: only a closed or postponed project has a decision.");
+                decisionRecord.Note = decision.Explanation;
+                db.RequestDecisions.Add(new RequestDecision
+                {
+                    Project = project,
+                    StepRecord = decisionRecord,
+                    Decision = decision.Decision,
+                    DecisionDate = decision.DecisionDate,
+                    DecidedBy = decision.DecidedBy,
+                    Reasons = decision.Reasons,
+                    ReasonOther = decision.ReasonOther,
+                    Explanation = decision.Explanation,
+                    ReevaluationDate = decision.ReevaluationDate,
+                    CreatedAt = decisionRecord.PerformedAt,
+                    CreatedById = decisionRecord.PerformedById,
                 });
             }
 

@@ -56,7 +56,7 @@ public class ProjectProcessController(IProcessService processService) : ApiContr
         return await processService.AnswerStepAsync(projectId, request, cancellationToken);
     }
 
-    /// <summary>Rejects the request (Software Department Manager only, reason required). Returns the updated process state.</summary>
+    /// <summary>Rejects the request with the Talep Ret / Erteleme Formu (Software Department Manager only). Returns the updated process state.</summary>
     [HttpPost("/api/v1/projects/{projectId:int}/process/reject")]
     [ProducesResponseType<ProjectProcessDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -67,5 +67,40 @@ public class ProjectProcessController(IProcessService processService) : ApiContr
         int projectId, RejectProjectDto request, CancellationToken cancellationToken)
     {
         return await processService.RejectAsync(projectId, request, cancellationToken);
+    }
+
+    /// <summary>Postpones the request with the Talep Ret / Erteleme Formu (Software Department Manager only). Returns the updated process state.</summary>
+    [HttpPost("/api/v1/projects/{projectId:int}/process/postpone")]
+    [ProducesResponseType<ProjectProcessDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ProjectProcessDto> Postpone(
+        int projectId, PostponeProjectDto request, CancellationToken cancellationToken)
+    {
+        return await processService.PostponeAsync(projectId, request, cancellationToken);
+    }
+
+    /// <summary>Takes a postponed request back; it continues on its step (Software Department Manager only).</summary>
+    [HttpPost("/api/v1/projects/{projectId:int}/process/resume")]
+    [ProducesResponseType<ProjectProcessDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ProjectProcessDto> Resume(
+        int projectId, ResumeProjectDto request, CancellationToken cancellationToken)
+    {
+        return await processService.ResumeAsync(projectId, request, cancellationToken);
+    }
+
+    /// <summary>The project's Talep Ret / Erteleme Formları, newest first.</summary>
+    [HttpGet("/api/v1/projects/{projectId:int}/request-decisions")]
+    [ProducesResponseType<IReadOnlyList<RequestDecisionDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IReadOnlyList<RequestDecisionDto>> ListRequestDecisions(int projectId, CancellationToken cancellationToken)
+    {
+        return await processService.GetRequestDecisionsAsync(projectId, cancellationToken);
     }
 }

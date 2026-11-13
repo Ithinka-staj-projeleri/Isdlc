@@ -30,6 +30,7 @@ public interface IApplicationDbContext
     DbSet<ProcessStep> ProcessSteps { get; }
     DbSet<ProcessStepJump> ProcessStepJumps { get; }
     DbSet<StepRecord> StepRecords { get; }
+    DbSet<RequestDecision> RequestDecisions { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<OpenIssue> OpenIssues { get; }
     DbSet<Meeting> Meetings { get; }

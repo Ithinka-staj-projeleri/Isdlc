@@ -45,4 +45,10 @@ public enum ProjectStatus
     Rejected,
     Lost,
     Redirected,
+
+    /// <summary>
+    /// Ertelendi: a request put on hold by the Software Department Manager (Talep Ret / Erteleme Formu). It keeps its
+    /// current step and continues from there when it is taken back; nothing can be done on it meanwhile.
+    /// </summary>
+    Postponed,
 }

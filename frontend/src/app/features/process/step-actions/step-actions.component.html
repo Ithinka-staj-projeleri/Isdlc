@@ -19,7 +19,7 @@
         <button type="button" class="button yes" [disabled]="busy()" (click)="answerYes()">Evet → sonraki adım</button>
 
         @if (step().noOutcome; as outcome) {
-        <button type="button" class="button no" [disabled]="busy()" (click)="answerNoAndClose()">
+        <button type="button" class="button no" [disabled]="busy() || !!decisionMode()" (click)="answerNoAndClose()">
             Hayır → talep kapanır ({{ statusLabels[outcome] }})
         </button>
         }
@@ -41,22 +41,30 @@
     }
     }
 
-    @if (actions().canReject) {
-    <div class="reject">
-        @if (rejecting()) {
-        <label class="field" [class.invalid]="reasonMissing()">
-            Reddetme gerekçesi
-            <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event); reasonMissing.set(false)"
-                [maxlength]="maxText" rows="2" [disabled]="busy()"></textarea>
-            @if (reasonMissing()) { <span class="error">Gerekçe zorunludur.</span> }
+    @if (actions().canResume) {
+    <div class="decide">
+        <label class="field">
+            Not (isteğe bağlı)
+            <textarea [ngModel]="resumeNote()" (ngModelChange)="resumeNote.set($event)" [maxlength]="maxText" rows="2"
+                [disabled]="busy()"></textarea>
         </label>
+        <button type="button" class="button primary" [disabled]="busy()" (click)="resume()">Değerlendirmeye geri al</button>
+    </div>
+    }
+
+    @if (decisionMode(); as mode) {
+    <app-request-decision-form [mode]="mode" [busy]="busy()" (submitted)="onDecision($event)"
+        (cancelled)="cancelDecision()" />
+    } @else if (actions().canReject || actions().canPostpone) {
+    <div class="decide">
         <div class="buttons">
-            <button type="button" class="button" [disabled]="busy()" (click)="cancelReject()">Vazgeç</button>
-            <button type="button" class="button no" [disabled]="busy()" (click)="confirmReject()">Talebi reddet</button>
+            @if (actions().canPostpone) {
+            <button type="button" class="button link" [disabled]="busy()" (click)="startDecision('postpone')">Talebi ertele…</button>
+            }
+            @if (actions().canReject) {
+            <button type="button" class="button link danger" [disabled]="busy()" (click)="startDecision('reject')">Talebi reddet…</button>
+            }
         </div>
-        } @else {
-        <button type="button" class="button link danger" [disabled]="busy()" (click)="startReject()">Talebi reddet…</button>
-        }
     </div>
     }
 </div>

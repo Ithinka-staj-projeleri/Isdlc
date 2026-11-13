@@ -14,6 +14,7 @@ export const PROJECT_STATUS_TONES: Record<ProjectStatus, BadgeTone> = {
   Rejected: 'bad',
   Lost: 'bad',
   Redirected: 'warn',
+  Postponed: 'warn',
 };
 
 export const PROJECT_PRIORITY_LABELS: Record<ProjectPriority, string> = {

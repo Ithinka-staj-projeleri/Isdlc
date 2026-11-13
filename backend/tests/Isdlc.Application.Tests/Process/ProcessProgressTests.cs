@@ -93,7 +93,7 @@ public class ProcessProgressTests
     {
         var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, UserRole.BusinessAnalyst);
 
-        Assert.Equal(new AvailableActionsDto(CanComplete: true, CanAnswer: false, CanReject: false, BlockedReason: null), actions);
+        Assert.Equal(new AvailableActionsDto(CanComplete: true, CanAnswer: false, CanReject: false, CanPostpone: false, CanResume: false, BlockedReason: null), actions);
     }
 
     [Fact]
@@ -132,7 +132,7 @@ public class ProcessProgressTests
     {
         var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, ApprovalDecision, UserRole.SoftwareDepartmentManager);
 
-        Assert.Equal(new AvailableActionsDto(CanComplete: false, CanAnswer: true, CanReject: true, BlockedReason: null), actions);
+        Assert.Equal(new AvailableActionsDto(CanComplete: false, CanAnswer: true, CanReject: true, CanPostpone: false, CanResume: false, BlockedReason: null), actions);
     }
 
     [Fact]
@@ -155,7 +155,52 @@ public class ProcessProgressTests
     {
         var actions = ProcessProgress.GetAvailableActions(status, NormalStep, UserRole.SoftwareDepartmentManager);
 
-        Assert.Equal(new AvailableActionsDto(false, false, false, "Proje aktif değil; süreçte işlem yapılamaz."), actions);
+        Assert.Equal(new AvailableActionsDto(false, false, false, false, false, "Proje aktif değil; süreçte işlem yapılamaz."), actions);
+    }
+
+    // ---- Postpone and resume (D2) ----
+
+    [Theory]
+    [InlineData(true, true)]   // a request: can be postponed
+    [InlineData(false, false)] // past the request stages: only rejected
+    public void AvailableActions_Manager_CanPostponeOnlyARequest(bool inRequestPhase, bool canPostpone)
+    {
+        var actions = ProcessProgress.GetAvailableActions(
+            ProjectStatus.Active, NormalStep, UserRole.SoftwareDepartmentManager, inRequestPhase);
+
+        Assert.True(actions.CanReject);
+        Assert.Equal(canPostpone, actions.CanPostpone);
+        Assert.False(actions.CanResume);
+    }
+
+    [Fact]
+    public void AvailableActions_OtherRoleOnARequest_CannotPostpone()
+    {
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, UserRole.BusinessAnalyst, inRequestPhase: true);
+
+        Assert.False(actions.CanPostpone);
+    }
+
+    [Fact]
+    public void AvailableActions_PostponedForManager_OnlyResume()
+    {
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Postponed, NormalStep, UserRole.SoftwareDepartmentManager, true);
+
+        Assert.Equal(
+            new AvailableActionsDto(false, false, false, false, CanResume: true,
+                "Talep ertelendi; değerlendirmeye geri alınınca bu adımdan devam eder."),
+            actions);
+    }
+
+    [Fact]
+    public void AvailableActions_PostponedForOtherRoles_NothingAllowed()
+    {
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Postponed, NormalStep, UserRole.BusinessAnalyst, true);
+
+        Assert.Equal(
+            new AvailableActionsDto(false, false, false, false, false,
+                "Talep ertelendi; Yazılım Departman Yöneticisi değerlendirmeye geri alınca devam eder."),
+            actions);
     }
 
     [Fact]
@@ -163,7 +208,7 @@ public class ProcessProgressTests
     {
         var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, userRole: null);
 
-        Assert.Equal(new AvailableActionsDto(false, false, false, "İşlem yapmak için giriş yapılmalıdır."), actions);
+        Assert.Equal(new AvailableActionsDto(false, false, false, false, false, "İşlem yapmak için giriş yapılmalıdır."), actions);
     }
 
     [Fact]
