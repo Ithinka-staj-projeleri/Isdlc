@@ -1,0 +1,89 @@
+<div class="card">
+    @switch (section()) {
+    @case ('prioritization') {
+    <h3>Önceliklendirme</h3>
+    <p class="hint">
+        Yazılım Departman Yöneticisi öneriyi üç ölçütle puanlar (1 düşük, 5 yüksek). Öncelik puanların toplamıdır:
+        12–15 Yüksek, 8–11 Orta, 3–7 Düşük. Çalışmaya alma kararı Süreç sekmesinde 2. adımda verilir.
+    </p>
+    <form class="scores" [formGroup]="scoreForm" (ngSubmit)="save()">
+        @for (s of scores; track s.key) {
+        <label class="field">
+            {{ s.label }}
+            <select [formControlName]="s.key">
+                <option [ngValue]="null">—</option>
+                @for (v of scoreValues; track v) {
+                <option [ngValue]="v">{{ v }}</option>
+                }
+            </select>
+            <span class="muted small">{{ s.hint }}</span>
+        </label>
+        }
+        <div class="result">
+            <span class="muted small">Öncelik</span>
+            @if (preview().priority; as p) {
+            <app-status-badge [label]="priorityLabels[p] + ' · ' + preview().score" [tone]="priorityTones[p]" />
+            } @else {
+            <span class="muted">Puanlanmadı</span>
+            }
+        </div>
+        @if (scoreError() ?? serverErrors()['impact']?.[0] ?? serverErrors()['frequency']?.[0] ?? serverErrors()['ease']?.[0]; as error) {
+        <span class="error full">{{ error }}</span>
+        }
+        @if (!readOnly()) {
+        <div class="actions full">
+            <button type="button" class="button" (click)="clearScores()">Puanları temizle</button>
+            <button type="submit" class="button primary" [disabled]="saving()">{{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}</button>
+            @if (savedAt()) { <span class="muted small">Kaydedildi</span> }
+        </div>
+        }
+    </form>
+    }
+    @default {
+    <h3>{{ section() === 'study' ? 'Çalışma dokümanı' : 'Pilot değerlendirme' }}</h3>
+    <p class="hint">
+        @if (section() === 'study') {
+        Süreç İyileştirme Çalışma Dokümanı (3. adım) ve yönetim onayı (4. adım) için. Alanlar isteğe bağlıdır; boş alan
+        "henüz yazılmadı" demektir.
+        } @else {
+        Pilot Değerlendirme Raporu (7. adım). Standartlaştırma, pilotu tekrarlama ya da 3. adıma dönme kararı Süreç sekmesinde
+        7. adımın cevabıyla verilir. Pilot tekrarlanırsa bu alanlar son pilotla güncellenir; öncekiler Kayıt Geçmişi'nde kalır.
+        }
+    </p>
+    <form class="texts" [formGroup]="textForm" (ngSubmit)="save()">
+        @if (section() === 'pilot') {
+        <div class="target full">
+            <span class="muted small">Pilot hedefi (Çalışma sekmesinden)</span>
+            <span>{{ improvement().study.pilotTarget ?? 'Hedef henüz yazılmadı.' }}</span>
+        </div>
+        <label class="field">
+            Sonuç
+            <select [formControl]="pilotResult">
+                <option [ngValue]="null">Henüz değerlendirilmedi</option>
+                @for (r of pilotResults; track r) {
+                <option [ngValue]="r">{{ pilotResultLabels[r] }}</option>
+                }
+            </select>
+        </label>
+        }
+        @for (f of fields(); track f.key) {
+        <label class="field" [class.full]="!f.short" [class.invalid]="errorFor(f)">
+            {{ f.label }}
+            <textarea [formControlName]="f.key" [class.short]="f.short" [attr.maxlength]="f.limit"></textarea>
+            @if (f.hint) { <span class="muted small">{{ f.hint }}</span> }
+            @if (errorFor(f); as error) { <span class="error">{{ error }}</span> }
+        </label>
+        }
+        @if (!readOnly()) {
+        <div class="actions full">
+            <button type="submit" class="button primary" [disabled]="saving()">{{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}</button>
+            @if (savedAt()) { <span class="muted small">Kaydedildi</span> }
+        </div>
+        }
+    </form>
+    }
+    }
+    @if (readOnly()) {
+    <p class="hint">Öneri aktif olmadığı için bilgiler yalnızca görüntülenebilir.</p>
+    }
+</div>

@@ -146,6 +146,7 @@ yapı birden fazlasına izin verir.
 | `BusinessAnalystId` | int? (FK → User) | |
 | `ProjectManagerId` | int? (FK → User) | |
 | `Level` | int? | 1–3; seviye belirlenene kadar boş. Yalnızca `Assessment` değiştirir ("Seviyeyi uygula") |
+| `ResearchDays` | int? | Faz 4 · B2. Araştırma süresi, gün (1–30); seviye formunun 2. bölümünden, seviyeyle birlikte uygulanır. Yalnızca `Assessment` değiştirir |
 | `Priority` | `ProjectPriority`? | Proje kabul edilirken verilir |
 | `Status` | `ProjectStatus` | |
 | `ProcessFlowId` | int (FK → ProcessFlow) | Faz 4. Kaydın izlediği akış; açılırken verilir, sonra değişmez |
@@ -414,7 +415,7 @@ QuestionAnswer * ──── 0..1 QuestionOption
 
 | Entity | Alanlar |
 | --- | --- |
-| `QuestionSet` | `Id`, `Code` (`level`, `request-analysis`, `risk-analysis`, `internal-approval`; benzersiz), `Name`, `SourceDocument`, `Version`, `AnswerMode` (`SharedOptions` / `QuestionOptions`), `Bands` (formlara özgü eşikler, JSON) |
+| `QuestionSet` | `Id`, `Code` (`level`, `request-analysis`, `risk-analysis`, `internal-approval`, `customer-fit`; benzersiz), `Name`, `SourceDocument`, `Version`, `AnswerMode` (`SharedOptions` / `QuestionOptions`), `Bands` (formlara özgü eşikler, JSON) |
 | `Question` | `Id`, `QuestionSetId`, `Key` (kalıcı anahtar, benzersiz), `WorkType` (akış anahtarı), `Subcategory` (`RequestSource?`; boş = bütün alt kategoriler), `No`, `Order`, `Section?`, `Group?`, `Topic?`, `Text` (2000), `Requirement` (`QuestionRequirement?`), `ExpectedInfo?`, `RiskDescription?`, `SuggestedAction?`, `Reference?` (1000), `IsActive` |
 | `QuestionOption` | `Id`, `QuestionSetId`, `QuestionId?` (doluysa soruya özgü), `Key` (kalıcı anahtar, benzersiz: ortak seçenekte `{set}/{kod}`, soruya özgüde `{soru anahtarı}/{sıra}`), `Label` (500), `Points?`, `Meaning?` (`OptionMeaning`), `IsScored`, `RequiresNote` (form açıklama bekliyor), `Order` |
 
@@ -442,7 +443,8 @@ Sözleşme: [process-improvement-api.md](process-improvement-api.md).
 
 | Alan | Tür | Not |
 | --- | --- | --- |
-| `ProjectId` | int (PK, FK → Project) | Kaydın kendisi; akışı `process-improvement` olmalıdır |
+| `Id` | int | |
+| `ProjectId` | int (FK → Project, benzersiz) | Kaydın kendisi; akışı `process-improvement` olmalıdır |
 | `Source` | `ImprovementSource` | Önerinin kaynağı |
 | `AffectedProcess` | string | En fazla 200 |
 | `ProposedSolution` | string? | Öneriyle gelen çözüm fikri; en fazla 2000 |

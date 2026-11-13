@@ -1,0 +1,568 @@
+{
+  "code": "customer-fit",
+  "name": "Müşteri Uygunluk Değerlendirme Anket Formu",
+  "sourceDocument": "ISDLC-Form-Analiz-006",
+  "version": "1.0",
+  "answerMode": "QuestionOptions",
+  "options": [],
+  "bands": [
+    {
+      "section": null,
+      "title": "Müşteri Uygunluğu",
+      "ranges": [
+        {
+          "min": 0,
+          "max": 49,
+          "result": "NotFit"
+        },
+        {
+          "min": 50,
+          "max": 69,
+          "result": "Risky"
+        },
+        {
+          "min": 70,
+          "max": 84,
+          "result": "ConditionallyFit"
+        },
+        {
+          "min": 85,
+          "max": 100,
+          "result": "Fit"
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 1,
+      "order": 1,
+      "text": "Müşterinin üst yönetimi projeye sahip çıkmakta ve gerekli bütçe kaynaklarını ayırma konusunda kararlılık sergilemekte midir? Ayırdıkları / ayıracakları bütçe bu projeyi gerçekleştirmek için yeterli midir?",
+      "options": [
+        {
+          "label": "0",
+          "points": 0
+        },
+        {
+          "label": "1",
+          "points": 1
+        },
+        {
+          "label": "2",
+          "points": 2
+        },
+        {
+          "label": "3",
+          "points": 3
+        },
+        {
+          "label": "4",
+          "points": 4
+        },
+        {
+          "label": "5",
+          "points": 5
+        },
+        {
+          "label": "6",
+          "points": 6
+        },
+        {
+          "label": "7",
+          "points": 7
+        },
+        {
+          "label": "8",
+          "points": 8
+        },
+        {
+          "label": "9",
+          "points": 9
+        },
+        {
+          "label": "10",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 2,
+      "order": 2,
+      "text": "Planlanan proje, müşteri bünyesinde farklı birimler veya lokasyonlarda yaygınlaştırılabilir mi?",
+      "options": [
+        {
+          "label": "0",
+          "points": 0
+        },
+        {
+          "label": "1",
+          "points": 1
+        },
+        {
+          "label": "2",
+          "points": 2
+        },
+        {
+          "label": "3",
+          "points": 3
+        },
+        {
+          "label": "4",
+          "points": 4
+        },
+        {
+          "label": "5",
+          "points": 5
+        },
+        {
+          "label": "6",
+          "points": 6
+        },
+        {
+          "label": "7",
+          "points": 7
+        },
+        {
+          "label": "8",
+          "points": 8
+        },
+        {
+          "label": "9",
+          "points": 9
+        },
+        {
+          "label": "10",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 3,
+      "order": 3,
+      "text": "Müşterinin mevcut organizasyon yapısı ve büyüklüğü, önerilen proje ile stratejik ve operasyonel açıdan uyumlu mudur? Bu proje müşteriye uygun bir proje midir?",
+      "options": [
+        {
+          "label": "0",
+          "points": 0
+        },
+        {
+          "label": "1",
+          "points": 1
+        },
+        {
+          "label": "2",
+          "points": 2
+        },
+        {
+          "label": "3",
+          "points": 3
+        },
+        {
+          "label": "4",
+          "points": 4
+        },
+        {
+          "label": "5",
+          "points": 5
+        },
+        {
+          "label": "6",
+          "points": 6
+        },
+        {
+          "label": "7",
+          "points": 7
+        },
+        {
+          "label": "8",
+          "points": 8
+        },
+        {
+          "label": "9",
+          "points": 9
+        },
+        {
+          "label": "10",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 4,
+      "order": 4,
+      "text": "Müşteri bünyesindeki dijital dönüşüm ekibi, proje sürecinde teknik destek sağlama konusunda yeterli midir? Verim olarak yüksek potansiyelde mi çalışmaktadırlar?",
+      "options": [
+        {
+          "label": "0",
+          "points": 0
+        },
+        {
+          "label": "1",
+          "points": 1
+        },
+        {
+          "label": "2",
+          "points": 2
+        },
+        {
+          "label": "3",
+          "points": 3
+        },
+        {
+          "label": "4",
+          "points": 4
+        },
+        {
+          "label": "5",
+          "points": 5
+        },
+        {
+          "label": "6",
+          "points": 6
+        },
+        {
+          "label": "7",
+          "points": 7
+        },
+        {
+          "label": "8",
+          "points": 8
+        },
+        {
+          "label": "9",
+          "points": 9
+        },
+        {
+          "label": "10",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 5,
+      "order": 5,
+      "text": "Müşteri, dijital dönüşüm ekibine sahip olmasa da bilgisayarlı görü, görüntü işleme veya yapay zekâ konularında bilgi sahibi bireye (bireylere) veya proje deneyimine sahip teknik personele sahip midir?",
+      "options": [
+        {
+          "label": "0",
+          "points": 0
+        },
+        {
+          "label": "1",
+          "points": 1
+        },
+        {
+          "label": "2",
+          "points": 2
+        },
+        {
+          "label": "3",
+          "points": 3
+        },
+        {
+          "label": "4",
+          "points": 4
+        },
+        {
+          "label": "5",
+          "points": 5
+        },
+        {
+          "label": "6",
+          "points": 6
+        },
+        {
+          "label": "7",
+          "points": 7
+        },
+        {
+          "label": "8",
+          "points": 8
+        },
+        {
+          "label": "9",
+          "points": 9
+        },
+        {
+          "label": "10",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 6,
+      "order": 6,
+      "text": "Müşteri, proje kapsamında mevcut sistemleri (ERP, MES, CRM vb.) ile entegrasyon talep etmesi hâlinde gerekli teknik altyapıyı sağlayabilecek yetkinlikte midir?",
+      "options": [
+        {
+          "label": "0",
+          "points": 0
+        },
+        {
+          "label": "1",
+          "points": 1
+        },
+        {
+          "label": "2",
+          "points": 2
+        },
+        {
+          "label": "3",
+          "points": 3
+        },
+        {
+          "label": "4",
+          "points": 4
+        },
+        {
+          "label": "5",
+          "points": 5
+        },
+        {
+          "label": "6",
+          "points": 6
+        },
+        {
+          "label": "7",
+          "points": 7
+        },
+        {
+          "label": "8",
+          "points": 8
+        },
+        {
+          "label": "9",
+          "points": 9
+        },
+        {
+          "label": "10",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 7,
+      "order": 7,
+      "text": "Müşteri, proje kapsamında ihtiyaç duyulan veri (görüntü vb.) erişimini düzenli ve teknik olarak mümkün kılabilecek düzeyde midir? Müşteri bünyesinde veriye erişmek kolay mıdır?",
+      "options": [
+        {
+          "label": "0",
+          "points": 0
+        },
+        {
+          "label": "1",
+          "points": 1
+        },
+        {
+          "label": "2",
+          "points": 2
+        },
+        {
+          "label": "3",
+          "points": 3
+        },
+        {
+          "label": "4",
+          "points": 4
+        },
+        {
+          "label": "5",
+          "points": 5
+        },
+        {
+          "label": "6",
+          "points": 6
+        },
+        {
+          "label": "7",
+          "points": 7
+        },
+        {
+          "label": "8",
+          "points": 8
+        },
+        {
+          "label": "9",
+          "points": 9
+        },
+        {
+          "label": "10",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 8,
+      "order": 8,
+      "text": "Müşteri, proje boyunca tarafımızdan paylaşılan teknik bilgi, öneri ve süreçleri proje sahasında uygulayabilir mi? Ortak bir dil oluşturulup sağlıklı bir proje iş birliği yürütülebilir mi?",
+      "options": [
+        {
+          "label": "0",
+          "points": 0
+        },
+        {
+          "label": "1",
+          "points": 1
+        },
+        {
+          "label": "2",
+          "points": 2
+        },
+        {
+          "label": "3",
+          "points": 3
+        },
+        {
+          "label": "4",
+          "points": 4
+        },
+        {
+          "label": "5",
+          "points": 5
+        },
+        {
+          "label": "6",
+          "points": 6
+        },
+        {
+          "label": "7",
+          "points": 7
+        },
+        {
+          "label": "8",
+          "points": 8
+        },
+        {
+          "label": "9",
+          "points": 9
+        },
+        {
+          "label": "10",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 9,
+      "order": 9,
+      "text": "Müşteri bir POC talep ediyor mu? Talep ediyorsa ücretli yapmayı kabul ediyor mu?",
+      "options": [
+        {
+          "label": "0",
+          "points": 0
+        },
+        {
+          "label": "1",
+          "points": 1
+        },
+        {
+          "label": "2",
+          "points": 2
+        },
+        {
+          "label": "3",
+          "points": 3
+        },
+        {
+          "label": "4",
+          "points": 4
+        },
+        {
+          "label": "5",
+          "points": 5
+        },
+        {
+          "label": "6",
+          "points": 6
+        },
+        {
+          "label": "7",
+          "points": 7
+        },
+        {
+          "label": "8",
+          "points": 8
+        },
+        {
+          "label": "9",
+          "points": 9
+        },
+        {
+          "label": "10",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "workType": "new-software-project",
+      "subcategory": "External",
+      "no": 10,
+      "order": 10,
+      "text": "Müşteri; stratejik önemi, iletişim kalitesi veya üst yönetim sahiplenmesi gibi sebeplerle teknik eksikleri telafi edebilecek bir potansiyel izlenimi vermekte midir? Bu bağlamda bir kanaat puanı verilmeli midir? Verilecekse bu puan ne olmalıdır?",
+      "options": [
+        {
+          "label": "0",
+          "points": 0
+        },
+        {
+          "label": "1",
+          "points": 1
+        },
+        {
+          "label": "2",
+          "points": 2
+        },
+        {
+          "label": "3",
+          "points": 3
+        },
+        {
+          "label": "4",
+          "points": 4
+        },
+        {
+          "label": "5",
+          "points": 5
+        },
+        {
+          "label": "6",
+          "points": 6
+        },
+        {
+          "label": "7",
+          "points": 7
+        },
+        {
+          "label": "8",
+          "points": 8
+        },
+        {
+          "label": "9",
+          "points": 9
+        },
+        {
+          "label": "10",
+          "points": 10
+        }
+      ]
+    }
+  ]
+}

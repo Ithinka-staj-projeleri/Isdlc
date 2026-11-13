@@ -17,6 +17,7 @@ export class SidebarComponent {
         { path: '/dashboard', label: 'Gösterge Paneli' },
         { path: '/requests', label: 'Talepler' },
         { path: '/projects', label: 'Projeler' },
+        { path: '/process-improvements', label: 'Süreç İyileştirme' },
       ]
     },
     {

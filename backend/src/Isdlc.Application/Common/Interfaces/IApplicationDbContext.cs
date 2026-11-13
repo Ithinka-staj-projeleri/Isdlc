@@ -6,6 +6,7 @@ using Isdlc.Domain.Meetings;
 using Isdlc.Domain.Notifications;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Process;
+using Isdlc.Domain.ProcessImprovements;
 using Isdlc.Domain.Projects;
 using Isdlc.Domain.QuestionBank;
 using Isdlc.Domain.Requirements;
@@ -43,6 +44,7 @@ public interface IApplicationDbContext
     DbSet<QuestionOption> QuestionOptions { get; }
     DbSet<Questionnaire> Questionnaires { get; }
     DbSet<QuestionAnswer> QuestionAnswers { get; }
+    DbSet<ProcessImprovement> ProcessImprovements { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

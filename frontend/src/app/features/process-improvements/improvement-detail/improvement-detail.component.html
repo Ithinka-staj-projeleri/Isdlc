@@ -1,0 +1,98 @@
+@if (notFound()) {
+<app-empty-state message="Öneri bulunamadı." />
+<p class="center"><a routerLink="/process-improvements">Süreç İyileştirme listesine dön</a></p>
+} @else if (improvement.error()) {
+<app-empty-state message="Öneri yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
+} @else if (loaded(); as i) {
+<header class="page-head">
+    <a routerLink="/process-improvements" class="back">← Süreç İyileştirme</a>
+
+    <div class="title">
+        <span class="code" title="Öneri No">{{ i.code }}</span>
+        <h2>{{ i.title }}</h2>
+        <app-status-badge [label]="statusLabels[i.status]" [tone]="statusTones[i.status]" />
+        @if (i.prioritization.priority; as p) {
+        <app-status-badge [label]="'Öncelik: ' + priorityLabels[p] + ' · ' + i.prioritization.score" [tone]="priorityTones[p]" />
+        }
+    </div>
+
+    <p class="meta">
+        @if (i.currentStep; as step) {
+        <span>Mevcut adım: <b class="step">{{ step.code }}</b> {{ step.stageShortTitle }}</span>
+        }
+        <span>Yürüten: <b>{{ i.owner?.fullName ?? 'Atanmadı' }}</b></span>
+        <span>Kaynak: <b>{{ sourceLabels[i.source] }}</b></span>
+    </p>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Öneri bölümleri">
+    @for (t of tabs; track t.key) {
+    <button type="button" role="tab" [id]="'tab-' + t.key" [attr.aria-selected]="tab() === t.key"
+        [attr.aria-controls]="'panel-' + t.key" [class.on]="tab() === t.key" (click)="selectTab(t.key)">
+        {{ t.label }}
+    </button>
+    }
+</nav>
+
+<section class="panel" role="tabpanel" [id]="'panel-' + tab()" [attr.aria-labelledby]="'tab-' + tab()">
+    @switch (tab()) {
+    @case ('prioritization') {
+    <app-improvement-section [improvement]="i" section="prioritization" [readOnly]="readOnly()" (saved)="onSaved($event)" />
+    }
+    @case ('study') {
+    <app-improvement-section [improvement]="i" section="study" [readOnly]="readOnly()" (saved)="onSaved($event)" />
+    }
+    @case ('pilot') {
+    <app-improvement-section [improvement]="i" section="pilot" [readOnly]="readOnly()" (saved)="onSaved($event)" />
+    }
+    @case ('process') {
+    <!-- After a step is completed or answered, reload so the summary shows the new step and status. -->
+    <app-project-process [projectId]="i.id" (processChanged)="improvement.reload()" />
+    }
+    @case ('open-issues') {
+    <app-open-issue-list [projectId]="i.id" [readOnly]="readOnly()" />
+    }
+    @case ('meetings') {
+    <app-meeting-list [projectId]="i.id" [readOnly]="readOnly()" />
+    }
+    @case ('history') {
+    <app-audit-log [projectId]="i.id" />
+    }
+    @default {
+    <div class="card">
+        <div class="card-head">
+            <h3>Öneri</h3>
+            @if (!readOnly()) {
+            <button type="button" class="button" (click)="editing.set(true)">Düzenle</button>
+            }
+        </div>
+        <p class="description">{{ i.problem }}</p>
+        <dl>
+            <dt>Öneri No</dt>
+            <dd>{{ i.code }}</dd>
+            <dt>Kaynak</dt>
+            <dd>{{ sourceLabels[i.source] }}</dd>
+            <dt>Etkilediği süreç</dt>
+            <dd>{{ i.affectedProcess }}</dd>
+            <dt>Çözüm fikri</dt>
+            <dd class="description">{{ i.proposedSolution ?? '—' }}</dd>
+            <dt>Öneriyi getiren</dt>
+            <dd>{{ i.suggestedBy }}</dd>
+            <dt>Yürüten</dt>
+            <dd>{{ i.owner?.fullName ?? 'Atanmadı' }}</dd>
+            <dt>Kayda alan</dt>
+            <dd>{{ i.createdBy.fullName }} · {{ i.createdAt | localDate }}</dd>
+            <dt>Son güncelleme</dt>
+            <dd>{{ (i.updatedAt | localDate) || '—' }}</dd>
+        </dl>
+    </div>
+    }
+    }
+</section>
+
+@if (editing()) {
+<app-improvement-form [improvement]="i" (saved)="onSaved($event)" (cancelled)="editing.set(false)" />
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}

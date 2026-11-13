@@ -49,6 +49,9 @@ public class Project : AuditableEntity, IAudited
     /// <summary>1–3. Empty until the level is assessed.</summary>
     public int? Level { get; set; }
 
+    /// <summary>Research time in days (1–30), applied together with the level from the level form. Empty until applied.</summary>
+    public int? ResearchDays { get; set; }
+
     /// <summary>Set when the project is accepted.</summary>
     public ProjectPriority? Priority { get; set; }
 
