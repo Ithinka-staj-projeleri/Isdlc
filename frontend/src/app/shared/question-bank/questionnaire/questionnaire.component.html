@@ -27,10 +27,17 @@
                 placeholder="Değerlendirmeye katılanlar" (blur)="setParticipants($any($event.target).value)" />
         </label>
         <label class="field">
-            Tarih
+            {{ dateLabel() }}
             <input type="date" [value]="f.assessedOn ?? ''" [disabled]="readOnly()"
                 (change)="setAssessedOn($any($event.target).value)" />
         </label>
+        @if (methodLabel(); as label) {
+        <label class="field grow">
+            {{ label }}
+            <input type="text" maxlength="200" [value]="f.method ?? ''" [disabled]="readOnly()"
+                placeholder="Ör. yüz yüze toplantı, çevrim içi, telefon" (blur)="setMethod($any($event.target).value)" />
+        </label>
+        }
     </div>
 </section>
 

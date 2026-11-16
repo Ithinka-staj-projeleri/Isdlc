@@ -65,7 +65,7 @@ süreç iyileştirme (E5) Erva'dadır.
 | --- | --- | --- | --- |
 | E1 | **Akış altyapısı.** `Flow` kavramı: aşama ve adımlar bir akışa bağlanır, her kayıt hangi akışı izlediğini bilir. Adım atlama koşulları (iç/dış talep, teklif var/yok, seviye), geri dönüşler, adım ↔ doküman bağlantısı (Yardımcı / Talimat / Form / Çıktı), kaydın hangi adımdan sonra "proje" sayılacağı. `ProjectService` ve `DashboardService`'teki "aşama 1–3 taleptir" sabiti kalkar | — | Akış görselleri |
 | E2 | **Beş akışın seed'i:** yeni yazılım projesi, ek geliştirme, süreç iyileştirme, kaynak planlama, faturalama. Eski 13 aşamalı akış geçersizdir ve kaldırılır; veritabanı yeni akışlarla baştan kurulur (canlı veri yok). Örnek projeler ve testler (`TestProjects.CreateAsync(db, "4.7")` gibi) yeni adım kodlarına çevrilir | E1 | Akış görselleri |
-| E3 | **Talep Analizi sekmesi** (proje detayı): iş tipi ve talep kaynağına göre soru listesi, cevap, açık konu, durum. "Açık" kalan soru tek tıkla Açık Konular'a aktarılır | B1 | Talep Anlama Soru Listesi (003) |
+| E3 | **Talep Analizi sekmesi** (proje detayı): iş tipi ve talep kaynağına göre soru listesi, cevap, açık konu, durum. "Açık" kalan soru tek tıkla Açık Konular'a aktarılır | B1 | Talep Anlama Soru Listesi (002 v2) |
 | E6 | **Demo senaryosu** yeni akışlarla baştan yazılır ve denenir | Hepsi | `docs/demo-scenario.md` |
 
 ### Erva — Tutanaklar, süreç iyileştirme

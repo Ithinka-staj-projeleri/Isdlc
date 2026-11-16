@@ -16,6 +16,7 @@ import { ProjectProcessComponent } from '../../process/project-process/project-p
 import { RequirementListComponent } from '../../requirements/requirement-list/requirement-list.component';
 import { RiskListComponent } from '../../risks/risk-list/risk-list.component';
 import { AddOnListComponent } from '../add-on-list/add-on-list.component';
+import { RequestAnalysisTabComponent } from '../../request-analysis/request-analysis-tab/request-analysis-tab.component';
 import {
   PROJECT_PRIORITY_LABELS,
   PROJECT_STATUS_LABELS,
@@ -29,6 +30,7 @@ import { ProjectService } from '../project.service';
 type DetailTab =
   | 'general'
   | 'process'
+  | 'request-analysis'
   | 'add-ons'
   | 'assessment'
   | 'requirements'
@@ -63,6 +65,7 @@ const LAST_REQUEST_STAGE = 2;
     DocumentListComponent,
     AuditLogComponent,
     AddOnListComponent,
+    RequestAnalysisTabComponent,
   ],
   templateUrl: './project-detail.component.html',
   styleUrl: './project-detail.component.scss',
@@ -82,6 +85,7 @@ export class ProjectDetailComponent {
   private static readonly ALL_TABS: { key: DetailTab; label: string }[] = [
     { key: 'general', label: 'Genel Bilgiler' },
     { key: 'process', label: 'Süreç' },
+    { key: 'request-analysis', label: 'Talep Analizi' },
     { key: 'add-ons', label: 'Ek Geliştirmeler' },
     { key: 'assessment', label: 'Seviye & Kabul' },
     { key: 'requirements', label: 'Gereksinimler' },

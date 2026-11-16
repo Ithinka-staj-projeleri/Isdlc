@@ -21,7 +21,7 @@ public class QuestionnaireService(IApplicationDbContext dbContext, ICurrentUserS
             .Where(x => x.ProjectId == projectId && x.QuestionSetId == set.Id)
             .Select(x => new
             {
-                x.Id, x.WorkType, x.Subcategory, x.Participants, x.AssessedOn, x.ApprovedOn,
+                x.Id, x.WorkType, x.Subcategory, x.Participants, x.AssessedOn, x.Method, x.ApprovedOn,
                 ApprovedBy = x.ApprovedBy == null ? null : new UserSummaryDto(x.ApprovedBy.Id, x.ApprovedBy.FullName),
             })
             .SingleOrDefaultAsync(cancellationToken);
@@ -61,6 +61,7 @@ public class QuestionnaireService(IApplicationDbContext dbContext, ICurrentUserS
             subcategory,
             form?.Participants,
             form?.AssessedOn,
+            form?.Method,
             form?.ApprovedBy,
             form?.ApprovedOn,
             items,
@@ -85,6 +86,7 @@ public class QuestionnaireService(IApplicationDbContext dbContext, ICurrentUserS
         form.Subcategory = request.Subcategory!.Value; // [Required]: the API answers 400 before this runs.
         form.Participants = QuestionnaireRules.Clean(request.Participants);
         form.AssessedOn = request.AssessedOn;
+        form.Method = QuestionnaireRules.Clean(request.Method);
         form.ApprovedById = request.ApprovedByUserId;
         form.ApprovedOn = request.ApprovedOn;
 

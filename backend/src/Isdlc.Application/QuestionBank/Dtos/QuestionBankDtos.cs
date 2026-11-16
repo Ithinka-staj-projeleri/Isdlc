@@ -75,6 +75,7 @@ public record QuestionnaireDto(
     RequestSource Subcategory,
     string? Participants,
     DateOnly? AssessedOn,
+    string? Method, // how the meeting was held (request analysis)
     UserSummaryDto? ApprovedBy,
     DateOnly? ApprovedOn,
     IReadOnlyList<QuestionnaireItemDto> Questions,
@@ -91,6 +92,10 @@ public record SaveQuestionnaireDto
     public string? Participants { get; init; }
 
     public DateOnly? AssessedOn { get; init; }
+
+    /// <summary>How the meeting was held; used by the request analysis ("Görüşme Yöntemi").</summary>
+    [MaxLength(200, ErrorMessage = "Görüşme yöntemi en fazla 200 karakter olabilir.")]
+    public string? Method { get; init; }
 
     public int? ApprovedByUserId { get; init; }
 

@@ -464,6 +464,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int?>("SourceMeetingId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("SourceQuestionAnswerId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -492,6 +495,10 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasIndex("OwnerUserId");
 
                     b.HasIndex("SourceMeetingId");
+
+                    b.HasIndex("SourceQuestionAnswerId")
+                        .IsUnique()
+                        .HasFilter("[SourceQuestionAnswerId] IS NOT NULL");
 
                     b.HasIndex("UpdatedById");
 
@@ -1335,6 +1342,10 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("CreatedById")
                         .HasColumnType("int");
 
+                    b.Property<string>("Method")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("Participants")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -1683,6 +1694,11 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SourceMeetingId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Isdlc.Domain.QuestionBank.QuestionAnswer", "SourceQuestionAnswer")
+                        .WithMany()
+                        .HasForeignKey("SourceQuestionAnswerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -1693,6 +1709,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("Project");
 
                     b.Navigation("SourceMeeting");
+
+                    b.Navigation("SourceQuestionAnswer");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Process.ProcessStage", b =>

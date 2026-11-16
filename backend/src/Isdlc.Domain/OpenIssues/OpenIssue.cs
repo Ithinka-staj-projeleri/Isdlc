@@ -2,6 +2,7 @@ using Isdlc.Domain.Common;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Meetings;
 using Isdlc.Domain.Projects;
+using Isdlc.Domain.QuestionBank;
 
 namespace Isdlc.Domain.OpenIssues;
 
@@ -40,4 +41,8 @@ public class OpenIssue : AuditableEntity, IAudited, IProjectRecord
     /// <summary>The meeting whose decision or action this record came from; null when added directly.</summary>
     public int? SourceMeetingId { get; set; }
     public Meeting? SourceMeeting { get; set; }
+
+    /// <summary>The Talep Analizi answer this record came from ("Açık Konular'a aktar"); at most one record per answer.</summary>
+    public int? SourceQuestionAnswerId { get; set; }
+    public QuestionAnswer? SourceQuestionAnswer { get; set; }
 }

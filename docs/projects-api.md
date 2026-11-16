@@ -255,6 +255,7 @@ yine olmazsa 409 döner. Açık konulardan farkı: talep formu uzun olduğu içi
 | --- | --- | --- |
 | Genel Bilgiler | `Projects` | Dide |
 | Süreç | `app-project-process` | Dide (Faz 4) |
+| Talep Analizi | `features/request-analysis` | Dide (Faz 4 · E3) |
 | Ek Geliştirmeler (yalnızca yeni yazılım projesinde) | `features/projects/add-on-list` | Dide (D3) |
 | Açık Konular | `features/open-issues` | Erva |
 | Toplantı Tutanakları | `features/meetings` | Erva |

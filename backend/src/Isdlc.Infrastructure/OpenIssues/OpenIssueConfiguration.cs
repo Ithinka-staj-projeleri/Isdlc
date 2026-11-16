@@ -26,6 +26,10 @@ public class OpenIssueConfiguration : IEntityTypeConfiguration<OpenIssue>
         builder.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId);
         builder.HasOne(x => x.OwnerUser).WithMany().HasForeignKey(x => x.OwnerUserId);
         builder.HasOne(x => x.SourceMeeting).WithMany().HasForeignKey(x => x.SourceMeetingId);
+        builder.HasOne(x => x.SourceQuestionAnswer).WithMany().HasForeignKey(x => x.SourceQuestionAnswerId);
+
+        // An answer is transferred once; a second transfer at the same moment fails here.
+        builder.HasIndex(x => x.SourceQuestionAnswerId).IsUnique().HasFilter("[SourceQuestionAnswerId] IS NOT NULL");
 
         builder.ConfigureAuditFields();
     }

@@ -127,6 +127,7 @@ Cevap kaydedince bütün form döner, çünkü özet (sayılar, sonuç) her ceva
   "subcategory": "External",
   "participants": "Elif Yılmaz, Müşteri BT",
   "assessedOn": "2026-11-11",
+  "method": "Yüz yüze toplantı",                          // talep analizinde "Görüşme Yöntemi"; diğerlerinde boş
   "approvedBy": null,                                     // iç onayda onaylayan (UserSummaryDto), diğerlerinde boş
   "approvedOn": null,
   "questions": [
@@ -152,7 +153,7 @@ Cevap kaydedince bütün form döner, çünkü özet (sayılar, sonuç) her ceva
 }
 
 // SaveQuestionnaireDto (PUT .../questionnaires/{setCode})
-{ "subcategory": "External", "participants": "Elif Yılmaz, Müşteri BT", "assessedOn": "2026-11-11",
+{ "subcategory": "External", "participants": "Elif Yılmaz, Müşteri BT", "assessedOn": "2026-11-11", "method": null,
   "approvedByUserId": null, "approvedOn": null }
 
 // SaveAnswerDto (PUT .../answers/{questionId}) — bütün alanlar null ise cevap boşaltılır
@@ -167,6 +168,7 @@ Cevap kaydedince bütün form döner, çünkü özet (sayılar, sonuç) her ceva
 | `probability`, `severity` | Yalnızca puanlanan seçenekte, 1–3; puanlanmayan seçenekte gönderilirse yok sayılmaz, 400 döner | "Olasılık 1 ile 3 arasında olmalıdır.", "Olasılık ve şiddet yalnızca puanlanan cevaplarda girilir." |
 | `questionId` | Formun iş tipi ve alt kategorisinde listelenen bir soru olmalı | "Soru bu formda yer almıyor." (404) |
 | `subcategory` | `Internal`, `External`, `Affiliated` | "Alt kategori seçilmelidir." |
+| `method` | İsteğe bağlı, en fazla 200 karakter (talep analizinde görüşme yöntemi) | "Görüşme yöntemi en fazla 200 karakter olabilir." |
 | `approvedByUserId` | İsteğe bağlı; aktif bir kullanıcı | "Seçilen onaylayan aktif bir kullanıcı değil." |
 
 ## Formlara özgü sonuçlar
@@ -177,9 +179,44 @@ kombinasyonda veritabanısız test edilir (AGENTS.md Bölüm 9). Eşikler seed'd
 | Set | Sonuç | Kural (formdan) | İş |
 | --- | --- | --- | --- |
 | `level` | Doküman seviyesi ve araştırma süresi | Bölüm 1 puanlarının toplamı: 1–20 Seviye 1, 21–40 Seviye 2, 41–60 Seviye 3. Bölüm 2: 1–10 → 1 gün, 11–20 → 2, 21–30 → 5, 31–40 → 10, 41–50 → 20, 51–60 → 30 gün. Seçilmemiş soru varsa sonuç yok | B2 |
-| `request-analysis` | Açık konular | `Open` ve `Partial` cevaplar; tek tıkla Açık Konular'a aktarılır | E3 |
+| `request-analysis` | Açık konular | `Open` ve `Partial` cevaplar; tek tıkla Açık Konular'a aktarılır. `result` doldurulmaz; ayrı uç noktadır (aşağıda "Talep Analizi (E3)") | E3 |
 | `risk-analysis` | Risk özeti | Puanlanan her cevapta derece = olasılık × şiddet (1–9). Seviye: 1 Hafif (C), 2 Tolere Edilebilir (C), 3–4 Orta Dereceli (B), 6 Yüksek Risk (A), 9 Tolere Edilemez (A). Özet: seviyelere göre sayı, en yüksek derece, ortalama derece, puanı eksik satır. Ölçek Risks modülüyle ortaktır (B3) | B4 |
 | `internal-approval` | Uygunluk oranı | Uygun / (Listelenen − Uygulanamaz). `Partial`, `Negative`, `NotApplicable` cevaplarda açıklama beklenir | D7 |
+
+## Talep Analizi (E3)
+
+Kaynak: Talep Anlama Soru Listesi (ISDLC-Doküman-Analiz-002, v2). Kullanıldığı adımlar: yeni yazılım projesi 6 ve ek geliştirme 4,
+"Talep anlaşılır" ("… soru listesi yanıtlanır; … aksiyon gerektiren konular Açık Konular Listesi'ne işlenir").
+
+**Ekran:** proje detayında **Talep Analizi** sekmesi. Ortak bileşen (`app-questionnaire`, `setCode="request-analysis"`) formun üç adımını
+gösterir: görüşme bilgileri (katılanlar, görüşme tarihi, **görüşme yöntemi**), alt kategori, sorular. Altında **Açık konular** paneli:
+"Açık Konu Var" ya da "Kısmen Yanıtlandı" denen sorular ve "Açık Konular'a aktar" düğmesi.
+
+| İstek | Açıklama | Başarılı cevap |
+| --- | --- | --- |
+| `GET /projects/{projectId}/request-analysis/open-items` | Listelenen sorulardan cevabı `Open` ya da `Partial` olanlar, form sırasıyla, aktarıldıkları açık konuyla | `200` `RequestAnalysisOpenItemDto[]` |
+| `POST /projects/{projectId}/request-analysis/open-items/{questionId}/open-issue` | Sorunun cevabını Açık Konular'a aktarır (cevap başına bir kez) | `200` `RequestAnalysisOpenItemDto` |
+
+```jsonc
+// RequestAnalysisOpenItemDto
+{ "questionId": 812, "no": 12, "section": "1-Temel", "group": "Hedef Durum", "text": "Süreçte uygulanması gereken iş kuralları …?",
+  "meaning": "Open", "optionLabel": "Açık Konu Var", "answerText": "Birim müdürü dönecek.", "note": "Onay akışı netleşmedi.",
+  "openIssue": { "id": 41, "code": "AK-004", "status": "Open" } }   // aktarılmadıysa null
+```
+
+| # | Karar |
+| --- | --- |
+| E3-1 | Aktarılan kayıt: tür **Soru** (`Question`), konu = sorunun metni (300 karakteri aşarsa "…" ile kısaltılır), açıklama = "Talep Analizi · soru 12 (Hedef Durum): Açık Konu Var", açık konu / eksik bilgi ve paydaş yanıtı, satır satır. Durum **Açık**, termin boş |
+| E3-2 | Sorumlu: projenin **talebi ileten kişisi** (`OwnerName`), çünkü müşteri dönüşü bekleniyor (formdaki kural: "Müşteri dönüşü bekleniyor"). Açık Konular'dan değiştirilebilir |
+| E3-3 | Kayıt, cevabına `OpenIssue.SourceQuestionAnswerId` ile bağlıdır (tutanaktaki `SourceMeetingId` gibi); bir cevap bir kez aktarılır (benzersiz indeks). Panel aktarılan kaydın kodunu ve güncel durumunu gösterir |
+| E3-4 | Görüşme yöntemi serbest metindir (`Questionnaire.Method`, en fazla 200); formda tek hücre ("Görüşme Tarihi & Yöntemi") ve seçenek listesi yok. Ortak bileşen alanı yalnızca `methodLabel` verilince gösterir; diğer formlar etkilenmez |
+
+| Durum | Kod | Mesaj |
+| --- | --- | --- |
+| Cevap açık değil ya da soru cevaplanmamış | `400` | "Yalnızca "Açık Konu Var" ya da "Kısmen Yanıtlandı" cevabı verilen sorular Açık Konular'a aktarılır." |
+| Soru bu formda yok | `404` | "Soru bu formda yer almıyor." |
+| Zaten aktarıldı | `409` | "Bu soru zaten Açık Konular'a aktarıldı (AK-004)." |
+| Proje aktif değil | `409` | "Proje aktif değil; kayıt eklenemez veya değiştirilemez." |
 
 ## Seed
 
@@ -228,7 +265,9 @@ kombinasyonda veritabanısız test edilir (AGENTS.md Bölüm 9). Eşikler seed'd
 | `Isdlc.Application/QuestionBank/` | `IQuestionBankService` (sorular), `IQuestionnaireService` (proje formları), DTO'lar, `QuestionnaireRules` (listeleme, tamamlanma, özet; saf) |
 | `Isdlc.Infrastructure/QuestionBank/` | EF yapılandırmaları, `QuestionSetSeeder` (JSON doğrulama ve eşitleme) |
 | `Isdlc.Infrastructure/Seed/question-sets/` | `level.json`, `request-analysis.json`, `risk-analysis.json`, `internal-approval.json` |
-| `Isdlc.Api/Controllers/` | `QuestionSetsController`, `QuestionnairesController` |
+| `Isdlc.Api/Controllers/` | `QuestionSetsController`, `QuestionnairesController`, `RequestAnalysisController` (E3) |
+| `Isdlc.Application/QuestionBank/` (E3) | `IRequestAnalysisService`, `RequestAnalysisService`, `RequestAnalysisRules` (saf) |
+| `frontend/src/app/features/request-analysis/` (E3) | Talep Analizi sekmesi ve açık konular paneli |
 | `frontend/src/app/shared/question-bank/` | Ortak bileşen: bölüm ve gruplara ayrılmış soru listesi, satır satır cevap, özet şeridi. Dört sekme bunu kullanır |
 
 ## Ortak ekran bileşeni
@@ -245,6 +284,8 @@ Dört sekme aynı bileşeni kullanır; sekme yalnızca kendi sonucunu (seviye, o
 | `projectId`, `setCode` | Hangi projenin hangi formu |
 | `readOnly` | Proje aktif değilse `true`: form görüntülenir, değiştirilemez |
 | `sectionTitles` | Bölüm kodlarına ad (`'1'` → "Doküman seviyesi"); verilmezse kod gösterilir |
+| `dateLabel` | Tarih alanının adı (varsayılan "Tarih"; talep analizinde "Görüşme tarihi") |
+| `methodLabel` | Verilirse başlıkta yöntem alanı çıkar (talep analizinde "Görüşme yöntemi"); verilmezse alan yok |
 | `changed` | Form yüklendiğinde ve her kayıttan sonra bütün form (`Questionnaire`); sekme sonucunu bundan hesaplar ya da gösterir |
 
 Bileşen: başlık (alt kategori, katılanlar, tarih), yapışkan özet şeridi (tamamlandı / bekleyen zorunlu, cevaplanan, anlamlara göre sayılar,

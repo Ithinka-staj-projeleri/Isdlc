@@ -1,0 +1,54 @@
+<p class="intro">
+    Talep sahibiyle yapılan görüşmelerde Talep Anlama Soru Listesi burada doldurulur. Cevaplanamayan sorular
+    "Açık Konu Var" seçilir ve aşağıdan Açık Konular'a aktarılır; müşteri dönüşü orada takip edilir.
+</p>
+
+<app-questionnaire [projectId]="projectId()" setCode="request-analysis" [readOnly]="readOnly()"
+    [sectionTitles]="sectionTitles" dateLabel="Görüşme tarihi" methodLabel="Görüşme yöntemi"
+    (changed)="onFormChanged()" />
+
+<section class="card open-items" aria-label="Açık konular">
+    <header>
+        <h3>Açık konular</h3>
+        @if (items().length) {
+        <span class="muted">{{ items().length }} soru · {{ waiting() }} tanesi henüz aktarılmadı</span>
+        }
+    </header>
+
+    @if (openItems.error()) {
+    <p class="muted">Açık konular yüklenemedi.</p>
+    } @else if (!items().length) {
+    <p class="muted">"Açık Konu Var" ya da "Kısmen Yanıtlandı" cevabı verilen soru yok.</p>
+    } @else {
+    <ul>
+        @for (item of items(); track item.questionId) {
+        <li>
+            <span class="no">{{ item.no }}</span>
+            <div class="body">
+                <span class="text">{{ item.text }}</span>
+                <span class="meta">
+                    <app-status-badge [label]="item.optionLabel" [tone]="item.meaning === 'Open' ? 'bad' : 'warn'" />
+                    @if (item.group) { <span class="muted">{{ item.group }}</span> }
+                </span>
+                @if (item.note) { <span class="note">Açık konu / eksik bilgi: {{ item.note }}</span> }
+                @if (item.answerText) { <span class="note">Paydaş yanıtı: {{ item.answerText }}</span> }
+            </div>
+            <div class="action">
+                @if (item.openIssue; as issue) {
+                <a [routerLink]="[]" [queryParams]="{ tab: 'open-issues' }" queryParamsHandling="merge" class="issue">
+                    {{ issue.code }} · {{ issueStatusLabels[issue.status] }}
+                </a>
+                } @else if (!readOnly()) {
+                <button type="button" class="button" [disabled]="transferring() !== null"
+                    (click)="transfer(item)">
+                    {{ transferring() === item.questionId ? 'Aktarılıyor…' : "Açık Konular'a aktar" }}
+                </button>
+                } @else {
+                <span class="muted">Aktarılmadı</span>
+                }
+            </div>
+        </li>
+        }
+    </ul>
+    }
+</section>

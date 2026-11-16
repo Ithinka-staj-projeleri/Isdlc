@@ -1,0 +1,96 @@
+@use '../../../shared/styles/ui' as ui;
+
+:host {
+    display: block;
+}
+
+.intro {
+    margin: 0 0 12px;
+    color: var(--muted);
+}
+
+.card {
+    @include ui.card;
+}
+
+.open-items {
+    margin-top: 16px;
+    padding: 16px 20px;
+
+    header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 6px 12px;
+        margin-bottom: 10px;
+    }
+
+    h3 {
+        margin: 0;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+    }
+
+    ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    li {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        padding: 10px 0;
+        border-top: 1px solid var(--line);
+
+        &:first-child {
+            border-top: 0;
+        }
+    }
+}
+
+.no {
+    @include ui.code;
+    min-width: 28px;
+    color: var(--muted);
+}
+
+.body {
+    display: flex;
+    flex: 1 1 320px;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.note {
+    color: var(--fg);
+    white-space: pre-line;
+}
+
+.action {
+    align-self: center;
+}
+
+.issue {
+    @include ui.code;
+    white-space: nowrap;
+}
+
+.button {
+    @include ui.button;
+}
+
+.muted {
+    color: var(--muted);
+}
