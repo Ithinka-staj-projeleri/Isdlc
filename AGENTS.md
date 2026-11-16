@@ -186,6 +186,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Tutanağı yazan / toplantı özeti / sonraki adımlar | `Meeting.RecordedById`, `Summary`, `NextSteps` |
 | Tamamlanan / devam eden aşamalar (tutanakta) | `Meeting.CompletedStages`, `OngoingStages` |
 | Tutanaktan aktarılan kayıt | `OpenIssue.SourceMeetingId` |
+| Talep Analizi'nden aktarılan kayıt / görüşme yöntemi | `OpenIssue.SourceQuestionAnswerId` / `Questionnaire.Method` |
 | Bildirim | `Notification` (alıcı başına bir satır; `ReadAt` okunma zamanı). Modüller yalnızca `INotificationService` ile gönderir |
 | Denetim kaydı | `AuditLog` |
 | Soru bankası: soru seti / soru / seçenek | `QuestionSet` (`level`, `request-analysis`, `risk-analysis`, `internal-approval`) / `Question` / `QuestionOption` |

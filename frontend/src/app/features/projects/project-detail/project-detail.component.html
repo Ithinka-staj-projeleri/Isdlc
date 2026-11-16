@@ -53,6 +53,9 @@
         <!-- After a step is completed, answered or rejected, reload so the summary shows the new step and status. -->
         <app-project-process [projectId]="p.id" (processChanged)="project.reload()" />
       }
+      @case ('request-analysis') {
+        <app-request-analysis-tab [projectId]="p.id" [readOnly]="readOnly()" />
+      }
       @case ('add-ons') {
         <app-add-on-list [projectId]="p.id" [acceptsAddOns]="acceptsAddOns()" />
       }

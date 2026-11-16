@@ -157,7 +157,7 @@ Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enu
 **Aktarım** (`POST`): tutanak ve açık konular tek `SaveChanges` ile kaydedilir.
 - Her aksiyon → `OpenIssue(Type = Action, Status = Open)`, verilen sorumlu ve terminle.
 - Her karar → `OpenIssue(Type = Decision, Status = Closed)`, sorumlu kaydeden kullanıcı, termin toplantı tarihi.
-- Hepsinin `SourceMeetingId`'si yeni tutanaktır. Kodlar sırayla verilir (`AK-004`, `AK-005`…): önce aksiyonlar, sonra kararlar, girildikleri sırayla.
+- Hepsinin `SourceMeetingId`'si yeni tutanaktır. (Talep Analizi'nden aktarılan kayıtlar da aynı biçimde `SourceQuestionAnswerId` taşır; bkz. question-bank-api.md → "Talep Analizi (E3)".) Kodlar sırayla verilir (`AK-004`, `AK-005`…): önce aksiyonlar, sonra kararlar, girildikleri sırayla.
 - Bir satır hatalıysa hiçbir şey kaydedilmez; mesaj satırı söyler: "2. aksiyon: Seçilen sorumlu aktif bir kullanıcı değil.", "3. karar en fazla 300 karakter olabilir.".
   Biçim hataları alan adıyla döner: `errors["actions[0].title"]`.
 - Tutanak detayında ve listedeki sayılarda türü `Decision` olan kayıtlar karar, diğerleri aksiyon sayılır;

@@ -14,6 +14,7 @@ function form(change: Partial<Questionnaire> = {}): Questionnaire {
     subcategory: 'Internal',
     participants: null,
     assessedOn: null,
+    method: null,
     approvedBy: null,
     approvedOn: null,
     questions: [{
@@ -113,7 +114,7 @@ describe('QuestionnaireComponent', () => {
 
     const req = http.expectOne(URL);
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({ subcategory: 'External', participants: null, assessedOn: null, approvedByUserId: null, approvedOn: null });
+    expect(req.request.body).toEqual({ subcategory: 'External', participants: null, assessedOn: null, method: null, approvedByUserId: null, approvedOn: null });
     req.flush(form({ subcategory: 'External' }));
   });
 

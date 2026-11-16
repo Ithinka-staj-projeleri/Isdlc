@@ -105,6 +105,7 @@ export function headerWith(form: Questionnaire, change: Partial<SaveQuestionnair
     subcategory: form.subcategory,
     participants: form.participants,
     assessedOn: form.assessedOn,
+    method: form.method,
     approvedByUserId: form.approvedBy?.id ?? null,
     approvedOn: form.approvedOn,
     ...change,

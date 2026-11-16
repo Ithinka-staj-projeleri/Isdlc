@@ -65,6 +65,7 @@ public class QuestionnaireConfiguration : IEntityTypeConfiguration<Questionnaire
     {
         builder.Property(x => x.WorkType).HasMaxLength(50);
         builder.Property(x => x.Participants).HasMaxLength(1000);
+        builder.Property(x => x.Method).HasMaxLength(200);
 
         // One filled-in form per project and set.
         builder.HasIndex(x => new { x.ProjectId, x.QuestionSetId }).IsUnique();

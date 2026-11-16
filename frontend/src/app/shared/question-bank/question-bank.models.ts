@@ -82,6 +82,8 @@ export interface Questionnaire {
   participants: string | null;
   /** yyyy-MM-dd */
   assessedOn: string | null;
+  /** How the meeting was held (request analysis: "Görüşme Yöntemi"). */
+  method: string | null;
   approvedBy: UserSummary | null;
   approvedOn: string | null;
   questions: QuestionnaireItem[];
@@ -94,6 +96,7 @@ export interface SaveQuestionnaire {
   subcategory: Subcategory;
   participants: string | null;
   assessedOn: string | null;
+  method: string | null;
   approvedByUserId: number | null;
   approvedOn: string | null;
 }

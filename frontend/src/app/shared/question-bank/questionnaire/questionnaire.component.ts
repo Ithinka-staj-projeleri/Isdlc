@@ -38,6 +38,12 @@ export class QuestionnaireComponent {
   /** Names for the form's section codes, e.g. level: { '1': 'Doküman seviyesi' }; the code is shown otherwise. */
   readonly sectionTitles = input<Record<string, string>>({});
 
+  /** Name of the date field; request analysis calls it "Görüşme tarihi". */
+  readonly dateLabel = input('Tarih');
+
+  /** When given, the header also asks how the meeting was held (request analysis: "Görüşme yöntemi"). */
+  readonly methodLabel = input<string | null>(null);
+
   /** The form after it was loaded or saved, for the tab's own result. */
   readonly changed = output<Questionnaire>();
 
@@ -101,6 +107,12 @@ export class QuestionnaireComponent {
 
   protected setAssessedOn(value: string): void {
     this.saveHeader({ assessedOn: value === '' ? null : value });
+  }
+
+  protected setMethod(value: string): void {
+    const method = value.trim() === '' ? null : value.trim();
+    if (method === (this.form.value()?.method ?? null)) return;
+    this.saveHeader({ method });
   }
 
   protected toggleOnlyOpen(): void {

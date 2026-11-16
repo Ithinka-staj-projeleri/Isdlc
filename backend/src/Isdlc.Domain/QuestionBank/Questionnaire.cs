@@ -30,6 +30,9 @@ public class Questionnaire : AuditableEntity, IAudited, IProjectRecord
     /// <summary>Meeting / assessment / review date.</summary>
     public DateOnly? AssessedOn { get; set; }
 
+    /// <summary>How the meeting was held (Talep Analizi: "Görüşme Yöntemi", e.g. "Yüz yüze toplantı"); free text.</summary>
+    public string? Method { get; set; }
+
     /// <summary>Who approved the form (internal approval: "İç Onayı Veren").</summary>
     public int? ApprovedById { get; set; }
     public User? ApprovedBy { get; set; }

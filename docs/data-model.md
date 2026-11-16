@@ -246,6 +246,7 @@ Talep Sahibi ile ortak kullanılan soru, aksiyon, karar, değişiklik talebi, ba
 | `Status` | `OpenIssueStatus` | |
 | `ClosedAt` | DateTime? (UTC) | `Closed` olunca otomatik dolar, yeniden açılınca boşalır |
 | `SourceMeetingId` | int? (FK → Meeting) | Kayıt bir tutanaktan aktarıldıysa |
+| `SourceQuestionAnswerId` | int? (FK → QuestionAnswer), benzersiz | Faz 4 · E3. Kayıt Talep Analizi'nde bir cevaptan aktarıldıysa; bir cevap bir kez aktarılır |
 | + `AuditableEntity` alanları | | |
 
 - `OwnerUserId` ve `OwnerName`'den **tam olarak biri** doludur. `OwnerUserId` aktif bir kullanıcı olmalıdır.
@@ -443,7 +444,7 @@ QuestionAnswer * ──── 0..1 QuestionOption
 
 | Entity | Alanlar |
 | --- | --- |
-| `Questionnaire` | `Id`, `ProjectId`, `QuestionSetId` (`(ProjectId, QuestionSetId)` benzersiz), `WorkType`, `Subcategory` (`RequestSource`), `Participants?` (1000), `AssessedOn?` (DateOnly), `ApprovedById?` (FK → User), `ApprovedOn?` |
+| `Questionnaire` | `Id`, `ProjectId`, `QuestionSetId` (`(ProjectId, QuestionSetId)` benzersiz), `WorkType`, `Subcategory` (`RequestSource`), `Participants?` (1000), `AssessedOn?` (DateOnly), `Method?` (200; talep analizinde görüşme yöntemi, E3), `ApprovedById?` (FK → User), `ApprovedOn?` |
 | `QuestionAnswer` | `Id`, `QuestionnaireId`, `ProjectId` (denetim kaydı için formunkinin aynısı), `QuestionId` (`(QuestionnaireId, QuestionId)` benzersiz), `OptionId?`, `Text?` (4000), `Note?` (2000), `Probability?` (1–3), `Severity?` (1–3) |
 
 - Formun sonucu (seviye, uygunluk oranı, risk derecesi) ve özet **saklanmaz**, cevaplardan hesaplanır.
