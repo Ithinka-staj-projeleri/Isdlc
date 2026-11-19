@@ -22,7 +22,8 @@ entity, API ve ekranını uçtan uca yazar.
 | **1 — Çekirdek** | `Process` | `Projects` | `Identity` |
 | **2 — Proje kayıtları** | `OpenIssues` + `Meetings` | `Requirements` + `Documents` | `Assessment` + `Risks` |
 | **3 — Bitiriş** | `Audit` ekranı + uçtan uca demo senaryosu | `Dashboard` | `Notifications` |
-| **4 — Şirket akışları** | Toplantı ve ziyaret tutanakları, süreç iyileştirme | Akış altyapısı, akış seed'leri, talep analizi, demo; talepler, ek geliştirme, dokümanlar, gereksinimler, kapsam ve efor, gösterge paneli | Soru bankası, seviye ve uygunluk, risk, ekip, kaynak planlama, faturalama |
+| **4 — Şirket akışları** (kapatıldı) | Toplantı ve ziyaret tutanakları, süreç iyileştirme | Akış altyapısı, akış seed'leri, talep analizi; talepler, ret / erteleme, ek geliştirme | Soru bankası, seviye ve uygunluk |
+| **5 — Takım çalışması** (öneri) | Zaman çizelgesi, tutanak aksiyonları, ses kaydından tutanak, e-postadan talep, demo | Proje özeti, panel eklemeleri | Genel arama, bağlantıyı kopyala, kişi profili |
 
 ### Faz 0 — Ortak temel
 
@@ -81,7 +82,17 @@ Uygulama, iş analistlerinin paylaştığı akışların son hâline (yeni yazı
 haftalık kaynak planlama, aylık faturalama) ve formlarına göre güncellenir. İşler, sıra ve açık konular:
 [docs/phase-4-plan.md](docs/phase-4-plan.md).
 
-**Bitiş koşulu:** Beş akış uygulamada uçtan uca yürütülebiliyor; menüler şirket formlarındaki alanları karşılıyor.
+**Kapatıldı (19 Kasım 2026).** Yeni yazılım projesi, ek geliştirme ve süreç iyileştirme akışları uygulamada; yapılmamış işler
+(dokümanlar, gereksinim alanları, kapsam ve efor, risk ölçeği, ekip, kaynak planlama, faturalama, demo) iptal edildi.
+Ayrıntı: [docs/phase-4-plan.md](docs/phase-4-plan.md) → Kapanış.
+
+### Faz 5 — Takım çalışması ve yapay zekâ yardımcıları
+
+17 Kasım 2026'daki Volobox tanıtımında görülen özelliklerden platforma uyanlar eklenir: proje özeti, panel eklemeleri,
+proje zaman çizelgesi, tutanaktan kişi kişi aksiyon, ses kaydından tutanak ve e-postadan talep taslağı, genel arama,
+kişi profili. İşler, sıra ve açık konular: [docs/phase-5-plan.md](docs/phase-5-plan.md).
+
+**Bitiş koşulu:** Faz 5 özellikleri demo senaryosunda sahte veriyle baştan sona çalışıyor.
 
 ## 3. Birlikte çalışma kuralları
 
