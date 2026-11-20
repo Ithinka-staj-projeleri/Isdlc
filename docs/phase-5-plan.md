@@ -54,7 +54,7 @@ Sorumlular **öneridir**; modül sahipliğine göre dağıtıldı, ekip onaylark
 | No | İş | Sorumlu | Bağımlılık |
 | --- | --- | --- | --- |
 | F4 | **Tutanaktan kişi kişi aksiyon:** tutanak taslağındaki her aksiyona sorumlu önerisi (katılımcılardan, sistem kullanıcısıyla eşleşirse `OwnerUserId`, yoksa `OwnerName`) ve metinde geçiyorsa termin. Öneri formu doldurur; açık konuyu kişi kaydeder | Erva | — |
-| F5 | **Ses kaydından tutanak taslağı:** tutanak formunda ses / video dosyası seçilir; `ai/` servisi kaydı **kendi makinesinde** metne çevirir (faster-whisper), metin mevcut tutanak taslağına verilir. Ses hiçbir dış servise gitmez. `ai/`'ye yeni paket ve ffmpeg gerekir: **eklenmeden önce ekip onayı alınır** (AGENTS.md Bölüm 2). Dosya boyutu sınırı ve uzun kayıtta bekleme süresi sözleşmede belirlenir | Erva | F4 ile aynı ajan |
+| F5 | **Ses kaydından tutanak taslağı:** tutanak formunda ses / video dosyası seçilir; `ai/` servisi kaydı **kendi makinesinde** metne çevirir (faster-whisper), metin mevcut tutanak taslağına verilir. Ses hiçbir dış servise gitmez. Paket (faster-whisper, isteğe bağlı `requirements-audio.txt`) 20 Kasım 2026'da onaylandı; ffmpeg gerekmedi (ses PyAV ile çözülür). Dosya boyutu sınırı ve uzun kayıtta bekleme süresi sözleşmede belirlenir | Erva | F4 ile aynı ajan |
 | F6 | **E-postadan talep taslağı:** yeni talep formunda "E-postadan doldur"; yapıştırılan e-posta metninden talep adı, talep sahibi, talebi ileten kişi ve iletişim bilgisi, talep türü ve notlar önerilir, kanal E-posta seçilir. Öneri formu doldurur; talebi kişi kaydeder | Erva | — |
 
 ### Gezinme ve kişiler
@@ -100,5 +100,5 @@ Dalga 3                        F10 demo · çapraz testler
 ## 6. Açık konular
 
 1. **Sorumlular:** Bölüm 3'teki dağılım öneridir; ekip onaylar.
-2. **F5 paket onayı:** `ai/` servisine faster-whisper ve sisteme ffmpeg eklenmesi. Model ilk çalışmada indirilir (~1,5 GB); GPU yoksa 1 saatlik kayıt dakikalar sürer.
+2. **F5 paket onayı:** onaylandı (20 Kasım 2026). Model ilk çalışmada indirilir (`small` ~500 MB); GPU yoksa 1 saatlik kayıt dakikalar sürer.
 3. **Gerçek kayıtlar:** Şirket verisi gönderme kararı gelene kadar F5 ve F6 yalnızca sahte kayıt ve e-postalarla denenir. Ses metne çevrilirken bilgisayardan çıkmaz, ama metin taslak için yine modele gider.

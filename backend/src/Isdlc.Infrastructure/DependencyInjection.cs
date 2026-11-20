@@ -59,8 +59,8 @@ public static class DependencyInjection
         // One HttpClient for the app's lifetime; connections are renewed so a changed address (DNS) is picked up.
         var http = new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) })
         {
-            // A model call with one retry can take a while.
-            Timeout = TimeSpan.FromSeconds(90),
+            // Each call sets its own time limit (HttpAgentClient): a recording takes far longer than a model call.
+            Timeout = Timeout.InfiniteTimeSpan,
         };
         if (!string.IsNullOrWhiteSpace(options.ServiceUrl))
         {

@@ -7,7 +7,7 @@ namespace Isdlc.Application.Agents.Dtos;
 public record DraftRequestFromEmailDto
 {
     [Required(ErrorMessage = "E-posta metni zorunludur.")]
-    [MaxLength(MeetingSuggestionLimits.MaxNotes, ErrorMessage = "E-posta en fazla 20000 karakter olabilir.")]
+    [MaxLength(RequestDraftLimits.MaxEmail, ErrorMessage = "E-posta en fazla 20000 karakter olabilir.")]
     public string? EmailText { get; init; }
 }
 
@@ -34,4 +34,5 @@ public static class RequestDraftLimits
 {
     public const int Short = 200;
     public const int Long = 2000;
+    public const int MaxEmail = 20_000;
 }

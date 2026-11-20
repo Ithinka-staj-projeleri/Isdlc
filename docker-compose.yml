@@ -32,7 +32,11 @@ services:
         required: false
     ports:
       - "${AI_PORT:-8000}:8000"
+    volumes:
+      # The speech-to-text model (~500 MB for "small"), downloaded once.
+      - isdlc-ai-models:/home/agent/.cache/huggingface
     restart: unless-stopped
 
 volumes:
   isdlc-mssql-data:
+  isdlc-ai-models:

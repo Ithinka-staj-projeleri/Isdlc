@@ -12,6 +12,9 @@ namespace Isdlc.Api.Controllers;
 /// </summary>
 public class AgentsController(IAgentService agentService) : ApiControllerBase
 {
+    /// <summary>500 MB: an hour of video fits (docs/open-issues-meetings-api.md → Ses kaydından notlar).</summary>
+    private const long MaxRecordingBytes = 500L * 1024 * 1024;
+
     /// <summary>Which AI features the screens may offer (off when the service is not configured or not running).</summary>
     [HttpGet("status")]
     [ProducesResponseType<AgentStatusDto>(StatusCodes.Status200OK)]
@@ -32,6 +35,25 @@ public class AgentsController(IAgentService agentService) : ApiControllerBase
         int projectId, SuggestMeetingItemsDto request, CancellationToken cancellationToken)
     {
         return await agentService.SuggestMeetingItemsAsync(projectId, request, cancellationToken);
+    }
+
+    /// <summary>
+    /// A meeting recording (audio or video, multipart field "file") as text for the minutes assistant. The recording is
+    /// turned into text on the AI service's machine; it is not sent to a model provider. Can take minutes.
+    /// </summary>
+    [HttpPost("/api/v1/projects/{projectId:int}/meetings/transcript")]
+    [RequestSizeLimit(MaxRecordingBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxRecordingBytes)]
+    [ProducesResponseType<MeetingTranscriptDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<MeetingTranscriptDto> TranscribeMeeting(
+        int projectId, IFormFile? file, CancellationToken cancellationToken)
+    {
+        await using var recording = file?.OpenReadStream();
+        return await agentService.TranscribeMeetingAsync(projectId, recording, file?.Length ?? 0, cancellationToken);
     }
 
     /// <summary>

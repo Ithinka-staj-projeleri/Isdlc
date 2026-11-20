@@ -8,6 +8,7 @@ Endpoints:
     POST /v1/risk/suggestions       risks found in a text, scored and with a preventive action (nothing is saved)
     POST /v1/risk/assessment        probability, impact and preventive action for one risk a person typed
     POST /v1/request/draft          the request form filled from the e-mail the request came with
+    POST /v1/meeting/transcribe     a meeting recording (raw bytes) as text, on this machine (needs requirements-audio.txt)
 
 The backend checks the user and the project, then sends only what the agent needs. The agent never
 calls the ISDLC API or the database in this flow; the person reviews the suggestions in the form.
@@ -16,11 +17,15 @@ When AGENT_SERVICE_KEY is set, every request must carry it in the X-Agent-Key he
 
 import hmac
 import logging
+import os
+import tempfile
 from collections.abc import Callable
 from datetime import date
+from pathlib import Path
 from typing import TypeVar
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
@@ -30,10 +35,14 @@ from isdlc_ai.agents.request_agent import RequestAgent
 from isdlc_ai.agents.risk_agent import RiskAgent, RiskInput
 from isdlc_ai.config import Settings, load_settings
 from isdlc_ai.llm import GeminiClient, LlmClient, LlmError
+from isdlc_ai.transcription import Transcriber, TranscriptionError, available as transcription_available
 
 logger = logging.getLogger("isdlc_ai.server")
 
 MAX_NOTES = 20_000
+# Meeting notes may be a whole recording's transcript: about an hour of talk.
+MAX_MEETING_NOTES = 100_000
+MAX_RECORDING_BYTES = 500 * 1024 * 1024
 T = TypeVar("T")
 
 
@@ -46,7 +55,7 @@ class CamelModel(BaseModel):
 class MeetingSuggestionsRequest(CamelModel):
     project_code: str = Field(min_length=1, max_length=50)
     meeting_date: date
-    notes: str = Field(min_length=1, max_length=MAX_NOTES)
+    notes: str = Field(min_length=1, max_length=MAX_MEETING_NOTES)
     current_step: str | None = Field(default=None, max_length=1000)
 
 
@@ -156,10 +165,24 @@ class RequestDraftResponse(CamelModel):
     run: RunDto
 
 
-def create_app(settings: Settings | None = None, llm_factory: Callable[[], LlmClient] | None = None) -> FastAPI:
-    """llm_factory lets tests use FakeLlmClient instead of the real model."""
+class TranscriptResponse(CamelModel):
+    text: str  # one segment (about a sentence) per line
+    duration_seconds: int
+    language: str
+    truncated: bool  # cut at MAX_MEETING_NOTES so it fits the minutes assistant
+    model_name: str
+
+
+def create_app(
+    settings: Settings | None = None,
+    llm_factory: Callable[[], LlmClient] | None = None,
+    transcriber: Transcriber | None = None,
+) -> FastAPI:
+    """llm_factory and transcriber let tests use fakes instead of the real models."""
     settings = settings or load_settings()
     model_configured = bool(settings.gemini_api_key and settings.gemini_model)
+    if transcriber is None and transcription_available():
+        transcriber = Transcriber(settings.whisper_model, settings.whisper_device, settings.whisper_compute_type)
 
     def default_llm() -> LlmClient:
         if not model_configured:
@@ -177,7 +200,11 @@ def create_app(settings: Settings | None = None, llm_factory: Callable[[], LlmCl
 
     @app.get("/health")
     def health() -> dict:
-        return {"status": "ok", "modelConfigured": model_configured or llm_factory is not None}
+        return {
+            "status": "ok",
+            "modelConfigured": model_configured or llm_factory is not None,
+            "transcriptionAvailable": transcriber is not None,
+        }
 
     @app.post(
         "/v1/meeting/suggestions",
@@ -313,6 +340,48 @@ def create_app(settings: Settings | None = None, llm_factory: Callable[[], LlmCl
             notes=draft.notes,
             warnings=draft.warnings,
             run=_run_dto(result.run),
+        )
+
+    @app.post(
+        "/v1/meeting/transcribe",
+        response_model=TranscriptResponse,
+        response_model_by_alias=True,
+        dependencies=[Depends(check_key)],
+    )
+    async def meeting_transcribe(request: Request) -> TranscriptResponse:
+        """The body is the file itself (application/octet-stream). It is kept in a temporary file and removed."""
+        if transcriber is None:
+            raise HTTPException(503, "Ses kaydını metne çevirme bu ortamda açık değil.")
+
+        handle, name = tempfile.mkstemp(prefix="isdlc-recording-")
+        try:
+            size = 0
+            with os.fdopen(handle, "wb") as file:
+                async for chunk in request.stream():
+                    size += len(chunk)
+                    if size > MAX_RECORDING_BYTES:
+                        raise HTTPException(413, "Kayıt en fazla 500 MB olabilir.")
+                    file.write(chunk)
+            if size == 0:
+                raise HTTPException(400, "Kayıt boş.")
+
+            try:
+                # Minutes of CPU work: run off the event loop so health checks still answer.
+                result = await run_in_threadpool(transcriber.transcribe, Path(name))
+            except TranscriptionError as error:
+                logger.info("Recording could not be read: %s", error)
+                raise HTTPException(400, "Kayıt okunamadı; ses ya da video dosyası seçin.") from error
+        finally:
+            os.remove(name)
+
+        truncated = len(result.text) > MAX_MEETING_NOTES
+        text = result.text[:MAX_MEETING_NOTES] if truncated else result.text
+        return TranscriptResponse(
+            text=text,
+            duration_seconds=round(result.duration_seconds),
+            language=result.language,
+            truncated=truncated,
+            model_name=result.model_name,
         )
 
     return app

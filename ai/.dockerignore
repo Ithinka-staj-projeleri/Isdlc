@@ -8,3 +8,4 @@ evals/
 **/__pycache__/
 *.txt
 !requirements.txt
+!requirements-audio.txt

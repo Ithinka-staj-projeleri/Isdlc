@@ -281,7 +281,7 @@ formu doldurur, kişi düzenleyip tutanağı yukarıdaki `POST /meetings` ile ka
 | Alan | Kural |
 | --- | --- |
 | `meetingDate` | Zorunlu; terminler bu tarihe göre çözülür ("gelecek çarşamba") |
-| `notes` | Zorunlu, en fazla 20000 karakter. E-posta, telefon, IBAN ve TCKN modele gitmeden gizlenir; **yalnızca sahte veri** |
+| `notes` | Zorunlu, en fazla 100000 karakter (1 saatlik bir toplantının dökümü sığsın diye; Faz 5 · F5). E-posta, telefon, IBAN ve TCKN modele gitmeden gizlenir; **yalnızca sahte veri** |
 | `actions[].ownerUserId` | Notlardaki ad tek bir aktif kullanıcıya uyuyorsa dolar; değilse `ownerName`. Türkçe büyük/küçük harf farkı gözetilmez. Sıra (Faz 5 · F4): (1) tam ad bir kullanıcının adıyla aynı; (2) notlarda yalnız ad ya da soyad geçiyorsa ("Can") ve önerilen katılımcılardan yalnızca birine uyuyorsa o katılımcının tam adı kullanılır, tam ad bir kullanıcıysa ona bağlanır; (3) yalnız ad ya da soyad tek bir aktif kullanıcının adına ya da soyadına uyuyor. Birden fazla kişiye uyuyorsa bağlanmaz, ad kalır ve `warnings`'e "“Can” birden fazla kişiye uyuyor: Can Öztürk, Can Yılmaz. Sorumluyu seçin." eklenir. Katılımcıyla tamamlanan ad kullanıcı değilse `ownerName` tam ad olur ("Hakan" → "Hakan Yıldız") |
 | `decisions` | Sorumlu yoktur: karar, tutanağı kaydeden kişi adına kapalı kaydedilir |
 | `others` | Soru, bağımlılık, varsayım, değişiklik talebi. Tutanak formunda yerleri yok; Açık Konular'dan elle eklenir |
@@ -293,6 +293,36 @@ servis ayarlı değil, çalışmıyor ya da model hata verdi `503` (Türkçe `de
 
 Backend, `ai/` servisini `Agents:ServiceUrl` adresinden `X-Agent-Key: Agents:ServiceKey` başlığıyla çağırır
 (`Isdlc.Infrastructure/Agents/HttpAgentClient.cs`). Tarayıcı Python servisini hiçbir zaman doğrudan çağırmaz.
+
+### Ses kaydından notlar (Faz 5 · F5)
+
+Tutanak asistanında **"Ses kaydından metne çevir"**: toplantının ses ya da video kaydı seçilir, kayıt **bilgisayardaki**
+yapay zekâ servisinde metne çevrilir ve "Ham toplantı notları" kutusuna yazılır. Kişi metni kontrol edip her zamanki gibi
+"karar ve aksiyonları çıkar"a basar. Ses hiçbir dış servise gitmez; yalnızca kişinin gönderdiği metin modele gider (gizlenerek).
+Durum: **taslak.** Sorumlu: Erva. Plan: [phase-5-plan.md](phase-5-plan.md) → F5.
+
+| İstek | Açıklama | Başarılı cevap |
+| --- | --- | --- |
+| `POST /projects/{projectId}/meetings/transcript` | `multipart/form-data`, alan adı `file`. Kayıt metne çevrilir, hiçbir şey kaydedilmez | `200` `MeetingTranscriptDto` |
+
+```jsonc
+// MeetingTranscriptDto
+{
+  "text": "Sizi de şimdi tanıtacağız...
+Herhangi bir sorunuz olursa...",   // bir cümle bir satır
+  "durationSeconds": 4165,
+  "language": "tr",
+  "truncated": false            // metin 100000 karakteri aşınca kesilir ve true olur
+}
+```
+
+| Kural | Açıklama |
+| --- | --- |
+| Yetki | Tutanak önerileriyle aynı: giriş yapmış kullanıcı, proje var ve aktif (`404`, `409`) |
+| Dosya | Ses ya da video (`mp3`, `m4a`, `wav`, `ogg`, `webm`, `mp4`…), en fazla 500 MB. Boş dosya ya da çözülemeyen biçim `400` ("Kayıt okunamadı; ses ya da video dosyası seçin.") |
+| Süre | Kayıt süresine ve bilgisayara göre birkaç dakika sürebilir; istek 30 dakikada zaman aşımına uğrar |
+| Kapalıysa | Servis ses paketiyle kurulmamışsa ya da çalışmıyorsa `503`. `GET /agents/status` cevabındaki `transcriptionEnabled` düğmenin görünüp görünmeyeceğini söyler |
+| Model | Whisper (faster-whisper), servisin bulunduğu makinede. Boyut `WHISPER_MODEL` ile seçilir (varsayılan `small`); ilk çalışmada indirilir |
 
 ## Hata durumları
 

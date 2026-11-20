@@ -6,13 +6,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# requirements-audio.txt adds speech to text for meeting recordings (faster-whisper) on top of requirements.txt.
+COPY requirements.txt requirements-audio.txt ./
+RUN pip install --no-cache-dir -r requirements-audio.txt
 
 COPY isdlc_ai ./isdlc_ai
 
 # Run as a normal user, not root.
-RUN useradd --create-home agent
+# The Whisper model is downloaded on first use into this folder (a volume in docker-compose.yml, so it is kept).
+RUN useradd --create-home agent && mkdir -p /home/agent/.cache/huggingface && chown -R agent /home/agent/.cache
 USER agent
 
 EXPOSE 8000

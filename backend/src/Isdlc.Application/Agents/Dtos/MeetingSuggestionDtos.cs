@@ -9,7 +9,8 @@ namespace Isdlc.Application.Agents.Dtos;
 /// GET /api/v1/agents/status — which AI features the screen may offer. All come from the same service today;
 /// they are separate so a feature can be turned off on its own later.
 /// </summary>
-public record AgentStatusDto(bool MeetingAssistantEnabled, bool RiskAssistantEnabled, bool RequestAssistantEnabled);
+public record AgentStatusDto(
+    bool MeetingAssistantEnabled, bool RiskAssistantEnabled, bool RequestAssistantEnabled, bool TranscriptionEnabled);
 
 /// <summary>POST .../meetings/suggestions — the raw meeting notes.</summary>
 public record SuggestMeetingItemsDto
@@ -18,13 +19,14 @@ public record SuggestMeetingItemsDto
     public DateOnly? MeetingDate { get; init; }
 
     [Required(ErrorMessage = "Toplantı notları zorunludur.")]
-    [MaxLength(MeetingSuggestionLimits.MaxNotes, ErrorMessage = "Notlar en fazla 20000 karakter olabilir.")]
+    [MaxLength(MeetingSuggestionLimits.MaxNotes, ErrorMessage = "Notlar en fazla 100000 karakter olabilir.")]
     public string? Notes { get; init; }
 }
 
 public static class MeetingSuggestionLimits
 {
-    public const int MaxNotes = 20_000;
+    /// <summary>A whole recording's transcript fits: about an hour of talk.</summary>
+    public const int MaxNotes = 100_000;
 }
 
 /// <summary>
@@ -74,3 +76,9 @@ public record SuggestedOpenIssueDto(
     string? OwnerName,
     DateOnly? DueDate,
     string Evidence);
+
+/// <summary>
+/// POST .../meetings/transcript — a meeting recording as text, for the "Ham toplantı notları" box; nothing is saved.
+/// One segment (about a sentence) per line. Truncated when it was cut to <see cref="MeetingSuggestionLimits.MaxNotes"/>.
+/// </summary>
+public record MeetingTranscriptDto(string Text, int DurationSeconds, string Language, bool Truncated);

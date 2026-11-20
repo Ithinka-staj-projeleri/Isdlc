@@ -10,6 +10,7 @@ public sealed class FakeAgentClient : IAgentClient
 {
     public bool IsConfigured { get; init; } = true;
     public bool IsAvailable { get; init; } = true;
+    public bool IsTranscriptionAvailable { get; init; } = true;
 
     public MeetingAgentResult Result { get; init; } = new("Özet", [], 0, "test-model");
 
@@ -20,6 +21,8 @@ public sealed class FakeAgentClient : IAgentClient
 
     public RequestAgentDraft RequestDraft { get; init; } =
         new("Talep", "Açıklama.", null, null, null, null, null, null, null, [], "test-model");
+
+    public MeetingAgentTranscript Transcript { get; init; } = new("Merhaba.\nBaşlayalım.", 61, "tr", false, "test-whisper");
 
     /// <summary>Thrown instead of answering, like a service that is down.</summary>
     public Exception? Failure { get; init; }
@@ -33,11 +36,17 @@ public sealed class FakeAgentClient : IAgentClient
 
     public RequestAgentRequest? LastRequestDraftRequest { get; private set; }
 
+    /// <summary>The bytes of the last recording sent; null when none was.</summary>
+    public byte[]? LastRecording { get; private set; }
+
     public bool WasCalled =>
         LastRequest is not null || LastRiskRequest is not null || LastRiskAssessmentRequest is not null
-        || LastRequestDraftRequest is not null;
+        || LastRequestDraftRequest is not null || LastRecording is not null;
 
     public Task<bool> IsAvailableAsync(CancellationToken cancellationToken) => Task.FromResult(IsAvailable);
+
+    public Task<bool> IsTranscriptionAvailableAsync(CancellationToken cancellationToken) =>
+        Task.FromResult(IsTranscriptionAvailable);
 
     public Task<MeetingAgentResult> SuggestOpenIssuesAsync(MeetingAgentRequest request, CancellationToken cancellationToken)
     {
@@ -62,6 +71,14 @@ public sealed class FakeAgentClient : IAgentClient
     {
         LastRequestDraftRequest = request;
         return Answer(RequestDraft);
+    }
+
+    public async Task<MeetingAgentTranscript> TranscribeAsync(Stream recording, CancellationToken cancellationToken)
+    {
+        using var copy = new MemoryStream();
+        await recording.CopyToAsync(copy, cancellationToken);
+        LastRecording = copy.ToArray();
+        return await Answer(Transcript);
     }
 
     private Task<T> Answer<T>(T result) => Failure is null ? Task.FromResult(result) : Task.FromException<T>(Failure);

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Isdlc.Application.Agents;
@@ -24,6 +26,9 @@ public class HttpAgentClient(
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan HealthCacheTime = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan HealthTimeout = TimeSpan.FromSeconds(2);
+    // A model call with one retry can take a while; an hour of recording takes minutes on a CPU.
+    private static readonly TimeSpan CallTimeout = TimeSpan.FromSeconds(90);
+    private static readonly TimeSpan TranscriptionTimeout = TimeSpan.FromMinutes(30);
 
     // The last /health answer; every page load asks for the status, the service is asked at most every 30 s.
     // A single reference, so parallel requests never see a half-written value.
@@ -31,34 +36,40 @@ public class HttpAgentClient(
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(options.ServiceUrl);
 
-    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken)
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken) =>
+        (await CheckHealthAsync(cancellationToken)).Available;
+
+    public async Task<bool> IsTranscriptionAvailableAsync(CancellationToken cancellationToken) =>
+        (await CheckHealthAsync(cancellationToken)).TranscriptionAvailable;
+
+    private async Task<HealthCheck> CheckHealthAsync(CancellationToken cancellationToken)
     {
+        var now = timeProvider.GetUtcNow();
         if (!IsConfigured)
         {
-            return false;
+            return new HealthCheck(false, false, now);
         }
 
-        var now = timeProvider.GetUtcNow();
         if (_health is { } cached && now - cached.CheckedAt < HealthCacheTime)
         {
-            return cached.Available;
+            return cached;
         }
 
-        var available = false;
+        ServiceHealth? health = null;
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(HealthTimeout);
-            var health = await http.GetFromJsonAsync<ServiceHealth>("health", Json, timeout.Token);
-            available = health?.ModelConfigured == true;
+            health = await http.GetFromJsonAsync<ServiceHealth>("health", Json, timeout.Token);
         }
         catch (Exception error) when (error is HttpRequestException or TaskCanceledException or JsonException)
         {
             logger.LogInformation("AI service not available at {Url}: {Message}", options.ServiceUrl, error.Message);
         }
 
-        _health = new HealthCheck(available, now);
-        return available;
+        var check = new HealthCheck(health?.ModelConfigured == true, health?.TranscriptionAvailable == true, now);
+        _health = check;
+        return check;
     }
 
     public async Task<MeetingAgentResult> SuggestOpenIssuesAsync(
@@ -165,7 +176,29 @@ public class HttpAgentClient(
             body.Run?.ModelName ?? string.Empty);
     }
 
-    /// <summary>Sends the request with the service key; any failure becomes a 503 with a Turkish message.</summary>
+    public async Task<MeetingAgentTranscript> TranscribeAsync(Stream recording, CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Post, "v1/meeting/transcribe")
+        {
+            Content = new StreamContent(recording),
+        };
+        message.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+        using var response = await SendAsync(message, TranscriptionTimeout, cancellationToken);
+        if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.RequestEntityTooLarge)
+        {
+            // The file itself is the problem ("Kayıt okunamadı..."): the person can pick another one.
+            throw new BusinessRuleException(
+                await ReadDetailAsync(response, cancellationToken) ?? "Kayıt okunamadı; ses ya da video dosyası seçin.");
+        }
+
+        var body = await ReadAsync<TranscriptServiceResponse>(response, cancellationToken);
+        return new MeetingAgentTranscript(
+            body.Text ?? string.Empty, body.DurationSeconds, body.Language ?? string.Empty, body.Truncated,
+            body.ModelName ?? string.Empty);
+    }
+
+    /// <summary>Sends JSON with the service key; any failure becomes a 503 with a Turkish message.</summary>
     private async Task<TResponse> PostAsync<TResponse>(string path, object payload, CancellationToken cancellationToken)
         where TResponse : class
     {
@@ -173,38 +206,50 @@ public class HttpAgentClient(
         {
             Content = JsonContent.Create(payload, options: Json),
         };
+
+        using var response = await SendAsync(message, CallTimeout, cancellationToken);
+        return await ReadAsync<TResponse>(response, cancellationToken);
+    }
+
+    /// <summary>Adds the service key and a time limit; a service that does not answer becomes a 503.</summary>
+    private async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage message, TimeSpan timeLimit, CancellationToken cancellationToken)
+    {
         if (!string.IsNullOrWhiteSpace(options.ServiceKey))
         {
             message.Headers.Add("X-Agent-Key", options.ServiceKey);
         }
 
-        HttpResponseMessage response;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(timeLimit);
         try
         {
-            response = await http.SendAsync(message, cancellationToken);
+            // The whole answer is read here, so it is still there after the time limit is disposed.
+            return await http.SendAsync(message, HttpCompletionOption.ResponseContentRead, timeout.Token);
         }
         catch (Exception error) when (error is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
         {
             logger.LogWarning(error, "AI service not reachable at {Url}", options.ServiceUrl);
             throw new ServiceUnavailableException("Yapay zekâ servisine şu an ulaşılamıyor. Biraz sonra tekrar deneyin.");
         }
+    }
 
-        using (response)
+    /// <summary>The service writes Turkish messages for the user in "detail" (model busy, quota...).</summary>
+    private async Task<TResponse> ReadAsync<TResponse>(HttpResponseMessage response, CancellationToken cancellationToken)
+        where TResponse : class
+    {
+        if (!response.IsSuccessStatusCode)
         {
-            if (!response.IsSuccessStatusCode)
-            {
-                // The service writes Turkish messages for the user in "detail" (model busy, quota...).
-                var detail = await ReadDetailAsync(response, cancellationToken);
-                logger.LogWarning("AI service answered {Status}: {Detail}", (int)response.StatusCode, detail);
-                throw new ServiceUnavailableException(
-                    response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable && detail is not null
-                        ? detail
-                        : "Yapay zekâ servisi isteği işleyemedi. Biraz sonra tekrar deneyin.");
-            }
-
-            return await response.Content.ReadFromJsonAsync<TResponse>(Json, cancellationToken)
-                ?? throw new ServiceUnavailableException("Yapay zekâ servisinden boş cevap geldi.");
+            var detail = await ReadDetailAsync(response, cancellationToken);
+            logger.LogWarning("AI service answered {Status}: {Detail}", (int)response.StatusCode, detail);
+            throw new ServiceUnavailableException(
+                response.StatusCode == HttpStatusCode.ServiceUnavailable && detail is not null
+                    ? detail
+                    : "Yapay zekâ servisi isteği işleyemedi. Biraz sonra tekrar deneyin.");
         }
+
+        return await response.Content.ReadFromJsonAsync<TResponse>(Json, cancellationToken)
+            ?? throw new ServiceUnavailableException("Yapay zekâ servisinden boş cevap geldi.");
     }
 
     /// <summary>The model of the last call; every task of one request uses the same model.</summary>
@@ -274,9 +319,12 @@ public class HttpAgentClient(
         List<string>? Warnings,
         ServiceRun? Run);
 
+    private record TranscriptServiceResponse(
+        string? Text, int DurationSeconds, string? Language, bool Truncated, string? ModelName);
+
     private record ServiceError(JsonElement? Detail);
 
-    private record ServiceHealth(string? Status, bool ModelConfigured);
+    private record ServiceHealth(string? Status, bool ModelConfigured, bool TranscriptionAvailable);
 
-    private sealed record HealthCheck(bool Available, DateTimeOffset CheckedAt);
+    private sealed record HealthCheck(bool Available, bool TranscriptionAvailable, DateTimeOffset CheckedAt);
 }

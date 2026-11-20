@@ -1,11 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of } from 'rxjs';
-import { AgentStatus, MeetingSuggestions } from './models/meeting-suggestions';
+import { AgentStatus, MeetingSuggestions, MeetingTranscript } from './models/meeting-suggestions';
 import { RequestDraft } from './models/request-draft';
 import { RiskAssessmentSuggestion, RiskSuggestions } from './models/risk-suggestions';
 
-const OFF: AgentStatus = { meetingAssistantEnabled: false, riskAssistantEnabled: false, requestAssistantEnabled: false };
+const OFF: AgentStatus = {
+    meetingAssistantEnabled: false,
+    riskAssistantEnabled: false,
+    requestAssistantEnabled: false,
+    transcriptionEnabled: false,
+};
 
 /**
  * AI assistants (Agents module). The browser only talks to the ISDLC API; the API calls the AI service.
@@ -28,6 +33,17 @@ export class AgentService {
 
     riskAssistantEnabled(): Observable<boolean> {
         return this.status().pipe(map(status => status.riskAssistantEnabled));
+    }
+
+    transcriptionEnabled(): Observable<boolean> {
+        return this.status().pipe(map(status => status.meetingAssistantEnabled && status.transcriptionEnabled));
+    }
+
+    /** A recording turned into text on the AI service's machine. Can take minutes; 400 when the file is not audio. */
+    transcribeMeeting(projectId: number, recording: File): Observable<MeetingTranscript> {
+        const body = new FormData();
+        body.append('file', recording, recording.name);
+        return this.http.post<MeetingTranscript>(`/api/v1/projects/${projectId}/meetings/transcript`, body);
     }
 
     requestAssistantEnabled(): Observable<boolean> {
