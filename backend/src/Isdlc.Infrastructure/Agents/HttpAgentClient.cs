@@ -144,6 +144,27 @@ public class HttpAgentClient(
             ModelNameOf(body.Runs));
     }
 
+    public async Task<RequestAgentDraft> DraftRequestAsync(RequestAgentRequest request, CancellationToken cancellationToken)
+    {
+        var body = await PostAsync<RequestServiceResponse>(
+            "v1/request/draft",
+            new { emailText = request.EmailText, today = request.Today },
+            cancellationToken);
+
+        return new RequestAgentDraft(
+            body.Name,
+            body.Description,
+            body.CustomerName,
+            body.RequesterName,
+            body.RequesterContact,
+            body.RequestType,
+            body.RequestDate,
+            body.DueDate,
+            body.Notes,
+            body.Warnings ?? [],
+            body.Run?.ModelName ?? string.Empty);
+    }
+
     /// <summary>Sends the request with the service key; any failure becomes a 503 with a Turkish message.</summary>
     private async Task<TResponse> PostAsync<TResponse>(string path, object payload, CancellationToken cancellationToken)
         where TResponse : class
@@ -239,6 +260,19 @@ public class HttpAgentClient(
     private record RiskAssessmentServiceResponse(
         int? Probability, int? Impact, string? AssessmentReason, string? Mitigation, List<string>? Warnings,
         List<ServiceRun>? Runs);
+
+    private record RequestServiceResponse(
+        string? Name,
+        string? Description,
+        string? CustomerName,
+        string? RequesterName,
+        string? RequesterContact,
+        string? RequestType,
+        DateOnly? RequestDate,
+        DateOnly? DueDate,
+        string? Notes,
+        List<string>? Warnings,
+        ServiceRun? Run);
 
     private record ServiceError(JsonElement? Detail);
 

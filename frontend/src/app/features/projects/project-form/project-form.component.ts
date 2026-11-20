@@ -13,6 +13,7 @@ import { map, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
 import { UserLookup, UserSummary } from '../../../shared/models/user-summary';
+import { RequestDraft } from '../../agents/models/request-draft';
 import { ProcessFlow, ProcessStep } from '../../process/models/process-stage';
 import { ProcessService } from '../../process/process.service';
 import {
@@ -23,6 +24,7 @@ import {
 } from '../project-labels';
 import { ProjectInput, RequestChannel, RequestSource, RequestType } from '../project.model';
 import { ProjectService } from '../project.service';
+import { RequestEmailAssistantComponent } from '../request-email-assistant/request-email-assistant.component';
 
 /** Required, and only spaces does not count as filled in (same as the API). */
 const notBlank: ValidatorFn = (control) =>
@@ -103,7 +105,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
  */
 @Component({
   selector: 'app-project-form',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, RequestEmailAssistantComponent],
   templateUrl: './project-form.component.html',
   styleUrl: './project-form.component.scss',
 })
@@ -307,6 +309,38 @@ export class ProjectFormComponent {
         this.form.controls.requiresOffer.disable();
       }
     });
+  }
+
+  /**
+   * "E-postadan doldur": fills only what the person has not touched yet, so nothing they typed is overwritten.
+   * A new request offers only a new project or an add-on; another suggested type is left for the person.
+   */
+  applyDraft(draft: RequestDraft): void {
+    const c = this.form.controls;
+    const fillText = (control: typeof c.name, value: string | null) => {
+      if (value && (control.pristine || !control.value.trim())) {
+        control.setValue(value);
+      }
+    };
+    fillText(c.name, draft.name);
+    fillText(c.description, draft.description);
+    fillText(c.customerName, draft.customerName);
+    fillText(c.requesterName, draft.requesterName);
+    fillText(c.requesterContact, draft.requesterContact);
+    fillText(c.notes, draft.notes);
+
+    if (draft.requestDate && c.requestDate.pristine) {
+      c.requestDate.setValue(draft.requestDate);
+    }
+    if (draft.dueDate && !c.dueDate.value) {
+      c.dueDate.setValue(draft.dueDate);
+    }
+    if (c.requestChannel.value === null) {
+      c.requestChannel.setValue('Email');
+    }
+    if ((draft.requestType === 'NewProject' || draft.requestType === 'AdditionalModule') && c.requestType.pristine) {
+      c.requestType.setValue(draft.requestType);
+    }
   }
 
   /** Where "İptal" and the back link go: the project when editing, the request list otherwise. */

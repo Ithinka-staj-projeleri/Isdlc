@@ -5,8 +5,10 @@ using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Meetings.Dtos;
 using Isdlc.Application.OpenIssues;
 using Isdlc.Application.Risks;
+using Isdlc.Domain.Identity;
 using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
+using Isdlc.Domain.Projects;
 using Isdlc.Domain.Risks;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,7 +22,7 @@ public class AgentService(
     public async Task<AgentStatusDto> GetStatusAsync(CancellationToken cancellationToken)
     {
         var available = await agents.IsAvailableAsync(cancellationToken);
-        return new AgentStatusDto(available, available);
+        return new AgentStatusDto(available, available, available);
     }
 
     public async Task<MeetingSuggestionsDto> SuggestMeetingItemsAsync(
@@ -194,6 +196,48 @@ public class AgentService(
     /// Checks shared by every suggestion: signed in, the project exists and is active (suggestions are only useful
     /// where the records can be saved), the service is configured. Returns the project and its current step.
     /// </summary>
+    public async Task<RequestDraftDto> DraftRequestFromEmailAsync(
+        DraftRequestFromEmailDto request, CancellationToken cancellationToken)
+    {
+        // Only who may open a request may have one drafted (the same rule as ProjectService.CreateAsync).
+        var userId = currentUser.UserId
+            ?? throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
+        var isAnalyst = await dbContext.Users.AnyAsync(
+            u => u.Id == userId && u.IsActive && u.Role == UserRole.BusinessAnalyst, cancellationToken);
+        if (!isAnalyst)
+        {
+            throw new ForbiddenException("Talebi yalnızca İş Analisti açabilir.");
+        }
+
+        if (!agents.IsConfigured)
+        {
+            throw new ServiceUnavailableException("Yapay zekâ servisi bu ortamda açık değil.");
+        }
+
+        // [Required] on the DTO guarantees the text.
+        var draft = await agents.DraftRequestAsync(
+            new RequestAgentRequest(request.EmailText!.Trim(), DateOnly.FromDateTime(DateTime.UtcNow)), cancellationToken);
+
+        // The agent checks the same limits; checked again here so a suggestion never breaks the form.
+        RequestType? type = Enum.TryParse<RequestType>(draft.RequestType, out var parsed) && Enum.IsDefined(parsed)
+            ? parsed
+            : null;
+        var dueDate = draft.RequestDate is { } requested && draft.DueDate is { } due && due < requested ? null : draft.DueDate;
+
+        return new RequestDraftDto(
+            WithinLimit(draft.Name, RequestDraftLimits.Short),
+            WithinLimit(draft.Description, RequestDraftLimits.Long),
+            WithinLimit(draft.CustomerName, RequestDraftLimits.Short),
+            WithinLimit(draft.RequesterName, RequestDraftLimits.Short),
+            WithinLimit(draft.RequesterContact, RequestDraftLimits.Short),
+            type,
+            draft.RequestDate,
+            dueDate,
+            WithinLimit(draft.Notes, RequestDraftLimits.Long),
+            draft.Warnings,
+            draft.ModelName);
+    }
+
     private async Task<(ProjectRef Project, string? CurrentStep)> PrepareAsync(
         int projectId, CancellationToken cancellationToken)
     {
