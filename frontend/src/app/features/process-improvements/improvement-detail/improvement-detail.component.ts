@@ -8,6 +8,7 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
 import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
 import { PROJECT_STATUS_LABELS } from '../../../shared/models/project-status';
 import { AuditLogComponent } from '../../audit/audit-log/audit-log.component';
+import { ProjectTimelineComponent } from '../../audit/project-timeline/project-timeline.component';
 import { MeetingListComponent } from '../../meetings/meeting-list/meeting-list.component';
 import { OpenIssueListComponent } from '../../open-issues/open-issue-list/open-issue-list.component';
 import { ProjectProcessComponent } from '../../process/project-process/project-process.component';
@@ -22,11 +23,12 @@ import {
 } from '../models/process-improvement';
 import { ProcessImprovementService } from '../process-improvement.service';
 
-type DetailTab = 'proposal' | 'prioritization' | 'study' | 'pilot' | 'process' | 'open-issues' | 'meetings' | 'history';
+type DetailTab =
+    | 'proposal' | 'prioritization' | 'study' | 'pilot' | 'process' | 'timeline' | 'open-issues' | 'meetings' | 'history';
 
 /**
- * A process improvement proposal: a summary on top and one tab per section. Process, open issues, minutes and
- * history are the project screens' components: a proposal is a project record on its own flow.
+ * A process improvement proposal: a summary on top and one tab per section. Process, timeline, open issues, minutes
+ * and history are the project screens' components: a proposal is a project record on its own flow.
  * The chosen tab is kept in the URL (?tab=study).
  */
 @Component({
@@ -42,6 +44,7 @@ type DetailTab = 'proposal' | 'prioritization' | 'study' | 'pilot' | 'process' |
         OpenIssueListComponent,
         MeetingListComponent,
         AuditLogComponent,
+        ProjectTimelineComponent,
     ],
     templateUrl: './improvement-detail.component.html',
     styleUrl: './improvement-detail.component.scss',
@@ -63,6 +66,7 @@ export class ImprovementDetailComponent {
         { key: 'study', label: 'Çalışma' },
         { key: 'pilot', label: 'Pilot' },
         { key: 'process', label: 'Süreç' },
+        { key: 'timeline', label: 'Zaman Çizelgesi' },
         { key: 'open-issues', label: 'Açık Konular' },
         { key: 'meetings', label: 'Toplantı Tutanakları' },
         { key: 'history', label: 'Kayıt Geçmişi' },

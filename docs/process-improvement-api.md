@@ -109,7 +109,7 @@ Hepsi isteğe bağlıdır; boş alan "henüz yazılmadı" demektir. Süreç adı
 | `PUT /process-improvements/{id}/pilot-evaluation` | 4. bölüm | `200` `ImprovementDto` |
 
 - `{id}` kaydın `Project.Id`'sidir. Akış adımları mevcut süreç uç noktalarıyla ilerler: `/projects/{id}/process/...`.
-  Açık konular, tutanaklar ve Kayıt Geçmişi de mevcut `/projects/{id}/...` uç noktalarını kullanır.
+  Açık konular, tutanaklar, zaman çizelgesi ve Kayıt Geçmişi de mevcut `/projects/{id}/...` uç noktalarını kullanır.
 - Başka akıştaki bir kaydın `Id`'si istenirse kayıt yokmuş gibi 404 döner ("Süreç iyileştirme önerisi bulunamadı.").
 - **Okuma:** giriş yapmış her kullanıcı. **Yazma:** giriş yapmış her aktif kullanıcı, **yalnızca aktif kayıtta** (değilse 409).
   Önceliklendirmeyi akış Yazılım Departman Yöneticisine verir; MVP'de bölüm herkes tarafından yazılabilir, karar adımı rolle sınırlıdır.
@@ -166,7 +166,7 @@ Hepsi isteğe bağlıdır; boş alan "henüz yazılmadı" demektir. Süreç adı
 | Ekran | Yer |
 | --- | --- |
 | Menü → Süreç İyileştirme: liste (kod, başlık, kaynak, öncelik, adım, durum), filtreler, "+ Yeni öneri" | `features/process-improvements` |
-| Öneri detayı: Öneri · Önceliklendirme · Çalışma · Pilot · Süreç · Açık Konular · Tutanaklar · Kayıt Geçmişi sekmeleri | Süreç, Açık Konular, Tutanaklar ve Kayıt Geçmişi mevcut bileşenlerdir (`projectId` alır) |
+| Öneri detayı: Öneri · Önceliklendirme · Çalışma · Pilot · Süreç · Zaman Çizelgesi · Açık Konular · Tutanaklar · Kayıt Geçmişi sekmeleri | Süreç, Zaman Çizelgesi, Açık Konular, Tutanaklar ve Kayıt Geçmişi mevcut bileşenlerdir (`projectId` alır). Kayıt Geçmişi kaydın kendisini "Proje" değil "Öneri" diye gösterir (`projectLabel`) |
 
 ## Kod yerleşimi
 

@@ -3,7 +3,7 @@
         Kayıt türü
         <select [ngModel]="entityType()" (ngModelChange)="setEntityType($event)">
             <option value="">Tümü</option>
-            @for (type of entityTypes; track type[0]) {
+            @for (type of entityTypes(); track type[0]) {
             <option [value]="type[0]">{{ type[1] }}</option>
             }
         </select>
