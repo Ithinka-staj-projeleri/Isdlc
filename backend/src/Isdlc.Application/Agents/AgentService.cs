@@ -1,4 +1,3 @@
-using System.Globalization;
 using Isdlc.Application.Agents.Dtos;
 using Isdlc.Application.Common;
 using Isdlc.Application.Common.Exceptions;
@@ -18,8 +17,6 @@ public class AgentService(
     ICurrentUserService currentUser,
     IAgentClient agents) : IAgentService
 {
-    private static readonly CultureInfo Turkish = CultureInfo.GetCultureInfo("tr-TR");
-
     public async Task<AgentStatusDto> GetStatusAsync(CancellationToken cancellationToken)
     {
         var available = await agents.IsAvailableAsync(cancellationToken);
@@ -37,7 +34,12 @@ public class AgentService(
             new MeetingAgentRequest(project.Code, request.MeetingDate!.Value, request.Notes!.Trim(), currentStep),
             cancellationToken);
 
-        var usersByName = await ActiveUsersByNameAsync(cancellationToken);
+        var users = await dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.IsActive)
+            .Select(u => new ActionOwners.User(u.Id, u.FullName))
+            .ToListAsync(cancellationToken);
+        var participants = result.Minutes?.Participants.Select(p => p.Name.Trim()).Where(n => n.Length > 0).ToList() ?? [];
 
         var decisions = new List<SuggestedDecisionDto>();
         var actions = new List<SuggestedActionDto>();
@@ -61,15 +63,14 @@ public class AgentService(
                     break;
 
                 case OpenIssueType.Action:
-                    var ownerName = OpenIssueRules.Clean(item.OwnerName);
-                    int? ownerUserId = ownerName is not null && usersByName.TryGetValue(ownerName, out var id) ? id : null;
+                    var owner = ActionOwners.Resolve(OpenIssueRules.Clean(item.OwnerName), users, participants);
                     actions.Add(new SuggestedActionDto(
                         title,
-                        ownerUserId,
-                        ownerUserId is null ? ownerName : null,
+                        owner.UserId,
+                        owner.Name,
                         item.DueDate,
                         item.Evidence,
-                        item.Warnings));
+                        owner.Warning is null ? item.Warnings : [.. item.Warnings, owner.Warning]));
                     break;
 
                 default:
@@ -240,21 +241,4 @@ public class AgentService(
 
     private static RiskSeverity? SeverityOf(int? probability, int? impact) =>
         ScoreOf(probability, impact) is { } score ? RiskRules.SeverityOf(score) : null;
-
-    /// <summary>Active users by full name, compared the Turkish way ("İ" / "i"), so "can öztürk" finds "Can Öztürk".</summary>
-    private async Task<Dictionary<string, int>> ActiveUsersByNameAsync(CancellationToken cancellationToken)
-    {
-        var users = await dbContext.Users
-            .AsNoTracking()
-            .Where(u => u.IsActive)
-            .Select(u => new { u.Id, u.FullName })
-            .ToListAsync(cancellationToken);
-
-        // Two people with the same name are left out: the person reviewing picks, the code does not guess.
-        var comparer = StringComparer.Create(Turkish, ignoreCase: true);
-        return users
-            .GroupBy(u => u.FullName, comparer)
-            .Where(group => group.Count() == 1)
-            .ToDictionary(group => group.Key, group => group.Single().Id, comparer);
-    }
 }

@@ -262,6 +262,32 @@ public class AgentServiceTests(DatabaseFixture database)
         Assert.Equal(name, action.OwnerName);
     }
 
+    [Fact]
+    public async Task Suggest_FirstNameOfAParticipant_IsCompletedFromTheMinutesDraft()
+    {
+        // Faz 5 · F4: notes say "Can", the drafted participants say "Can Öztürk" (a user) and "Hakan Yıldız" (not one).
+        var projectId = await TestProjects.CreateAsync(database, "14");
+        var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
+        var agent = new FakeAgentClient
+        {
+            Result = new MeetingAgentResult(
+                "Özet",
+                [Item("Action", "Ekran taslakları", "Can"), Item("Action", "Depo listesi", "Hakan")],
+                0,
+                "gemini-test",
+                new MeetingAgentMinutes(
+                    "AnalysisSession", null,
+                    [new MeetingAgentParticipant("Can Öztürk", null), new MeetingAgentParticipant("Hakan Yıldız", "Depo Sorumlusu")],
+                    "- Ekranlar", null, null, [])),
+        };
+
+        var result = await SuggestAsync(agent, projectId);
+
+        Assert.Equal(developerId, result.Actions[0].OwnerUserId);
+        Assert.Null(result.Actions[1].OwnerUserId);
+        Assert.Equal("Hakan Yıldız", result.Actions[1].OwnerName);
+    }
+
     // ---- Minutes draft (type, participants with roles, agenda, summary, next steps) ----
 
     private static FakeAgentClient WithMinutes(MeetingAgentMinutes? minutes) =>

@@ -21,6 +21,19 @@
         </p>
         @if (r.summary) { <p class="muted">{{ r.summary }}</p> }
 
+        @if (byOwner().length) {
+        <h5>Kişilere göre aksiyonlar</h5>
+        <ul>
+            @for (group of byOwner(); track group.owner) {
+            <li>
+                <b>{{ group.owner ?? 'Sorumlusu belirtilmemiş' }}</b>
+                @if (group.owner && !group.isUser) { <span class="muted">(sistem dışı)</span> }
+                · {{ group.titles.length }} aksiyon: {{ group.titles.join('; ') }}
+            </li>
+            }
+        </ul>
+        }
+
         @if (r.minutes; as m) {
         <p>
             <b>Tutanak bilgileri de önerildi: tür ({{ meetingTypeLabels[m.type] }}), katılımcılar, gündem@if (m.summary) {, özet}@if (m.nextSteps) {, sonraki adımlar}.</b>
