@@ -109,7 +109,7 @@ Bir gereksinim onaydan çıkıp yeniden onaylanırsa iki olay görünür; her bi
 
 ### Ekran
 
-Proje detayında **Zaman Çizelgesi** sekmesi (Süreç'ten sonra). Dikey bir çizgi üzerinde, gün başlıklarıyla gruplanmış
+Proje detayında ve süreç iyileştirme önerisinin detayında **Zaman Çizelgesi** sekmesi (Süreç'ten sonra). Dikey bir çizgi üzerinde, gün başlıklarıyla gruplanmış
 satırlar: simge ve tür ("Adım 4 · Evet", "Tutanak TT-001 · Analiz toplantısı", "Karar AK-003"), başlık, kişi ve saat,
 varsa not. Satır başlığı ilgili sekmeyi açar (adım → Süreç, tutanak → Toplantı Tutanakları, karar → Açık Konular,
 gereksinim → Gereksinimler, risk → Riskler, kayıt açıldı → Genel Bilgiler). Sayfa başına 50 olay; fazlası sayfalanır.

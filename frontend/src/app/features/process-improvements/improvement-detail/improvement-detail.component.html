@@ -49,6 +49,9 @@
     <!-- After a step is completed or answered, reload so the summary shows the new step and status. -->
     <app-project-process [projectId]="i.id" (processChanged)="improvement.reload()" />
     }
+    @case ('timeline') {
+    <app-project-timeline [projectId]="i.id" />
+    }
     @case ('open-issues') {
     <app-open-issue-list [projectId]="i.id" [readOnly]="readOnly()" />
     }
@@ -56,7 +59,7 @@
     <app-meeting-list [projectId]="i.id" [readOnly]="readOnly()" />
     }
     @case ('history') {
-    <app-audit-log [projectId]="i.id" />
+    <app-audit-log [projectId]="i.id" projectLabel="Öneri" />
     }
     @default {
     <div class="card">

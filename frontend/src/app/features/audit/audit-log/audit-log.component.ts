@@ -1,4 +1,4 @@
-import { Component, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
@@ -25,10 +25,18 @@ export class AuditLogComponent {
     private readonly auditService = inject(AuditService);
 
     readonly projectId = input.required<number>();
+    /** What the record itself is called in the history: a process improvement proposal is a project record on its own flow. */
+    readonly projectLabel = input('Proje');
 
-    protected readonly entityTypes = Object.entries(AUDIT_ENTITY_LABELS) as [AuditEntityType, string][];
+    protected readonly entityTypes = computed(() =>
+        (Object.entries(AUDIT_ENTITY_LABELS) as [AuditEntityType, string][]).map(
+            ([type, label]): [AuditEntityType, string] => [type, type === 'Project' ? this.projectLabel() : label],
+        ),
+    );
     protected readonly actionLabels = AUDIT_ACTION_LABELS;
-    protected readonly entityLabel = entityLabel;
+    protected entityLabel(entityType: string): string {
+        return entityType === 'Project' ? this.projectLabel() : entityLabel(entityType);
+    }
     protected readonly fieldLabel = fieldLabel;
 
     protected readonly pageSize = 20;
