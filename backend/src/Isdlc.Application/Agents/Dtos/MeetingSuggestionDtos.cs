@@ -56,8 +56,9 @@ public record MinutesDraftDto(
 public record SuggestedDecisionDto(string Title, string Evidence);
 
 /// <summary>
-/// An action. When the owner's name matches an active user, OwnerUserId is set and OwnerName is null;
-/// otherwise OwnerName is the name from the notes (or null when the notes name nobody).
+/// An action. When the owner's name fits exactly one active user (full name, or a first or last name), OwnerUserId is
+/// set and OwnerName is null; otherwise OwnerName is the name from the notes, completed from the participants when
+/// only one of them fits (or null when the notes name nobody). See <see cref="ActionOwners"/>.
 /// </summary>
 public record SuggestedActionDto(
     string Title,

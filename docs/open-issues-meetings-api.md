@@ -282,7 +282,7 @@ formu doldurur, kişi düzenleyip tutanağı yukarıdaki `POST /meetings` ile ka
 | --- | --- |
 | `meetingDate` | Zorunlu; terminler bu tarihe göre çözülür ("gelecek çarşamba") |
 | `notes` | Zorunlu, en fazla 20000 karakter. E-posta, telefon, IBAN ve TCKN modele gitmeden gizlenir; **yalnızca sahte veri** |
-| `actions[].ownerUserId` | Notlardaki ad aktif bir kullanıcının adıyla aynıysa (Türkçe büyük/küçük harf farkı gözetilmez) dolar; değilse `ownerName` |
+| `actions[].ownerUserId` | Notlardaki ad tek bir aktif kullanıcıya uyuyorsa dolar; değilse `ownerName`. Türkçe büyük/küçük harf farkı gözetilmez. Sıra (Faz 5 · F4): (1) tam ad bir kullanıcının adıyla aynı; (2) notlarda yalnız ad ya da soyad geçiyorsa ("Can") ve önerilen katılımcılardan yalnızca birine uyuyorsa o katılımcının tam adı kullanılır, tam ad bir kullanıcıysa ona bağlanır; (3) yalnız ad ya da soyad tek bir aktif kullanıcının adına ya da soyadına uyuyor. Birden fazla kişiye uyuyorsa bağlanmaz, ad kalır ve `warnings`'e "“Can” birden fazla kişiye uyuyor: Can Öztürk, Can Yılmaz. Sorumluyu seçin." eklenir. Katılımcıyla tamamlanan ad kullanıcı değilse `ownerName` tam ad olur ("Hakan" → "Hakan Yıldız") |
 | `decisions` | Sorumlu yoktur: karar, tutanağı kaydeden kişi adına kapalı kaydedilir |
 | `others` | Soru, bağımlılık, varsayım, değişiklik talebi. Tutanak formunda yerleri yok; Açık Konular'dan elle eklenir |
 | `warnings` | Ajanın uyarıları: dayanak notlarda bulunamadı, termin toplantıdan önce, sorumlu yok |
