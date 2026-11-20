@@ -271,6 +271,18 @@ Riskler sekmesinde (akış 4.8, Risk Analiz Formu) iki kullanım:
 - Skor ve seviye modelden istenmez; `RiskRules` ile hesaplanır.
 - Sözleşme: [risks-api.md](risks-api.md) → "Yapay zekâ önerileri".
 
+### E-postadan talep taslağı (Faz 5 · F6)
+
+Yeni talep formunda katlanır **"E-postadan doldur"** kutusu: İş Analisti talebin geldiği e-postayı yapıştırır; ajan proje adı,
+açıklama, talep sahibi, talebi ileten kişi ve iletişim bilgisi, talep türü, talep ve bitiş tarihi ile notları önerir.
+Form yalnızca kişinin dokunmadığı alanları doldurur ve kanalı E-posta yapar; kaynak, teklif, analist gibi seçimler kişide kalır.
+
+- Akış: tarayıcı → .NET (`POST /api/v1/agents/request-draft`: giriş, yalnızca İş Analisti) → `ai/` servisi (`/v1/request/draft`,
+  prompt `request/from_email.v1`, tek model çağrısı) → .NET doğrular (tür, uzunluk, bitiş ≥ talep tarihi) → form.
+- E-posta adresi ve telefon modele gitmeden gizlenir; cevaptaki yer tutucu geri konduğu için iletişim bilgisi doğru gelir.
+  Modelin uydurduğu bir yer tutucu atılır ve uyarı olur.
+- Sözleşme: [projects-api.md](projects-api.md) → "Yapay zekâ: e-postadan talep taslağı".
+
 ## Deneme: toplantı ve risk ajanları (komut satırı)
 
 Ajan fikrini gerçek kodla sınamak için yapılan deneme. Kod: [`ai/`](../ai/README.md). Komut satırı hâlâ çalışır;

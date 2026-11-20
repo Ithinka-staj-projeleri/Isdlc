@@ -7,7 +7,7 @@ namespace Isdlc.Api.Controllers;
 
 /// <summary>
 /// AI assistants (ai/ service). They only suggest; nothing is saved here.
-/// /api/v1/agents/status and the project sub-resources .../meetings/suggestions, .../risks/suggestions
+/// /api/v1/agents/status, /api/v1/agents/request-draft and the project sub-resources .../meetings/suggestions, .../risks/suggestions
 /// and .../risks/assessment-suggestion.
 /// </summary>
 public class AgentsController(IAgentService agentService) : ApiControllerBase
@@ -61,5 +61,19 @@ public class AgentsController(IAgentService agentService) : ApiControllerBase
         int projectId, SuggestRiskAssessmentDto request, CancellationToken cancellationToken)
     {
         return await agentService.SuggestRiskAssessmentAsync(projectId, request, cancellationToken);
+    }
+
+    /// <summary>
+    /// The new request form filled from the e-mail a request came with. The e-mail is sent to the AI service
+    /// (personal data such as e-mail and phone numbers is masked first and put back in the answer).
+    /// </summary>
+    [HttpPost("request-draft")]
+    [ProducesResponseType<RequestDraftDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<RequestDraftDto> DraftRequest(DraftRequestFromEmailDto request, CancellationToken cancellationToken)
+    {
+        return await agentService.DraftRequestFromEmailAsync(request, cancellationToken);
     }
 }

@@ -30,4 +30,10 @@ public interface IAgentService
     /// </summary>
     Task<RiskAssessmentSuggestionDto> SuggestRiskAssessmentAsync(
         int projectId, SuggestRiskAssessmentDto request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The new request form filled from the e-mail a request came with; nothing is saved.
+    /// 403 when the user may not open a request (only an active Business Analyst may), 503 the AI service is off or not reachable.
+    /// </summary>
+    Task<RequestDraftDto> DraftRequestFromEmailAsync(DraftRequestFromEmailDto request, CancellationToken cancellationToken);
 }

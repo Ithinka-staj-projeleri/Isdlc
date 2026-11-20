@@ -21,6 +21,9 @@ public interface IAgentClient
     /// <summary>Probability, impact and preventive action for one risk a person typed. 503 when the service fails.</summary>
     Task<RiskAssessmentAgentResult> AssessRiskAsync(
         RiskAssessmentAgentRequest request, CancellationToken cancellationToken);
+
+    /// <summary>The request form filled from the e-mail a request came with. 503 when the service fails.</summary>
+    Task<RequestAgentDraft> DraftRequestAsync(RequestAgentRequest request, CancellationToken cancellationToken);
 }
 
 /// <summary>What the agent gets: only the project code, the date, the current step and the notes.</summary>
@@ -87,5 +90,25 @@ public record RiskAssessmentAgentResult(
     int? Impact,
     string? AssessmentReason,
     string? Mitigation,
+    IReadOnlyList<string> Warnings,
+    string ModelName);
+
+/// <summary>What the request agent gets: only the e-mail and today's date (for "yıl sonuna kadar" style dates).</summary>
+public record RequestAgentRequest(string EmailText, DateOnly Today);
+
+/// <summary>
+/// The request form as the agent fills it; a field is null when the e-mail does not say it.
+/// RequestType is a RequestType name or null.
+/// </summary>
+public record RequestAgentDraft(
+    string? Name,
+    string? Description,
+    string? CustomerName,
+    string? RequesterName,
+    string? RequesterContact,
+    string? RequestType,
+    DateOnly? RequestDate,
+    DateOnly? DueDate,
+    string? Notes,
     IReadOnlyList<string> Warnings,
     string ModelName);

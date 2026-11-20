@@ -261,6 +261,56 @@ yine olmazsa 409 döner. Açık konulardan farkı: talep formu uzun olduğu içi
 | Toplantı Tutanakları | `features/meetings` | Erva |
 | Seviye & Kabul, Risk, Gereksinimler, Dokümanlar, Kayıt | Faz 2–3 | Modül sahibi |
 
+## Yapay zekâ: e-postadan talep taslağı (Faz 5 · F6)
+
+Yeni talep formunda **"E-postadan doldur"**: İş Analisti talebin geldiği e-postayı yapıştırır, yapay zekâ formu doldurur,
+kişi kontrol edip normal şekilde kaydeder. Hiçbir şey kaydedilmez. Durum: **taslak.** Sorumlu: Erva.
+Plan: [phase-5-plan.md](phase-5-plan.md) → F6. Ajan kuralları: [ai-vision.md](ai-vision.md) (yalnızca sahte veri).
+
+| İstek | Açıklama | Başarılı cevap |
+| --- | --- | --- |
+| `POST /agents/request-draft` | E-postadan talep formu önerisi | `200` `RequestDraftDto` |
+
+- **Yetki:** talebi açabilen kişi, yani aktif İş Analisti; diğerleri `403` ("Talebi yalnızca İş Analisti açabilir.").
+- **Gönderilen:** yalnızca e-posta metni ve bugünün tarihi (göreli tarihler için). E-posta adresi, telefon, IBAN ve TCKN
+  modele gitmeden gizlenir, cevaptaki yer tutucular backend'e dönmeden geri konur; iletişim bilgisi bu yüzden doğru gelir.
+- Servis ayarlı değilse ya da cevap vermiyorsa `503` (tutanak asistanıyla aynı mesajlar). `GET /agents/status` cevabındaki
+  `requestAssistantEnabled` düğmenin görünüp görünmeyeceğini söyler.
+
+```jsonc
+// İstek
+{ "emailText": "Kimden: Ayşe Kaya <ayse.kaya@ornek.com>
+Konu: Depo stok takip ekranı
+..." }   // zorunlu, en fazla 20000
+
+// RequestDraftDto (alanların hepsi boş olabilir; boş alan "e-postada yok" demektir)
+{
+  "name": "Depo stok takip ekranı",               // en fazla 200
+  "description": "Depodaki ürünlerin anlık stok durumunun izlenmesi isteniyor...",  // en fazla 2000
+  "customerName": "Örnek Lojistik A.Ş.",           // talep sahibi firma / birim, en fazla 200
+  "requesterName": "Ayşe Kaya",                    // en fazla 200
+  "requesterContact": "ayse.kaya@ornek.com",       // e-posta ya da telefon, en fazla 200
+  "requestType": "NewProject",                     // RequestType; e-posta bir türü açıkça söylemiyorsa null
+  "requestDate": "2026-11-18",                     // e-postanın tarihi; yoksa null (form bugünü bırakır)
+  "dueDate": "2026-12-31",                         // istenen bitiş; yoksa null
+  "notes": "Mobil cihazdan da erişim istendi.",     // açıklamaya girmeyen ek bilgi, en fazla 2000
+  "warnings": ["Talep sahibi firma e-postada açıkça yazmıyor; imzadaki alan adından tahmin edildi."],
+  "modelName": "gemini-2.5-flash"
+}
+```
+
+| Kural | Açıklama |
+| --- | --- |
+| Uydurma yok | Model yalnızca e-postada geçen bilgiyi yazar; geçmeyen alan `null` |
+| Sınırı aşan alan | Formun sınırını aşan metin ya da bilinmeyen tür `null` gelir; gerisi kullanılır |
+| `dueDate` | `requestDate`'ten önceyse `null` ve uyarı |
+| Kanal | Form kanalı **E-posta** yapar; taslakta yoktur |
+| Formda kalan | Kaynak (iç / dış), teklif, gizlilik sözleşmesi, analist ve proje yöneticisi: kişi seçer |
+| Ek geliştirme | `AdditionalModule` önerilirse ait olduğu projeyi kişi seçer; model proje seçmez |
+
+**Ekran:** yeni talep formunun üstünde katlanır bir "E-postadan doldur" kutusu (yalnızca yeni talepte ve servis açıkken).
+"Yapay zekâ ile doldur" yalnızca kişinin henüz doldurmadığı alanları doldurur; uyarılar kutunun altında görünür.
+
 ## Açık konular
 
 1. **Proje No nereden başlayacak?** Şirketin Proje Kayıt Listesi'nde (032) numara verilmiş projeler varsa uygulamanın

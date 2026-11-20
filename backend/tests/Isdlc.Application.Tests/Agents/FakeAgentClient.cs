@@ -18,6 +18,9 @@ public sealed class FakeAgentClient : IAgentClient
     public RiskAssessmentAgentResult RiskAssessmentResult { get; init; } =
         new(3, 4, "Gerekçe.", "Önleyici aksiyon.", [], "test-model");
 
+    public RequestAgentDraft RequestDraft { get; init; } =
+        new("Talep", "Açıklama.", null, null, null, null, null, null, null, [], "test-model");
+
     /// <summary>Thrown instead of answering, like a service that is down.</summary>
     public Exception? Failure { get; init; }
 
@@ -28,7 +31,11 @@ public sealed class FakeAgentClient : IAgentClient
 
     public RiskAssessmentAgentRequest? LastRiskAssessmentRequest { get; private set; }
 
-    public bool WasCalled => LastRequest is not null || LastRiskRequest is not null || LastRiskAssessmentRequest is not null;
+    public RequestAgentRequest? LastRequestDraftRequest { get; private set; }
+
+    public bool WasCalled =>
+        LastRequest is not null || LastRiskRequest is not null || LastRiskAssessmentRequest is not null
+        || LastRequestDraftRequest is not null;
 
     public Task<bool> IsAvailableAsync(CancellationToken cancellationToken) => Task.FromResult(IsAvailable);
 
@@ -49,6 +56,12 @@ public sealed class FakeAgentClient : IAgentClient
     {
         LastRiskAssessmentRequest = request;
         return Answer(RiskAssessmentResult);
+    }
+
+    public Task<RequestAgentDraft> DraftRequestAsync(RequestAgentRequest request, CancellationToken cancellationToken)
+    {
+        LastRequestDraftRequest = request;
+        return Answer(RequestDraft);
     }
 
     private Task<T> Answer<T>(T result) => Failure is null ? Task.FromResult(result) : Task.FromException<T>(Failure);

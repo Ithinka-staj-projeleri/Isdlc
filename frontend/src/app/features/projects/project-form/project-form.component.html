@@ -26,6 +26,10 @@
   <p class="notice warn">Bu proje aktif değil; bilgileri artık değiştirilemez.</p>
 }
 
+@if (!isEdit()) {
+  <app-request-email-assistant (drafted)="applyDraft($event)" />
+}
+
 <form [formGroup]="form" (ngSubmit)="save()" novalidate>
   <!-- Which flow the request follows: a new project, or an add-on of an existing project (docs/projects-api.md, D3). -->
   @if (!isEdit()) {

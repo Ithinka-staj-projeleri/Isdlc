@@ -82,6 +82,7 @@ docker compose --profile ai up -d --build
 | `POST /v1/meeting/suggestions` | Notlardan açık konu önerileri (`X-Agent-Key` gerekir). Sözleşme: [open-issues-meetings-api.md](../docs/open-issues-meetings-api.md) → "Yapay zekâ önerileri" |
 | `POST /v1/risk/suggestions` | Metinden riskler: bul, puanla, önleyici aksiyon öner (üç model çağrısı). Sözleşme: [risks-api.md](../docs/risks-api.md) → "Yapay zekâ önerileri" |
 | `POST /v1/risk/assessment` | Kişinin yazdığı tek risk için olasılık, etki ve önleyici aksiyon (iki model çağrısı) |
+| `POST /v1/request/draft` | Talep e-postasından Talep Kayıt Formu taslağı (tek model çağrısı). Sözleşme: [projects-api.md](../docs/projects-api.md) → "Yapay zekâ: e-postadan talep taslağı" |
 
 Servis yalnızca backend tarafından çağrılır; ISDLC API'sine ve veritabanına bu akışta dokunmaz.
 Model hata verirse Türkçe bir mesajla `503` döner; backend bu mesajı kullanıcıya iletir.

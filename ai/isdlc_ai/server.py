@@ -7,6 +7,7 @@ Endpoints:
     POST /v1/meeting/suggestions    open issues and a minutes draft (type, participants, agenda, summary, next steps) from meeting notes
     POST /v1/risk/suggestions       risks found in a text, scored and with a preventive action (nothing is saved)
     POST /v1/risk/assessment        probability, impact and preventive action for one risk a person typed
+    POST /v1/request/draft          the request form filled from the e-mail the request came with
 
 The backend checks the user and the project, then sends only what the agent needs. The agent never
 calls the ISDLC API or the database in this flow; the person reviews the suggestions in the form.
@@ -25,6 +26,7 @@ from pydantic.alias_generators import to_camel
 
 from isdlc_ai.agents.base import AgentOutputError, RunInfo
 from isdlc_ai.agents.meeting_agent import MeetingAgent, MeetingInput
+from isdlc_ai.agents.request_agent import RequestAgent
 from isdlc_ai.agents.risk_agent import RiskAgent, RiskInput
 from isdlc_ai.config import Settings, load_settings
 from isdlc_ai.llm import GeminiClient, LlmClient, LlmError
@@ -132,6 +134,26 @@ class RiskAssessmentResponse(CamelModel):
     mitigation: str | None
     warnings: list[str]
     runs: list[RunDto]  # assess, mitigate
+
+
+class RequestDraftRequest(CamelModel):
+    email_text: str = Field(min_length=1, max_length=MAX_NOTES)
+    today: date  # relative dates ("yıl sonuna kadar") are worked out from the e-mail's date, or from today
+
+
+class RequestDraftResponse(CamelModel):
+    # Every field is null when the e-mail does not say it.
+    name: str | None
+    description: str | None
+    customer_name: str | None
+    requester_name: str | None
+    requester_contact: str | None
+    request_type: str | None  # RequestType value
+    request_date: date | None
+    due_date: date | None
+    notes: str | None
+    warnings: list[str]
+    run: RunDto
 
 
 def create_app(settings: Settings | None = None, llm_factory: Callable[[], LlmClient] | None = None) -> FastAPI:
@@ -266,6 +288,31 @@ def create_app(settings: Settings | None = None, llm_factory: Callable[[], LlmCl
             mitigation=item.risk.mitigation,
             warnings=item.warnings,
             runs=[_run_dto(run) for run in result.runs],
+        )
+
+    @app.post(
+        "/v1/request/draft",
+        response_model=RequestDraftResponse,
+        response_model_by_alias=True,
+        dependencies=[Depends(check_key)],
+    )
+    def request_draft(request: RequestDraftRequest) -> RequestDraftResponse:
+        agent = RequestAgent(make_llm())
+        result = _run(lambda: agent.draft_from_email(request.email_text, request.today))
+
+        draft = result.draft
+        return RequestDraftResponse(
+            name=draft.name,
+            description=draft.description,
+            customer_name=draft.customer_name,
+            requester_name=draft.requester_name,
+            requester_contact=draft.requester_contact,
+            request_type=draft.request_type,
+            request_date=draft.request_date,
+            due_date=draft.due_date,
+            notes=draft.notes,
+            warnings=draft.warnings,
+            run=_run_dto(result.run),
         )
 
     return app

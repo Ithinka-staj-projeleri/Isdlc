@@ -165,3 +165,40 @@ def test_meetingSuggestions_UnknownMeetingType_ReturnsNoMinutes():
 
     assert response.status_code == 200
     assert response.json()["minutes"] is None
+
+
+def test_requestDraft_ReturnsTheFormInCamelCase():
+    answer = json.dumps({
+        "name": "Depo stok takip ekranı",
+        "description": "Stok durumu anlık izlenecek.",
+        "customer_name": "Örnek Lojistik A.Ş.",
+        "requester_name": "Ayşe Kaya",
+        "requester_contact": "[EPOSTA_1]",
+        "request_type": "NewProject",
+        "request_date": None,
+        "due_date": "2026-12-31",
+        "notes": None,
+        "warnings": [],
+    }, ensure_ascii=False)
+
+    response = client(answer).post("/v1/request/draft", json={
+        "emailText": "Ayşe Kaya (ayse.kaya@ornek.com): Depo stok takip ekranı istiyoruz, yıl sonuna kadar.",
+        "today": "2026-11-20",
+    })
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["requesterContact"] == "ayse.kaya@ornek.com"
+    assert body["requestType"] == "NewProject"
+    assert body["dueDate"] == "2026-12-31"
+    assert body["requestDate"] is None
+    assert body["run"]["promptVersion"] == "request/from_email.v1"
+
+
+def test_requestDraft_WithoutKey_Is401():
+    settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
+    plain = TestClient(create_app(settings, llm_factory=lambda: FakeLlmClient([])))
+
+    response = plain.post("/v1/request/draft", json={"emailText": "Talep", "today": "2026-11-20"})
+
+    assert response.status_code == 401

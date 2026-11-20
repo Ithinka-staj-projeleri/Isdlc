@@ -1,0 +1,60 @@
+@use '../../../shared/styles/ui' as ui;
+
+// Same look as the minutes assistant (features/meetings/meeting-assistant).
+.assistant {
+    display: block;
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border: 1px dashed var(--info);
+    border-radius: 6px;
+    background: #f3f7fc;
+
+    summary {
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    &[open] summary {
+        margin-bottom: 8px;
+    }
+}
+
+.field {
+    @include ui.field;
+    margin-bottom: 8px;
+
+    textarea {
+        min-height: 140px;
+    }
+}
+
+.privacy {
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.button {
+    @include ui.button;
+}
+
+.result {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: var(--panel);
+    font-size: 13px;
+
+    p {
+        margin: 0 0 6px;
+    }
+}
+
+.muted {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+.warning {
+    color: var(--warn);
+}

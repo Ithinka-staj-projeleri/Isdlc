@@ -2,13 +2,15 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of } from 'rxjs';
 import { AgentStatus, MeetingSuggestions } from './models/meeting-suggestions';
+import { RequestDraft } from './models/request-draft';
 import { RiskAssessmentSuggestion, RiskSuggestions } from './models/risk-suggestions';
 
-const OFF: AgentStatus = { meetingAssistantEnabled: false, riskAssistantEnabled: false };
+const OFF: AgentStatus = { meetingAssistantEnabled: false, riskAssistantEnabled: false, requestAssistantEnabled: false };
 
 /**
  * AI assistants (Agents module). The browser only talks to the ISDLC API; the API calls the AI service.
- * Contracts: docs/open-issues-meetings-api.md and docs/risks-api.md → "Yapay zekâ önerileri".
+ * Contracts: docs/open-issues-meetings-api.md and docs/risks-api.md → "Yapay zekâ önerileri";
+ * docs/projects-api.md → "Yapay zekâ: e-postadan talep taslağı".
  */
 @Injectable({ providedIn: 'root' })
 export class AgentService {
@@ -26,6 +28,10 @@ export class AgentService {
 
     riskAssistantEnabled(): Observable<boolean> {
         return this.status().pipe(map(status => status.riskAssistantEnabled));
+    }
+
+    requestAssistantEnabled(): Observable<boolean> {
+        return this.status().pipe(map(status => status.requestAssistantEnabled));
     }
 
     /** Can take several seconds (a model call). 503 with a Turkish message when the service fails. */
@@ -46,5 +52,10 @@ export class AgentService {
             `/api/v1/projects/${projectId}/risks/assessment-suggestion`,
             { title, description },
         );
+    }
+
+    /** The new request form filled from an e-mail; nothing is saved. Only a Business Analyst may ask (403 otherwise). */
+    draftRequest(emailText: string): Observable<RequestDraft> {
+        return this.http.post<RequestDraft>('/api/v1/agents/request-draft', { emailText });
     }
 }

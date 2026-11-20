@@ -5,6 +5,7 @@ import { OpenIssueType } from '../../open-issues/models/open-issue';
 export interface AgentStatus {
     meetingAssistantEnabled: boolean;
     riskAssistantEnabled: boolean;
+    requestAssistantEnabled: boolean;
 }
 
 /** POST /api/v1/projects/{projectId}/meetings/suggestions — nothing is saved; the form is filled for review. */

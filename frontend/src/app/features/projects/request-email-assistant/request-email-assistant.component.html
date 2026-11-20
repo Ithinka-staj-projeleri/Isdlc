@@ -1,0 +1,30 @@
+@if (enabled()) {
+<details class="assistant">
+    <summary>E-postadan doldur <span class="muted">(yapay zekâ)</span></summary>
+
+    <label class="field">
+        Talep e-postası
+        <textarea [ngModel]="email()" (ngModelChange)="email.set($event)" [maxlength]="maxEmail" [disabled]="busy()"
+            placeholder="Talebin geldiği e-postayı gönderen, tarih ve imzasıyla birlikte yapıştırın."></textarea>
+    </label>
+    <p class="privacy">
+        E-posta yapay zekâ servisine gönderilir; e-posta adresi ve telefon gibi bilgiler göndermeden önce gizlenir.
+        Şimdilik yalnızca deneme verisi girin.
+    </p>
+    <button type="button" class="button ai" [disabled]="busy() || !email().trim()" (click)="ask()">
+        {{ busy() ? 'E-posta okunuyor…' : 'Yapay zekâ ile doldur' }}
+    </button>
+
+    @if (result(); as r) {
+    <div class="result" role="status">
+        <p>
+            <b>Form e-postaya göre dolduruldu; yalnızca sizin doldurmadığınız alanlar değişti.</b>
+            Talep kanalı E-posta seçildi. Kaynak, teklif ve diğer seçimleri siz yapın; kaydetmeden önce kontrol edin.
+        </p>
+        @for (warning of r.warnings; track $index) {
+        <p class="warning">{{ warning }}</p>
+        }
+    </div>
+    }
+</details>
+}
