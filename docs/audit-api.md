@@ -59,3 +59,57 @@ Yeni bir proje kaydı `IAudited` + `IProjectRecord` taşıdığında geçmişe k
 `ProjectAssessment` böyle eklendi).
 Ekranda Türkçe görünmesi için `audit-labels.ts`'e alan adları ve enum etiketleri, kodunun görünmesi için
 `AuditService.LoadRecordCodesAsync`'e bir satır eklenir.
+
+## Zaman çizelgesi (Faz 5 · F3)
+
+Projede olan önemli olaylar tek bir akışta: proje detayındaki **Zaman Çizelgesi** sekmesi. Kayıt Geçmişi her alan
+değişikliğini gösterir; zaman çizelgesi yalnızca "ne oldu"yu anlatır. Durum: **taslak.** Sorumlu: Erva.
+Plan: [phase-5-plan.md](phase-5-plan.md) → F3. Yeni tablo yoktur; mevcut kayıtlardan hesaplanır, hiçbir şey değiştirmez.
+
+| İstek | Açıklama | Başarılı cevap |
+| --- | --- | --- |
+| `GET /projects/{projectId}/timeline` | Olaylar, en yeni önce (sayfalı) | `200` `PagedResult<TimelineEventDto>` |
+
+- **Okuma:** giriş yapmış her kullanıcı. Proje yoksa `404`.
+- **Sayfalama:** `page`, `pageSize` (en fazla 100). Sıralama: `occurredAt` azalan; aynı anda olanlar aşağıdaki tablo sırasıyla.
+
+### Olaylar
+
+| `kind` | Kaynak | `occurredAt` | `performedBy` |
+| --- | --- | --- | --- |
+| `Created` | Projenin kendisi (talep / ek geliştirme / öneri açıldı) | `Project.CreatedAt` | Kayda alan |
+| `Step` | Her `StepRecord` (Tamamlandı, Evet, Hayır, Reddedildi, Ertelendi, Geri alındı) | `PerformedAt` | İşlemi yapan |
+| `Meeting` | Her tutanak | Toplantı tarihi (`dateOnly: true`) | Tutanağı yazan |
+| `Decision` | Türü Karar olan açık konular | Kaydın oluşturulduğu an | Kaydeden |
+| `RequirementApproved` | Durumu "Onaylandı"ya geçen gereksinim (Kayıt Geçmişi'nden) | Değişikliğin anı | Değiştiren |
+| `RiskClosed` | Durumu "Kapandı"ya geçen risk (Kayıt Geçmişi'nden) | Değişikliğin anı | Değiştiren |
+
+Bir gereksinim onaydan çıkıp yeniden onaylanırsa iki olay görünür; her biri gerçekten olmuş bir onaydır.
+
+### DTO
+
+```jsonc
+// TimelineEventDto
+{
+  "kind": "Step",                      // Created | Step | Meeting | Decision | RequirementApproved | RiskClosed
+  "occurredAt": "2026-11-05T12:00:00Z",
+  "dateOnly": false,                   // true: yalnızca gün bilinir (tutanak); ekran saati göstermez
+  "performedBy": { "id": 1, "fullName": "Elif Yılmaz" },
+  "recordId": null,                    // Meeting / Decision / RequirementApproved / RiskClosed: ilgili kaydın id'si
+  "recordCode": "4",                   // Step: adım kodu; Created: proje kodu; diğerleri: kayıt kodu (TT-001, AK-003, GR-002, RSK-01)
+  "title": "Müşteri uygunluğu değerlendirilir",
+                                       // Step: adım metninin ilk cümlesi; Created: proje adı; Meeting: gündemin ilk satırı;
+                                       // diğerleri: kaydın konusu
+  "stepAction": "Yes",                 // yalnızca Step
+  "jumpedToStepCode": null,            // yalnızca Step: "Hayır" ile dönülen adım
+  "meetingType": null,                 // yalnızca Meeting
+  "note": "Müşteri dış talep; uygun."  // Step: işlem notu; Meeting: toplantı özeti; diğerlerinde null
+}
+```
+
+### Ekran
+
+Proje detayında **Zaman Çizelgesi** sekmesi (Süreç'ten sonra). Dikey bir çizgi üzerinde, gün başlıklarıyla gruplanmış
+satırlar: simge ve tür ("Adım 4 · Evet", "Tutanak TT-001 · Analiz toplantısı", "Karar AK-003"), başlık, kişi ve saat,
+varsa not. Satır başlığı ilgili sekmeyi açar (adım → Süreç, tutanak → Toplantı Tutanakları, karar → Açık Konular,
+gereksinim → Gereksinimler, risk → Riskler, kayıt açıldı → Genel Bilgiler). Sayfa başına 50 olay; fazlası sayfalanır.

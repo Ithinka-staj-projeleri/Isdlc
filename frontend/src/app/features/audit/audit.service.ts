@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PagedResult } from '../../shared/models/paged-result';
 import { AuditLog } from './models/audit-log';
+import { TimelineEvent } from './models/timeline';
 
 /** Audit API (read only). Contract: docs/audit-api.md */
 @Injectable({ providedIn: 'root' })
@@ -16,5 +17,11 @@ export class AuditService {
             params = params.set('entityType', entityType);
         }
         return this.http.get<PagedResult<AuditLog>>(`/api/v1/projects/${projectId}/audit-logs`, { params });
+    }
+
+    /** Steps, minutes, decisions, approvals; newest first. */
+    projectTimeline(projectId: number, page: number, pageSize: number): Observable<PagedResult<TimelineEvent>> {
+        const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+        return this.http.get<PagedResult<TimelineEvent>>(`/api/v1/projects/${projectId}/timeline`, { params });
     }
 }

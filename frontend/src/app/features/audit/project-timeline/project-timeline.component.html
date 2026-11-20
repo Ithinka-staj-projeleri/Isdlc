@@ -1,0 +1,43 @@
+<p class="muted intro">
+    Projede olanlar, en yeni önce: süreç adımları, tutanaklar, kararlar, onaylanan gereksinimler ve kapanan riskler.
+    Her alan değişikliği için Kayıt Geçmişi sekmesine bakın.
+</p>
+
+@if (timeline.error()) {
+<app-empty-state message="Zaman çizelgesi yüklenemedi." />
+} @else if (timeline.hasValue()) {
+@let result = timeline.value();
+<div [class.loading]="timeline.isLoading()">
+    @for (day of days(); track day.label) {
+    <section class="day">
+        <h4>{{ day.label }}</h4>
+        <ol class="events">
+            @for (event of day.events; track $index) {
+            <li class="event" [class]="'kind-' + event.kind">
+                <span class="dot" aria-hidden="true"></span>
+                <div class="body">
+                    <p class="head">
+                        @if (tabOf(event); as tab) {
+                        <a [routerLink]="[]" [queryParams]="{ tab: tab }" queryParamsHandling="merge">{{ heading(event) }}</a>
+                        } @else {
+                        {{ heading(event) }}
+                        }
+                    </p>
+                    @if (event.title) { <p class="title">{{ event.title }}</p> }
+                    @if (event.note) { <p class="note">{{ event.note }}</p> }
+                    <p class="meta">
+                        {{ event.performedBy.fullName }}@if (timeOf(event); as time) { · {{ time }} }
+                    </p>
+                </div>
+            </li>
+            }
+        </ol>
+    </section>
+    }
+</div>
+@if (result.totalCount > pageSize) {
+<app-pagination [page]="page()" [pageSize]="pageSize" [totalCount]="result.totalCount" (pageChange)="page.set($event)" />
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}
