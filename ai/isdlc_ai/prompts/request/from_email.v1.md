@@ -12,8 +12,10 @@ iş analisti her alanı kontrol edip kaydeder.
 - `requester_contact`: Talebi iletenin e-postası ya da telefonu. Metinde `[EPOSTA_1]`, `[TELEFON_1]` gibi yer tutucular
   varsa onları **olduğu gibi** yaz; bunlar gizlenmiş iletişim bilgileridir. Birden fazla varsa talebi iletene ait olanı seç.
 - `request_type`: Yalnızca şunlardan biri, ya da `null`:
-  - `NewProject`: Yeni bir yazılım / proje isteniyor.
-  - `AdditionalModule`: Hâlihazırda kullanılan bir sisteme ek modül, ekran ya da geliştirme isteniyor.
+  - `NewProject`: Yeni bir yazılım / proje isteniyor. Yeni yazılımın müşterinin mevcut sistemleriyle (ERP, muhasebe…)
+    entegre olması onu ek geliştirme yapmaz.
+  - `AdditionalModule`: **Bizim daha önce bu müşteriye yaptığımız** bir projeye ek modül, ekran ya da geliştirme isteniyor
+    ("geçen yıl yaptığınız portala…", "sizin geliştirdiğiniz sisteme…"). E-posta bunu açıkça söylemiyorsa seçme.
   - `CompanyProduct`: Şirketin kendi ürünü (paket yazılım) isteniyor ya da soruluyor.
   - `Support`: Var olan bir sistemde hata, destek ya da bakım isteniyor.
   Tür e-postadan açıkça anlaşılmıyorsa `null` bırak.
