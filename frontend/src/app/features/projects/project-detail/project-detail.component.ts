@@ -9,6 +9,7 @@ import { DateOnlyPipe } from '../../../shared/pipes/date-only.pipe';
 import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
 import { ProjectAssessmentComponent } from '../../assessment/project-assessment/project-assessment.component';
 import { AuditLogComponent } from '../../audit/audit-log/audit-log.component';
+import { ProjectTimelineComponent } from '../../audit/project-timeline/project-timeline.component';
 import { DocumentListComponent } from '../../documents/document-list/document-list.component';
 import { MeetingListComponent } from '../../meetings/meeting-list/meeting-list.component';
 import { OpenIssueListComponent } from '../../open-issues/open-issue-list/open-issue-list.component';
@@ -30,6 +31,7 @@ import { ProjectService } from '../project.service';
 type DetailTab =
   | 'general'
   | 'process'
+  | 'timeline'
   | 'request-analysis'
   | 'add-ons'
   | 'assessment'
@@ -64,6 +66,7 @@ const LAST_REQUEST_STAGE = 2;
     ProjectAssessmentComponent,
     DocumentListComponent,
     AuditLogComponent,
+    ProjectTimelineComponent,
     AddOnListComponent,
     RequestAnalysisTabComponent,
   ],
@@ -85,6 +88,7 @@ export class ProjectDetailComponent {
   private static readonly ALL_TABS: { key: DetailTab; label: string }[] = [
     { key: 'general', label: 'Genel Bilgiler' },
     { key: 'process', label: 'Süreç' },
+    { key: 'timeline', label: 'Zaman Çizelgesi' },
     { key: 'request-analysis', label: 'Talep Analizi' },
     { key: 'add-ons', label: 'Ek Geliştirmeler' },
     { key: 'assessment', label: 'Seviye & Kabul' },
