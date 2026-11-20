@@ -3,6 +3,29 @@
 Bu dosya Faz 4'te yapılacak işleri, kimin neyi yapacağını ve işlerin sırasını anlatır.
 Ortak kurallar için: [AGENTS.md](../AGENTS.md), ekip ve çalışma kuralları için: [PLANNING.md](../PLANNING.md).
 
+> **Durum: kapatıldı (19 Kasım 2026).** Birleşen işler uygulamada kalır; yapılmamış işler iptal edildi ve yapılmayacak.
+> Sonraki iş planı: [phase-5-plan.md](phase-5-plan.md). Aşağıdaki bölümler planın ilk hâlidir, kayıt için durur.
+
+## 0. Kapanış
+
+**Birleşenler:** E1 akış altyapısı · E2 beş akışın seed'i · E3 talep analizi · E4 toplantı ve ziyaret tutanakları ·
+E5 süreç iyileştirme · D1 talepler · D2 ret / erteleme · D3 ek geliştirme · B1 soru bankası · B2 seviye ve uygunluk.
+
+**İptal edilenler:** E6 demo senaryosu · D4 dokümanlar · D5 doküman kütüphanesi · D6 gereksinim alt kategorileri ·
+D7 gereksinim iç onayı · D8 kapsam ve efor · D9 gösterge panelinin yeni akışlara uyarlanması · B3 risk ölçeği 3 × 3 ·
+B4 risk analizi · B5 ekip ve iletişim · B6 kaynak planlama · B7 faturalama · Faz 4 işlerinin çapraz testleri.
+
+**İptalin sonuçları** (bilinçli olarak böyle kalır):
+
+| Konu | Durum |
+| --- | --- |
+| Kaynak planlama ve faturalama akışları | Seed'de durur (silmek migration ister) ama menüleri yoktur; bu akışlarda kayıt açılmaz |
+| Dokümanlar | Faz 2'deki liste ve durumlar kalır; seviye matrisi ve "zorunlu doküman onaylanmadan aşama geçilmez" kuralı yoktur |
+| Riskler | 5 × 5 ölçek ve mevcut seviyeler kalır; risk ajanı değişmez |
+| Gösterge paneli | Aşama çubukları yalnızca yeni yazılım projesi akışını sayar; ek geliştirmeler ve süreç iyileştirme önerileri çubuklarda görünmez |
+| Demo senaryosu | `docs/demo-scenario.md` eski 13 aşamalı akışı anlatır; Faz 5'te (F10) güncellenir |
+| Bölüm 7'deki açık konular | Kapandı; iptal edilen işlere ait olanlar sorulmayacak. Süreç iyileştirme formları (madde 1) gelirse E5'e alan eklenebilir |
+
 ## 1. Neden
 
 Şirketin iş analistleri süreç akışlarının son hâlini ve kullandıkları formları paylaştı. Uygulama şu an prototipteki
