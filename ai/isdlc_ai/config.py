@@ -14,6 +14,10 @@ class Settings:
     gemini_model: str | None
     # Shared with the backend (Agents:ServiceKey); when set, the HTTP service requires it.
     agent_service_key: str | None = None
+    # Speech to text (isdlc_ai/transcription.py); used only when faster-whisper is installed.
+    whisper_model: str = "small"
+    whisper_device: str = "cpu"
+    whisper_compute_type: str = "int8"
 
 
 def load_settings() -> Settings:
@@ -23,4 +27,7 @@ def load_settings() -> Settings:
         gemini_api_key=os.getenv("GEMINI_API_KEY") or None,
         gemini_model=os.getenv("GEMINI_MODEL") or None,
         agent_service_key=os.getenv("AGENT_SERVICE_KEY") or None,
+        whisper_model=os.getenv("WHISPER_MODEL") or "small",
+        whisper_device=os.getenv("WHISPER_DEVICE") or "cpu",
+        whisper_compute_type=os.getenv("WHISPER_COMPUTE_TYPE") or "int8",
     )

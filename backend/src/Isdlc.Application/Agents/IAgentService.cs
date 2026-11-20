@@ -36,4 +36,11 @@ public interface IAgentService
     /// 403 when the user may not open a request (only an active Business Analyst may), 503 the AI service is off or not reachable.
     /// </summary>
     Task<RequestDraftDto> DraftRequestFromEmailAsync(DraftRequestFromEmailDto request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// A meeting recording as text, made on the AI service's machine (the audio is not sent to a model provider).
+    /// 404 project missing, 409 project not active, 400 no file or not audio, 503 the AI service is off or not reachable.
+    /// </summary>
+    Task<MeetingTranscriptDto> TranscribeMeetingAsync(
+        int projectId, Stream? recording, long length, CancellationToken cancellationToken);
 }

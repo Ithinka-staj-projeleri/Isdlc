@@ -271,6 +271,18 @@ Riskler sekmesinde (akış 4.8, Risk Analiz Formu) iki kullanım:
 - Skor ve seviye modelden istenmez; `RiskRules` ile hesaplanır.
 - Sözleşme: [risks-api.md](risks-api.md) → "Yapay zekâ önerileri".
 
+### Ses kaydından tutanak notları (Faz 5 · F5)
+
+Tutanak asistanında **"Ses kaydından metne çevir"**: toplantının ses ya da video kaydı seçilir; `ai/` servisi kaydı
+**kendi makinesinde** Whisper (faster-whisper) ile metne çevirir ve metin "Ham toplantı notları" kutusuna yazılır.
+Kişi metni okuyup düzeltir, sonra her zamanki gibi karar ve aksiyonları çıkarır.
+
+- Akış: tarayıcı → .NET (`POST /api/v1/projects/{id}/meetings/transcript`, en fazla 500 MB) → `ai/` servisi
+  (`/v1/meeting/transcribe`) → metin. Ses dışarı gitmez; yalnızca kişinin gönderdiği metin, gizlenerek modele gider.
+- Paket isteğe bağlıdır (`requirements-audio.txt`, Docker imajında kurulu); yoksa düğme görünmez.
+- Tutanak notlarının sınırı 1 saatlik bir dökümün sığması için 100000 karaktere çıkarıldı.
+- Sözleşme: [open-issues-meetings-api.md](open-issues-meetings-api.md) → "Ses kaydından notlar".
+
 ### E-postadan talep taslağı (Faz 5 · F6)
 
 Yeni talep formunda katlanır **"E-postadan doldur"** kutusu: İş Analisti talebin geldiği e-postayı yapıştırır; ajan proje adı,

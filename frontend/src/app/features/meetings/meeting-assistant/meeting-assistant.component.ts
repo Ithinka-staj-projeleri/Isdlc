@@ -9,7 +9,8 @@ import { MeetingSuggestions } from '../../agents/models/meeting-suggestions';
 import { OPEN_ISSUE_TYPE_LABELS } from '../../open-issues/models/open-issue';
 import { MEETING_TYPE_LABELS } from '../models/meeting';
 
-const MAX_NOTES = 20_000;
+/** A whole recording's transcript fits: about an hour of talk (same as the API). */
+const MAX_NOTES = 100_000;
 
 /** The suggested actions of one person (or of nobody: owner null). */
 interface OwnerActions {
@@ -39,6 +40,7 @@ export class MeetingAssistantComponent {
     readonly suggested = output<MeetingSuggestions>();
 
     protected readonly enabled = toSignal(this.agentService.meetingAssistantEnabled(), { initialValue: false });
+    protected readonly transcriptionEnabled = toSignal(this.agentService.transcriptionEnabled(), { initialValue: false });
     protected readonly typeLabels = OPEN_ISSUE_TYPE_LABELS;
     protected readonly meetingTypeLabels = MEETING_TYPE_LABELS;
     protected readonly maxNotes = MAX_NOTES;
@@ -46,6 +48,10 @@ export class MeetingAssistantComponent {
     protected readonly notes = signal('');
     protected readonly busy = signal(false);
     protected readonly result = signal<MeetingSuggestions | null>(null);
+
+    protected readonly transcribing = signal(false);
+    /** "12 dakikalık kayıt metne çevrildi." after a recording was turned into text. */
+    protected readonly transcriptInfo = signal<{ minutes: number; truncated: boolean } | null>(null);
 
     private readonly users = toSignal(inject(LookupService).users$.pipe(catchError(() => of([]))), { initialValue: [] });
 
@@ -67,6 +73,34 @@ export class MeetingAssistantComponent {
             || b.titles.length - a.titles.length
             || (a.owner ?? '').localeCompare(b.owner ?? '', 'tr'));
     });
+
+    /**
+     * "Ses kaydından metne çevir": the text goes into the notes box (after what is already there), so the person can
+     * read and correct it before asking for decisions and actions.
+     */
+    protected transcribe(input: HTMLInputElement): void {
+        const recording = input.files?.[0];
+        input.value = ''; // the same file can be picked again
+        if (!recording || this.transcribing()) {
+            return;
+        }
+
+        this.transcribing.set(true);
+        this.transcriptInfo.set(null);
+        this.agentService.transcribeMeeting(this.projectId(), recording).subscribe({
+            next: transcript => {
+                this.transcribing.set(false);
+                const current = this.notes().trim();
+                this.notes.set((current ? `${current}\n\n${transcript.text}` : transcript.text).slice(0, MAX_NOTES));
+                this.transcriptInfo.set({
+                    minutes: Math.max(1, Math.round(transcript.durationSeconds / 60)),
+                    truncated: transcript.truncated,
+                });
+            },
+            // The error interceptor shows the API's message (not audio, service off...).
+            error: () => this.transcribing.set(false),
+        });
+    }
 
     protected ask(): void {
         const notes = this.notes().trim();

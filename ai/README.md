@@ -41,6 +41,17 @@ python -m venv .venv
 
 macOS / Linux'ta `.venv/Scripts/python` yerine `.venv/bin/python` yazılır.
 
+**Ses kaydından tutanak (isteğe bağlı):** toplantı kaydını metne çeviren paket (faster-whisper) ayrıdır, çünkü
+Python 3.13 ve üstü için henüz paketi yoktur. Docker imajı onu kurar. Lokalde Python 3.11 ya da 3.12 ile denemek için:
+
+```bash
+.venv/Scripts/python -m pip install -r requirements-audio.txt
+```
+
+Kurulu değilse servis çalışır, yalnızca `/health` `transcriptionAvailable: false` döner ve düğme görünmez.
+Model ilk kayıtta indirilir (`small` ~500 MB); boyut `WHISPER_MODEL` ile seçilir (`base`, `small`, `medium`,
+`large-v3-turbo`). Ses dosyası bilgisayardan çıkmaz.
+
 `.env.example` dosyasını `.env` adıyla kopyalayıp `GEMINI_API_KEY` değerini girin.
 
 Google eski modelleri zamanla kapatır. "model ... is no longer available" hatası alırsanız anahtarınızın
@@ -82,6 +93,7 @@ docker compose --profile ai up -d --build
 | `POST /v1/meeting/suggestions` | Notlardan açık konu önerileri (`X-Agent-Key` gerekir). Sözleşme: [open-issues-meetings-api.md](../docs/open-issues-meetings-api.md) → "Yapay zekâ önerileri" |
 | `POST /v1/risk/suggestions` | Metinden riskler: bul, puanla, önleyici aksiyon öner (üç model çağrısı). Sözleşme: [risks-api.md](../docs/risks-api.md) → "Yapay zekâ önerileri" |
 | `POST /v1/risk/assessment` | Kişinin yazdığı tek risk için olasılık, etki ve önleyici aksiyon (iki model çağrısı) |
+| `POST /v1/meeting/transcribe` | Toplantı kaydını (gövde: dosyanın kendisi) bu makinede metne çevirir; `requirements-audio.txt` gerekir. Sözleşme: [open-issues-meetings-api.md](../docs/open-issues-meetings-api.md) → "Ses kaydından notlar" |
 | `POST /v1/request/draft` | Talep e-postasından Talep Kayıt Formu taslağı (tek model çağrısı). Sözleşme: [projects-api.md](../docs/projects-api.md) → "Yapay zekâ: e-postadan talep taslağı" |
 
 Servis yalnızca backend tarafından çağrılır; ISDLC API'sine ve veritabanına bu akışta dokunmaz.

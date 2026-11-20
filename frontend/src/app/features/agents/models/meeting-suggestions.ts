@@ -6,6 +6,18 @@ export interface AgentStatus {
     meetingAssistantEnabled: boolean;
     riskAssistantEnabled: boolean;
     requestAssistantEnabled: boolean;
+    /** The AI service can turn a meeting recording into text (on its own machine). */
+    transcriptionEnabled: boolean;
+}
+
+/** POST /api/v1/projects/{projectId}/meetings/transcript — a recording as text; nothing is saved. */
+export interface MeetingTranscript {
+    /** One segment (about a sentence) per line. */
+    text: string;
+    durationSeconds: number;
+    language: string;
+    /** Cut to the notes limit (100000 characters). */
+    truncated: boolean;
 }
 
 /** POST /api/v1/projects/{projectId}/meetings/suggestions — nothing is saved; the form is filled for review. */

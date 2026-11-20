@@ -202,3 +202,75 @@ def test_requestDraft_WithoutKey_Is401():
     response = plain.post("/v1/request/draft", json={"emailText": "Talep", "today": "2026-11-20"})
 
     assert response.status_code == 401
+
+
+class FakeTranscriber:
+    model_name = "fake-whisper"
+
+    def __init__(self, text="Merhaba.\nToplantıya başlayalım.", error=None):
+        self.text, self.error, self.received = text, error, None
+
+    def transcribe(self, path):
+        from isdlc_ai.transcription import Transcript
+
+        self.received = path.read_bytes()
+        if self.error:
+            raise self.error
+        return Transcript(self.text, 61.4, "tr", self.model_name)
+
+
+def transcribing(transcriber) -> TestClient:
+    settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
+    app = create_app(settings, llm_factory=lambda: FakeLlmClient([]), transcriber=transcriber)
+    return TestClient(app, headers={"X-Agent-Key": KEY})
+
+
+def test_transcribe_ReturnsTheTextAndRemovesTheFile():
+    fake = FakeTranscriber()
+
+    response = transcribing(fake).post("/v1/meeting/transcribe", content=b"fake audio bytes")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "text": "Merhaba.\nToplantıya başlayalım.",
+        "durationSeconds": 61,
+        "language": "tr",
+        "truncated": False,
+        "modelName": "fake-whisper",
+    }
+    assert fake.received == b"fake audio bytes"
+
+
+def test_transcribe_LongTextIsCutToTheNotesLimit():
+    from isdlc_ai.server import MAX_MEETING_NOTES
+
+    response = transcribing(FakeTranscriber(text="a" * (MAX_MEETING_NOTES + 5))).post(
+        "/v1/meeting/transcribe", content=b"x")
+
+    assert len(response.json()["text"]) == MAX_MEETING_NOTES
+    assert response.json()["truncated"] is True
+
+
+def test_transcribe_UnreadableFile_Is400():
+    from isdlc_ai.transcription import TranscriptionError
+
+    response = transcribing(FakeTranscriber(error=TranscriptionError("not audio"))).post(
+        "/v1/meeting/transcribe", content=b"not audio")
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Kayıt okunamadı; ses ya da video dosyası seçin."
+
+
+def test_transcribe_EmptyBody_Is400():
+    response = transcribing(FakeTranscriber()).post("/v1/meeting/transcribe", content=b"")
+
+    assert response.status_code == 400
+
+
+def test_transcribe_NotInstalled_Is503AndHealthSaysSo(monkeypatch):
+    monkeypatch.setattr("isdlc_ai.server.transcription_available", lambda: False)
+    settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
+    off = TestClient(create_app(settings, llm_factory=lambda: FakeLlmClient([])), headers={"X-Agent-Key": KEY})
+
+    assert off.get("/health").json()["transcriptionAvailable"] is False
+    assert off.post("/v1/meeting/transcribe", content=b"x").status_code == 503

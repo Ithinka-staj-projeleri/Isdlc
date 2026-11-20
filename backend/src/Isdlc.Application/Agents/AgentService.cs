@@ -22,7 +22,23 @@ public class AgentService(
     public async Task<AgentStatusDto> GetStatusAsync(CancellationToken cancellationToken)
     {
         var available = await agents.IsAvailableAsync(cancellationToken);
-        return new AgentStatusDto(available, available, available);
+        var transcription = available && await agents.IsTranscriptionAvailableAsync(cancellationToken);
+        return new AgentStatusDto(available, available, available, transcription);
+    }
+
+    public async Task<MeetingTranscriptDto> TranscribeMeetingAsync(
+        int projectId, Stream? recording, long length, CancellationToken cancellationToken)
+    {
+        // Same checks as the minutes suggestions: signed in, project exists and is active, service configured.
+        await PrepareAsync(projectId, cancellationToken);
+
+        if (recording is null || length == 0)
+        {
+            throw new BusinessRuleException("Kayıt dosyası seçilmelidir.");
+        }
+
+        var transcript = await agents.TranscribeAsync(recording, cancellationToken);
+        return new MeetingTranscriptDto(transcript.Text, transcript.DurationSeconds, transcript.Language, transcript.Truncated);
     }
 
     public async Task<MeetingSuggestionsDto> SuggestMeetingItemsAsync(

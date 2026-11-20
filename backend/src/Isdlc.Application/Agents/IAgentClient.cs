@@ -12,6 +12,9 @@ public interface IAgentClient
     /// <summary>Configured, running and has a model (GET /health). Cached briefly; never throws.</summary>
     Task<bool> IsAvailableAsync(CancellationToken cancellationToken);
 
+    /// <summary>The service has speech to text installed (GET /health). Cached with IsAvailableAsync; never throws.</summary>
+    Task<bool> IsTranscriptionAvailableAsync(CancellationToken cancellationToken);
+
     /// <summary>Open issue suggestions from meeting notes. ServiceUnavailableException (503) when the service fails.</summary>
     Task<MeetingAgentResult> SuggestOpenIssuesAsync(MeetingAgentRequest request, CancellationToken cancellationToken);
 
@@ -24,6 +27,12 @@ public interface IAgentClient
 
     /// <summary>The request form filled from the e-mail a request came with. 503 when the service fails.</summary>
     Task<RequestAgentDraft> DraftRequestAsync(RequestAgentRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// A meeting recording as text, made on the AI service's machine. BusinessRuleException (400) when the file is not
+    /// audio or too large; 503 when the service fails or does not answer in 30 minutes.
+    /// </summary>
+    Task<MeetingAgentTranscript> TranscribeAsync(Stream recording, CancellationToken cancellationToken);
 }
 
 /// <summary>What the agent gets: only the project code, the date, the current step and the notes.</summary>
@@ -112,3 +121,6 @@ public record RequestAgentDraft(
     string? Notes,
     IReadOnlyList<string> Warnings,
     string ModelName);
+
+/// <summary>A recording as text: one segment per line; Truncated when it was cut to the notes limit.</summary>
+public record MeetingAgentTranscript(string Text, int DurationSeconds, string Language, bool Truncated, string ModelName);

@@ -1,0 +1,4 @@
+# Optional: speech to text for meeting recordings (isdlc_ai/transcription.py), installed by the Docker image.
+# Without it the service runs and reports transcription as off. PyAV comes with faster-whisper, so no ffmpeg is needed.
+-r requirements.txt
+faster-whisper>=1.1

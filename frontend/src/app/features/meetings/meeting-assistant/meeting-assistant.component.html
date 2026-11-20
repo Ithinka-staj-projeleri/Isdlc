@@ -5,6 +5,22 @@
         <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" [maxlength]="maxNotes" [disabled]="busy()"
             placeholder="Toplantıda konuşulanları serbest metin olarak yazın veya yapıştırın. Örn: Müşteri test kullanıcılarını cuma gününe kadar iletecek…"></textarea>
     </label>
+    @if (transcriptionEnabled()) {
+    <div class="recording">
+        <label class="button small" [class.disabled]="transcribing() || busy()">
+            {{ transcribing() ? 'Kayıt metne çevriliyor… (birkaç dakika sürebilir)' : 'Ses kaydından metne çevir' }}
+            <input #recording type="file" accept="audio/*,video/*" hidden [disabled]="transcribing() || busy()"
+                (change)="transcribe(recording)" />
+        </label>
+        <span class="muted small">Ses ya da video, en fazla 500 MB. Kayıt bilgisayarda metne çevrilir, dışarı gönderilmez.</span>
+    </div>
+    @if (transcriptInfo(); as info) {
+    <p class="muted small">
+        {{ info.minutes }} dakikalık kayıt metne çevrilip notlara eklendi. Göndermeden önce okuyup düzeltin.
+        @if (info.truncated) { <span class="warning">Metin çok uzun olduğu için sonu kesildi.</span> }
+    </p>
+    }
+    }
     <p class="privacy">
         Notlar yapay zekâ servisine gönderilir; e-posta, telefon gibi bilgiler göndermeden önce gizlenir.
         Şimdilik yalnızca deneme verisi girin.
