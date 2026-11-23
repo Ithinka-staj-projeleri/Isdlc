@@ -3,6 +3,8 @@ using Isdlc.Application.Agents.Dtos;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Tests.Common;
+using Isdlc.Application.Tests.Identity;
+using Isdlc.Domain.Identity;
 using Isdlc.Domain.Projects;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -97,5 +99,130 @@ public class RequestDraftTests(DatabaseFixture database)
         Assert.Null(draft.DueDate);
         Assert.Equal(new DateOnly(2026, 11, 18), draft.RequestDate);
         Assert.Equal("Örnek Lojistik A.Ş.", draft.CustomerName);
+    }
+
+    // ---- Cross tests (PLANNING.md): Dide → Erva's modules ----
+
+    private static RequestAgentDraft DraftWithTexts(
+        string? name = "Depo stok takip ekranı", string? description = "Stok durumu anlık izlenecek.",
+        string? customerName = "Örnek Lojistik A.Ş.", string? requesterName = "Ayşe Kaya",
+        string? requesterContact = "ayse.kaya@ornek.com", string? notes = "Mobil erişim istendi.") =>
+        new(name, description, customerName, requesterName, requesterContact, "NewProject", null, null, notes, [], "gemini-test");
+
+    [Fact]
+    public async Task Draft_InactiveAnalyst_IsForbiddenAndTheServiceIsNotCalled()
+    {
+        var user = await TestUsers.CreateAsync(database, password: null, isActive: false, role: UserRole.BusinessAnalyst);
+        var agent = new FakeAgentClient();
+        await using var scope = database.CreateScope();
+        var service = new AgentService(
+            scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(), new TestUser(user.Id), agent);
+
+        var error = await Assert.ThrowsAsync<ForbiddenException>(() =>
+            service.DraftRequestFromEmailAsync(new DraftRequestFromEmailDto { EmailText = Email }, CancellationToken.None));
+
+        Assert.Equal("Talebi yalnızca İş Analisti açabilir.", error.Message);
+        Assert.False(agent.WasCalled);
+    }
+
+    [Fact]
+    public async Task Draft_TodayIsSentForRelativeDates()
+    {
+        var agent = new FakeAgentClient();
+        var before = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await DraftAsync(agent);
+
+        var today = agent.LastRequestDraftRequest!.Today;
+        Assert.InRange(today, before, DateOnly.FromDateTime(DateTime.UtcNow));
+    }
+
+    [Theory]
+    [InlineData("NewProject", RequestType.NewProject)]
+    [InlineData("AdditionalModule", RequestType.AdditionalModule)]
+    [InlineData("CompanyProduct", RequestType.CompanyProduct)]
+    [InlineData("Support", RequestType.Support)]
+    public async Task Draft_EveryRequestTypeName_IsRead(string requestType, RequestType expected)
+    {
+        var draft = await DraftAsync(new FakeAgentClient { RequestDraft = Draft(requestType: requestType) });
+
+        Assert.Equal(expected, draft.RequestType);
+    }
+
+    [Fact]
+    public async Task Draft_RequestTypeInAnotherCase_IsNull()
+    {
+        var draft = await DraftAsync(new FakeAgentClient { RequestDraft = Draft(requestType: "newproject") });
+
+        Assert.Null(draft.RequestType);
+    }
+
+    [Fact]
+    public async Task Draft_Texts_AreTrimmedAndBlankOnesAreNull()
+    {
+        var agent = new FakeAgentClient
+        {
+            RequestDraft = DraftWithTexts(name: "  Depo stok takip ekranı  ", description: "   ", notes: ""),
+        };
+
+        var draft = await DraftAsync(agent);
+
+        Assert.Equal("Depo stok takip ekranı", draft.Name);
+        Assert.Null(draft.Description);
+        Assert.Null(draft.Notes);
+    }
+
+    [Fact]
+    public async Task Draft_TextsAtTheFormsLimit_AreKept()
+    {
+        var agent = new FakeAgentClient
+        {
+            RequestDraft = DraftWithTexts(
+                name: new string('a', 200), description: new string('b', 2000), customerName: new string('c', 200),
+                requesterName: new string('d', 200), requesterContact: new string('e', 200), notes: new string('f', 2000)),
+        };
+
+        var draft = await DraftAsync(agent);
+
+        Assert.Equal(
+            [200, 2000, 200, 200, 200, 2000],
+            new[] { draft.Name, draft.Description, draft.CustomerName, draft.RequesterName, draft.RequesterContact, draft.Notes }
+                .Select(t => t!.Length));
+    }
+
+    [Fact]
+    public async Task Draft_TextsOverTheFormsLimit_AreEachDropped()
+    {
+        var agent = new FakeAgentClient
+        {
+            RequestDraft = DraftWithTexts(
+                description: new string('b', 2001), requesterContact: new string('e', 201), notes: new string('f', 2001)),
+        };
+
+        var draft = await DraftAsync(agent);
+
+        Assert.Null(draft.Description);
+        Assert.Null(draft.RequesterContact);
+        Assert.Null(draft.Notes);
+        Assert.Equal("Depo stok takip ekranı", draft.Name);
+        Assert.Equal("Ayşe Kaya", draft.RequesterName);
+    }
+
+    [Theory]
+    [InlineData("2026-11-18", "2026-11-18", "2026-11-18")] // due on the request day: kept
+    [InlineData(null, "2026-11-01", "2026-11-01")]          // no request date to compare with: kept
+    [InlineData("2026-11-18", null, null)]
+    public async Task Draft_DueDate_IsKeptUnlessBeforeTheRequestDate(string? requestDate, string? dueDate, string? expected)
+    {
+        var agent = new FakeAgentClient
+        {
+            RequestDraft = Draft(
+                requestDate: requestDate is null ? null : DateOnly.Parse(requestDate),
+                dueDate: dueDate is null ? null : DateOnly.Parse(dueDate)),
+        };
+
+        var draft = await DraftAsync(agent);
+
+        Assert.Equal(expected is null ? null : DateOnly.Parse(expected), draft.DueDate);
     }
 }
