@@ -21,11 +21,13 @@ public record DashboardDto(
     IReadOnlyList<StageCountDto> Stages,
     DashboardListDto<WaitingStepDto> MyWaitingSteps,
     DashboardListDto<DashboardOpenIssueDto> MyOpenIssues,
+    DashboardListDto<DashboardOpenIssueDto> MyOpenIssuesDueThisWeek, // F2: mine, not closed, due from today to Sunday
     DashboardListDto<DashboardOpenIssueDto> OverdueOpenIssues,
     IReadOnlyList<RecentActivityDto> RecentActivity,
     DashboardListDto<HighRiskDto> HighRisks,
     LevelCountsDto Levels,
-    DashboardListDto<AcceptanceQueueItemDto> AcceptanceQueue);
+    DashboardListDto<AcceptanceQueueItemDto> AcceptanceQueue,
+    IReadOnlyList<TeamMemberWorkloadDto> TeamWorkload); // F2: every active user, the busiest first
 
 public record DashboardSummaryDto(
     int WaitingRequests,

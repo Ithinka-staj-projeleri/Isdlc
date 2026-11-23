@@ -1,0 +1,26 @@
+@if (members().length === 0) {
+<p class="empty">Aktif kullanıcı yok.</p>
+} @else {
+<p class="legend">
+  <span class="key issues"></span> Açık konu
+  <span class="key steps"></span> Bekleyen adım
+</p>
+<ul>
+  @for (m of members(); track m.user.id) {
+  <li>
+    <span class="who">
+      <b>{{ m.user.fullName }}</b>
+      <span class="role">{{ roleLabels[m.role] }}</span>
+    </span>
+    <span class="bar" [attr.aria-label]="m.openIssues + ' açık konu, ' + m.waitingSteps + ' bekleyen adım'">
+      <span class="issues" [style.width.%]="percent(m.openIssues)"></span>
+      <span class="steps" [style.width.%]="percent(m.waitingSteps)"></span>
+    </span>
+    <span class="numbers">
+      {{ m.openIssues }} konu · {{ m.waitingSteps }} adım
+      @if (m.overdueOpenIssues) { <b class="late">· {{ m.overdueOpenIssues }} gecikmiş</b> }
+    </span>
+  </li>
+  }
+</ul>
+}

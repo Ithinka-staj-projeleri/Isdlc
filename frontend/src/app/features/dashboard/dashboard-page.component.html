@@ -132,6 +132,43 @@
       </section>
     </div>
 
+    <!-- ---- This week and the team (Faz 5 · F2) ---- -->
+    <div class="columns">
+      <section class="card panel">
+        <h3>Termini bu hafta dolan açık konularım <span class="count">{{ d.myOpenIssuesDueThisWeek.totalCount }}</span></h3>
+        @if (d.myOpenIssuesDueThisWeek.items.length === 0) {
+          <p class="empty">Bu hafta termini dolan açık konunuz yok.</p>
+        } @else {
+          <ul class="rows">
+            @for (issue of d.myOpenIssuesDueThisWeek.items; track issue.id) {
+              <li>
+                <a [routerLink]="['/projects', issue.project.id]" [queryParams]="{ tab: 'open-issues' }">
+                  <span class="main">
+                    <span class="code">{{ issue.project.code }} · {{ issue.code }}</span>
+                    <b>{{ issue.title }}</b>
+                    <span class="muted small">{{ issueTypeLabels[issue.type] }}</span>
+                  </span>
+                  <span class="side">
+                    <span class="small">{{ issue.dueDate | dateOnly }}</span>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (d.myOpenIssuesDueThisWeek.totalCount > d.myOpenIssuesDueThisWeek.items.length) {
+            <p class="more muted small">
+              İlk {{ d.myOpenIssuesDueThisWeek.items.length }} kayıt gösteriliyor (toplam {{ d.myOpenIssuesDueThisWeek.totalCount }}).
+            </p>
+          }
+        }
+      </section>
+
+      <section class="card panel">
+        <h3>Ekip iş yükü</h3>
+        <app-team-workload [members]="d.teamWorkload" />
+      </section>
+    </div>
+
     <!-- ---- Stages ---- -->
     <section class="card panel">
       <h3>Aşamalara göre aktif kayıtlar</h3>

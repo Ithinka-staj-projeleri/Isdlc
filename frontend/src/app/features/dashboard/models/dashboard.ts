@@ -2,6 +2,7 @@ import { UserSummary } from '../../../shared/models/user-summary';
 import { AcceptanceRecommendation } from '../../assessment/models/assessment';
 import { OpenIssueStatus, OpenIssueType, Owner } from '../../open-issues/models/open-issue';
 import { StepAction } from '../../process/models/project-process';
+import { UserRole } from '../../../shared/models/user-role';
 import { RiskStatus } from '../../risks/models/risk';
 
 // Shapes of the Dashboard API. Contract: docs/dashboard-api.md
@@ -116,9 +117,22 @@ export interface Dashboard {
   stages: StageCount[];
   myWaitingSteps: DashboardList<WaitingStep>;
   myOpenIssues: DashboardList<DashboardOpenIssue>;
+  /** Faz 5 · F2: mine, not closed, due from today to Sunday. */
+  myOpenIssuesDueThisWeek: DashboardList<DashboardOpenIssue>;
   overdueOpenIssues: DashboardList<DashboardOpenIssue>;
   recentActivity: RecentActivity[];
   highRisks: DashboardList<HighRisk>;
   levels: LevelCounts;
   acceptanceQueue: DashboardList<AcceptanceQueueItem>;
+  /** Faz 5 · F2: every active user, the busiest first; the same whatever the scope. */
+  teamWorkload: TeamMemberWorkload[];
+}
+
+/** One team member's open issues and waiting steps on active records (shared with the person profile, F9). */
+export interface TeamMemberWorkload {
+  user: UserSummary;
+  role: UserRole;
+  openIssues: number;
+  overdueOpenIssues: number;
+  waitingSteps: number;
 }

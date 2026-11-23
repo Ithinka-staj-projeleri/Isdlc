@@ -3,7 +3,7 @@
 Gösterge paneli: giriş yapan kullanıcıya bekleyen işlerini ve projelerin genel durumunu gösteren ana sayfa.
 Yeni tablo yoktur; mevcut kayıtlardan (`Project`, `StepRecord`, `OpenIssue`) hesaplanır.
 Durum: **onaylandı** (10 Kasım 2026); API ve ekran uygulandı. Risk ve seviye göstergeleri **onaylandı**
-(aşağıda "Ek: risk ve seviye göstergeleri"). Sorumlu: Dide.
+(aşağıda "Ek: risk ve seviye göstergeleri"). Faz 5 · F2 eklemeleri (aşağıda "Faz 5: bu hafta ve ekip iş yükü") uygulandı. Sorumlu: Dide.
 
 Uç nokta AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, tarihler UTC / ISO 8601
 (`DateOnly` alanları `2026-11-10` biçiminde), hatalar `ProblemDetails`, JSON alanları camelCase.
@@ -211,6 +211,32 @@ Mevcut alanlar değişmez; `DashboardDto`'ya yeni alanlar eklenir (ekran ve test
 
 Yüksek risk eşiği (14 sayılmaz, 15 sayılır), kapanmış risk ve kapanmış proje sayılmaz, `scope=mine`, seviye dağılımının
 toplamı, kabul kuyruğunda yalnızca 3.1 / 3.2, eksik puanlamada öneri boş, tam puanlamada öneri `AssessmentRules` ile aynı.
+
+## Faz 5: bu hafta ve ekip iş yükü (F2)
+
+Plan: [phase-5-plan.md](phase-5-plan.md) → F2. Yeni tablo yok; `DashboardDto`'ya iki alan eklenir.
+
+```jsonc
+{
+  // … mevcut alanlar …
+  "myOpenIssuesDueThisWeek": { "totalCount": 2, "items": [ /* DashboardOpenIssueDto, "myOpenIssues" ile aynı */ ] },
+  "teamWorkload": [
+    { "user": { "id": 5, "fullName": "Can Öztürk" }, "role": "SoftwareDeveloper",
+      "openIssues": 2, "overdueOpenIssues": 1, "waitingSteps": 1 }
+  ]
+}
+```
+
+| # | Karar |
+| --- | --- |
+| F2-1 | **Termini bu hafta dolan açık konularım:** giriş yapan kullanıcıya atanmış, kapanmamış, aktif projedeki ve termini **bugünden bu Pazar'a kadar** olan açık konular (hafta Pazartesi–Pazar). Gecikmişler burada değil, "Geciken açık konular"dadır. Sıralama ve en fazla 10 satır kuralı diğer listelerle aynı |
+| F2-2 | **Ekip iş yükü:** bütün **aktif** kullanıcılar, işi olmasa da; kapanmamış açık konuları (sistem kullanıcısı olarak sorumlu oldukları), bunların gecikenleri ve bekleyen adımları. Yalnızca **aktif** kayıtlar sayılır (kapanan ya da ertelenen kayıt kimseyi beklemez); bütün akışlar dahil |
+| F2-3 | **Bekleyen adım** "Bana bekleyen adımlar" ile aynı kuraldır: onaylayan rol, onaylayan yoksa sorumlu rol; iş analisti ve proje yöneticisi yalnızca atandıkları ya da kimsenin atanmadığı kayıtlarda. Bu yüzden kimsenin atanmadığı bir analist adımı her analistin sayısına girer |
+| F2-4 | Ekip iş yükü **kapsamdan bağımsızdır** (`scope=mine` de bütün ekibi gösterir): bir kişinin yükü, panelde kimin projelerinin gösterildiğine göre değişmez |
+| F2-5 | Sıralama: en yoğun önce (açık konu + bekleyen adım), eşitse en çok gecikmesi olan, sonra ada göre (Türkçe sıra) |
+| F2-6 | Hesap ortak servistedir: `ITeamWorkloadService` (`Isdlc.Application/Dashboard/`). Kişi profili ve sorumlu önerisi (F9) aynı sayıları buradan alır; kurallar `TeamWorkloadRules`'ta, veritabanısız test edilir |
+
+Proje özetindeki (F1) "Ekip iş yükü" yalnızca o projenin açık konularını sayar; bekleyen adımları saymaz.
 
 ## Sonra eklenecekler
 

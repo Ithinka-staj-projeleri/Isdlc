@@ -13,6 +13,7 @@ import { STEP_ACTION_LABELS } from '../process/models/project-process';
 import { RISK_SEVERITY_LABELS, RISK_SEVERITY_TONES, RISK_STATUS_LABELS, severityOf } from '../risks/models/risk';
 import { DashboardService } from './dashboard.service';
 import { DashboardScope } from './models/dashboard';
+import { TeamWorkloadComponent } from './team-workload/team-workload.component';
 
 /** In the new software project flow stages 1–2 are requests ("Talepler"), 3–4 projects; the bars use a different color for each. */
 const LAST_REQUEST_STAGE = 2;
@@ -23,7 +24,7 @@ const LAST_REQUEST_STAGE = 2;
  */
 @Component({
   selector: 'app-dashboard-page',
-  imports: [RouterLink, EmptyStateComponent, StatusBadgeComponent, DateOnlyPipe, LocalDatePipe],
+  imports: [RouterLink, EmptyStateComponent, StatusBadgeComponent, DateOnlyPipe, LocalDatePipe, TeamWorkloadComponent],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.scss',
 })

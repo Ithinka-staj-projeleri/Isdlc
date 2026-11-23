@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<ITimelineService, TimelineService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IProjectSummaryService, ProjectSummaryService>();
+        services.AddScoped<ITeamWorkloadService, TeamWorkloadService>();
         services.AddScoped<IRequirementService, RequirementService>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IDashboardService, DashboardService>();
