@@ -5,8 +5,12 @@ Ajan her oturumun başında bu dosyayı okur. Bir kural değişirse önce bu dos
 
 ## 1. Proje
 
-ISDLC (Yazılım Geliştirme Yaşam Döngüsü) sürecini yöneten, şirket içi kullanılacak bir iş analizi platformu.
-Şu anki hedef basit bir **MVP**'dir.
+ISDLC (Yazılım Geliştirme Yaşam Döngüsü) sürecini yöneten bir iş analizi platformu. Bir şirketin kendi akışlarıyla
+başladı; birden fazla şirketin kendi akışlarıyla kullanabileceği bir platforma dönüştürülüyor (yön ve fazlar:
+[PLANNING.md](PLANNING.md) → Yol haritası).
+
+**Tasarım kuralı:** Şirkete özel bilgi (rol, akış, atlama koşulu, form alanı, soru listesi, doküman türü) koda gömülmez;
+şablon ve veri olarak tutulur. Kodlama gibi büyük yetenekler çekirdeğe değil, `ai/` gibi ayrı servis olarak eklenir.
 
 Ürün adı henüz kesin değildir. Kodda kök ad olarak `Isdlc` kullanılır.
 

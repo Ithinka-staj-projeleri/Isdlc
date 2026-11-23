@@ -93,7 +93,8 @@ Dalga 5       T7 ayrım testleri · T8 belgeler ve demo
 
 ## 7. Sonraki faza bırakılanlar
 
-Faz 6 ayrımı kurar; şirketlerin uygulamayı kendine göre ayarlaması bundan sonraki iştir:
+Faz 6 ayrımı kurar; şirketlerin uygulamayı kendine göre ayarlaması Faz 7'nin işidir (gerekçe ve ilkeler:
+[PLANNING.md](../PLANNING.md) → Yol haritası):
 
 - **Roller veriye:** `UserRole` sabit 6 rol yerine şirketin tanımladığı roller.
 - **Atlama koşulları veriye:** bugünkü üç koşul (dış talep, teklif, seviye) yerine şirketin tanımlayabileceği koşullar.
