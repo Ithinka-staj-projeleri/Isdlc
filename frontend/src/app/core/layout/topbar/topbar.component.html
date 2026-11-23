@@ -2,6 +2,6 @@
 <span class="spacer"></span>
 @if (auth.user(); as user) {
 <app-notification-bell />
-<span class="user">{{ user.fullName }} · {{ roleLabels[user.role] }}</span>
+<a class="user" [routerLink]="['/users', user.id]" title="Profilim">{{ user.fullName }} · {{ roleLabels[user.role] }}</a>
 <button type="button" (click)="auth.logout()">Çıkış</button>
 }

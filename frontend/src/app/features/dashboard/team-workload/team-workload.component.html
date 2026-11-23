@@ -9,7 +9,7 @@
   @for (m of members(); track m.user.id) {
   <li>
     <span class="who">
-      <b>{{ m.user.fullName }}</b>
+      <a [routerLink]="['/users', m.user.id]"><b>{{ m.user.fullName }}</b></a>
       <span class="role">{{ roleLabels[m.role] }}</span>
     </span>
     <span class="bar" [attr.aria-label]="m.openIssues + ' açık konu, ' + m.waitingSteps + ' bekleyen adım'">

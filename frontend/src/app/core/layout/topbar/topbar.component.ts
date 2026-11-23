@@ -1,10 +1,11 @@
 import { Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
 import { NotificationBellComponent } from '../../../features/notifications/notification-bell/notification-bell.component';
 
 @Component({
-  imports: [NotificationBellComponent],
+  imports: [RouterLink, NotificationBellComponent],
   selector: 'app-topbar',
   styleUrl: './topbar.component.scss',
   templateUrl: './topbar.component.html',

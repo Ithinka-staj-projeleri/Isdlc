@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IUserProfileService, UserProfileService>();
         services.AddScoped<IRiskService, RiskService>();
         services.AddScoped<IAssessmentService, AssessmentService>();
         services.AddScoped<IQuestionBankService, QuestionBankService>();

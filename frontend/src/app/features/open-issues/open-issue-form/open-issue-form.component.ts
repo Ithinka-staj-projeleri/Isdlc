@@ -1,9 +1,11 @@
-import { Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, of } from 'rxjs';
+import { catchError, of, startWith } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
-import { LookupService } from '../../../shared/services/lookup.service';
+import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
+import { expertiseAreas, ownerOptionLabel } from '../../identity/models/user-profile';
+import { UserProfileService } from '../../identity/user-profile.service';
 import { OPEN_ISSUE_TYPE_LABELS, OpenIssue, OpenIssueType, SaveOpenIssue } from '../models/open-issue';
 import { OpenIssueService } from '../open-issue.service';
 
@@ -29,8 +31,12 @@ export class OpenIssueFormComponent implements OnInit {
 
     protected readonly typeLabels = OPEN_ISSUE_TYPE_LABELS;
     protected readonly types = Object.keys(OPEN_ISSUE_TYPE_LABELS) as OpenIssueType[];
+    protected readonly roleLabels = USER_ROLE_LABELS;
+    protected readonly ownerOptionLabel = ownerOptionLabel;
+    protected readonly expertiseAreas = expertiseAreas;
+    // Sorumlu önerisi (Faz 5 · F9): active users with their expertise and workload, loaded fresh each time the form opens.
     // A failed load leaves the list empty; the error interceptor has already told the user.
-    protected readonly users = toSignal(inject(LookupService).users$.pipe(catchError(() => of([]))), { initialValue: [] });
+    protected readonly users = toSignal(inject(UserProfileService).workload().pipe(catchError(() => of([]))), { initialValue: [] });
 
     protected readonly form = this.fb.nonNullable.group({
         type: this.fb.nonNullable.control<OpenIssueType>('Action', Validators.required),
@@ -41,6 +47,13 @@ export class OpenIssueFormComponent implements OnInit {
         ownerName: ['', Validators.maxLength(200)],
         dueDate: [''],
     });
+
+    private readonly _ownerUserId = toSignal(
+        this.form.controls.ownerUserId.valueChanges.pipe(startWith(this.form.controls.ownerUserId.value)),
+        { initialValue: null });
+
+    /** The chosen team member's expertise and load, shown under the selector. */
+    protected readonly selectedOwner = computed(() => this.users().find(u => u.id === this._ownerUserId()) ?? null);
 
     /** The record's code while editing ("AK-003"). */
     protected readonly code = signal<string | null>(null);

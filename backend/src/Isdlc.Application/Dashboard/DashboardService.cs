@@ -51,7 +51,7 @@ public class DashboardService(
             projects = projects.Where(p => p.BusinessAnalystId == userId || p.ProjectManagerId == userId);
         }
 
-        var myWaitingSteps = await MyWaitingStepsAsync(userId, role, now, cancellationToken);
+        var myWaitingSteps = await WaitingStepsAsync(dbContext, userId, role, now, cancellationToken);
         var overdueOpenIssues = await OpenIssueListAsync(
             dbContext.OpenIssues.Where(x =>
                 projects.Any(p => p.Id == x.ProjectId && p.Status == ProjectStatus.Active)
@@ -219,10 +219,10 @@ public class DashboardService(
     /// Active projects whose current step this user can act on: the step's approver role, or its responsible role
     /// when it has no approver (ProcessProgress.CanActOnStep, written so the database can run it).
     /// An analyst or project manager sees only the projects they are assigned to, or nobody is (docs/dashboard-api.md, decision 3).
-    /// Longest waiting first.
+    /// Longest waiting first. Also the person profile's list (docs/users-api.md, P5).
     /// </summary>
-    private async Task<DashboardListDto<WaitingStepDto>> MyWaitingStepsAsync(
-        int userId, UserRole role, DateTime now, CancellationToken cancellationToken)
+    internal static async Task<DashboardListDto<WaitingStepDto>> WaitingStepsAsync(
+        IApplicationDbContext dbContext, int userId, UserRole role, DateTime now, CancellationToken cancellationToken)
     {
         var query = dbContext.Projects
             .AsNoTracking()
@@ -277,8 +277,8 @@ public class DashboardService(
                 .ToList());
     }
 
-    /// <summary>Overdue first, then by due date (none last), then by code.</summary>
-    private static async Task<DashboardListDto<DashboardOpenIssueDto>> OpenIssueListAsync(
+    /// <summary>Overdue first, then by due date (none last), then by code. Also the person profile's list (docs/users-api.md, P5).</summary>
+    internal static async Task<DashboardListDto<DashboardOpenIssueDto>> OpenIssueListAsync(
         IQueryable<OpenIssue> issues, DateOnly today, CancellationToken cancellationToken)
     {
         var totalCount = await issues.CountAsync(cancellationToken);

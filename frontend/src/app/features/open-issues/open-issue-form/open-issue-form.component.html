@@ -45,9 +45,26 @@
                 <select formControlName="ownerUserId" aria-label="Sorumlu ekip üyesi">
                     <option [ngValue]="null">Seçin…</option>
                     @for (user of users(); track user.id) {
-                    <option [ngValue]="user.id">{{ user.fullName }}</option>
+                    <option [ngValue]="user.id">{{ ownerOptionLabel(user) }}</option>
                     }
                 </select>
+                @if (selectedOwner(); as owner) {
+                <div class="owner-info">
+                    <span class="muted">
+                        {{ roleLabels[owner.role] }} · {{ owner.waitingSteps }} bekleyen adım
+                        · <a [href]="'/users/' + owner.id" target="_blank" rel="noopener">Profili gör</a>
+                    </span>
+                    @if (expertiseAreas(owner.expertise); as areas) {
+                    @if (areas.length) {
+                    <ul class="tags" aria-label="Uzmanlık alanları">
+                        @for (area of areas; track area) { <li>{{ area }}</li> }
+                    </ul>
+                    } @else {
+                    <span class="muted">Uzmanlık alanı belirtilmemiş.</span>
+                    }
+                    }
+                </div>
+                }
                 } @else {
                 <input formControlName="ownerName" maxlength="200" aria-label="Sorumlunun adı" placeholder="Ad veya birim" />
                 }

@@ -54,6 +54,15 @@ li {
   min-width: 0;
 }
 
+.who a {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .role {
   color: var(--muted);
   font-size: 12px;

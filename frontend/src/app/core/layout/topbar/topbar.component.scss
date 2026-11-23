@@ -18,6 +18,12 @@ h1 {
 
 .user {
     color: var(--muted);
+    text-decoration: none;
+
+    &:hover {
+        color: var(--fg);
+        text-decoration: underline;
+    }
 }
 button {
     padding: 6px 12px;
