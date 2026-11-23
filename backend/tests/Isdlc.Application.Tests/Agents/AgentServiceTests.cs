@@ -288,6 +288,50 @@ public class AgentServiceTests(DatabaseFixture database)
         Assert.Equal("Hakan Yıldız", result.Actions[1].OwnerName);
     }
 
+    // ---- Faz 5 · F4 cross tests (PLANNING.md): Dide → Erva's modules ----
+
+    [Fact]
+    public async Task Suggest_FirstNameOfOneUserWithoutAMinutesDraft_IsThatUser()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "14");
+        var testerId = await TestProjects.UserIdAsync(database, "burak.sahin@isdlc.local");
+
+        var result = await SuggestAsync(Answering(Item("Action", "Test senaryoları", "Burak")), projectId);
+
+        var action = Assert.Single(result.Actions);
+        Assert.Equal(testerId, action.OwnerUserId);
+        Assert.Null(action.OwnerName);
+    }
+
+    [Fact]
+    public async Task Suggest_FirstNameOfTwoParticipants_AddsTheWarningAfterTheAgentsOwnAndKeepsTheDueDate()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "14");
+        var dueDate = new DateOnly(2026, 11, 12);
+        var agent = new FakeAgentClient
+        {
+            Result = new MeetingAgentResult(
+                "Özet",
+                [Item("Action", "Depo listesi", "Hakan", dueDate, "Dayanak notlarda bulunamadı.")],
+                0,
+                "gemini-test",
+                new MeetingAgentMinutes(
+                    "AnalysisSession", null,
+                    [new MeetingAgentParticipant("Hakan Yıldız", null), new MeetingAgentParticipant("Hakan Kara", null),
+                        new MeetingAgentParticipant("  ", null)],
+                    "- Depo", null, null, [])),
+        };
+
+        var action = Assert.Single((await SuggestAsync(agent, projectId)).Actions);
+
+        Assert.Null(action.OwnerUserId);
+        Assert.Equal("Hakan", action.OwnerName);
+        Assert.Equal(dueDate, action.DueDate);
+        Assert.Equal(
+            ["Dayanak notlarda bulunamadı.", "“Hakan” birden fazla kişiye uyuyor: Hakan Kara, Hakan Yıldız. Sorumluyu seçin."],
+            action.Warnings);
+    }
+
     // ---- Minutes draft (type, participants with roles, agenda, summary, next steps) ----
 
     private static FakeAgentClient WithMinutes(MeetingAgentMinutes? minutes) =>
