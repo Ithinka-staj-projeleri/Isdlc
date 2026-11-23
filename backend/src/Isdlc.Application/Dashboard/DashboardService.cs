@@ -18,7 +18,8 @@ namespace Isdlc.Application.Dashboard;
 public class DashboardService(
     IApplicationDbContext dbContext,
     ICurrentUserService currentUser,
-    TimeProvider timeProvider) : IDashboardService
+    TimeProvider timeProvider,
+    ITeamWorkloadService teamWorkload) : IDashboardService
 {
     /// <summary>Each list shows its first rows; the rest is on the module's own page.</summary>
     public const int ListSize = 10;
@@ -41,6 +42,7 @@ public class DashboardService(
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var today = DateOnly.FromDateTime(now);
+        var endOfWeek = TeamWorkloadRules.EndOfWeek(today);
 
         // The general sections count these projects: requests and projects only (not improvement, planning or billing).
         var projects = dbContext.Projects.AsNoTracking().Where(p => p.ProcessFlow.Kind == ProcessFlowKind.Request);
@@ -83,11 +85,18 @@ public class DashboardService(
                 dbContext.OpenIssues.Where(x => x.OwnerUserId == userId && x.Status != OpenIssueStatus.Closed
                     && x.Project.Status == ProjectStatus.Active),
                 today, cancellationToken),
+            await OpenIssueListAsync(
+                dbContext.OpenIssues.Where(x => x.OwnerUserId == userId && x.Status != OpenIssueStatus.Closed
+                    && x.Project.Status == ProjectStatus.Active
+                    && x.DueDate != null && x.DueDate >= today && x.DueDate <= endOfWeek),
+                today, cancellationToken),
             overdueOpenIssues,
             await RecentActivityAsync(projects, cancellationToken),
             highRisks,
             await LevelsAsync(projects, cancellationToken),
-            await AcceptanceQueueAsync(projects, cancellationToken));
+            await AcceptanceQueueAsync(projects, cancellationToken),
+            // The whole team, whatever the scope: the load of a person does not depend on whose projects are shown.
+            await teamWorkload.GetAsync(cancellationToken));
     }
 
     /// <summary>

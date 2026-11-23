@@ -1,0 +1,84 @@
+:host {
+  display: block;
+}
+
+.empty,
+.legend {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+
+  &.steps {
+    margin-left: 10px;
+  }
+}
+
+ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  display: grid;
+  grid-template-columns: minmax(130px, 200px) minmax(60px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.role {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.issues {
+  background: var(--accent);
+}
+
+.steps {
+  background: var(--info);
+}
+
+.numbers {
+  white-space: nowrap;
+}
+
+.late {
+  color: var(--bad);
+}

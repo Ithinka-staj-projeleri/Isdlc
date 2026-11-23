@@ -143,6 +143,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | --- | --- |
 | Talep / Proje | `Project` |
 | Proje özeti (açık konu, risk, gereksinim, doküman sayıları ve ekip iş yükü; saklanmaz, hesaplanır) | `ProjectSummaryDto` (`GET /projects/{id}/summary`, Faz 5 · F1) |
+| Ekip iş yükü (kişi başına açık konu ve bekleyen adım; saklanmaz, hesaplanır) | `TeamMemberWorkloadDto`, `ITeamWorkloadService` (Faz 5 · F2; F9 da kullanır) |
 | Proje No | `Project.Code` (düz sıra numarası, metin olarak: `"14"`) |
 | Talep sahibi (firma / birim) | `Project.CustomerName` |
 | Talebi ileten kişi / iletişim bilgisi | `Requester` (`Project.RequesterName`, `Project.RequesterContact`; sistem kullanıcısı değildir) |

@@ -31,8 +31,9 @@ public class DashboardServiceTests(DatabaseFixture database)
     private async Task<DashboardDto> AsAsync(int? userId, DashboardScope scope = DashboardScope.Mine)
     {
         await using var scope2 = database.CreateScope();
+        var db = scope2.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var service = new DashboardService(
-            scope2.ServiceProvider.GetRequiredService<IApplicationDbContext>(), new TestUser(userId), TimeProvider.System);
+            db, new TestUser(userId), TimeProvider.System, new TeamWorkloadService(db, TimeProvider.System));
         return await service.GetAsync(scope, CancellationToken.None);
     }
 
@@ -299,6 +300,79 @@ public class DashboardServiceTests(DatabaseFixture database)
 
         Assert.Equal(2, dashboard.Summary.OverdueOpenIssues);
         Assert.Equal([oldest, late], dashboard.OverdueOpenIssues.Items.Select(x => x.Id));
+    }
+
+    // ---- Due this week and team workload (Faz 5 · F2) ----
+
+    [Fact]
+    public async Task MyOpenIssuesDueThisWeek_MineNotClosed_FromTodayToSunday()
+    {
+        var me = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var someoneElse = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var projectId = await NewProjectAsync("15", analystId: null);
+        var endOfWeek = TeamWorkloadRules.EndOfWeek(Today);
+
+        var dueToday = await AddOpenIssueAsync(projectId, "AK-001", me, Today);
+        var dueSunday = await AddOpenIssueAsync(projectId, "AK-002", me, endOfWeek);
+        await AddOpenIssueAsync(projectId, "AK-003", me, Today.AddDays(-1));                 // overdue: its own list
+        await AddOpenIssueAsync(projectId, "AK-004", me, endOfWeek.AddDays(1));             // next week
+        await AddOpenIssueAsync(projectId, "AK-005", me, null);                             // no due date
+        await AddOpenIssueAsync(projectId, "AK-006", me, Today, OpenIssueStatus.Closed);    // closed
+        await AddOpenIssueAsync(projectId, "AK-007", someoneElse, Today);                   // not mine
+
+        var list = (await AsAsync(me)).MyOpenIssuesDueThisWeek;
+
+        Assert.Equal(2, list.TotalCount);
+        Assert.Equal([dueToday, dueSunday], list.Items.Select(x => x.Id));
+    }
+
+    [Fact]
+    public async Task MyOpenIssuesDueThisWeek_ClosedProject_IsLeftOut()
+    {
+        var me = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var projectId = await NewProjectAsync(null, analystId: null, status: ProjectStatus.Closed);
+        await AddOpenIssueAsync(projectId, "AK-001", me, Today);
+
+        Assert.Equal(0, (await AsAsync(me)).MyOpenIssuesDueThisWeek.TotalCount);
+    }
+
+    [Fact]
+    public async Task TeamWorkload_ListsTheUserWithTheirOpenIssuesAndWaitingSteps()
+    {
+        var developer = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var activeProject = await NewProjectAsync("15", analystId: null);     // step 15: a developer step
+        var closedProject = await NewProjectAsync(null, analystId: null, status: ProjectStatus.Closed);
+        await AddOpenIssueAsync(activeProject, "AK-001", developer, Today.AddDays(-2));
+        await AddOpenIssueAsync(activeProject, "AK-002", developer, null, OpenIssueStatus.InProgress);
+        await AddOpenIssueAsync(activeProject, "AK-003", developer, null, OpenIssueStatus.Closed);
+        await AddOpenIssueAsync(closedProject, "AK-001", developer, Today.AddDays(-2));    // closed project: not counted
+
+        var member = Assert.Single((await AsAsync(developer)).TeamWorkload, w => w.User.Id == developer);
+
+        Assert.Equal(UserRole.SoftwareDeveloper, member.Role);
+        Assert.Equal((2, 1), (member.OpenIssues, member.OverdueOpenIssues));
+        // Other tests' projects at developer steps wait for every developer too; this one is among them.
+        Assert.True(member.WaitingSteps >= 1);
+    }
+
+    [Fact]
+    public async Task TeamWorkload_SameForEveryScope_InactiveUsersLeftOut()
+    {
+        var me = await NewUserAsync(UserRole.BusinessAnalyst);
+        var inactive = await NewUserAsync(UserRole.SoftwareDeveloper);
+        await using (var scope = database.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            (await db.Users.SingleAsync(u => u.Id == inactive)).IsActive = false;
+            await db.SaveChangesAsync();
+        }
+
+        var mine = await AsAsync(me, DashboardScope.Mine);
+        var all = await AsAsync(me, DashboardScope.All);
+
+        Assert.Equal(mine.TeamWorkload.Select(w => w.User.Id), all.TeamWorkload.Select(w => w.User.Id));
+        Assert.DoesNotContain(all.TeamWorkload, w => w.User.Id == inactive);
+        Assert.Contains(all.TeamWorkload, w => w.User.Id == me);
     }
 
     // ---- Recent activity ----
