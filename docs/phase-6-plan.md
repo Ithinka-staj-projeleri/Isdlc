@@ -25,10 +25,10 @@ ayrı bir iştir ve sonraki faza bırakılır (Bölüm 7).
 | 5 | Şirket nereden anlaşılır | **Kullanıcıdan.** E-posta bütün sistemde benzersiz kalır; kullanıcı tek bir şirkete aittir. Giriş, kullanıcının şirketini JWT'ye `tenant` claim'i olarak yazar. Alt alan adı (`ithinka.isdlc...`) gerekmez | Giriş ekranı ve adresler değişmez |
 | 6 | Mevcut veri | Bir migration, bugünkü bütün kayıtları ilk şirkete (**Ithinka**) taşır | Canlı veri yok ama geliştirme ve demo verisi korunur |
 | 7 | Seed ve ayar tabloları | Akışlar, aşamalar, adımlar, dönüşler, doküman türleri ve soru setleri **şirkete ait** olur. `Seed/` dosyaları **şablon** olur: yeni şirket açılınca şablondan kopyalanır; sonra şirket kendi kopyasını değiştirebilir | Her şirketin akışı farklı olabilmeli |
-| 8 | Açılışta seed eşitleme | Şablon değişikliği yalnızca **şablonu kullanmaya devam eden** şirketlere uygulanır (şirketin "şablona bağlı" işareti). Kendi akışını değiştirmiş şirket etkilenmez | Şirketin değişikliği açılışta ezilmez |
+| 8 | Açılışta seed eşitleme | Şablon değişikliği yalnızca şirketin **değiştirmediği** kopyalara uygulanır (kayıt bazında `IsCustomized`). Kendi akışını değiştirmiş şirket etkilenmez | Şirketin değişikliği açılışta ezilmez |
 | 9 | Kodlar ve sayaçlar | Proje No, `SI-001` gibi kodlar **şirket içinde** sırayla verilir; benzersizlik `(TenantId, Code)` olur. Proje içi kodlar (`AK-001`, `RSK-001`) zaten proje bazında, değişmez | İki şirketin de 1 numaralı projesi olabilir |
 | 10 | Platform yönetimi | Yeni rol **Platform Yöneticisi**: hiçbir şirkete ait değildir, yalnızca şirket açar / pasife alır ve şirketin ilk yöneticisini oluşturur. Şirketlerin proje verisini **göremez** | Şirket verisine erişen tek kişi şirketin kendisi olur |
-| 11 | Şirket içi yönetim | Yeni rol **Şirket Yöneticisi**: kendi şirketinin kullanıcılarını ekler, pasife alır, rol verir | Bugün kullanıcılar seed'den geliyor; şirket kendi kullanıcısını yönetebilmeli |
+| 11 | Şirket içi yönetim | **Şirket Yöneticisi** bir rol değil, kullanıcıdaki işarettir (`IsTenantAdmin`): kendi şirketinin kullanıcılarını ekler, pasife alır, rol verir. Yeni kullanıcı geçici parolayla açılır, ilk girişte değiştirir | Bugün kullanıcılar seed'den geliyor; şirket kendi kullanıcısını yönetebilmeli. Kullanıcı başına tek rol kuralı yüzünden ayrı rol olsaydı bir İş Analisti yönetici olamazdı |
 | 12 | Yapay zekâ | Servis ve servis anahtarı ortak kalır; her şirketin **açık / kapalı** ayarı ve **veri gönderme izni** olur. Model anahtarı şirket başına ayrılmaz (sonraki faz) | Veri gönderme kararı şirkete göre değişir |
 | 13 | Bildirim, denetim kaydı | `Notification` ve `AuditLog` de `TenantId` taşır; denetim kaydı şirket dışına çıkmaz | Karar 2 ile aynı |
 
@@ -42,7 +42,7 @@ ayrı bir iştir ve sonraki faza bırakılır (Bölüm 7).
 | Akış kodları | Servislerde `ProcessFlowCodes.NewRequest` gibi sabitler | Kod şirket içinde aynı kalır (`new-software-project`), sorgu filtre sayesinde şirketin akışını bulur |
 | Seed | Tablo boşsa dosyadan yüklenir; akış her açılışta dosyayla eşitlenir | Şablon → şirket kopyası (karar 7, 8) |
 | Giriş | JWT'de `sub` | JWT'de `sub` + `tenant`; `ICurrentUserService.TenantId` |
-| Roller | `UserRole` 6 sabit rol | + `PlatformAdmin`, `TenantAdmin` (karar 10, 11). Şirkete özel roller sonraki faz |
+| Roller | `UserRole` 6 sabit rol | + `PlatformAdmin` rolü ve `IsTenantAdmin` işareti (karar 10, 11). Şirkete özel roller sonraki faz |
 | Testler | Tek şirket | Her modül için "A şirketi B'nin kaydını göremez ve değiştiremez" testi |
 
 ## 4. Yapılacak işler
@@ -52,10 +52,10 @@ Sorumlular **öneridir**; modül sahipliğine göre dağıtıldı, ekip onaylark
 
 | No | İş | Sorumlu | Bağımlılık |
 | --- | --- | --- | --- |
-| T1 | **Sözleşme:** `docs/multi-tenancy.md` — Bölüm 2'deki kararlar, `Tenant` entity'si, JWT claim'i, interceptor ve filtre kuralları, `IgnoreQueryFilters` kuralı, yeni hata mesajları. AGENTS.md Bölüm 6 ve 8'e kural olarak eklenir | Dide | — |
+| T1 | **Sözleşme:** [multi-tenancy.md](multi-tenancy.md) — Bölüm 2'deki kararlar, `Tenant` entity'si, JWT claim'i, interceptor ve filtre kuralları, `IgnoreQueryFilters` kuralı, parola, yönetim uç noktaları, yeni hata mesajları. Kurallar T2 ile AGENTS.md'ye taşınır | Erva | — |
 | T2 | **Ayrım altyapısı:** `Tenant` entity'si; bütün tablolara `TenantId`; mevcut veriyi Ithinka'ya taşıyan migration; `TenantId`'yi dolduran interceptor; global sorgu filtresi; `ICurrentUserService.TenantId` ve JWT'ye `tenant` claim'i; benzersizlik ve sayaçların şirkete göre ayrılması (karar 9). **Kritik yol:** bütün tablolara dokunduğu için tek PR'da ve diğer işler durmuşken yapılır | Dide | T1 |
-| T3 | **Şirket başına seed:** `Seed/` dosyaları şablon olur; yeni şirkete şablondan kopya; açılış eşitlemesi yalnızca şablona bağlı şirketlere (karar 7, 8); test ve örnek veri yardımcıları (`TestProjects`, `TestUsers`) şirket alır | Erva | T2 |
-| T4 | **Platform ve şirket yönetimi (backend):** `PlatformAdmin` ve `TenantAdmin` rolleri; şirket aç / pasife al; şirketin ilk yöneticisi; şirket içinde kullanıcı ekle, pasife al, rol ver. Pasif şirketin kullanıcıları giriş yapamaz | Baran | T2, T3 |
+| T3 | **Şirket başına seed:** `Seed/` dosyaları şablon olur; yeni şirkete şablondan kopya; açılış eşitlemesi yalnızca şirketin değiştirmediği kopyalara (karar 7, 8); test ve örnek veri yardımcıları (`TestProjects`, `TestUsers`) şirket alır | Erva | T2 |
+| T4 | **Platform ve şirket yönetimi (backend):** `PlatformAdmin` rolü ve `IsTenantAdmin` işareti; geçici parola ve parola değiştirme; şirket aç / pasife al; şirketin ilk yöneticisi; şirket içinde kullanıcı ekle, pasife al, rol ver. Pasif şirketin kullanıcıları giriş yapamaz | Baran | T2, T3 |
 | T5 | **Yönetim ekranları:** Platform Yöneticisi için şirket listesi ve yeni şirket formu; Şirket Yöneticisi için kullanıcı listesi ve formu; üst barda şirket adı | Baran | T4 |
 | T6 | **Yapay zekâ ayarları:** şirket bazında açık / kapalı ve veri gönderme izni (karar 12); `GET /agents/status` şirkete göre döner | Erva | T2 |
 | T7 | **Ayrım testleri:** her modül için iki şirketli testler (listeleme, detay, güncelleme, sayaç, bildirim, denetim kaydı, panel, arama). Çapraz test kuralıyla dağıtılır | Herkes | T2–T6 |
