@@ -88,6 +88,7 @@ ait olduğu proje bulunur." Talep, yeni projeyle **aynı formdan** girer; fark, 
 | --- | --- | --- |
 | `GET /projects` | Proje listesi (filtreli, sayfalı) | `200` `PagedResult<ProjectListItemDto>` |
 | `GET /projects/{projectId}` | Proje detayı | `200` `ProjectDto` |
+| `GET /projects/{projectId}/summary` | Proje özeti (Faz 5 · F1; aşağıda) | `200` `ProjectSummaryDto` |
 | `POST /projects` | Yeni talep | `201` `ProjectDto` (`Location: /api/v1/projects/{id}`) |
 | `PUT /projects/{projectId}` | Temel bilgileri güncelle | `200` `ProjectDto` |
 | `GET /users` | Formdaki kişi seçimi için kullanıcı listesi (karar 5) | `200` `UserLookupDto[]` |
@@ -231,6 +232,41 @@ yine olmazsa 409 döner. Açık konulardan farkı: talep formu uzun olduğu içi
 | Olay | Kime | Mesaj örneği |
 | --- | --- | --- |
 | Projeye iş analisti veya proje yöneticisi atandı (yeni talep ya da değişiklik) | Atanan kişi (işlemi yapan kendisi değilse) | "19 · Bayi Sipariş Portalı projesine iş analisti olarak atandınız." |
+
+## Proje özeti (Faz 5 · F1)
+
+Proje detayında "Genel Bilgiler" sekmesinin üstünde. Projenin kendi kayıtlarından o an hesaplanır; yeni tablo yok, hiçbir şey saklanmaz.
+Plan: [phase-5-plan.md](phase-5-plan.md) → F1. Okuma: giriş yapmış her kullanıcı; proje yoksa 404.
+
+```jsonc
+// ProjectSummaryDto — GET /projects/{projectId}/summary
+{
+  "openIssues": {
+    "open": 4, "inProgress": 2, "closed": 9,
+    "overdue": 1,                 // kapanmamış ve termini geçmiş
+    "closedLast30Days": 3,        // kapanma tarihi bugünden 30 gün öncesi ya da sonrası
+    "byType": [ { "type": "Question", "count": 3 }, { "type": "Action", "count": 2 } /* … her tür, sıfırlar dahil */ ]
+  },
+  "risks": { "high": 1, "medium": 2, "low": 0, "closed": 1 },          // açık + izlenen riskler seviyesine göre
+  "requirements": { "draft": 3, "inReview": 1, "approved": 5, "cancelled": 0 },
+  "documents": { "approved": 2, "tracked": 12 },                         // takip edilen = "Gerekli değil" olmayan türler
+  "workload": [                                                          // kapanmamış açık konular, sorumluya göre
+    { "userId": 1, "name": "Elif Yılmaz", "open": 3, "overdue": 1 },
+    { "userId": null, "name": "Müşteri BT", "open": 2, "overdue": 0 }    // sistem dışı sorumlu
+  ]
+}
+```
+
+| # | Karar |
+| --- | --- |
+| F1-1 | Açık konular **durumuna ve türüne** göre gösterilir. Planda "önceliğine göre" yazıyor ama açık konuların öncelik alanı yok; tür dağılımı kullanıldı |
+| F1-2 | Açık risk = `Open` ve `Monitoring`; seviye risk modülündeki kuralla (olasılık × etki: 1–7 düşük, 8–14 orta, 15–25 yüksek) |
+| F1-3 | Takip edilen doküman: bütün doküman türleri, "Gerekli değil" işaretlenenler hariç; henüz kaydı olmayan tür takip edilir ve başlanmamış sayılır |
+| F1-4 | Ekip iş yükü: kapanmamış açık konular sorumluya göre; ekip üyesi kullanıcı kimliğiyle, sistem dışı kişi kayıttaki adıyla. En çok açık konusu olan önce, eşitse en çok gecikmesi olan, sonra ada göre. Gösterge panelinin iş yükü (F2) aktif projelerdeki bekleyen adımları da sayar |
+| F1-5 | Ekranda her kutu ilgili sekmeyi açar (Açık Konular, Riskler, Gereksinimler, Dokümanlar) |
+
+Kod: `Isdlc.Application/Projects/` → `IProjectSummaryService`, `ProjectSummaryService`, `ProjectSummaryRules` (saf; her sayım veritabanısız test edilir).
+Ekran: `features/projects/project-summary`.
 
 ## Kod yerleşimi
 

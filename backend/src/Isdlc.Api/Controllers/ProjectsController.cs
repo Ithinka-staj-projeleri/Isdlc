@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Isdlc.Api.Controllers;
 
 /// <summary>Requests and projects: /api/v1/projects. Contract: docs/projects-api.md</summary>
-public class ProjectsController(IProjectService projectService) : ApiControllerBase
+public class ProjectsController(IProjectService projectService, IProjectSummaryService summaryService) : ApiControllerBase
 {
     /// <summary>
     /// Filters: ?status=Active&amp;phase=Request&amp;search=portal&amp;businessAnalystId=1. Paging: ?page=1&amp;pageSize=20.
@@ -19,6 +19,15 @@ public class ProjectsController(IProjectService projectService) : ApiControllerB
         [FromQuery] ProjectFilter filter, [FromQuery] PageRequest pageRequest, CancellationToken cancellationToken)
     {
         return await projectService.ListAsync(filter, pageRequest, cancellationToken);
+    }
+
+    /// <summary>The overview on top of the project's "Genel Bilgiler" tab (Faz 5 · F1).</summary>
+    [HttpGet("{projectId:int}/summary")]
+    [ProducesResponseType<ProjectSummaryDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ProjectSummaryDto> GetSummary(int projectId, CancellationToken cancellationToken)
+    {
+        return await summaryService.GetAsync(projectId, cancellationToken);
     }
 
     [HttpGet("{projectId:int}")]
