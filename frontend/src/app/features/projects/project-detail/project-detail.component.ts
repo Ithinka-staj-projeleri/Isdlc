@@ -17,6 +17,7 @@ import { ProjectProcessComponent } from '../../process/project-process/project-p
 import { RequirementListComponent } from '../../requirements/requirement-list/requirement-list.component';
 import { RiskListComponent } from '../../risks/risk-list/risk-list.component';
 import { AddOnListComponent } from '../add-on-list/add-on-list.component';
+import { ProjectSummaryComponent } from '../project-summary/project-summary.component';
 import { RequestAnalysisTabComponent } from '../../request-analysis/request-analysis-tab/request-analysis-tab.component';
 import {
   PROJECT_PRIORITY_LABELS,
@@ -68,6 +69,7 @@ const LAST_REQUEST_STAGE = 2;
     AuditLogComponent,
     ProjectTimelineComponent,
     AddOnListComponent,
+    ProjectSummaryComponent,
     RequestAnalysisTabComponent,
   ],
   templateUrl: './project-detail.component.html',

@@ -85,6 +85,9 @@
         <app-audit-log [projectId]="p.id" />
       }
       @default {
+        <!-- Proje özeti (Faz 5 · F1): each box opens its tab. -->
+        <app-project-summary [projectId]="p.id" (openTab)="selectTab($event)" />
+
         <!-- The fields of the company's Talep Kayıt Formu, in its order and words. -->
         <div class="card">
           <h3>Talep Kayıt Bilgileri</h3>

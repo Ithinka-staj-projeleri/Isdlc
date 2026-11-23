@@ -5,6 +5,7 @@ import { showsFieldErrors } from '../../core/http/problem-details';
 import { PagedResult } from '../../shared/models/paged-result';
 import { UserLookup, UserRole } from '../../shared/models/user-summary';
 import { Project, ProjectFilter, ProjectInput, ProjectListItem } from './project.model';
+import { ProjectSummary } from './project-summary/project-summary.model';
 
 /** Calls to the Projects API. Screens never call HttpClient directly. Contract: docs/projects-api.md */
 @Injectable({ providedIn: 'root' })
@@ -21,6 +22,11 @@ export class ProjectService {
       }
     }
     return this._http.get<PagedResult<ProjectListItem>>(this._baseUrl, { params });
+  }
+
+  /** The overview on top of "Genel Bilgiler" (Faz 5 · F1), counted from the project's records. */
+  summary(projectId: number): Observable<ProjectSummary> {
+    return this._http.get<ProjectSummary>(`${this._baseUrl}/${projectId}/summary`);
   }
 
   /** One project with all its details. */

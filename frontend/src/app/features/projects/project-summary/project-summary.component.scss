@@ -1,0 +1,143 @@
+@use '../../../shared/styles/ui' as ui;
+
+:host {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 1000px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.box {
+  @include ui.card;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+}
+
+button.box {
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-soft);
+    border-color: var(--accent);
+  }
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+
+  small {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+}
+
+.detail {
+  font-size: 13px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.bad {
+  color: var(--bad);
+}
+
+.chips,
+.levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-top: 2px;
+}
+
+.chip,
+.level {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--bg);
+  font-size: 12px;
+}
+
+.level {
+  &.high { background: #f8dedc; color: var(--bad); }
+  &.medium { background: #fbefd9; color: var(--warn); }
+  &.low { background: #dcf1e3; color: var(--ok); }
+}
+
+.bar {
+  display: block;
+  height: 6px;
+  margin: 4px 0;
+  border-radius: 3px;
+  background: var(--bg);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+  }
+}
+
+.workload ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workload li {
+  display: grid;
+  grid-template-columns: minmax(120px, 220px) minmax(60px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+
+  .bar {
+    margin: 0;
+  }
+}
+
+.note {
+  margin: 0;
+  color: var(--muted);
+}

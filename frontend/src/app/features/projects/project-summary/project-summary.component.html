@@ -1,0 +1,63 @@
+@if (summary.error()) {
+<p class="note">Proje özeti yüklenemedi.</p>
+} @else if (s(); as s) {
+<section class="summary" aria-label="Proje özeti">
+  <button type="button" class="box" (click)="openTab.emit('open-issues')">
+    <span class="label">Açık konular</span>
+    <span class="value">{{ waitingIssues() }}</span>
+    <span class="detail">
+      {{ s.openIssues.inProgress }} devam ediyor
+      @if (s.openIssues.overdue) { · <b class="bad">{{ s.openIssues.overdue }} gecikmiş</b> }
+    </span>
+    <span class="detail muted">Son 30 günde {{ s.openIssues.closedLast30Days }} kapandı</span>
+    <span class="chips">
+      @for (t of s.openIssues.byType; track t.type) {
+      @if (t.count) { <span class="chip">{{ typeLabels[t.type] }} {{ t.count }}</span> }
+      }
+    </span>
+  </button>
+
+  <button type="button" class="box" (click)="openTab.emit('risks')">
+    <span class="label">Açık riskler</span>
+    <span class="value">{{ followedRisks() }}</span>
+    <span class="levels">
+      <span class="level high">Yüksek {{ s.risks.high }}</span>
+      <span class="level medium">Orta {{ s.risks.medium }}</span>
+      <span class="level low">Düşük {{ s.risks.low }}</span>
+    </span>
+    <span class="detail muted">{{ s.risks.closed }} kapandı</span>
+  </button>
+
+  <button type="button" class="box" (click)="openTab.emit('requirements')">
+    <span class="label">Gereksinimler</span>
+    <span class="value">{{ s.requirements.approved }} <small>/ {{ activeRequirements() }} onaylı</small></span>
+    <span class="detail">{{ s.requirements.draft }} taslak · {{ s.requirements.inReview }} incelemede</span>
+    @if (s.requirements.cancelled) { <span class="detail muted">{{ s.requirements.cancelled }} iptal</span> }
+  </button>
+
+  <button type="button" class="box" (click)="openTab.emit('documents')">
+    <span class="label">Dokümanlar</span>
+    <span class="value">{{ s.documents.approved }} <small>/ {{ s.documents.tracked }} onaylı</small></span>
+    <span class="bar" role="progressbar" aria-label="Onaylanan dokümanlar" [attr.aria-valuenow]="documentPercent()"
+      aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="documentPercent()"></span></span>
+    <span class="detail muted">Takip edilen: "Gerekli değil" olmayan dokümanlar</span>
+  </button>
+
+  <div class="box wide workload">
+    <span class="label">Ekip iş yükü <small>(açık konular)</small></span>
+    @if (s.workload.length) {
+    <ul>
+      @for (w of s.workload; track w.name) {
+      <li>
+        <span class="name">{{ w.name }}@if (w.userId === null) { <small class="muted"> (sistem dışı)</small> }</span>
+        <span class="bar"><span [style.width.%]="(w.open / maxWorkload()) * 100"></span></span>
+        <span class="count">{{ w.open }}@if (w.overdue) { <b class="bad"> · {{ w.overdue }} gecikmiş</b> }</span>
+      </li>
+      }
+    </ul>
+    } @else {
+    <span class="detail muted">Kimsenin üzerinde açık konu yok.</span>
+    }
+  </div>
+</section>
+}
