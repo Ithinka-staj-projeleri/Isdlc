@@ -24,6 +24,7 @@ entity, API ve ekranını uçtan uca yazar.
 | **3 — Bitiriş** | `Audit` ekranı + uçtan uca demo senaryosu | `Dashboard` | `Notifications` |
 | **4 — Şirket akışları** (kapatıldı) | Toplantı ve ziyaret tutanakları, süreç iyileştirme | Akış altyapısı, akış seed'leri, talep analizi; talepler, ret / erteleme, ek geliştirme | Soru bankası, seviye ve uygunluk |
 | **5 — Takım çalışması** (öneri) | Zaman çizelgesi, tutanak aksiyonları, ses kaydından tutanak, e-postadan talep, demo | Proje özeti, panel eklemeleri | Genel arama, bağlantıyı kopyala, kişi profili |
+| **6 — Çok şirketli yapı** (öneri) | Şirket başına seed, yapay zekâ ayarları, belgeler ve demo | Sözleşme, ayrım altyapısı (`TenantId`, filtre, migration) | Platform ve şirket yönetimi, yönetim ekranları |
 
 ### Faz 0 — Ortak temel
 
@@ -93,6 +94,15 @@ proje zaman çizelgesi, tutanaktan kişi kişi aksiyon, ses kaydından tutanak v
 kişi profili. İşler, sıra ve açık konular: [docs/phase-5-plan.md](docs/phase-5-plan.md).
 
 **Bitiş koşulu:** Faz 5 özellikleri demo senaryosunda sahte veriyle baştan sona çalışıyor.
+
+### Faz 6 — Çok şirketli yapı (multi-tenant)
+
+Tek kurulum birden fazla şirkete hizmet eder: her şirketin kendi kullanıcıları, akışları, soru listeleri ve doküman türleri
+olur; hiçbir şirket başka şirketin kaydını göremez. Tek veritabanı, her tabloda `TenantId` ve global sorgu filtresi.
+Roller, koşullar ve akışların ekrandan düzenlenmesi sonraki faza kalır. İşler, kararlar ve sıra: [docs/phase-6-plan.md](docs/phase-6-plan.md).
+
+**Bitiş koşulu:** İki şirket aynı kurulumda çalışıyor; her modülde bir şirketin diğerinin kaydını göremediği ve
+değiştiremediği testlerle gösteriliyor.
 
 ## 3. Birlikte çalışma kuralları
 
