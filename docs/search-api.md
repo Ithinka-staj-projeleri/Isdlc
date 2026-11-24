@@ -2,7 +2,7 @@
 
 Faz 5 · F7 ([phase-5-plan.md](phase-5-plan.md)). Üst bardaki arama kutusu (Ctrl+K) projeleri, süreç iyileştirme önerilerini ve
 proje içi kayıtları (açık konular, tutanaklar, riskler, gereksinimler) tek yerden bulur; sonuca tıklayınca kayıt açılır.
-Durum: sözleşme **taslak** (24 Kasım 2026); servis, API ve testleri uygulandı (2. adım). Sorumlu: Baran.
+Durum: sözleşme **taslak** (24 Kasım 2026); servis, API ve testleri (2. adım) ile üst bardaki arama kutusu (3. adım) uygulandı. Sorumlu: Baran.
 
 Yeni tablo ya da kolon yoktur; arama mevcut tablolarda yapılır.
 
