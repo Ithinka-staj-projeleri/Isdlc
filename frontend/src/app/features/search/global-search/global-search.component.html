@@ -1,0 +1,48 @@
+@let panelOpen = open() && state() !== 'idle';
+<div class="box">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+    </svg>
+    <input #input type="search" role="combobox" placeholder="Ara…" autocomplete="off" aria-label="Genel arama"
+        aria-autocomplete="list" aria-controls="global-search-results" [attr.aria-expanded]="panelOpen"
+        [attr.aria-activedescendant]="panelOpen && activeKey() ? 'search-' + activeKey() : null"
+        [attr.maxlength]="maxLength" [value]="text()" (input)="onInput(input.value)" (focus)="onFocus()"
+        (keydown)="onKeydown($event)" />
+    <kbd aria-hidden="true">{{ shortcut }}</kbd>
+</div>
+
+@if (panelOpen) {
+<div class="panel" id="global-search-results" role="listbox" aria-label="Arama sonuçları">
+    @switch (state()) {
+    @case ('loading') {
+    <p class="empty">Aranıyor…</p>
+    }
+    @case ('error') {
+    <p class="empty">Arama yapılamadı. Lütfen tekrar deneyin.</p>
+    }
+    @default {
+    @for (group of groups(); track group.label) {
+    <section role="group" [attr.aria-label]="group.label">
+        <header>
+            <span>{{ group.label }}</span>
+            <span class="count">{{ group.rows.length < group.totalCount ? group.rows.length + ' / ' + group.totalCount : group.totalCount }}</span>
+        </header>
+        @for (row of group.rows; track row.key) {
+        <button type="button" class="row" role="option" tabindex="-1" [id]="'search-' + row.key"
+            [class.active]="row.key === activeKey()" [class.closed]="row.closedLabel"
+            [attr.aria-selected]="row.key === activeKey()" (mousemove)="setActive(row)" (click)="go(row)">
+            <span class="code">{{ row.code }}</span>
+            <span class="title">{{ row.title }}</span>
+            @if (row.closedLabel) { <span class="status">{{ row.closedLabel }}</span> }
+            @if (row.subtitle) { <span class="subtitle">{{ row.subtitle }}</span> }
+        </button>
+        }
+    </section>
+    } @empty {
+    <p class="empty">Sonuç bulunamadı.</p>
+    }
+    }
+    }
+</div>
+}
