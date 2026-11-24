@@ -329,6 +329,17 @@ Bütün yeni uç noktalar AGENTS.md Bölüm 7'deki ortak kurallara uyar.
 
 Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döner ("Yapay zekâ yardımcıları şirketiniz için kapalı.").
 
+**Uygulandı (T6).** Kural `Isdlc.Application/Agents/CompanyAiRules.cs` (saf sınıf), kullanımı `AgentService`:
+
+- Şirket, giriş yapan kullanıcının şirketidir (`ICurrentUserService.TenantId`). Giriş yoksa ya da şirket bulunamazsa iki
+  anahtar da kapalı sayılır.
+- `GET /agents/status`: tutanak, risk ve e-posta yardımcıları servis açık **ve** iki anahtar açıksa; ses kaydı servis açık,
+  ses paketi kurulu **ve** `AiEnabled` açıksa görünür. Ekranlar bugünkü gibi yalnızca bu cevaba bakar.
+- Yardımcılar, giriş ve proje kontrollerinden sonra, servisi çağırmadan önce şirketin anahtarlarına bakar.
+- Ithinka'da iki anahtar da açık (migration); yeni şirkette ikisi de kapalı başlar.
+- Anahtarları değiştiren `PUT /tenants/current/settings` Şirket Yöneticisi gerektirdiği için T4 ile gelir (`IsTenantAdmin`).
+  O zamana kadar anahtarlar veritabanından değiştirilir.
+
 ## 8. Hata mesajları
 
 | Durum | Kod | `detail` |

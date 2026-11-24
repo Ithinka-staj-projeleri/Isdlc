@@ -297,6 +297,9 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
 - **Yapay zekâ servisi:** Backend, `ai/` servisini `Agents:ServiceUrl` adresinden `Agents:ServiceKey` anahtarıyla çağırır
   (`Isdlc.Infrastructure/Agents/`). Adres boşsa ya da servis cevap vermiyorsa `GET /api/v1/agents/status` kapalı döner ve
   ekranlar yapay zekâ butonlarını göstermez. Ajan kayıt oluşturmaz; önerileri kişi inceleyip normal ekrandan kaydeder.
+  Her şirketin iki anahtarı vardır (`Tenant.AiEnabled`, `AiDataSharingAllowed`): metni dış modele gönderen yardımcılar ikisini,
+  ses kaydını metne çevirme yalnızca birincisini ister; kural `CompanyAiRules`, kapalıysa servis çağrılmadan 503
+  ("Yapay zekâ yardımcıları şirketiniz için kapalı.").
   Yalnızca sahte veriyle çalışılır (şirketin veri gönderme kararı bekleniyor).
 - **Eşzamanlılık:** `Project.RowVersion` aynı kaydın aynı anda güncellenmesini yakalar ve 409 döner.
 - **Seed:** `Isdlc.Infrastructure/Seed/` altındaki akış, doküman türü ve soru seti dosyaları **şablondur**. Uygulama her

@@ -80,9 +80,11 @@ public class MeetingTranscriptTests(DatabaseFixture database)
     [InlineData(false, true, false)]
     public async Task GetStatus_TranscriptionNeedsTheServiceAndTheAudioPackage(bool available, bool audio, bool expected)
     {
+        // A signed-in Ithinka user: Ithinka has both AI switches on (Faz 6 · T6), so only the service decides here.
+        var analystId = await TestProjects.UserIdAsync(database, TestProjects.Analyst);
         await using var scope = database.CreateScope();
         var service = new AgentService(
-            scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(), new TestUser(null),
+            scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(), new TestUser(analystId),
             new FakeAgentClient { IsAvailable = available, IsTranscriptionAvailable = audio });
 
         var status = await service.GetStatusAsync(CancellationToken.None);
