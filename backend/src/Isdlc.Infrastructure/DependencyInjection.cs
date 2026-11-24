@@ -7,6 +7,7 @@ using Isdlc.Infrastructure.Persistence;
 using Isdlc.Infrastructure.QuestionBank;
 using Isdlc.Infrastructure.Persistence.Interceptors;
 using Isdlc.Infrastructure.Persistence.Seeding;
+using Isdlc.Infrastructure.Tenants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,14 +24,19 @@ public static class DependencyInjection
 
         services.AddSingleton(TimeProvider.System);
 
+        // The company of the request; the query filters and TenantInterceptor read it (docs/multi-tenancy.md).
+        services.AddScoped<ITenantContext, TenantContext>();
+        services.AddScoped<TenantInterceptor>();
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddScoped<AuditLogInterceptor>();
+        // Not pooled (AddDbContextPool): the query filters read the scope's ITenantContext.
         services.AddDbContext<IsdlcDbContext>((sp, options) => options
             // Queries that load several collections run as one SQL query (EF Core's default, set explicitly).
             // For a large collection, a query can opt into AsSplitQuery().
             .UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery))
-            // Order matters: audit fields are filled first, then the log reads them.
+            // Order matters: the company is written first, then the audit fields, then the log reads both.
             .AddInterceptors(
+                sp.GetRequiredService<TenantInterceptor>(),
                 sp.GetRequiredService<AuditableEntityInterceptor>(),
                 sp.GetRequiredService<AuditLogInterceptor>()));
 

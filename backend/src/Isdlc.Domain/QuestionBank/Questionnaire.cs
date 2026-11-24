@@ -8,9 +8,11 @@ namespace Isdlc.Domain.QuestionBank;
 /// A form filled in for a project: one per project and question set, created with the first answer.
 /// Project data: audited, never deleted. Rules: docs/question-bank-api.md → Ortak kurallar.
 /// </summary>
-public class Questionnaire : AuditableEntity, IAudited, IProjectRecord
+public class Questionnaire : AuditableEntity, IAudited, IProjectRecord, ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int ProjectId { get; set; }
     public Project Project { get; set; } = null!;

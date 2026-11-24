@@ -2,7 +2,7 @@
 
 Tek kurulumun birden fazla şirkete (tenant) hizmet etmesi: veri modeli, kimlik, okuma ve yazma kuralları, seed, yönetim
 uç noktaları ve testler. Plan ve iş dağılımı: [phase-6-plan.md](phase-6-plan.md).
-Durum: **taslak, ekip onayı bekliyor** (23 Kasım 2026; T2 açısından gözden geçirildi 24 Kasım 2026). Sorumlu: Erva (T1). Uygulama: T2–T7.
+Durum: **onaylandı** (24 Kasım 2026). Sorumlu: Erva (T1). Uygulama: T2–T7. Bölüm 12'deki kurallar T2 ile AGENTS.md'ye taşındı.
 
 Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9) taşınır (Bölüm 12).
 
@@ -39,7 +39,7 @@ Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9)
 
 **Bütün tablolar**, `Tenants` hariç: `Users`, `Projects`, `ProcessFlows`, `ProcessStages`, `ProcessSteps`,
 `ProcessStepJumps`, `StepRecords`, `RequestDecisions`, `AuditLogs`, `OpenIssues`, `Meetings`, `Requirements`,
-`DocumentTypes`, `ProjectDocuments`, `Risks`, `ProjectAssessments`, `Notifications`, `QuestionSets`, `Questions`,
+`DocumentTypes`, `ProjectDocuments`, `Risks`, `Notifications`, `QuestionSets`, `Questions`,
 `QuestionOptions`, `Questionnaires`, `QuestionAnswers`, `ProcessImprovements`.
 
 - `TenantId` int, zorunlu, `Tenants.Id`'ye `Restrict` yabancı anahtar ve indeksli.

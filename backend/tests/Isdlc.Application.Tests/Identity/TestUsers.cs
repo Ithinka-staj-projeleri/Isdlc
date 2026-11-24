@@ -17,9 +17,11 @@ public static class TestUsers
         string? password,
         bool isActive = true,
         UserRole role = UserRole.SoftwareDeveloper,
-        string? fullName = null)
+        string? fullName = null,
+        int? tenantId = null)
     {
-        await using var scope = database.CreateScope();
+        // A user of another company is saved in a scope working as that company (Ithinka by default).
+        await using var scope = tenantId is { } id ? database.CreateScope(id) : database.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IsdlcDbContext>();
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
 

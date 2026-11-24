@@ -1,3 +1,4 @@
+using Isdlc.Domain.Common;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Projects;
 
@@ -6,9 +7,11 @@ namespace Isdlc.Domain.Process;
 /// <summary>
 /// A step inside a stage. Master data loaded from the seed; not edited by users.
 /// </summary>
-public class ProcessStep
+public class ProcessStep : ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int ProcessStageId { get; set; }
     public ProcessStage ProcessStage { get; set; } = null!;

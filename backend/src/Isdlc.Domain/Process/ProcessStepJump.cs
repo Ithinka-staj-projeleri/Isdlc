@@ -1,12 +1,16 @@
+using Isdlc.Domain.Common;
+
 namespace Isdlc.Domain.Process;
 
 /// <summary>
 /// A step the flow can return to when a decision step is answered "No".
 /// A decision step can have several options, e.g. 5.4 goes back to 4.1 or 4.9.
 /// </summary>
-public class ProcessStepJump
+public class ProcessStepJump : ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     /// <summary>The decision step.</summary>
     public int ProcessStepId { get; set; }

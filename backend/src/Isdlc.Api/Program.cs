@@ -5,6 +5,7 @@ using Isdlc.Api.Identity;
 using Isdlc.Application;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Identity;
+using Isdlc.Domain.Tenants;
 using Isdlc.Infrastructure;
 using Isdlc.Infrastructure.Persistence;
 using Isdlc.Infrastructure.Persistence.Seeding;
@@ -91,6 +92,8 @@ await app.Services.InitializeDatabaseAsync(app.Environment.IsDevelopment());
 if (app.Environment.IsDevelopment())
 {
     await using var scope = app.Services.CreateAsyncScope();
+    // The seed users are Ithinka's (docs/multi-tenancy.md → Seed).
+    scope.ServiceProvider.GetRequiredService<ITenantContext>().Use(Tenant.IthinkaId);
     await scope.ServiceProvider.GetRequiredService<UserPasswordSeeder>().SeedAsync();
 }
 

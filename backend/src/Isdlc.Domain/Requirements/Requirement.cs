@@ -7,9 +7,11 @@ namespace Isdlc.Domain.Requirements;
 /// A requirement of the project. A User Story is not a separate record: it is written into the description.
 /// Never deleted; cancelled instead. Rules: docs/data-model.md → Requirement, docs/requirements-documents-api.md
 /// </summary>
-public class Requirement : AuditableEntity, IAudited, IProjectRecord
+public class Requirement : AuditableEntity, IAudited, IProjectRecord, ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int ProjectId { get; set; }
     public Project Project { get; set; } = null!;

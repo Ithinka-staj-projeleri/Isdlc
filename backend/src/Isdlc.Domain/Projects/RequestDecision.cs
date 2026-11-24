@@ -8,9 +8,11 @@ namespace Isdlc.Domain.Projects;
 /// Written together with the StepRecord of the decision and never edited. A request can collect several
 /// (postponed, taken back, then rejected). Contract: docs/process-api.md → "Ret / erteleme kararı".
 /// </summary>
-public class RequestDecision : AuditableEntity, IAudited, IProjectRecord
+public class RequestDecision : AuditableEntity, IAudited, IProjectRecord, ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int ProjectId { get; set; }
     public Project Project { get; set; } = null!;

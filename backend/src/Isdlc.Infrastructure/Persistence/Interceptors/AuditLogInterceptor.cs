@@ -23,7 +23,7 @@ public class AuditLogInterceptor(TimeProvider timeProvider) : SaveChangesInterce
     /// <summary>Never written to the log: secrets, technical fields, and fields already on the log row.</summary>
     private static readonly HashSet<string> IgnoredProperties =
     [
-        "Id", "PasswordHash", "RowVersion",
+        "Id", "PasswordHash", "RowVersion", nameof(ITenantOwned.TenantId),
         nameof(AuditableEntity.CreatedAt), nameof(AuditableEntity.CreatedById),
         nameof(AuditableEntity.UpdatedAt), nameof(AuditableEntity.UpdatedById),
     ];
@@ -192,6 +192,8 @@ public class AuditLogInterceptor(TimeProvider timeProvider) : SaveChangesInterce
 
             context.Set<AuditLog>().Add(new AuditLog
             {
+                // The log belongs to the changed record's company, set here so it never depends on the current one.
+                TenantId = ((ITenantOwned)entity).TenantId,
                 EntityName = entity.GetType().Name,
                 EntityId = entityId,
                 ProjectId = entity switch

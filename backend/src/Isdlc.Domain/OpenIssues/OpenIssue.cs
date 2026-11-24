@@ -11,9 +11,11 @@ namespace Isdlc.Domain.OpenIssues;
 /// question, action, decision, change request, dependency or assumption.
 /// Never deleted; closed instead. Rules: docs/data-model.md → "Proje kayıtları".
 /// </summary>
-public class OpenIssue : AuditableEntity, IAudited, IProjectRecord
+public class OpenIssue : AuditableEntity, IAudited, IProjectRecord, ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int ProjectId { get; set; }
     public Project Project { get; set; } = null!;

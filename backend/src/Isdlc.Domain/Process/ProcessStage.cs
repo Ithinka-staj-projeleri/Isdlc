@@ -1,11 +1,15 @@
+using Isdlc.Domain.Common;
+
 namespace Isdlc.Domain.Process;
 
 /// <summary>
 /// A stage ("bölüm") of a flow. Master data loaded from the seed; not edited by users.
 /// </summary>
-public class ProcessStage
+public class ProcessStage : ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int ProcessFlowId { get; set; }
     public ProcessFlow ProcessFlow { get; set; } = null!;

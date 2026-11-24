@@ -25,7 +25,8 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(x => x.Notes).HasMaxLength(2000);
         builder.Property(x => x.RowVersion).IsRowVersion();
 
-        builder.HasIndex(x => x.Code).IsUnique();
+        // Each company numbers its own records (docs/multi-tenancy.md → Benzersizlik).
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
         builder.HasIndex(x => x.Status);
 
         builder.HasOne(x => x.BusinessAnalyst).WithMany().HasForeignKey(x => x.BusinessAnalystId);

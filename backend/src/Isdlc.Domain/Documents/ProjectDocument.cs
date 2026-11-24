@@ -7,9 +7,11 @@ namespace Isdlc.Domain.Documents;
 /// The state of one document in one project. Created the first time the document is saved on the project;
 /// until then the document counts as NotStarted. Rules: docs/data-model.md → ProjectDocument
 /// </summary>
-public class ProjectDocument : AuditableEntity, IAudited, IProjectRecord
+public class ProjectDocument : AuditableEntity, IAudited, IProjectRecord, ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int ProjectId { get; set; }
     public Project Project { get; set; } = null!;

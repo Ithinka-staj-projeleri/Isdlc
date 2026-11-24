@@ -10,7 +10,7 @@ namespace Isdlc.Domain.Meetings;
 /// A customer visit is minutes of type CustomerVisit, with the visit fields filled in.
 /// Never deleted. Rules: docs/data-model.md → "Proje kayıtları".
 /// </summary>
-public class Meeting : AuditableEntity, IAudited, IProjectRecord
+public class Meeting : AuditableEntity, IAudited, IProjectRecord, ITenantOwned
 {
     public const int MaxAgendaLength = 4000;
     public const int MaxSummaryLength = 4000;
@@ -19,6 +19,8 @@ public class Meeting : AuditableEntity, IAudited, IProjectRecord
     public const int MaxActivitiesLength = 4000;
 
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int ProjectId { get; set; }
     public Project Project { get; set; } = null!;

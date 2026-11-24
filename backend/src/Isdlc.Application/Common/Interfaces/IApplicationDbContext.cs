@@ -10,6 +10,7 @@ using Isdlc.Domain.Projects;
 using Isdlc.Domain.QuestionBank;
 using Isdlc.Domain.Requirements;
 using Isdlc.Domain.Risks;
+using Isdlc.Domain.Tenants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -22,6 +23,7 @@ namespace Isdlc.Application.Common.Interfaces;
 /// </summary>
 public interface IApplicationDbContext
 {
+    DbSet<Tenant> Tenants { get; }
     DbSet<User> Users { get; }
     DbSet<Project> Projects { get; }
     DbSet<ProcessFlow> ProcessFlows { get; }

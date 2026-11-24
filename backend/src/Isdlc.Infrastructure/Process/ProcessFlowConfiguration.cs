@@ -11,6 +11,9 @@ public class ProcessFlowConfiguration : IEntityTypeConfiguration<ProcessFlow>
         builder.Property(x => x.Code).HasMaxLength(50);
         builder.Property(x => x.Name).HasMaxLength(100);
 
-        builder.HasIndex(x => x.Code).IsUnique();
+        builder.Property(x => x.TemplateCode).HasMaxLength(50);
+
+        // Every company has its own copy of the templates (docs/multi-tenancy.md → Benzersizlik).
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
     }
 }

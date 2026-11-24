@@ -7,12 +7,14 @@ namespace Isdlc.Domain.QuestionBank;
 /// The answer to one question of a filled-in form. Project data: audited with its project, never deleted
 /// (an answer is emptied instead). ProjectId repeats the questionnaire's so the audit log can list it per project.
 /// </summary>
-public class QuestionAnswer : AuditableEntity, IAudited, IProjectRecord
+public class QuestionAnswer : AuditableEntity, IAudited, IProjectRecord, ITenantOwned
 {
     public const int MinLevel = 1;
     public const int MaxLevel = 3;
 
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int QuestionnaireId { get; set; }
     public Questionnaire Questionnaire { get; set; } = null!;

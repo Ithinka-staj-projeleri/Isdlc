@@ -1,3 +1,5 @@
+using Isdlc.Application.Common.Interfaces;
+using Isdlc.Domain.Tenants;
 using Isdlc.Infrastructure.Persistence.Seeding;
 using Isdlc.Infrastructure.QuestionBank;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +21,10 @@ public static class DatabaseInitializer
         {
             await db.Database.MigrateAsync();
         }
+
+        // Nobody is signed in at startup, so the seed says which company it fills. Ithinka is the only company until
+        // T3 copies the templates to every company (docs/multi-tenancy.md → Seed ve şablon).
+        scope.ServiceProvider.GetRequiredService<ITenantContext>().Use(Tenant.IthinkaId);
 
         await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync(includeSampleProjects: isDevelopment);
 

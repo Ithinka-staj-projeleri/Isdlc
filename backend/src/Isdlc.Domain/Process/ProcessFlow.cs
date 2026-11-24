@@ -1,3 +1,4 @@
+using Isdlc.Domain.Common;
 using Isdlc.Domain.Projects;
 
 namespace Isdlc.Domain.Process;
@@ -7,12 +8,20 @@ namespace Isdlc.Domain.Process;
 /// Seed/flows/*.json; not edited by users. Every record (Project) follows one flow.
 /// Rules: docs/process-api.md → "Akışlar".
 /// </summary>
-public class ProcessFlow
+public class ProcessFlow : ITenantOwned
 {
     public int Id { get; set; }
 
+    public int TenantId { get; set; }
+
     /// <summary>e.g. "new-software-project", unique. Seed files and code find a flow by this.</summary>
     public string Code { get; set; } = string.Empty;
+
+    /// <summary>The template (Seed/ file code) this copy came from; empty for a record the company added itself.</summary>
+    public string? TemplateCode { get; set; }
+
+    /// <summary>The company changed this copy; the startup sync no longer follows the template (docs/multi-tenancy.md → Seed).</summary>
+    public bool IsCustomized { get; set; }
 
     public string Name { get; set; } = string.Empty;
 
