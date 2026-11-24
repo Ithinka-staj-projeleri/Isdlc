@@ -1,3 +1,4 @@
+using Isdlc.Application.Assessment;
 using Isdlc.Application.Common;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
@@ -66,7 +67,7 @@ public class QuestionnaireService(IApplicationDbContext dbContext, ICurrentUserS
             form?.ApprovedOn,
             items,
             QuestionnaireRules.Summarize(items),
-            Result: null);
+            ResultOf(set, items, project));
     }
 
     public async Task<QuestionnaireDto> SaveAsync(
@@ -156,18 +157,31 @@ public class QuestionnaireService(IApplicationDbContext dbContext, ICurrentUserS
         }
     }
 
-    /// <summary>What a new form takes from the project. 404 when there is no such project.</summary>
-    private async Task<(string WorkType, RequestSource Source)> GetProjectAsync(int projectId, CancellationToken cancellationToken)
+    /// <summary>The form's own result (docs/assessment-api.md → Sonuçlar); null for the forms without one.</summary>
+    private static object? ResultOf(QuestionSetRef set, IReadOnlyList<QuestionnaireItemDto> items, ProjectForForm project) =>
+        set.Dto.Code switch
+        {
+            LevelRules.SetCode => LevelRules.Calculate(items, ScoreBands.Parse(set.Bands), project.Level, project.ResearchDays),
+            CustomerFitRules.SetCode => CustomerFitRules.Calculate(items, ScoreBands.Parse(set.Bands)),
+            _ => null,
+        };
+
+    /// <summary>What a form takes from the project. 404 when there is no such project.</summary>
+    private async Task<ProjectForForm> GetProjectAsync(int projectId, CancellationToken cancellationToken)
     {
         var project = await dbContext.Projects
             .AsNoTracking()
             .Where(p => p.Id == projectId)
-            .Select(p => new { p.Source, FlowCode = p.ProcessFlow.Code })
+            .Select(p => new { p.Source, FlowCode = p.ProcessFlow.Code, p.Level, p.ResearchDays })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
 
-        return (QuestionnaireRules.WorkTypeFor(project.FlowCode), project.Source);
+        return new ProjectForForm(
+            QuestionnaireRules.WorkTypeFor(project.FlowCode), project.Source, project.Level, project.ResearchDays);
     }
+
+    /// <summary>The project's flow (work type) and request source, and the level applied to it.</summary>
+    private sealed record ProjectForForm(string WorkType, RequestSource Source, int? Level, int? ResearchDays);
 
     /// <summary>The project's form for the set; a new one (not yet added) taking the project's flow and request source.</summary>
     private async Task<Questionnaire> LoadOrAddAsync(int projectId, QuestionSetRef set, CancellationToken cancellationToken)

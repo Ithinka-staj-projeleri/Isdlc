@@ -96,7 +96,7 @@ export class ProjectDetailComponent {
     { key: 'timeline', label: 'Zaman Çizelgesi' },
     { key: 'request-analysis', label: 'Talep Analizi' },
     { key: 'add-ons', label: 'Ek Geliştirmeler' },
-    { key: 'assessment', label: 'Seviye & Kabul' },
+    { key: 'assessment', label: 'Seviye & Uygunluk' },
     { key: 'requirements', label: 'Gereksinimler' },
     { key: 'documents', label: 'Dokümanlar' },
     { key: 'risks', label: 'Riskler' },

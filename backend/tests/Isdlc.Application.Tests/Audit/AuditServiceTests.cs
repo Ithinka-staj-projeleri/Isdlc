@@ -10,7 +10,8 @@ using Isdlc.Application.Meetings.Dtos;
 using Isdlc.Application.Requirements;
 using Isdlc.Application.Requirements.Dtos;
 using Isdlc.Application.Tests.Common;
-using Isdlc.Domain.Assessment;
+using Isdlc.Domain.Projects;
+using Isdlc.Domain.QuestionBank;
 using Isdlc.Domain.Audit;
 using Isdlc.Domain.Documents;
 using Isdlc.Domain.Meetings;
@@ -166,7 +167,7 @@ public class AuditServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task List_RiskHasItsCode_AssessmentHasNone()
+    public async Task List_RiskHasItsCode_QuestionnaireHasNone()
     {
         var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await TestProjects.UserIdAsync(database, TestProjects.Developer);
@@ -177,18 +178,25 @@ public class AuditServiceTests(DatabaseFixture database)
                 ProjectId = projectId, Code = "RSK-001", Title = "ERP gecikmesi", Category = RiskCategory.Technical,
                 Probability = 4, Impact = 5, OwnerUserId = developerId,
             });
-            db.ProjectAssessments.Add(new ProjectAssessment { ProjectId = projectId, Effort = 2 });
+            db.Questionnaires.Add(new Questionnaire
+            {
+                ProjectId = projectId,
+                QuestionSetId = await db.QuestionSets.Where(s => s.Code == "level").Select(s => s.Id).SingleAsync(),
+                WorkType = "new-software-project",
+                Subcategory = RequestSource.Internal,
+                Participants = "Elif Yılmaz",
+            });
             await db.SaveChangesAsync();
         });
 
         var risk = Assert.Single((await ListAsync(projectId, "Risk")).Items);
-        var assessment = Assert.Single((await ListAsync(projectId, "ProjectAssessment")).Items);
+        var form = Assert.Single((await ListAsync(projectId, "Questionnaire")).Items);
 
         Assert.Equal("RSK-001", risk.RecordCode);
         Assert.Equal("Can Öztürk", NewValueOf(risk, "OwnerUserId"));
-        // One assessment per project and no code of its own (docs/audit-api.md).
-        Assert.Null(assessment.RecordCode);
-        Assert.Equal("2", NewValueOf(assessment, "Effort"));
+        // One form per set and project, with no code of its own (docs/audit-api.md).
+        Assert.Null(form.RecordCode);
+        Assert.Equal("Elif Yılmaz", NewValueOf(form, "Participants"));
     }
 
     // ---- Filter, paging and project boundary ----

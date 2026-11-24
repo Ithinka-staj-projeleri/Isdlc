@@ -3,7 +3,7 @@
 Faz 0'ın temel entity'leri (`ProcessStage`, `ProcessStep`, `User`, `Project`, `StepRecord`), denetim kaydı
 ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
 Kaynak: "ISDLC Analiz Merkezi" prototipi.
-Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **uygulandı**; `Notification` (Faz 3) **uygulandı**; soru bankası (Faz 4 · B1) **taslak, ekip onayı bekliyor**; tutanak ve ziyaret alanları (Faz 4 · E4) **taslak, ekip onayı bekliyor**; süreç iyileştirme (Faz 4 · E5) **taslak, ekip onayı bekliyor.**
+Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **kaldırıldı** (Faz 4 · B2); `Notification` (Faz 3) **uygulandı**; soru bankası (Faz 4 · B1) **taslak, ekip onayı bekliyor**; tutanak ve ziyaret alanları (Faz 4 · E4) **taslak, ekip onayı bekliyor**; süreç iyileştirme (Faz 4 · E5) **taslak, ekip onayı bekliyor.**
 
 İsimlendirme AGENTS.md'ye uyar: entity tekil, tablo çoğul; `?` alanın boş bırakılabileceğini (nullable) gösterir.
 
@@ -28,14 +28,13 @@ Project      1 ──── * Requirement
 Project      1 ──── * ProjectDocument * ── 1 DocumentType
 ProcessStage 1 ──── * DocumentType        (dokümanın ilk hazırlandığı aşama)
 Project      1 ──── * Risk
-Project      1 ──── 0..1 ProjectAssessment (seviye cevapları ve kabul puanları)
 User         1 ──── * Notification        (UserId: alıcı)
 Project      1 ──── * Notification        (bildirimin ilgili olduğu proje)
 User         1 ──── * Risk                (OwnerUserId: sorumlu ekip üyesi)
 ```
 
 - **Ana veri:** `ProcessFlow`, `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `DocumentType`. Seed ile yüklenir, kullanıcı tarafından değiştirilmez.
-- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`, `Notification`. Uygulama kullanıldıkça oluşur.
+- **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `Notification`. Uygulama kullanıldıkça oluşur.
 
 ## Ortak temel sınıf: `AuditableEntity`
 
@@ -372,32 +371,12 @@ API sözleşmesi: [risks-api.md](risks-api.md).
 - Veritabanında `Probability` ve `Impact` için 1–5 kontrolü (check constraint) bulunur.
 - Kapatılan risk yeniden açılabilir (`Open`).
 
-### `ProjectAssessment` — seviye belirleme ve proje kabul puanlaması (akış 2.4 ve 3.1)
+### Seviye ve müşteri uygunluğu (Faz 4 · B2)
 
-API sözleşmesi, sorular ve ağırlıklar: [assessment-api.md](assessment-api.md).
-
-| Alan | Tür | Not |
-| --- | --- | --- |
-| `Id` | int | |
-| `ProjectId` | int (FK → Project) | Benzersiz: projenin tek değerlendirmesi |
-| `Effort` | int? | Seviye sorusu, 1–3; boş = cevaplanmadı |
-| `ScreensAndModules` | int? | Seviye sorusu, 1–3 |
-| `Integrations` | int? | Seviye sorusu, 1–3 |
-| `UserRoles` | int? | Seviye sorusu, 1–3 |
-| `DataSensitivity` | int? | Seviye sorusu, 1–3 |
-| `HardwareDependency` | int? | Seviye sorusu, 1–3 |
-| `StrategicFit` | int? | Kabul ölçütü, 1–5 (%20) |
-| `CommercialValue` | int? | Kabul ölçütü, 1–5 (%20) |
-| `TechnicalFeasibility` | int? | Kabul ölçütü, 1–5 (%20) |
-| `ResourceAndSchedule` | int? | Kabul ölçütü, 1–5 (%15) |
-| `CustomerFit` | int? | Kabul ölçütü, 1–5 (%15) |
-| `RiskLevel` | int? | Kabul ölçütü, 1–5 (%10); yüksek puan = düşük risk |
-| + `AuditableEntity` alanları | | |
-
-- Kendi `Code`'u yoktur; projenin bir parçası olarak görünür. İlk cevap kaydedilince oluşur, silinmez.
-- **Puan, önerilen seviye, ağırlıklı ortalama ve öneri saklanmaz**, cevaplardan hesaplanır.
-- Uygulanan seviye `Project.Level`'de tutulur; cevaplar değişince kendiliğinden değişmez.
-- Veritabanında her seviye sorusu için 1–3, her kabul ölçütü için 1–5 kontrolü (check constraint) bulunur.
+Faz 1'deki `ProjectAssessment` tablosu (6 seviye sorusu ve 6 kabul ölçütü) **kaldırıldı** (migration `RemoveProjectAssessmentsTable`).
+Seviye Belirleme Şablonu (`level`) ve Müşteri Uygunluk Anketi (`customer-fit`) soru bankasında tutulur (`Questionnaire`, `QuestionAnswer`).
+Sonuçlar saklanmaz, cevaplardan ve formun eşiklerinden (`QuestionSet.Bands`) hesaplanır. Uygulanan seviye `Project.Level`,
+araştırma süresi `Project.ResearchDays`'te tutulur; cevaplar değişince kendiliğinden değişmez. Ayrıntılar: [assessment-api.md](assessment-api.md).
 - `IAudited` ve `IProjectRecord` taşır; cevap değişiklikleri denetim kaydına projesiyle yazılır.
 
 ## Bildirimler (Faz 3)
@@ -505,7 +484,7 @@ Sözleşme: [process-improvement-api.md](process-improvement-api.md).
 | `QuestionRequirement` | `Required` (Zorunlu), `Conditional` (Duruma bağlı) |
 | `OptionMeaning` | `Complete`, `Partial`, `Open`, `Negative`, `NotApplicable`; formlardaki karşılıkları: [question-bank-api.md](question-bank-api.md) → Kavramlar |
 | `AnswerMode` | `SharedOptions` (seçenekler setin), `QuestionOptions` (her sorunun kendi seçenekleri) |
-| `AcceptanceRecommendation` | `Accept` (Kabul önerilir, ≥ 3,50), `Conditional` (Koşullu kabul, 2,50–3,49), `RejectOrPostpone` (Ret / erteleme önerilir, < 2,50). Saklanmaz, yalnızca DTO'da |
+| `CustomerFitRating` | `Fit` (Uygun, 85–100), `ConditionallyFit` (Şartlı uygun, 70–84), `Risky` (Riskli, 50–69), `NotFit` (Uygun değil, 0–49). Eşikler `customer-fit.json`'da. Saklanmaz, yalnızca DTO'da |
 | `ImprovementSource` | *(Faz 4 · E5)* `Retrospective` (Proje kapanışı / retrospektif), `DefectOrComplaint` (Hata, sapma, müşteri şikâyeti), `EmployeeSuggestion` (Çalışan önerisi), `ManagementGoal` (Yönetim hedefi) |
 | `ImprovementPriority` | *(Faz 4 · E5, saklanmaz)* `High` (Yüksek), `Medium` (Orta), `Low` (Düşük) |
 | `PilotResult` | *(Faz 4 · E5)* `Met` (Karşılandı), `PartiallyMet` (Kısmen karşılandı), `NotMet` (Karşılanmadı) |
@@ -551,8 +530,8 @@ Sözleşme: [process-improvement-api.md](process-improvement-api.md).
 14. Takip edilen dokümanlar seviyeye bağlı değildir; projede gerekmeyen doküman `NotRequired` işaretlenir.
 15. *(Taslak)* Risk skoru ve seviyesi saklanmaz, olasılık ve etkiden hesaplanır; riskin sorumlusu yalnızca ekip üyesidir.
     Ayrıntılar ve onay bekleyen diğer kararlar: [risks-api.md](risks-api.md) → "Ekip onayı bekleyen kararlar".
-16. *(Taslak)* Seviye cevapları ve kabul puanları projenin tek `ProjectAssessment` satırında sütun olarak tutulur;
-    seviye yalnızca "Seviyeyi uygula" ile `Project.Level`'e yazılır. Ayrıntılar: [assessment-api.md](assessment-api.md) → "Ekip onayı bekleyen kararlar".
+16. *(Faz 4 · B2 ile değişti)* Seviye ve uygunluk formları soru bankasında tutulur (`ProjectAssessment` kaldırıldı);
+    seviye yalnızca "Seviyeyi uygula" ile `Project.Level`'e yazılır. Ayrıntılar: [assessment-api.md](assessment-api.md).
 17. *(Taslak)* Bildirimler kişi başına satırdır; gönderen modüller `INotificationService`'i değiştirmeden kullanır.
     Ayrıntılar: [notifications-api.md](notifications-api.md) → "Ekip onayı bekleyen kararlar".
 18. *(Faz 4)* Akışlar veri olarak tutulur (`ProcessFlow`); her kayıt tek bir akışı izler. Akışlar şirketin beş akışıdır;

@@ -25,7 +25,7 @@ export const AUDIT_ENTITY_LABELS: Record<AuditEntityType, string> = {
     Requirement: 'Gereksinim',
     ProjectDocument: 'Doküman',
     Risk: 'Risk',
-    ProjectAssessment: 'Seviye & Kabul',
+    ProjectAssessment: 'Seviye & Kabul (eski form)',
 };
 
 /**

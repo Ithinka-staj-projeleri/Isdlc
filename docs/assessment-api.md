@@ -4,7 +4,7 @@
 **doküman seviyesi** (5. adım). İkisi de soru bankasının formlarıyla doldurulur ([question-bank-api.md](question-bank-api.md));
 bu modül formların **sonucunu** hesaplar ve seviyeyi projeye uygular. Sorumlu: Baran. Plan: [phase-4-plan.md](phase-4-plan.md) → B2.
 
-Durum: sözleşme **onaylandı** (#130); seed ve `Project.ResearchDays` uygulandı (2. adım). Faz 1'deki sürüm (6 soruluk seviye ve 6 ölçütlü kabul puanlaması; #96–#98) bu sözleşmeyle
+Durum: sözleşme **onaylandı** (#130); seed ve `Project.ResearchDays` (2. adım), kurallar, API ve ekran (3. ve 4. adım, tek PR) uygulandı. Faz 1'deki sürüm (6 soruluk seviye ve 6 ölçütlü kabul puanlaması; #96–#98) bu sözleşmeyle
 **kalkar**; yerine şirketin kendi formları gelir.
 
 Bütün uç noktalar AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin, hatalar `ProblemDetails`, JSON alanları camelCase.
@@ -121,7 +121,7 @@ B2'nin API PR'ında, panelin derlenmeye devam etmesi için satırdaki `weightedS
 | Katman | Dosyalar |
 | --- | --- |
 | `Isdlc.Domain/Assessment/` | `CustomerFitRating` (`ProjectAssessment` ve `AcceptanceRecommendation` kalkar) |
-| `Isdlc.Application/Assessment/` | `IAssessmentService` (`ApplyLevelAsync`), `LevelRules`, `CustomerFitRules` (saf; eşikleri `QuestionSet.Bands`'den okur), sonuç DTO'ları |
+| `Isdlc.Application/Assessment/` | `IAssessmentService` (`ApplyLevelAsync`), `LevelRules`, `CustomerFitRules`, `ScoreBands` (saf; eşikleri `QuestionSet.Bands`'den okur), sonuç DTO'ları |
 | `Isdlc.Application/QuestionBank/` | `QuestionnaireService`, `result`'u setin kural sınıfından alır (`level` → `LevelRules`, `customer-fit` → `CustomerFitRules`, diğerleri null) |
 | `Isdlc.Infrastructure/Seed/question-sets/` | `customer-fit.json` |
 | `Isdlc.Api/Controllers/` | `AssessmentController` (yalnızca `apply-level`) |
@@ -139,8 +139,10 @@ B2'nin API PR'ında, panelin derlenmeye devam etmesi için satırdaki `weightedS
 1. Bu doküman (ekip onayı)
 2. Seed (`customer-fit.json`) ve `Project.ResearchDays` (migration `AddProjectResearchDays`) ✅
 3. `LevelRules`, `CustomerFitRules` ve testleri; `result` alanı, `apply-level`; eski uç noktalar, gösterge paneli satırı ve
-   `ProjectAssessments` tablosunun kaldırılması (migration). Tablo eski kodla aynı PR'da kalkar; yoksa 2. adımda derleme kırılırdı
-4. Ekran: "Seviye & Uygunluk" sekmesi ve menü sayfası
+   `ProjectAssessments` tablosunun kaldırılması (migration `RemoveProjectAssessmentsTable`). Tablo eski kodla aynı PR'da kalkar; yoksa 2. adımda derleme kırılırdı ✅
+4. Ekran: "Seviye & Uygunluk" sekmesi ve menü sayfası ✅
+
+3. ve 4. adım **tek PR'da** yapıldı: eski uç noktalar kalkınca eski "Seviye & Kabul" sekmesi çalışmayacağı için main'de bozuk bir sekme kalmasın diye.
 
 ## Ekip onayı bekleyen kararlar
 
