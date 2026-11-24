@@ -380,6 +380,9 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
   denetim kaydı); API'de olduğu gibi oluşturan her zaman şirketin kendi kullanıcısıdır.
 - **Her modül için ayrım testi (T7):** Erva → Baran'ın modülleri uygulandı: `Tenants/RiskIsolationTests`,
   `QuestionBankIsolationTests`, `IdentityNotificationIsolationTests` (arama ve kişi profili: #163).
+  Dide → Erva'nın modülleri uygulandı: `Tenants/OpenIssueMeetingIsolationTests` (açık konular, tutanaklar),
+  `ProcessIsolationTests` (akış kopyaları, süreç, "Hayır" dönüşü, süreç iyileştirme ve `SI-` sayacı),
+  `AuditAgentIsolationTests` (Kayıt Geçmişi, zaman çizelgesi, yapay zekâ yardımcıları).
   1. B şirketinin kullanıcısı A'nın kaydını listede görmez, detayında `404` alır, güncelleyemez.
   2. B, A'nın kullanıcısını sorumlu / analist / yönetici seçemez (mevcut "aktif kullanıcı değil" mesajı).
   3. İki şirkette sayaçlar ayrı ilerler (ikisinin de 1 numaralı projesi olur).

@@ -337,11 +337,13 @@ public class SearchServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Search_ImprovementCode_FindsTheProposal()
     {
-        var word = NewWord();
+        // A unique code that is still a number: "SI-<letters>" would count as the highest proposal code ("longer first")
+        // and leave every later proposal of the shared database without a number (409).
+        var code = $"SI-{Random.Shared.Next(900_000_000, 999_999_999)}";
         var proposalId = await TestProjects.CreateAsync(database, null, flowCode: ProcessFlowCodes.ProcessImprovement);
-        await SetProjectAsync(proposalId, code: $"SI-{word}");
+        await SetProjectAsync(proposalId, code: code);
 
-        var result = await SearchAsync($"SI-{word}");
+        var result = await SearchAsync(code);
 
         Assert.Equal(proposalId, Assert.Single(result.Improvements.Items).Id);
     }
