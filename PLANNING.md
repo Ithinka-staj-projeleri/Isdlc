@@ -24,7 +24,11 @@ entity, API ve ekranını uçtan uca yazar.
 | **3 — Bitiriş** | `Audit` ekranı + uçtan uca demo senaryosu | `Dashboard` | `Notifications` |
 | **4 — Şirket akışları** (kapatıldı) | Toplantı ve ziyaret tutanakları, süreç iyileştirme | Akış altyapısı, akış seed'leri, talep analizi; talepler, ret / erteleme, ek geliştirme | Soru bankası, seviye ve uygunluk |
 | **5 — Takım çalışması** (öneri) | Zaman çizelgesi, tutanak aksiyonları, ses kaydından tutanak, e-postadan talep, demo | Proje özeti, panel eklemeleri | Genel arama, bağlantıyı kopyala, kişi profili |
-| **6 — Çok şirketli yapı** (öneri) | Şirket başına seed, yapay zekâ ayarları, belgeler ve demo | Sözleşme, ayrım altyapısı (`TenantId`, filtre, migration) | Platform ve şirket yönetimi, yönetim ekranları |
+| **6 — Çok şirketli yapı** (öneri) | Sözleşme, şirket başına seed, yapay zekâ ayarları, belgeler ve demo | Ayrım altyapısı (`TenantId`, filtre, migration) | Platform ve şirket yönetimi, yönetim ekranları |
+| **7 — Ayarlanabilirlik** (yol haritası) | Faz 6 biterken planlanır | | |
+| **8+ — Entegrasyonlar** (yol haritası) | Faz 7 biterken planlanır | | |
+
+Faz 6'dan sonraki yön ve gerekçesi: Bölüm 6 (Yol haritası).
 
 ### Faz 0 — Ortak temel
 
@@ -164,3 +168,46 @@ Ekip, komut satırındaki denemenin ardından toplantı ajanını MVP'ye almayı
   risk formunda "Yapay zekâ ile puan ve aksiyon öner". Öneriler risk formunu doldurur; kaydeden yine kişidir.
 - **Sonraya kalanlar:** `AgentRun` / `AgentSuggestion` tabloları ve öneri paneli, diğer ajan tipleri.
 - **Yalnızca sahte veriyle** çalışılır; model sağlayıcısı ve şirketin veri gönderme izni ayrıca kararlaştırılacak.
+
+## 6. Yol haritası ve yön kararları
+
+23 Kasım 2026'da alınan karar. Durum: **ekip onayı bekliyor.**
+
+### Karar: yeni proje değil, bu projeyi dönüştürmek
+
+Hedef üç şeyi birlikte karşılamak: şirketin kendi akışlarına uyum, başka şirketlere ve onların akışlarına uyum, ileride
+iş analizinden geliştirmeye (kodlama) bağlanabilmek. Bunun için yeni bir projeye başlanmaz; bu proje bir yöne doğru dönüştürülür:
+**"bir şirketin iş analizi aracı" → "şirketlerin kendi süreçlerini tanımladığı iş analizi platformu".**
+
+**Neden:**
+- Asıl zor parça hazır ve geneldir: akışlar veriden çalışıyor (aşama, adım, rol, Evet/Hayır, dönüş, koşullu atlama).
+  Başka bir şirketin akışı da bir JSON dosyasıdır.
+- Giriş, yetki, denetim kaydı, bildirim, kayıt modülleri (risk, gereksinim, açık konu, tutanak, doküman) ve yapay zekâ
+  servisi her şirkette aynıdır; yeniden yazmanın getirisi yoktur.
+- Yaklaşık 1000 backend testi ve CI, bugün çalışan davranışın güvencesidir; yeniden yazmada en çok kaybedilen şey budur.
+- Başka şirketlere uyarlamayı engelleyen noktalar belli ve sınırlıdır: sabit 6 rol, üç tür atlama koşulu, bu şirketin
+  formlarına göre yazılmış alanlar ve tek şirketli yapı. Her biri ayrı bir fazda değiştirilebilir; yeni projede de aynı
+  sorunlar çözülmek zorunda kalırdı.
+
+**Ne zaman yeniden düşünülür:** ürünün hedefi iş analizi olmaktan çıkıp Volobox gibi genel bir "her işi yapan yapay zekâ
+çalışma alanı"na dönüşürse. Bu, ayrı bir ürün ve ayrı bir ekip ölçeği demektir.
+
+### İlkeler
+
+1. **Çekirdek her şirkette aynıdır; şirkete özel olan her şey veridir.** Rol, akış, atlama koşulu, form alanı, soru listesi
+   ve doküman türü koda gömülmez; şablon ve şirket verisi olarak tutulur. Bu şirketin akışları "ilk şablon"dur.
+2. **Büyük yetenekler çekirdeğe gömülmez, yanına servis olarak eklenir.** `ai/` servisinde olduğu gibi: çekirdek "ne
+   yapılacak, kim onayladı" sorusunu yönetir; kodlama, sandbox, deploy gibi işler ayrı servis ya da hazır araçla
+   (GitHub, Azure DevOps, Volobox) entegrasyon olur. Çekirdek iş verir ve sonucu (PR bağlantısı, durum) geri yazar.
+3. **Her faz çalışan bir ürünle biter.** Dönüşüm bir kerede yapılmaz; her faz sonunda uygulama bugünkü şirket için
+   çalışmaya devam eder ve testler yeşil kalır.
+
+### Fazlar
+
+| Faz | Kapsam | Sonunda |
+| --- | --- | --- |
+| **6 — Çok şirketli yapı** | `TenantId`, global filtre, şirket başına şablon kopyası, Platform ve Şirket Yöneticisi ([phase-6-plan.md](docs/phase-6-plan.md)) | Aynı kurulumda birbirinden ayrı birden fazla şirket |
+| **7 — Şirkete göre ayarlanabilirlik** | Roller veriye (şirketin tanımladığı roller; adımın sorumlu ve onaylayan rolü bunlardan seçilir). Atlama koşulları sabit üç alan yerine kayıt alanlarına bakan kurallar olarak tanımlanır. Akış düzenleme ekranı (aşama ve adım ekleme, çıkarma, sıralama; migration gerekmez). Formlara şirkete özel ek alanlar (tanımı şirket verisinde, değeri kayıtta). Şirket başına yapay zekâ modeli ve kullanım takibi | Başka bir şirket kendi akışını, rollerini ve form alanlarını kod değişmeden kurar; bu şirketin akışları da aynı motorda bir şablon olur |
+| **8 ve sonrası — Entegrasyonlar** | GitHub / Azure DevOps bağlantısı; akış adımından iş (issue, görev) açma ve durumunu geri okuma; kodlama ajanı ayrı servis olarak; e-posta ve takvim bağlantıları | İş analizinden geliştirmeye kesintisiz geçiş |
+
+Faz 7 ve sonrasının iş listesi ve sorumluları, bir önceki faz biterken o fazın plan dosyasında (`docs/phase-N-plan.md`) yazılır.
