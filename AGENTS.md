@@ -329,6 +329,7 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
     Şirketi Ithinka'dır; başka şirket için `new TestUser(id, tenantId)`.
   - **Şirket:** `database.CreateScope()` Ithinka olarak çalışır. Başka şirket için `database.CreateScope(tenantId)`:
     o kapsamdaki DbContext yalnızca o şirketi görür ve yeni kaydı ona yazar. Filtre `TestUser`'a değil kapsama bakar.
+    Kapsam, kayıtları (oluşturan, güncelleyen, denetim kaydı) o şirketin ilk aktif kullanıcısı olarak kaydeder.
     `TestUsers.CreateAsync(…, tenantId: …)` başka şirkete kullanıcı açar. Şirketler arası ayrım testleri `Tenants/` altındadır.
   - **İkinci şirket:** fixture Ithinka'nın yanında **Deneme A.Ş.**'yi açar (`database.DenemeId`); açılış seed'i ona şablonları
     verir, kullanıcıları `TestTenants`'tadır (`TestTenants.DenemeAnalyst` vb.). Ayrıca seed'in atlaması gereken pasif bir şirket

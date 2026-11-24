@@ -376,7 +376,10 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
 - `TestUser` şirket alır: `new TestUser(userId, tenantId)`. Bu, servisin `ICurrentUserService.TenantId`'yi okuduğu yerler
   içindir; kapsamın şirketiyle aynı verilir.
 - `TestProjects.CreateAsync(database, "4", tenantId: …)` ve `TestUsers.CreateAsync(…, tenantId: …)`.
-- **Her modül için ayrım testi (T7):**
+- `database.CreateScope(tenantId)` kayıtları o şirketin ilk aktif kullanıcısı olarak kaydeder (oluşturan, güncelleyen,
+  denetim kaydı); API'de olduğu gibi oluşturan her zaman şirketin kendi kullanıcısıdır.
+- **Her modül için ayrım testi (T7):** Erva → Baran'ın modülleri uygulandı: `Tenants/RiskIsolationTests`,
+  `QuestionBankIsolationTests`, `IdentityNotificationIsolationTests` (arama ve kişi profili: #163).
   1. B şirketinin kullanıcısı A'nın kaydını listede görmez, detayında `404` alır, güncelleyemez.
   2. B, A'nın kullanıcısını sorumlu / analist / yönetici seçemez (mevcut "aktif kullanıcı değil" mesajı).
   3. İki şirkette sayaçlar ayrı ilerler (ikisinin de 1 numaralı projesi olur).
