@@ -45,6 +45,7 @@ public static class DependencyInjection
 
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<QuestionSetSeeder>();
+        services.AddScoped<ITenantTemplates, TenantTemplates>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddScoped<UserPasswordSeeder>();
 

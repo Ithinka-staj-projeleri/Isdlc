@@ -6,7 +6,9 @@ using Microsoft.Extensions.Logging;
 namespace Isdlc.Infrastructure.QuestionBank;
 
 /// <summary>
-/// Loads Seed/question-sets/*.json at start-up and keeps the database in line with them (docs/question-bank-api.md → Seed):
+/// Loads Seed/question-sets/*.json into the company in ITenantContext and keeps its copies in line with them
+/// (docs/question-bank-api.md → Seed; docs/multi-tenancy.md → Seed ve şablon). Sets are matched by template code; a set the
+/// company changed (IsCustomized) is left as it is.
 /// sets, questions and options are matched by their permanent keys; texts are updated in place, new ones are added,
 /// a question that left the file becomes inactive (never deleted, so its answers stay). Runs on every start; an unchanged
 /// database is not written to. Wrong files stop the start-up before anything is written.
@@ -23,19 +25,31 @@ public class QuestionSetSeeder(IsdlcDbContext db, ILogger<QuestionSetSeeder> log
                 "Question set files are not valid:" + Environment.NewLine + string.Join(Environment.NewLine, errors));
         }
 
-        var sets = await db.QuestionSets
+        var all = await db.QuestionSets
             .Include(s => s.Options)
             .Include(s => s.Questions)
-            .ToDictionaryAsync(s => s.Code, cancellationToken);
+            .ToListAsync(cancellationToken);
+        var sets = all.Where(s => s.TemplateCode is not null).ToDictionary(s => s.TemplateCode!);
 
         var changes = 0;
         foreach (var file in files)
         {
             if (!sets.TryGetValue(file.Code, out var set))
             {
+                if (all.Any(s => s.Code == file.Code))
+                {
+                    // The company made a set of its own with the template's code; its own set wins.
+                    logger.LogWarning("Question set template {Code} is not copied: the company has its own set with that code.", file.Code);
+                    continue;
+                }
+
                 set = new QuestionSet { Code = file.Code, TemplateCode = file.Code };
                 db.QuestionSets.Add(set);
                 changes++;
+            }
+            else if (set.IsCustomized)
+            {
+                continue;
             }
 
             changes += SyncSet(set, file);

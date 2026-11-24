@@ -1,4 +1,5 @@
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Domain.Identity;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 using Microsoft.EntityFrameworkCore;
@@ -20,16 +21,17 @@ public static class TestProjects
 
     /// <summary>
     /// A new project. Active and waiting at the given step, or closed with the given status (no current step).
-    /// The analyst is Elif Yılmaz and the project manager Ayşe Demir.
+    /// The analyst is Elif Yılmaz and the project manager Ayşe Demir; in another company (tenantId) its first
+    /// Business Analyst and Project Manager, and the company's copy of the flow.
     /// By default an internal request with an offer in the new software project flow; the other values are
     /// for tests of conditional steps (docs/process-api.md → "Adım koşulları") and of the other flows.
     /// </summary>
     public static async Task<int> CreateAsync(
         DatabaseFixture database, string? stepCode, ProjectStatus status = ProjectStatus.Active,
         RequestSource source = RequestSource.Internal, bool requiresOffer = true, int? level = null,
-        string flowCode = ProcessFlowCodes.NewRequest)
+        string flowCode = ProcessFlowCodes.NewRequest, int? tenantId = null)
     {
-        await using var scope = database.CreateScope();
+        await using var scope = Scope(database, tenantId);
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
 
         var project = new Project
@@ -43,13 +45,17 @@ public static class TestProjects
             RequestType = RequestType.NewProject,
             CustomerName = "Test",
             RequesterName = "Test",
-            BusinessAnalystId = await UserIdAsync(database, Analyst),
-            ProjectManagerId = await UserIdAsync(database, ProjectManager),
+            BusinessAnalystId = tenantId is null
+                ? await UserIdAsync(database, Analyst)
+                : await FirstUserIdAsync(db, UserRole.BusinessAnalyst),
+            ProjectManagerId = tenantId is null
+                ? await UserIdAsync(database, ProjectManager)
+                : await FirstUserIdAsync(db, UserRole.ProjectManager),
             Level = level,
             Status = status,
-            ProcessFlowId = await FlowIdAsync(database, flowCode),
+            ProcessFlowId = await FlowIdAsync(database, flowCode, tenantId),
             RequiresOffer = requiresOffer,
-            CurrentStepId = stepCode is null ? null : await StepIdAsync(database, stepCode, flowCode),
+            CurrentStepId = stepCode is null ? null : await StepIdAsync(database, stepCode, flowCode, tenantId),
             RequestDate = new DateOnly(2026, 11, 1),
         };
 
@@ -65,19 +71,20 @@ public static class TestProjects
         return await db.Projects.AsNoTracking().Include(p => p.CurrentStep).SingleAsync(p => p.Id == projectId);
     }
 
-    /// <summary>A flow by its code; by default the one new requests follow.</summary>
-    public static async Task<int> FlowIdAsync(DatabaseFixture database, string flowCode = ProcessFlowCodes.NewRequest)
+    /// <summary>A flow by its code; by default the one new requests follow. In another company: its copy.</summary>
+    public static async Task<int> FlowIdAsync(
+        DatabaseFixture database, string flowCode = ProcessFlowCodes.NewRequest, int? tenantId = null)
     {
-        await using var scope = database.CreateScope();
+        await using var scope = Scope(database, tenantId);
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         return await db.ProcessFlows.Where(f => f.Code == flowCode).Select(f => f.Id).SingleAsync();
     }
 
     /// <summary>A step of a flow (step codes repeat across flows); by default of the flow new requests follow.</summary>
     public static async Task<int> StepIdAsync(
-        DatabaseFixture database, string stepCode, string flowCode = ProcessFlowCodes.NewRequest)
+        DatabaseFixture database, string stepCode, string flowCode = ProcessFlowCodes.NewRequest, int? tenantId = null)
     {
-        await using var scope = database.CreateScope();
+        await using var scope = Scope(database, tenantId);
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         return await db.ProcessSteps
             .Where(s => s.Code == stepCode && s.ProcessFlow.Code == flowCode)
@@ -85,12 +92,19 @@ public static class TestProjects
             .SingleAsync();
     }
 
-    public static async Task<int> UserIdAsync(DatabaseFixture database, string email)
+    /// <summary>A user by e-mail; a user of another company is found only with its tenantId (the query filter).</summary>
+    public static async Task<int> UserIdAsync(DatabaseFixture database, string email, int? tenantId = null)
     {
-        await using var scope = database.CreateScope();
+        await using var scope = Scope(database, tenantId);
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         return await db.Users.Where(u => u.Email == email).Select(u => u.Id).SingleAsync();
     }
+
+    private static AsyncServiceScope Scope(DatabaseFixture database, int? tenantId) =>
+        tenantId is { } id ? database.CreateScope(id) : database.CreateScope();
+
+    private static Task<int> FirstUserIdAsync(IApplicationDbContext db, UserRole role) =>
+        db.Users.Where(u => u.Role == role && u.IsActive).OrderBy(u => u.Id).Select(u => u.Id).FirstAsync();
 
     /// <summary>A seed project by its code (read-only use).</summary>
     public static async Task<int> SeedProjectIdAsync(DatabaseFixture database, string code)

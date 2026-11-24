@@ -258,6 +258,20 @@ değiştirir (Bölüm 2 → Sonraki migration'larda akış değişikliği). Soru
 Yöneticisi. `TenantService` şirket satırını kaydettikten sonra `ITenantContext`'i yeni şirkete ayarlar ve şablon kopyasını
 seed'in kullandığı kodla yapar. Biri başarısız olursa hiçbiri kaydedilmez.
 
+**Uygulandı (T3).** Ortak kod `ITenantTemplates.ApplyAsync()` (`Isdlc.Application/Common/Interfaces/`, uygulaması
+`Isdlc.Infrastructure/Tenants/TenantTemplates.cs`): akışlar ve doküman türleri (`DatabaseSeeder.SeedTemplatesAsync`), sonra
+soru setleri (`QuestionSetSeeder`). Kurallar:
+
+- `ITenantContext` boşsa hata verir; transaction açmaz, şirketi değiştirmez (ikisini çağıran yapar). T4'te `TenantService`:
+  şirket satırını kaydet → `ITenantContext.Use(yeniŞirket)` → `ApplyAsync()` → ilk yönetici, hepsi tek transaction'da.
+- Şablon ile kopya `TemplateCode` ile eşleşir. Kopya yoksa eklenir; `IsCustomized = false` ise dosyayla eşitlenir;
+  `IsCustomized = true` ise dokunulmaz.
+- Şirketin **kendi** kaydı şablonun koduyla aynı koda sahipse (`TemplateCode` boş) şablon kopyalanmaz, uyarı loglanır;
+  şirketin kaydı kazanır.
+- Doküman türleri şirketin `new-software-project` kopyasının aşamalarına bağlanır; o kopya yoksa doküman türleri atlanır.
+- Açılışta her şirket ayrı DI kapsamında ve ayrı transaction'da çalışır; bir şirketin hatası diğerine yarım kayıt bırakmaz.
+- Platform Yöneticisinin açılışta oluşturulması (4. adım) T4'tedir.
+
 ## 7. Uç noktalar
 
 Bütün yeni uç noktalar AGENTS.md Bölüm 7'deki ortak kurallara uyar.
@@ -341,7 +355,9 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
 
 ## 10. Testler
 
-- `DatabaseFixture` iki şirketle açılır: **Ithinka** (bugünkü seed) ve **Deneme A.Ş.** (şablon kopyası ve kendi kullanıcıları).
+- `DatabaseFixture` iki şirketle açılır: **Ithinka** (bugünkü seed) ve **Deneme A.Ş.** (şablon kopyası ve kendi kullanıcıları;
+  `database.DenemeId`, kullanıcılar `TestTenants`'ta). Fixture, Deneme'yi ve pasif bir şirketi (`database.InactiveTenantId`)
+  açtıktan sonra açılış seed'ini ikinci kez çalıştırır; böylece testler gerçek açılış döngüsünü sınar. Uygulandı (T3).
 - **Şirketi kapsam belirler:** `database.CreateScope(tenantId)`. Testler DbContext'i fixture'ın açtığı kapsamdan alır;
   filtrenin şirketi de bu kapsamdaki `ITenantContext`'ten gelir. Servise verilen `TestUser` filtreyi etkilemez (bugün
   fixture'da kullanıcı tek bir `FixtureCurrentUser`'dan geliyor). Bu yüzden şirket `TestUser`'a değil, kapsama verilir;
