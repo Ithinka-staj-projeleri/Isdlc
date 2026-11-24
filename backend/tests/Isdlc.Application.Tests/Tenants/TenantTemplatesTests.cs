@@ -95,11 +95,14 @@ public class TenantTemplatesTests(DatabaseFixture database)
     [Fact]
     public async Task Startup_DevelopmentDataStaysWithIthinka()
     {
-        // Deneme has only the users the fixture gave it and no sample projects.
+        // None of Seed/users.json and no sample project in Deneme. Other tests add their own users and "T-" projects to
+        // Deneme, so this looks for the seed's records instead of counting (AGENTS.md → Bölüm 9).
+        string[] seedEmails = [TestProjects.Analyst, TestProjects.Manager, TestProjects.ProjectManager, TestProjects.Developer, TestProjects.Sales];
         var denemeEmails = await InTenantAsync(database.DenemeId, db => db.Users.Select(u => u.Email).ToListAsync());
         var denemeHasSeedProjects = await InTenantAsync(database.DenemeId, db => db.Projects.AnyAsync(p => !p.Code.StartsWith("T-")));
 
-        Assert.Equal(TestTenants.DenemeUsers.Select(u => u.Email).Order(), denemeEmails.Order());
+        Assert.Empty(denemeEmails.Intersect(seedEmails));
+        Assert.Subset(denemeEmails.ToHashSet(), TestTenants.DenemeUsers.Select(u => u.Email).ToHashSet());
         Assert.False(denemeHasSeedProjects);
     }
 
