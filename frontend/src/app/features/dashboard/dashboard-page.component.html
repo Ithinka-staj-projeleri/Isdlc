@@ -228,7 +228,7 @@
       </section>
 
       <section class="card panel">
-        <h3>Kabul kararı bekleyen talepler <span class="count">{{ d.acceptanceQueue.totalCount }}</span></h3>
+        <h3>Uygunluk kararı bekleyen talepler <span class="count">{{ d.acceptanceQueue.totalCount }}</span></h3>
         @if (d.acceptanceQueue.items.length === 0) {
           <p class="empty">Kabul aşamasında bekleyen talep yok.</p>
         } @else {
@@ -244,15 +244,12 @@
                     </span>
                   </span>
                   <span class="side">
-                    @if (item.recommendation; as recommendation) {
-                      <span class="small muted">{{ formatScore(item.weightedScore) }}</span>
-                      <app-status-badge
-                        [label]="recommendationLabels[recommendation]"
-                        [tone]="recommendationTones[recommendation]"
-                      />
+                    @if (item.rating; as rating) {
+                      <span class="small muted">{{ item.score }} / 100</span>
+                      <app-status-badge [label]="fitLabels[rating]" [tone]="fitTones[rating]" />
                     } @else {
                       <span class="small muted">
-                        Puanlama eksik ({{ item.answeredCount }}/{{ acceptanceCriteriaCount }})
+                        Anket eksik ({{ item.answeredCount }}/{{ item.questionCount }})
                       </span>
                     }
                   </span>

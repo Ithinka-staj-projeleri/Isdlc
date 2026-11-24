@@ -1,20 +1,21 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
-import { rxResource, toSignal } from '@angular/core/rxjs-interop';
-import { Observable, catchError, of } from 'rxjs';
-import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
-import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
+import { QuestionnaireComponent } from '../../../shared/question-bank/questionnaire/questionnaire.component';
+import { Questionnaire } from '../../../shared/question-bank/question-bank.models';
 import { AssessmentService } from '../assessment.service';
-import { RECOMMENDATION_LABELS, RECOMMENDATION_TONES, ProjectAssessment } from '../models/assessment';
+import {
+    CUSTOMER_FIT_DESCRIPTIONS, CUSTOMER_FIT_LABELS, CUSTOMER_FIT_SET, CUSTOMER_FIT_TONES, CustomerFitResult, LEVEL_SECTION_TITLES,
+    LEVEL_SET, LevelResult, canApplyLevel, differsFromApplied,
+} from '../models/assessment';
 
 /**
- * Level questions (flow 2.4) and acceptance scoring (flow 3.1) of a project.
- * A click saves at once, like the paper form being filled in; clicking the chosen option again clears it.
- * Takes the project id, so the menu page and the project detail page can both show it.
+ * Seviye & Uygunluk (Faz 4 · B2): the customer fit survey (step 4, external requests only) and the level form (step 5),
+ * each with its result card. The forms are the shared app-questionnaire; every click saves at once.
+ * Takes the project id, so the menu page and the project detail page can both show it. Contract: docs/assessment-api.md
  */
 @Component({
     selector: 'app-project-assessment',
-    imports: [EmptyStateComponent, StatusBadgeComponent, LocalDatePipe],
+    imports: [QuestionnaireComponent, StatusBadgeComponent],
     templateUrl: './project-assessment.component.html',
     styleUrl: './project-assessment.component.scss',
 })
@@ -23,73 +24,54 @@ export class ProjectAssessmentComponent {
 
     readonly projectId = input.required<number>();
 
-    /** True when the project is not active: the assessment can be read but not changed. */
+    /** True when the project is not active: the forms can be read but not changed. */
     readonly readOnly = input(false);
 
-    /** After "Seviyeyi uygula", so the project page can show the new level. */
+    /** After "Seviyeyi projeye uygula", so the project page can show the new level. */
     readonly levelChanged = output<void>();
 
-    protected readonly recommendationLabels = RECOMMENDATION_LABELS;
-    protected readonly recommendationTones = RECOMMENDATION_TONES;
-    protected readonly acceptanceLevels = [1, 2, 3, 4, 5];
+    protected readonly levelSet = LEVEL_SET;
+    protected readonly fitSet = CUSTOMER_FIT_SET;
+    protected readonly sectionTitles = LEVEL_SECTION_TITLES;
+    protected readonly fitLabels = CUSTOMER_FIT_LABELS;
+    protected readonly fitTones = CUSTOMER_FIT_TONES;
+    protected readonly fitDescriptions = CUSTOMER_FIT_DESCRIPTIONS;
 
-    // A failed load shows a message; the error interceptor has already told the user why.
-    protected readonly definition = toSignal(
-        this.assessmentService.definition$.pipe(catchError(() => of(null))), { initialValue: undefined });
+    protected readonly level = signal<LevelResult | null>(null);
+    protected readonly fit = signal<CustomerFitResult | null>(null);
+    protected readonly applying = signal(false);
 
-    protected readonly assessment = rxResource({
-        params: () => this.projectId(),
-        stream: ({ params }) => this.assessmentService.get(params),
-    });
+    /** Internal and affiliated requests list no survey questions: the survey is not filled in. */
+    protected readonly fitListed = computed(() => (this.fit()?.listed ?? 0) > 0);
 
-    /** True while a click is being saved, so a second click cannot overtake the first. */
-    protected readonly saving = signal(false);
-
-    protected readonly levelQuestionCount = computed(() => this.definition()?.levelQuestions.length ?? 0);
-    protected readonly criterionCount = computed(() => this.definition()?.acceptanceCriteria.length ?? 0);
-
-    /** The suggested level can be applied: every question answered and it differs from the applied one. */
     protected readonly canApply = computed(() => {
-        const level = this.assessment.value()?.level;
-        return !this.readOnly() && !!level?.suggestedLevel && level.suggestedLevel !== level.appliedLevel;
+        const result = this.level();
+        return !this.readOnly() && !!result && canApplyLevel(result) && differsFromApplied(result);
     });
 
-    protected answerLevel(key: string, value: number): void {
-        const current = this.assessment.value();
-        if (!current) return;
-        const answers = { ...current.level.answers, [key]: current.level.answers[key] === value ? null : value };
-        this.save(this.assessmentService.saveLevelAnswers(this.projectId(), answers));
+    protected readonly differs = computed(() => {
+        const result = this.level();
+        return !!result && result.appliedLevel !== null && differsFromApplied(result);
+    });
+
+    protected onLevelChanged(form: Questionnaire): void {
+        this.level.set(form.result as LevelResult);
     }
 
-    protected scoreCriterion(key: string, value: number): void {
-        const current = this.assessment.value();
-        if (!current) return;
-        const scores = { ...current.acceptance.scores, [key]: current.acceptance.scores[key] === value ? null : value };
-        this.save(this.assessmentService.saveAcceptanceScores(this.projectId(), scores));
+    protected onFitChanged(form: Questionnaire): void {
+        this.fit.set(form.result as CustomerFitResult);
     }
 
     protected applyLevel(): void {
-        this.save(this.assessmentService.applyLevel(this.projectId()), () => this.levelChanged.emit());
-    }
-
-    /** 2 decimals with a comma, like the paper form: 3,70. */
-    protected formatScore(value: number): string {
-        return value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    private save(request: Observable<ProjectAssessment>, afterSave?: () => void): void {
-        this.saving.set(true);
-        request.subscribe({
-            next: result => {
-                this.assessment.set(result);
-                this.saving.set(false);
-                afterSave?.();
+        this.applying.set(true);
+        this.assessmentService.applyLevel(this.projectId()).subscribe({
+            next: form => {
+                this.level.set(form.result as LevelResult);
+                this.applying.set(false);
+                this.levelChanged.emit();
             },
-            // The error interceptor shows the message; reload so the screen shows what is really saved.
-            error: () => {
-                this.saving.set(false);
-                this.assessment.reload();
-            },
+            // The error interceptor shows the message.
+            error: () => this.applying.set(false),
         });
     }
 }

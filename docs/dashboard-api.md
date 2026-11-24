@@ -145,7 +145,7 @@ Mevcut alanlar değişmez; `DashboardDto`'ya yeni alanlar eklenir (ekran ve test
 | 10 | "Yüksek risk" nedir? | Kapanmamış (`Open`, `Monitoring`) ve seviyesi **Yüksek** olan risk: skor (olasılık × etki) 15 ve üstü. Eşik ve hesap Risks'teki `RiskRules`'tan alınır, panelde ayrıca yazılmaz; böylece Riskler sekmesiyle hep aynı sonucu verir |
 | 11 | Hangi projelerin riskleri sayılır? | Yalnızca **aktif** projeler (kapanmış projenin riski panelde uyarı vermez); `scope=mine` iken kullanıcının projeleri |
 | 12 | Seviye dağılımı neyi sayar? | Aktif kayıtları (talep + proje) `Project.Level`'e göre: Seviye 1 / 2 / 3 / **Belirlenmedi**. "Belirlenmedi" sayısı 2.4'te seviyesi uygulanmamış işleri gösterir |
-| 13 | "Kabul kararı bekleyen talepler" nedir? | Mevcut adımı **3.1 veya 3.2** olan aktif talepler (aşama 3: Proje Kabul). Her satırda kabul puanlamasının sonucu (ağırlıklı ortalama ve öneri) ya da "Puanlama eksik" yazar. Öneri Assessment'taki `AssessmentRules`'tan hesaplanır. İş analisti eksik puanlamayı, yönetici 3.2 kararını buradan görür |
+| 13 | "Uygunluk kararı bekleyen talepler" nedir? | Faz 4 · B2: mevcut adımı **4** (müşteri uygunluğu; yalnızca dış talepler bu adıma gelir) olan aktif talepler. Her satırda müşteri uygunluk anketinin puanı ve sonucu ya da "Anket eksik" yazar. Sonuç `CustomerFitRules` ve formun eşiklerinden hesaplanır, sekmeyle aynıdır. İş analisti 4. adımdaki kararı buradan görür. (Faz 1'deki 6 ölçütlü kabul puanlaması kalktı.) |
 | 14 | Kişiye özel mi? | Hayır; ikisi de genel bölümdür ve `scope`'a uyar. Kişiye özel karşılıkları zaten "Bana bekleyen adımlar"dadır (3.1 analistin, 3.2 yöneticinin listesinde) |
 
 ### DTO'ya eklenenler
@@ -181,10 +181,11 @@ Mevcut alanlar değişmez; `DashboardDto`'ya yeni alanlar eklenir (ekran ve test
     "items": [
       {
         "project": { "id": 7, "code": "ISDLC-2026-021", "name": "Saha Ekibi Stok Takibi" },
-        "stepCode": "3.2",
-        "weightedScore": 3.85,            // bütün ölçütler puanlanmadıysa null
-        "recommendation": "Accept",       // AcceptanceRecommendation; puanlama eksikse null
-        "answeredCount": 6,               // puanlanan ölçüt sayısı (0–6)
+        "stepCode": "4",
+        "score": 78,                      // müşteri uygunluk anketinin puanı (0–100)
+        "rating": "ConditionallyFit",     // CustomerFitRating; anket eksikse null
+        "answeredCount": 10,              // cevaplanan soru sayısı
+        "questionCount": 10,              // anketin soru sayısı
         "waitingSince": "2026-11-08T09:00:00Z"
       }
     ]
@@ -203,8 +204,8 @@ Mevcut alanlar değişmez; `DashboardDto`'ya yeni alanlar eklenir (ekran ve test
 - **Özet kartları:** yedinci kart **"Yüksek riskler"**; sayı 0'dan büyükse kırmızı kenarlı.
 - **Yeni iki sütun** (aşama çubuklarının altında):
   - Sol: **Yüksek riskler**: proje, risk kodu ve tanımı, skor rozeti (ör. "20 · Yüksek"), sorumlu → satır projenin **Riskler** sekmesini açar.
-  - Sağ: **Kabul kararı bekleyen talepler**: proje, adım (3.1 / 3.2), öneri rozeti (Kabul önerilir · Koşullu kabul · Ret / erteleme önerilir)
-    ya da "Puanlama eksik (4/6)" → satır projenin **Seviye & Kabul** sekmesini açar.
+  - Sağ: **Uygunluk kararı bekleyen talepler** (Faz 4 · B2): proje, adım (4), puan ve sonuç rozeti (Uygun · Şartlı uygun · Riskli · Uygun değil)
+    ya da "Anket eksik (6/10)" → satır projenin **Seviye & Uygunluk** sekmesini açar.
 - **Seviye dağılımı:** aşama çubuklarının yanında küçük bir özet: "Seviye 1: 2 · Seviye 2: 3 · Seviye 3: 1 · Belirlenmedi: 4".
 
 ### Testler

@@ -1,5 +1,5 @@
 import { UserSummary } from '../../../shared/models/user-summary';
-import { AcceptanceRecommendation } from '../../assessment/models/assessment';
+import { CustomerFitRating } from '../../assessment/models/assessment';
 import { OpenIssueStatus, OpenIssueType, Owner } from '../../open-issues/models/open-issue';
 import { StepAction } from '../../process/models/project-process';
 import { UserRole } from '../../../shared/models/user-role';
@@ -99,13 +99,15 @@ export interface LevelCounts {
   notSet: number;
 }
 
-/** An active request at the customer suitability step (4); weightedScore and recommendation stay null until all six criteria are scored. */
+/** An active external request at the customer fit step (4) and its survey; rating stays null until every question is answered. */
 export interface AcceptanceQueueItem {
   project: DashboardProject;
   stepCode: string;
-  weightedScore: number | null;
-  recommendation: AcceptanceRecommendation | null;
+  /** 0–100. */
+  score: number;
+  rating: CustomerFitRating | null;
   answeredCount: number;
+  questionCount: number;
   /** UTC date and time. */
   waitingSince: string;
 }

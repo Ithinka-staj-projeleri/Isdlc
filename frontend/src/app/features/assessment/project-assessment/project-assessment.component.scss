@@ -1,133 +1,84 @@
 @use '../../../shared/styles/ui' as ui;
 
 :host {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
-.note {
+.block-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+
+    h3 {
+        margin: 0;
+        font-size: 16px;
+    }
+
+    p {
+        margin: 2px 0 0;
+    }
+}
+
+.result {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.score {
+    font-size: 15px;
+}
+
+.description {
     margin: 0 0 12px;
     color: var(--muted);
 }
 
-.grid {
+.cards {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-    align-items: start;
-
-    &.busy {
-        cursor: progress;
-    }
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
 }
 
-@media (max-width: 1000px) {
-    .grid {
+@media (max-width: 900px) {
+    .cards {
         grid-template-columns: minmax(0, 1fr);
     }
 }
 
 .card {
     @include ui.card;
-    padding: 14px 16px;
-}
-
-.card-head {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 6px;
-
-    h3 {
-        margin: 0;
-        font-size: 15px;
-    }
-}
-
-.question {
-    padding: 10px 0;
-    border-bottom: 1px solid var(--line);
-}
-
-.question-title {
-    margin-bottom: 6px;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.options,
-.scores {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-// The five score buttons stay on one row; the criterion text wraps instead.
-.scores {
-    flex-wrap: nowrap;
+    flex-direction: column;
     gap: 4px;
+    padding: 12px 14px;
 }
 
-.option {
-    padding: 5px 10px;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    background: var(--panel);
-    color: var(--fg);
-    font: inherit;
-    font-size: 13px;
-    cursor: pointer;
-
-    &.score {
-        min-width: 30px;
-        padding: 4px 0;
-    }
-
-    &:hover:not(:disabled),
-    &:focus-visible {
-        border-color: var(--accent);
-    }
-
-    &.on {
-        border-color: var(--accent);
-        background: var(--accent);
-        color: #fff;
-    }
-
-    &:disabled {
-        cursor: default;
-    }
-
-    &:disabled:not(.on) {
-        opacity: .6;
-    }
+.label {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
 }
 
-.apply {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+.value {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.applied .button {
+    align-self: flex-start;
     margin-top: 6px;
 }
 
 .button {
     @include ui.button;
-}
-
-.table-wrap {
-    overflow-x: auto;
-}
-
-table {
-    @include ui.table;
-}
-
-.num {
-    text-align: right;
-    white-space: nowrap;
 }
 
 .muted {
@@ -138,6 +89,10 @@ table {
     font-size: 12px;
 }
 
-.updated {
-    margin: 12px 0 0;
+.warn {
+    color: var(--warn);
+}
+
+.note {
+    margin: 0;
 }

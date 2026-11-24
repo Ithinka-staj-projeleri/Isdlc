@@ -34,7 +34,7 @@ Aşağıdaki liste kesin değildir; kapsam netleştikçe güncellenir.
 | Giriş ve kullanıcı/rol yönetimi | `Identity` | Kullanıcı girişi, roller |
 | Talepler ve projeler | `Projects` | Talep kaydı, proje listesi ve detayı |
 | Süreç akışı | `Process` | 13 aşamalı ISDLC adımları, Evet/Hayır kararları, onaylar |
-| Seviye ve kabul | `Assessment` | Seviye belirleme, proje kabul puanlaması |
+| Seviye ve uygunluk | `Assessment` | Seviye belirleme formu, müşteri uygunluk anketi (Faz 4 · B2) |
 | Doküman takibi | `Documents` | Proje dokümanlarının durumu |
 | Gereksinimler | `Requirements` | Gereksinim / User Story kayıtları |
 | Risk yönetimi | `Risks` | Risk kaydı, olasılık × etki skoru |
@@ -167,8 +167,9 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | İşlem türü (Tamamlandı, Evet, Hayır, Reddedildi, Ertelendi, Değerlendirmeye geri alındı) | `StepAction` (`Postponed`, `Resumed` dahil) |
 | Oluşturan / güncelleyen bilgisi | `AuditableEntity` (`CreatedAt`, `CreatedById`, `UpdatedAt`, `UpdatedById`) |
 | Seviye | `Level` (`Project.Level`, 1–3; yalnızca `Assessment` uygular) |
-| Seviye belirleme ve kabul puanlaması | `ProjectAssessment` (seviye cevapları 1–3, kabul puanları 1–5) |
-| Kabul önerisi | `AcceptanceRecommendation` (`Accept`, `Conditional`, `RejectOrPostpone`; saklanmaz, hesaplanır) |
+| Seviye belirleme formu / sonucu | Soru seti `level` (`Questionnaire`); `LevelResultDto` (doküman seviyesi 1–3 ve araştırma süresi; saklanmaz, hesaplanır). Uygulanınca `Project.Level`, `Project.ResearchDays` |
+| Müşteri uygunluk anketi / sonucu | Soru seti `customer-fit` (yalnızca dış talep); `CustomerFitRating` (`Fit`, `ConditionallyFit`, `Risky`, `NotFit`; saklanmaz, hesaplanır) |
+| Formun eşikleri | `QuestionSet.Bands` (seed dosyasındaki `bands`), `ScoreBands`; eşikler koda yazılmaz |
 | Doküman durumu | `DocumentStatus` (`NotStarted`, `InProgress`, `InReview`, `Approved`, `NotRequired`) |
 | Doküman türü (takip edilen doküman) / projedeki dokümanı | `DocumentType` / `ProjectDocument` |
 | Gereksinim (User Story dahil) | `Requirement` |

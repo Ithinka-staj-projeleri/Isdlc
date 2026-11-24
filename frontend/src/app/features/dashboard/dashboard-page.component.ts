@@ -7,7 +7,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { DateOnlyPipe } from '../../shared/pipes/date-only.pipe';
 import { LocalDatePipe } from '../../shared/pipes/local-date-pipe';
-import { RECOMMENDATION_LABELS, RECOMMENDATION_TONES } from '../assessment/models/assessment';
+import { CUSTOMER_FIT_LABELS, CUSTOMER_FIT_TONES } from '../assessment/models/assessment';
 import { OPEN_ISSUE_TYPE_LABELS } from '../open-issues/models/open-issue';
 import { STEP_ACTION_LABELS } from '../process/models/project-process';
 import { RISK_SEVERITY_LABELS, RISK_SEVERITY_TONES, RISK_STATUS_LABELS, severityOf } from '../risks/models/risk';
@@ -37,16 +37,13 @@ export class DashboardPageComponent {
   protected readonly actionLabels = STEP_ACTION_LABELS;
   protected readonly issueTypeLabels = OPEN_ISSUE_TYPE_LABELS;
   protected readonly lastRequestStage = LAST_REQUEST_STAGE;
-  // Labels and colors of the Risks and Seviye & Kabul tabs, so the dashboard reads the same.
+  // Labels and colors of the Risks and Seviye & Uygunluk tabs, so the dashboard reads the same.
   protected readonly riskStatusLabels = RISK_STATUS_LABELS;
   protected readonly severityLabels = RISK_SEVERITY_LABELS;
   protected readonly severityTones = RISK_SEVERITY_TONES;
   protected readonly severityOf = severityOf;
-  protected readonly recommendationLabels = RECOMMENDATION_LABELS;
-  protected readonly recommendationTones = RECOMMENDATION_TONES;
-
-  /** The number of acceptance criteria (docs/assessment-api.md). */
-  protected readonly acceptanceCriteriaCount = 6;
+  protected readonly fitLabels = CUSTOMER_FIT_LABELS;
+  protected readonly fitTones = CUSTOMER_FIT_TONES;
 
   protected readonly scope = toSignal(
     this._route.queryParamMap.pipe(
@@ -80,11 +77,6 @@ export class DashboardPageComponent {
       queryParams: { scope: scope === 'Mine' ? 'mine' : null },
       queryParamsHandling: 'merge',
     });
-  }
-
-  /** "3,85": two decimals with a Turkish decimal comma. */
-  protected formatScore(score: number | null): string {
-    return score === null ? '' : score.toFixed(2).replace('.', ',');
   }
 
   protected waitingText(days: number): string {
