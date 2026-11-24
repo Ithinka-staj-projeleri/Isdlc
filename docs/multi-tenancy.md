@@ -2,7 +2,7 @@
 
 Tek kurulumun birden fazla şirkete (tenant) hizmet etmesi: veri modeli, kimlik, okuma ve yazma kuralları, seed, yönetim
 uç noktaları ve testler. Plan ve iş dağılımı: [phase-6-plan.md](phase-6-plan.md).
-Durum: **taslak, ekip onayı bekliyor** (23 Kasım 2026). Sorumlu: Erva (T1). Uygulama: T2–T7.
+Durum: **taslak, ekip onayı bekliyor** (23 Kasım 2026; T2 açısından gözden geçirildi 24 Kasım 2026). Sorumlu: Erva (T1). Uygulama: T2–T7.
 
 Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9) taşınır (Bölüm 12).
 
@@ -12,7 +12,8 @@ Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9)
 | --- | --- | --- |
 | Şirket | `Tenant` | Uygulamayı kullanan kurum. Kendi kullanıcıları, akışları, soru listeleri, doküman türleri ve kayıtları vardır |
 | Şirket kimliği | `TenantId` | Şirkete ait her satırda bulunur |
-| Şirkete ait kayıt | `ITenantOwned` | `TenantId` taşıyan her entity bu arayüzü uygular |
+| Şirkete ait kayıt | `ITenantOwned` | `int TenantId` taşıyan her entity bu arayüzü uygular. `User` uygulamaz; kuralı ayrıdır (Bölüm 2 → `Users`) |
+| İsteğin şirketi | `ITenantContext` | Filtrenin ve interceptor'ın kullandığı şirket. İstek (kapsam) başına bir tane; API'de girişten, seed ve şirket açarken koddan ayarlanır (Bölüm 3) |
 | Şablon | `Seed/` dosyaları | Yeni şirkete kopyalanan başlangıç akışları, soru setleri ve doküman türleri |
 | Şablondan gelen kayıt | `TemplateCode`, `IsCustomized` | Kopyanın hangi şablondan geldiği ve şirketin onu değiştirip değiştirmediği |
 | Platform Yöneticisi | `UserRole.PlatformAdmin` | Hiçbir şirkete ait değildir; şirket açar ve pasife alır. Şirketlerin kayıtlarını göremez |
@@ -42,10 +43,23 @@ Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9)
 `QuestionOptions`, `Questionnaires`, `QuestionAnswers`, `ProcessImprovements`.
 
 - `TenantId` int, zorunlu, `Tenants.Id`'ye `Restrict` yabancı anahtar ve indeksli.
-- **Tek istisna:** `Users.TenantId` yalnızca Platform Yöneticisi için boştur. Kural veritabanında da tutulur:
-  `CHECK ((Role = 'PlatformAdmin' AND TenantId IS NULL) OR (Role <> 'PlatformAdmin' AND TenantId IS NOT NULL))`.
+- **Tek istisna:** `Users.TenantId` yalnızca Platform Yöneticisi için boştur (aşağıda `Users`).
 - Alt kayıtlar (risk, açık konu, adım kaydı…) da `TenantId` taşır, projeden türetilmez. Böylece her sorgu kendi
   tablosunda filtrelenir; filtrenin bir join'e bağlı olması gerekmez.
+
+### `Users` değişiklikleri
+
+| Alan | Tür | Kural |
+| --- | --- | --- |
+| `TenantId` | int? | Platform Yöneticisinde boş, diğer herkeste dolu |
+| `IsTenantAdmin` | bool | Şirket Yöneticisi işareti. Varsayılan `false`; Platform Yöneticisinde hep `false` |
+| `MustChangePassword` | bool | Geçici parolayla açıldıysa `true`; parola değişince `false` (Bölüm 4) |
+| `Role` | `UserRole` | Yeni değer `PlatformAdmin` |
+
+- Kural veritabanında da tutulur:
+  `CHECK ((Role = 'PlatformAdmin' AND TenantId IS NULL AND IsTenantAdmin = 0) OR (Role <> 'PlatformAdmin' AND TenantId IS NOT NULL))`.
+- `User`, `TenantId`'si boş olabildiği için `ITenantOwned` uygulamaz. Filtresi ve interceptor kuralı ayrıca yazılır
+  (Bölüm 3 ve 5). Böylece Platform Yöneticisi, şirketsiz kayıt yasağına takılmadan seed'den açılabilir.
 
 ### Benzersizlik
 
@@ -54,8 +68,14 @@ Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9)
 | `Projects.Code` | `(TenantId, Code)` |
 | `ProcessFlows.Code` | `(TenantId, Code)` |
 | `DocumentTypes.Code` | `(TenantId, Code)` |
+| `QuestionSets.Code` | `(TenantId, Code)` |
+| `Questions.Key` | `(TenantId, Key)` |
+| `QuestionOptions.Key` | `(TenantId, Key)` |
 | `Users.Email` | **Değişmez**, bütün sistemde benzersiz (giriş şirketi e-postadan bulur, Bölüm 4) |
 | Proje içi kodlar (`(ProjectId, Code)`), `(ProcessFlowId, …)`, `ProjectId` benzersizlikleri | Değişmez; üst kayıt zaten tek şirkete ait |
+
+Soru bankasının üç anahtarı (`QuestionBankConfigurations.cs`) bugün bütün sistemde benzersiz. Şirkete göre ayrılmazlarsa
+ikinci şirkete şablon kopyalanırken aynı anahtar ikinci kez yazılır ve şirket açılamaz.
 
 ### Şablondan gelen kayıtlar
 
@@ -69,12 +89,27 @@ Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9)
 ### Mevcut verinin taşınması (tek migration)
 
 1. `Tenants` tablosu açılır ve **Ithinka** (`Id = 1`, `Code = "ithinka"`, `AiEnabled` ve `AiDataSharingAllowed` bugünkü
-   davranış korunsun diye `true`) eklenir.
+   davranış korunsun diye `true`) eklenir. `Id` kimlik (identity) kolonu olduğu için bu satır `SET IDENTITY_INSERT` ile yazılır.
 2. Bütün tablolara `TenantId` boş olarak eklenir, bütün satırlar `1` yapılır, sonra kolon zorunlu olur.
 3. Benzersizlik indeksleri yukarıdaki tabloya göre yeniden kurulur.
 4. `TemplateCode` bugünkü akış, doküman türü ve soru seti kodlarıyla doldurulur; `IsCustomized = false`.
 
 Canlı veri yok; migration yine de geri alınabilir yazılır (`Down`).
+
+### Sonraki migration'larda akış değişikliği
+
+Faz 6'dan sonra bir akışa adım eklemek, çıkarmak ya da sıralamak, o şablondan gelen **bütün şirketlerin** kopyasını
+değiştirir. Migration kopyaları koddan bulur, sabit id kullanmaz:
+
+```sql
+INSERT INTO ProcessSteps (TenantId, ProcessFlowId, ProcessStageId, Code, ...)
+SELECT f.TenantId, f.Id, s.Id, '4.8', ...
+FROM ProcessFlows f
+JOIN ProcessStages s ON s.ProcessFlowId = f.Id AND s.[Order] = 4
+WHERE f.TemplateCode = 'new-software-project' AND f.IsCustomized = 0;
+```
+
+Şirketin değiştirdiği kopyalara (`IsCustomized = 1`) dokunulmaz (karar 8).
 
 ## 3. Okuma kuralı: global sorgu filtresi
 
@@ -82,10 +117,17 @@ Canlı veri yok; migration yine de geri alınabilir yazılır (`Down`).
 
 ```csharp
 builder.Entity<T>().HasQueryFilter(e => e.TenantId == _tenant.TenantId);
+
+// Users: TenantId boş olabildiği için açık bir boşluk kontrolüyle
+builder.Entity<User>().HasQueryFilter(u => _tenant.TenantId != null && u.TenantId == _tenant.TenantId);
 ```
 
 - `_tenant` istek başına çözülen `ITenantContext`'tir (Bölüm 4). Giriş yapılmamışsa ya da kullanıcı Platform Yöneticisiyse
   `TenantId` boştur ve filtre **hiçbir satır döndürmez**: Platform Yöneticisi şirket verisini yapısal olarak göremez.
+- `Users` filtresindeki `!= null` kontrolü şart: EF Core C#'taki `null == null → true` anlamını korur. Kontrol olmasa
+  Platform Yöneticisi (şirketi boş) `Users`'ta şirketi boş olan satırları, yani diğer platform yöneticilerini görürdü.
+- DbContext havuzlanmaz (`AddDbContext`, `AddDbContextPool` değil). Filtre istek başına `ITenantContext`'i kullandığı
+  için bu bir kuraldır.
 - Servisler değişmez; `dbContext.Projects` zaten yalnızca kullanıcının şirketini görür. Sayaçlar ("en büyük + 1",
   `RecordCodes.NextNumberAsync`) da kendiliğinden şirket içinde sayar.
 - **`IgnoreQueryFilters()` yalnızca şu yerlerde** kullanılır; her kullanımın üstüne `// tenant: <neden>` yorumu yazılır ve
@@ -94,9 +136,19 @@ builder.Entity<T>().HasQueryFilter(e => e.TenantId == _tenant.TenantId);
 | Yer | Neden |
 | --- | --- |
 | Giriş (`AuthService`) | E-postadan kullanıcıyı ve şirketini bulmak; o anda şirket bilinmiyor |
-| Seed ve açılış eşitlemesi (`DatabaseSeeder`) | Bütün şirketlerin şablon kopyalarını eşitlemek |
-| Şirket yönetimi (`TenantService`, Platform Yöneticisi) | Yeni şirkete şablon kopyalamak ve ilk yöneticisini açmak; yalnızca `Tenants` ve o şirketin seed tabloları |
 | E-posta benzersizliği kontrolü | E-posta bütün sistemde benzersiz |
+| Platform Yöneticisinin şirket listesi (`TenantService`) | Kullanıcı sayısı (`TenantDto.userCount`); yalnızca sayı okunur |
+
+**Seed ve şirket açma filtreyi atlamaz**, şirketi ayarlar: `ITenantContext`'i sırayla her aktif şirkete (seed) ya da yeni
+şirkete (`POST /tenants`) ayarlayıp mevcut kodu çalıştırır. Nedeni:
+
+- Bugünkü seed "tablo boşsa yükle" diye çalışıyor (`DatabaseSeeder.cs`: `db.Users.AnyAsync()`, `db.Projects.AnyAsync()`,
+  `db.DocumentTypes.AnyAsync()`). Açılışta giriş yapan kimse olmadığı için filtre boş döner, bu kontroller hep "boş" der ve
+  seed her açılışta yeniden çalışıp e-posta benzersizliğine takılır.
+- Filtre atlanırsa da akış ve soru seti eşitlemesi kodla arar (`SingleOrDefault(f => f.Code == …)`,
+  `ToDictionaryAsync(s => s.Code)`); birden fazla şirkette aynı kod bulunur ve hata verir.
+- Şirket ayarlanınca bu kontroller kendiliğinden "bu şirket boşsa" ve "bu şirketin akışı" anlamına gelir; seed kodu
+  neredeyse değişmez.
 
 - **Ham SQL** (`FromSql`, `ExecuteSql`) uygulama kodunda kullanılmaz; filtreyi atlar. Yalnızca migration'larda.
 - `ExecuteUpdate` / `ExecuteDelete` filtreye uyar; yine de bu PR'larda şirket testi yazılır.
@@ -110,7 +162,8 @@ builder.Entity<T>().HasQueryFilter(e => e.TenantId == _tenant.TenantId);
 1. Kullanıcı e-postayla bulunur (bütün şirketlerde, `IgnoreQueryFilters`).
 2. Kullanıcı pasifse, şirketi pasifse ya da parola yanlışsa **aynı 401** döner ("E-posta veya parola hatalı.");
    pasif şirketin varlığı dışarıya söylenmez.
-3. Token'a mevcut claim'lere ek olarak `tenant` (şirket `Id`'si, Platform Yöneticisinde yok) ve `tenantAdmin` (`true`/`false`) yazılır.
+3. Token'a mevcut claim'lere ek olarak `tenant` (şirket `Id`'si, Platform Yöneticisinde yok), `tenantAdmin` (`true`/`false`)
+   ve parola değiştirilmesi gerekiyorsa `mustChangePassword: true` yazılır.
 4. Cevaptaki `user` nesnesine `tenant: { id, code, name }` (Platform Yöneticisinde `null`) ve `isTenantAdmin` eklenir.
 
 ### İstek başına
@@ -131,9 +184,13 @@ public interface ITenantContext
 }
 ```
 
-- **Pasife alınan şirket:** her istekte şirketin aktif olduğu kontrol edilir (1 dakika önbellekli). Pasifse `401`
-  döner ve ekran girişe yönlenir. Böylece açık oturumlar token süresini beklemeden kapanır.
-- **Pasife alınan kullanıcı:** bugünkü davranış aynen kalır.
+- `ITenantContext` kapsam başına (scoped) kaydedilir. Uygulaması değiştirilebilir: API'de istek başında
+  `ICurrentUserService.TenantId` ile dolar; seed ve şirket açma, işe başlamadan önce kendisi ayarlar (Bölüm 3).
+  Servisler `ITenantContext`'i değiştirmez.
+- **Pasife alınan şirket ya da kullanıcı:** her istekte kullanıcının ve şirketinin aktif olduğu kontrol edilir
+  (1 dakika önbellekli). Biri pasifse `401` döner ve ekran girişe yönlenir. Böylece açık oturumlar token süresini
+  beklemeden kapanır. Bugün kullanıcının aktifliği yalnızca girişte kontrol ediliyor (`AuthService`); pasife alınan
+  kullanıcının token'ı süresi dolana kadar çalışıyor. Şirket için eklenen kontrol kullanıcıyı da kapsar.
 
 ### Parola
 
@@ -142,9 +199,10 @@ Bugün parolalar yalnızca seed'den (`Identity:TestPassword`) geliyor. Yeni şir
 - Yeni kullanıcıyı açan (Platform ya da Şirket Yöneticisi) bir **geçici parola** verir (en az 12 karakter).
 - Kullanıcıda `MustChangePassword = true` olur. Giriş başarılı olur ama cevapta `mustChangePassword: true` döner; ekran
   parola değiştirme sayfasına yönlenir. Parola değişene kadar `POST /auth/change-password` dışındaki her istek `403` alır
-  ("Devam etmek için parolanızı değiştirin.").
+  ("Devam etmek için parolanızı değiştirin."). Kontrol, token'daki `mustChangePassword` claim'inden yapılır; her istekte
+  veritabanı okunmaz.
 - `POST /api/v1/auth/change-password` (`{ currentPassword, newPassword }`): yeni parola en az 12 karakter ve
-  eskisinden farklı olmalıdır. Başarılıysa yeni token döner.
+  eskisinden farklı olmalıdır. Başarılıysa `mustChangePassword` claim'i olmayan yeni bir token döner.
 - Seed kullanıcıları ve testler etkilenmez (`MustChangePassword = false`).
 
 ## 5. Yazma kuralı: `TenantInterceptor`
@@ -157,6 +215,17 @@ Bugün parolalar yalnızca seed'den (`Identity:TestPassword`) geliyor. Yeni şir
 | Yeni kayıt, `TenantId` dolu ve mevcut şirketten farklı | **Hata** (`InvalidOperationException` → 500, loga yazılır). Yalnızca seed ve şirket yönetimi başka şirkete yazabilir; onlar `ITenantContext`'i o şirkete ayarlar |
 | Var olan kaydın `TenantId`'si değiştirilmiş | **Hata** (aynı) |
 | Şirket bilinmiyor (girişsiz, Platform Yöneticisi) ve `ITenantOwned` kayıt ekleniyor | **Hata** (aynı) |
+| Yeni `User`, rolü `PlatformAdmin` | `TenantId` boş kalır (Bölüm 2 → `Users`) |
+| Yeni `User`, başka rol | `ITenantOwned` gibi: boşsa `ITenantContext.TenantId` yazılır, farklıysa ya da şirket bilinmiyorsa hata |
+
+**Sıra ve denetim kaydı:**
+
+- Interceptor sırası: `TenantInterceptor` → `AuditableEntityInterceptor` → `AuditLogInterceptor`. Şirket, diğerleri
+  kaydı görmeden yazılmış olur.
+- `AuditLogInterceptor` log satırlarını kayıttan sonra ikinci bir kayıtla yazar (`SavedChanges`). Logun `TenantId`'si
+  değişen entity'nin `TenantId`'sinden alınır; interceptor bunu açıkça atar.
+- `TenantId`, `AuditLogInterceptor`'daki `IgnoredProperties`'e eklenir. Eklenmezse her yeni kayıtta "TenantId: boş → 1"
+  bir alan değişikliği gibi Kayıt Geçmişi'ne yazılır.
 
 **Başka şirketin kaydına bağlanma:** bir istekten gelen id (sorumlu kullanıcı, analist, ana proje, tutanak…) kayda
 yazılmadan önce **her zaman context üzerinden okunur** (bugünkü "aktif kullanıcı mı", "proje var mı" kontrolleri).
@@ -174,11 +243,20 @@ Filtre sayesinde başka şirketin kaydı bulunamaz ve mevcut mesajlar döner ("S
 
 **Açılış eşitlemesi:** bugün akışlar her açılışta dosyayla eşitleniyor. Faz 6'da bu, **her aktif şirket** için
 `TemplateCode`'u dolu ve `IsCustomized = false` olan akışlara uygulanır. Kural aynı kalır: metin, rol ve dönüş
-değişiklikleri dosyadan; adım eklemek, çıkarmak ya da sıralamak migration ister ve migration **bütün şirketlerin** kopyasını değiştirir.
-Soru setleri ve doküman türleri için de aynı.
+değişiklikleri dosyadan; adım eklemek, çıkarmak ya da sıralamak migration ister ve migration **bütün şirketlerin** kopyasını
+değiştirir (Bölüm 2 → Sonraki migration'larda akış değişikliği). Soru setleri ve doküman türleri için de aynı.
+
+**Açılış sırası:**
+
+1. Migration'lar uygulanır.
+2. `Tenants` okunur (filtresiz tablo).
+3. Her aktif şirket için `ITenantContext` o şirkete ayarlanır ve bugünkü seed adımları çalışır: şablon eşitlemesi, Ithinka
+   için ayrıca kullanıcılar ve geliştirme ortamında örnek projeler (Bölüm 3).
+4. `ITenantContext` boşken Platform Yöneticisi açılır (yoksa). `User` kuralı buna izin verir (Bölüm 5).
 
 **Yeni şirket açmak** (`POST /tenants`) tek bir işlemde (transaction): şirket satırı, şablonların kopyası ve ilk Şirket
-Yöneticisi. Biri başarısız olursa hiçbiri kaydedilmez.
+Yöneticisi. `TenantService` şirket satırını kaydettikten sonra `ITenantContext`'i yeni şirkete ayarlar ve şablon kopyasını
+seed'in kullandığı kodla yapar. Biri başarısız olursa hiçbiri kaydedilmez.
 
 ## 7. Uç noktalar
 
@@ -264,7 +342,12 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
 ## 10. Testler
 
 - `DatabaseFixture` iki şirketle açılır: **Ithinka** (bugünkü seed) ve **Deneme A.Ş.** (şablon kopyası ve kendi kullanıcıları).
-- `TestUser` şirket alır: `new TestUser(userId, tenantId)`; mevcut `new TestUser(userId)` Ithinka'yı kullanır, bugünkü testler değişmeden çalışır.
+- **Şirketi kapsam belirler:** `database.CreateScope(tenantId)`. Testler DbContext'i fixture'ın açtığı kapsamdan alır;
+  filtrenin şirketi de bu kapsamdaki `ITenantContext`'ten gelir. Servise verilen `TestUser` filtreyi etkilemez (bugün
+  fixture'da kullanıcı tek bir `FixtureCurrentUser`'dan geliyor). Bu yüzden şirket `TestUser`'a değil, kapsama verilir;
+  mevcut `database.CreateScope()` Ithinka'yı kullanır ve bugünkü testler değişmeden çalışır.
+- `TestUser` şirket alır: `new TestUser(userId, tenantId)`. Bu, servisin `ICurrentUserService.TenantId`'yi okuduğu yerler
+  içindir; kapsamın şirketiyle aynı verilir.
 - `TestProjects.CreateAsync(database, "4", tenantId: …)` ve `TestUsers.CreateAsync(…, tenantId: …)`.
 - **Her modül için ayrım testi (T7):**
   1. B şirketinin kullanıcısı A'nın kaydını listede görmez, detayında `404` alır, güncelleyemez.
@@ -290,7 +373,7 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
 - **Bölüm 8:** "Her yeni entity `ITenantOwned` uygular; `TenantId`'yi interceptor doldurur. `IgnoreQueryFilters` yalnızca
   Bölüm 3'teki yerlerde ve `// tenant:` yorumuyla. Uygulama kodunda ham SQL yok. İstekten gelen id yabancı anahtara
   okunmadan yazılmaz."
-- **Bölüm 9:** iki şirketli fixture, `TestUser(userId, tenantId)`, her yeni modül için ayrım testi.
+- **Bölüm 9:** iki şirketli fixture, `database.CreateScope(tenantId)` ve `TestUser(userId, tenantId)`, her yeni modül için ayrım testi.
 
 ## 13. Açık konular
 
@@ -299,3 +382,6 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
    kurulum komutuyla mı? Öneri: yapılandırma; parola ilk girişte değiştirilir.
 3. **Şirket kodu nerede görünür?** Şimdilik yalnızca yönetim ekranında; adreslerde kullanılmaz (karar 5).
 4. **Bir kullanıcı birden fazla şirkette:** desteklenmez (planın açık konu 4'ü).
+5. **Başka şirketin kaydına bağlanmanın veritabanında da engellenmesi (sonraki faz, isteğe bağlı):** bugün bunu
+   "id'yi yazmadan önce oku" kuralı (Bölüm 5) ve T7 testleri önlüyor. Kritik ilişkilerde `(TenantId, Id)` üzerinden
+   bileşik yabancı anahtar, kuralı veritabanı düzeyinde zorunlu kılar; bütün ilişkileri değiştirdiği için Faz 6'ya alınmadı.
