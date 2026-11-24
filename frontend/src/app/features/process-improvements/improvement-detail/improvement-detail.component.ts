@@ -3,8 +3,10 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
+import { CopyLinkButtonComponent } from '../../../shared/components/copy-link-button/copy-link-button.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
+import { improvementLink, recordIdOf } from '../../../shared/models/record-link';
 import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
 import { PROJECT_STATUS_LABELS } from '../../../shared/models/project-status';
 import { AuditLogComponent } from '../../audit/audit-log/audit-log.component';
@@ -35,6 +37,7 @@ type DetailTab =
     selector: 'app-improvement-detail',
     imports: [
         RouterLink,
+        CopyLinkButtonComponent,
         LocalDatePipe,
         EmptyStateComponent,
         StatusBadgeComponent,
@@ -79,6 +82,13 @@ export class ImprovementDetailComponent {
         { requireSync: true },
     );
 
+    /** The record the tab opens: ?id=12 (Faz 5 · F8, docs/record-links.md). */
+    protected readonly recordId = toSignal(this.route.queryParamMap.pipe(map(params => recordIdOf(params.get('id')))), {
+        requireSync: true,
+    });
+
+    protected readonly link = computed(() => improvementLink(this.id()));
+
     protected readonly improvement = rxResource({
         params: () => ({ id: this.id() }),
         stream: ({ params }) => this.service.get(params.id),
@@ -101,8 +111,21 @@ export class ImprovementDetailComponent {
     protected selectTab(tab: DetailTab): void {
         this.router.navigate([], {
             relativeTo: this.route,
-            queryParams: { tab: tab === 'proposal' ? null : tab },
+            queryParams: { tab: tab === 'proposal' ? null : tab, id: null },
             queryParamsHandling: 'merge',
+        });
+    }
+
+    /** The tab closed the record it opened from the address, so a reload does not open it again. */
+    protected clearRecordId(): void {
+        if (this.recordId() === null) {
+            return;
+        }
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { id: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
         });
     }
 

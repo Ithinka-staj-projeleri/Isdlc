@@ -98,5 +98,5 @@
 
 @if (editing(); as target) {
 <app-open-issue-form [projectId]="projectId()" [openIssueId]="target === 'new' ? null : target"
-    (saved)="onSaved()" (cancelled)="editing.set(null)" />
+    (saved)="onSaved()" (cancelled)="closeForm()" />
 }

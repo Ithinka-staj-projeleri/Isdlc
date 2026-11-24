@@ -1,4 +1,7 @@
 import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { CopyLinkButtonComponent } from '../../../shared/components/copy-link-button/copy-link-button.component';
+import { recordLinkFrom } from '../../../shared/models/record-link';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, of } from 'rxjs';
@@ -19,7 +22,7 @@ type Field = 'title' | 'description' | 'category' | 'probability' | 'impact' | '
 /** Add or edit a risk. The status can be changed only when editing; a new risk starts as Open. */
 @Component({
     selector: 'app-risk-form',
-    imports: [ReactiveFormsModule, StatusBadgeComponent],
+    imports: [ReactiveFormsModule, StatusBadgeComponent, CopyLinkButtonComponent],
     templateUrl: './risk-form.component.html',
     styleUrl: './risk-form.component.scss',
 })
@@ -31,6 +34,14 @@ export class RiskFormComponent implements OnInit {
     readonly projectId = input.required<number>();
     /** null adds a new risk. */
     readonly riskId = input<number | null>(null);
+
+    private readonly router = inject(Router);
+
+    /** "Bağlantıyı kopyala" (Faz 5 · F8): only for a saved record. */
+    protected readonly link = computed(() => {
+        const id = this.riskId();
+        return id === null ? null : recordLinkFrom(this.router.url, this.projectId(), 'risks', id);
+    });
     /** A new risk filled from the AI assistant's suggestion; the person checks it and saves. */
     readonly suggestion = input<SuggestedRisk | null>(null);
 

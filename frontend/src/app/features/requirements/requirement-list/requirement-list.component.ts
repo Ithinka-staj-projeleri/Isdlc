@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
@@ -29,6 +29,12 @@ export class RequirementListComponent {
 
   /** True when the project is not active: records can be read but not added or changed. */
   readonly readOnly = input(false);
+
+  /** The record to open: ?id= in the address (docs/record-links.md). */
+  readonly openId = input<number | null>(null);
+
+  /** The opened record was closed, so the page can remove ?id= from the address. */
+  readonly recordClosed = output<void>();
 
   protected readonly typeLabels = REQUIREMENT_TYPE_LABELS;
   protected readonly priorityLabels = REQUIREMENT_PRIORITY_LABELS;
@@ -73,6 +79,11 @@ export class RequirementListComponent {
   private readonly _searchInput = new Subject<string>();
 
   constructor() {
+    effect(() => {
+      const id = this.openId();
+      if (id !== null) untracked(() => this.editing.set(id));
+    });
+
     this._searchInput
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed())
       .subscribe((text) => this.applyFilter(() => this.search.set(text.trim())));
@@ -114,8 +125,13 @@ export class RequirementListComponent {
   }
 
   protected onSaved(): void {
-    this.editing.set(null);
+    this.closeForm();
     this.requirements.reload();
+  }
+
+  protected closeForm(): void {
+    this.editing.set(null);
+    this.recordClosed.emit();
   }
 
   /** A new filter shows its results from the first page. */

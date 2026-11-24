@@ -2,6 +2,9 @@ import { OPEN_ISSUE_STATUS_LABELS, OpenIssueStatus } from '../../open-issues/mod
 import { REQUIREMENT_STATUS_LABELS, RequirementStatus } from '../../requirements/models/requirement';
 import { RISK_STATUS_LABELS, RiskStatus } from '../../risks/models/risk';
 import { PROJECT_STATUS_LABELS, ProjectStatus } from '../../../shared/models/project-status';
+import {
+  RecordLink, RecordTab, improvementLink, projectLink, projectRecordLink,
+} from '../../../shared/models/record-link';
 
 /** GET /api/v1/search. Contract: docs/search-api.md */
 
@@ -68,8 +71,8 @@ export interface SearchRow {
   subtitle: string | null;
   /** Shown only for a closed record ("Kapandı", "İptal"). */
   closedLabel: string | null;
-  /** Router commands and query params of the record's page (S9). */
-  link: { commands: (string | number)[]; queryParams?: Record<string, string> };
+  /** The record's page (S9); a record inside a project opens itself on its tab (F8). */
+  link: RecordLink;
 }
 
 export interface SearchRowGroup {
@@ -94,15 +97,15 @@ function inProject(record: { projectCode: string; projectName: string }): string
   return `${record.projectCode} · ${record.projectName}`;
 }
 
-/** A record inside a project opens its project on the record's tab; F8 adds the record's id. */
-function recordRow(kind: string, tab: string, record: SearchRecord, closedLabel: string | null): SearchRow {
+/** A record inside a project opens its project on the record's tab, and the tab opens the record (F8). */
+function recordRow(kind: string, tab: RecordTab, record: SearchRecord, closedLabel: string | null): SearchRow {
   return {
     key: `${kind}-${record.id}`,
     code: record.code,
     title: record.title,
     subtitle: inProject(record),
     closedLabel,
-    link: { commands: ['/projects', record.projectId], queryParams: { tab } },
+    link: projectRecordLink(record.projectId, tab, record.id),
   };
 }
 
@@ -118,7 +121,7 @@ export function toRowGroups(result: SearchResult): SearchRowGroup[] {
         title: p.name,
         subtitle: p.customerName || null,
         closedLabel: projectClosedLabel(p.status),
-        link: { commands: ['/projects', p.id] },
+        link: projectLink(p.id),
       })),
     },
     {
@@ -130,7 +133,7 @@ export function toRowGroups(result: SearchResult): SearchRowGroup[] {
         title: p.name,
         subtitle: null,
         closedLabel: projectClosedLabel(p.status),
-        link: { commands: ['/process-improvements', p.id] },
+        link: improvementLink(p.id),
       })),
     },
     {
@@ -148,7 +151,7 @@ export function toRowGroups(result: SearchResult): SearchRowGroup[] {
         title: m.title,
         subtitle: inProject(m),
         closedLabel: null,
-        link: { commands: ['/projects', m.projectId], queryParams: { tab: 'meetings' } },
+        link: projectRecordLink(m.projectId, 'meetings', m.id),
       })),
     },
     {

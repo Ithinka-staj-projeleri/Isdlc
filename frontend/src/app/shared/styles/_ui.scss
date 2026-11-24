@@ -176,3 +176,18 @@
         margin-top: 20px;
     }
 }
+
+/* A dialog title with a button on its right ("Bağlantıyı kopyala", Faz 5 · F8). */
+@mixin dialog-head {
+    .dialog-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 16px;
+
+        h3 {
+            margin: 0;
+        }
+    }
+}

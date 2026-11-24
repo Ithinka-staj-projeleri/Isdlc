@@ -138,3 +138,8 @@ dl {
 .center {
   text-align: center;
 }
+
+/* "Bağlantıyı kopyala" sits at the right end of the title row. */
+.copy {
+  margin-left: auto;
+}

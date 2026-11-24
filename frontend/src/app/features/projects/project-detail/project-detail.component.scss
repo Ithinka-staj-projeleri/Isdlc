@@ -32,9 +32,14 @@
     @include ui.code;
   }
 
+  .actions {
+    display: inline-flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+
   .edit-button {
     @include ui.button;
-    margin-left: auto;
     text-decoration: none;
   }
 
