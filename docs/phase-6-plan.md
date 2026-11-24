@@ -37,7 +37,7 @@ ayrı bir iştir ve sonraki faza bırakılır (Bölüm 7).
 | Alan | Bugün | Faz 6'da |
 | --- | --- | --- |
 | Tablolar (23) | Şirket bilgisi yok | Hepsinde `TenantId` (karar 2) ve yeni `Tenants` tablosu |
-| Benzersizlik | `Project.Code`, `ProcessFlow.Code`, `DocumentType.Code` bütün sistemde benzersiz | `(TenantId, Code)` |
+| Benzersizlik | `Project.Code`, `ProcessFlow.Code`, `DocumentType.Code`, `QuestionSet.Code`, `Question.Key`, `QuestionOption.Key` bütün sistemde benzersiz | `(TenantId, Code)` / `(TenantId, Key)` |
 | Kod numaraları | `RecordCodes.NextNumberAsync` ve servislerdeki "en büyük + 1" sorguları tüm sistemde sayar | Global filtre sayesinde şirket içinde sayar; testle doğrulanır |
 | Akış kodları | Servislerde `ProcessFlowCodes.NewRequest` gibi sabitler | Kod şirket içinde aynı kalır (`new-software-project`), sorgu filtre sayesinde şirketin akışını bulur |
 | Seed | Tablo boşsa dosyadan yüklenir; akış her açılışta dosyayla eşitlenir | Şablon → şirket kopyası (karar 7, 8) |
