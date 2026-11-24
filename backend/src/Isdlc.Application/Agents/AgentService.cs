@@ -22,15 +22,21 @@ public class AgentService(
     public async Task<AgentStatusDto> GetStatusAsync(CancellationToken cancellationToken)
     {
         var available = await agents.IsAvailableAsync(cancellationToken);
-        var transcription = available && await agents.IsTranscriptionAvailableAsync(cancellationToken);
-        return new AgentStatusDto(available, available, available, transcription);
+        var company = await CompanyAiAsync(cancellationToken);
+
+        // The company's switches come on top of the service (docs/multi-tenancy.md → Yapay zekâ ayarlarının etkisi).
+        var sendsText = available && CompanyAiRules.MaySendText(company);
+        var transcription = available && CompanyAiRules.MayTranscribe(company)
+            && await agents.IsTranscriptionAvailableAsync(cancellationToken);
+        return new AgentStatusDto(sendsText, sendsText, sendsText, transcription);
     }
 
     public async Task<MeetingTranscriptDto> TranscribeMeetingAsync(
         int projectId, Stream? recording, long length, CancellationToken cancellationToken)
     {
-        // Same checks as the minutes suggestions: signed in, project exists and is active, service configured.
-        await PrepareAsync(projectId, cancellationToken);
+        // Same checks as the minutes suggestions (signed in, project active, service configured), but the recording
+        // stays on the AI service's machine: the company's permission to send data out is not needed.
+        await PrepareAsync(projectId, cancellationToken, sendsText: false);
 
         if (recording is null || length == 0)
         {
@@ -230,6 +236,8 @@ public class AgentService(
             throw new ServiceUnavailableException("Yapay zekâ servisi bu ortamda açık değil.");
         }
 
+        await EnsureCompanyAllowsAsync(sendsText: true, cancellationToken);
+
         // [Required] on the DTO guarantees the text.
         var draft = await agents.DraftRequestAsync(
             new RequestAgentRequest(request.EmailText!.Trim(), DateOnly.FromDateTime(DateTime.UtcNow)), cancellationToken);
@@ -254,8 +262,12 @@ public class AgentService(
             draft.ModelName);
     }
 
+    /// <summary>
+    /// Checks shared by the project's assistants: signed in, project active, service configured, and the company
+    /// allows it. sendsText: the assistant sends the person's text to the model provider (all but transcription).
+    /// </summary>
     private async Task<(ProjectRef Project, string? CurrentStep)> PrepareAsync(
-        int projectId, CancellationToken cancellationToken)
+        int projectId, CancellationToken cancellationToken, bool sendsText = true)
     {
         if (currentUser.UserId is null)
         {
@@ -269,6 +281,8 @@ public class AgentService(
             throw new ServiceUnavailableException("Yapay zekâ servisi bu ortamda açık değil.");
         }
 
+        await EnsureCompanyAllowsAsync(sendsText, cancellationToken);
+
         var currentStep = await dbContext.Projects
             .AsNoTracking()
             .Where(p => p.Id == projectId && p.CurrentStep != null)
@@ -276,6 +290,34 @@ public class AgentService(
             .SingleOrDefaultAsync(cancellationToken);
 
         return (project, currentStep);
+    }
+
+    /// <summary>The service is never called for a company that switched the assistant off: 503.</summary>
+    private async Task EnsureCompanyAllowsAsync(bool sendsText, CancellationToken cancellationToken)
+    {
+        var company = await CompanyAiAsync(cancellationToken);
+        var allowed = sendsText ? CompanyAiRules.MaySendText(company) : CompanyAiRules.MayTranscribe(company);
+        if (!allowed)
+        {
+            throw new ServiceUnavailableException(CompanyAiRules.ClosedMessage);
+        }
+    }
+
+    /// <summary>The signed-in user's company switches; nobody signed in (or no company) means both off.</summary>
+    private async Task<CompanyAiRules.Settings> CompanyAiAsync(CancellationToken cancellationToken)
+    {
+        if (currentUser.TenantId is not { } tenantId)
+        {
+            return CompanyAiRules.Settings.Off;
+        }
+
+        // Tenants has no query filter; the company is the one of the signed-in user.
+        return await dbContext.Tenants
+            .AsNoTracking()
+            .Where(t => t.Id == tenantId)
+            .Select(t => new CompanyAiRules.Settings(t.AiEnabled, t.AiDataSharingAllowed))
+            .SingleOrDefaultAsync(cancellationToken)
+            ?? CompanyAiRules.Settings.Off;
     }
 
     /// <summary>Both values 1–5, or neither: a half or out-of-range score is dropped and the person scores it.</summary>
