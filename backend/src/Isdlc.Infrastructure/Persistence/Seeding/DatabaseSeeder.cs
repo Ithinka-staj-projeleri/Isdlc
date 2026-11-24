@@ -10,29 +10,38 @@ using static Isdlc.Infrastructure.Persistence.Seeding.SeedFiles;
 namespace Isdlc.Infrastructure.Persistence.Seeding;
 
 /// <summary>
-/// Loads the JSON seed files into empty tables. Rules: docs/data-model.md, "Seed verisi".
-/// Each part runs only when its table is empty, so restarting the API is safe.
+/// Loads the JSON seed files into the company in ITenantContext. Rules: docs/data-model.md, "Seed verisi", and
+/// docs/multi-tenancy.md → Seed ve şablon. Every part can run again, so restarting the API is safe.
 /// </summary>
 public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogger<DatabaseSeeder> logger)
 {
-    public async Task SeedAsync(bool includeSampleProjects, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// The template part: flows and document types (question sets: QuestionSetSeeder). Copies templates the company
+    /// does not have yet and keeps the copies it has not changed in line with the files. Every company gets this.
+    /// </summary>
+    public async Task SeedTemplatesAsync(CancellationToken cancellationToken = default)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-
         await SeedProcessFlowAsync(cancellationToken);
         await SeedDocumentTypesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Ithinka's development data: the users of Seed/users.json and, in development, the sample projects.
+    /// Each part runs only when the company has none yet. Never for another company (docs/multi-tenancy.md → Seed ve şablon).
+    /// </summary>
+    public async Task SeedDevelopmentCompanyAsync(bool includeSampleProjects, CancellationToken cancellationToken = default)
+    {
         await SeedUsersAsync(cancellationToken);
         if (includeSampleProjects)
         {
             await SeedSampleProjectsAsync(cancellationToken);
         }
-
-        await transaction.CommitAsync(cancellationToken);
     }
 
     /// <summary>
-    /// One flow per file in Seed/flows. A flow that is not in the database yet is added with its stages and
-    /// steps (no record uses it, so no migration is needed). An existing flow follows its file (SyncFlowAsync).
+    /// One flow per file in Seed/flows, matched by its template code. A flow the company does not have yet is copied
+    /// with its stages and steps (no record uses it, so no migration is needed). A copy the company has not changed
+    /// follows its file (SyncFlowAsync); a changed one (IsCustomized) is left as the company made it.
     /// </summary>
     private async Task SeedProcessFlowAsync(CancellationToken cancellationToken)
     {
@@ -41,9 +50,22 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
 
         foreach (var file in files)
         {
-            var flow = flows.SingleOrDefault(f => f.Code == file.Code);
+            var flow = flows.SingleOrDefault(f => f.TemplateCode == file.Code);
+            if (flow is { IsCustomized: true })
+            {
+                continue;
+            }
+
             if (flow is null)
             {
+                if (flows.Any(f => f.Code == file.Code))
+                {
+                    // The company made a flow of its own with the template's code; its own flow wins.
+                    logger.LogWarning(
+                        "Flow template {Code} is not copied: the company has its own flow with that code.", file.Code);
+                    continue;
+                }
+
                 flow = new ProcessFlow { Code = file.Code, TemplateCode = file.Code };
                 db.ProcessFlows.Add(flow);
             }
@@ -67,9 +89,9 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         }
 
         var fileCodes = files.Select(f => f.Code).ToHashSet();
-        foreach (var orphan in flows.Where(f => !fileCodes.Contains(f.Code)))
+        foreach (var orphan in flows.Where(f => f.TemplateCode is { } code && !fileCodes.Contains(code)))
         {
-            logger.LogWarning("Flow {Code} is in the database but has no seed file; it is left as it is.", orphan.Code);
+            logger.LogWarning("Flow {Code} came from a template that has no seed file now; it is left as it is.", orphan.Code);
         }
     }
 
@@ -226,34 +248,69 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         return 1;
     }
 
-    /// <summary>The documents tracked on every project. Linked to stages by order, like the process flow.</summary>
+    /// <summary>
+    /// The documents tracked on every project, linked to the stages of the company's copy of the new software project
+    /// flow by order. Matched by template code like the flows: missing ones are copied, unchanged copies follow the file.
+    /// </summary>
     private async Task SeedDocumentTypesAsync(CancellationToken cancellationToken)
     {
-        if (await db.DocumentTypes.AnyAsync(cancellationToken))
+        var file = Read<DocumentTypesFile>("document-types.json");
+        var types = await db.DocumentTypes.ToListAsync(cancellationToken);
+        var stageIds = await db.ProcessStages
+            .Where(s => s.ProcessFlow.TemplateCode == ProcessFlowCodes.NewRequest)
+            .ToDictionaryAsync(s => s.Order, s => s.Id, cancellationToken);
+        if (stageIds.Count == 0)
         {
+            // The company has no template copy of the flow the document types hang on; they are left as they are.
+            logger.LogWarning("Document types are not seeded: the company has no template copy of {Flow}.", ProcessFlowCodes.NewRequest);
             return;
         }
 
-        var file = Read<DocumentTypesFile>("document-types.json");
-        // Document types belong to the stages of the request flow (redone with the company's document list in D4).
-        var stageIds = await db.ProcessStages
-            .Where(s => s.ProcessFlow.Code == ProcessFlowCodes.NewRequest)
-            .ToDictionaryAsync(s => s.Order, s => s.Id, cancellationToken);
-
-        db.DocumentTypes.AddRange(file.DocumentTypes.Select(d => new DocumentType
+        var added = 0;
+        var changed = 0;
+        foreach (var seed in file.DocumentTypes)
         {
-            Code = d.Code,
-            TemplateCode = d.Code,
-            Name = d.Name,
-            Description = d.Description,
-            ProcessStageId = stageIds.TryGetValue(d.StageOrder, out var stageId)
-                ? stageId
-                : throw new InvalidOperationException($"Document type {d.Code}: stage {d.StageOrder} does not exist."),
-            Order = d.Order,
-        }));
-        await db.SaveChangesAsync(cancellationToken);
+            var stageId = stageIds.TryGetValue(seed.StageOrder, out var id)
+                ? id
+                : throw new InvalidOperationException($"Document type {seed.Code}: stage {seed.StageOrder} does not exist.");
 
-        logger.LogInformation("Seeded {DocumentTypes} document types.", file.DocumentTypes.Count);
+            var type = types.SingleOrDefault(t => t.TemplateCode == seed.Code);
+            if (type is null)
+            {
+                if (types.Any(t => t.Code == seed.Code))
+                {
+                    continue; // the company's own document type with the template's code wins
+                }
+
+                db.DocumentTypes.Add(new DocumentType
+                {
+                    Code = seed.Code,
+                    TemplateCode = seed.Code,
+                    Name = seed.Name,
+                    Description = seed.Description,
+                    ProcessStageId = stageId,
+                    Order = seed.Order,
+                });
+                added++;
+                continue;
+            }
+
+            if (type.IsCustomized)
+            {
+                continue;
+            }
+
+            changed += Set(type.Name, seed.Name, v => type.Name = v);
+            changed += Set(type.Description, seed.Description, v => type.Description = v);
+            changed += Set(type.ProcessStageId, stageId, v => type.ProcessStageId = v);
+            changed += Set(type.Order, seed.Order, v => type.Order = v);
+        }
+
+        if (added + changed > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Document types: {Added} copied, {Changed} values updated from the seed file.", added, changed);
+        }
     }
 
     private async Task SeedUsersAsync(CancellationToken cancellationToken)

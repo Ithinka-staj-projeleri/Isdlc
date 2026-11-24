@@ -546,8 +546,10 @@ Sözleşme: [process-improvement-api.md](process-improvement-api.md).
 
 ## Seed verisi
 
-Seed, EF Core'un `HasData` yöntemiyle değil JSON dosyalarıyla yapılır. Uygulama açılırken
-tablo boşsa bir seeder sınıfı dosyayı okuyup tabloya yazar.
+Seed, EF Core'un `HasData` yöntemiyle değil JSON dosyalarıyla yapılır. Akış, doküman türü ve soru seti dosyaları **şablondur**:
+uygulama her açılışta her aktif şirket için şablonları şirkete kopyalar ve şirketin değiştirmediği kopyaları dosyayla eşitler
+(`TemplateCode`, `IsCustomized`; bkz. [multi-tenancy.md](multi-tenancy.md) → Seed ve şablon). Kullanıcılar ve örnek projeler
+yalnızca Ithinka'ya, tabloları boşsa yüklenir. Aşağıdaki kurallar her şirketin kopyası için geçerlidir.
 
 **Akışlar her açılışta dosyalarıyla eşitlenir.** Her akış ayrı bir dosyadır: `Seed/flows/<code>.json` (beş dosya; kaynak:
 `Ithinka Proje Dokümanları/Akışlar`, 11.11.2026). Veritabanında olmayan bir akış dosyası **eklenir** (içinde henüz kayıt

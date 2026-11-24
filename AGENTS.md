@@ -295,10 +295,13 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
   ekranlar yapay zekâ butonlarını göstermez. Ajan kayıt oluşturmaz; önerileri kişi inceleyip normal ekrandan kaydeder.
   Yalnızca sahte veriyle çalışılır (şirketin veri gönderme kararı bekleniyor).
 - **Eşzamanlılık:** `Project.RowVersion` aynı kaydın aynı anda güncellenmesini yakalar ve 409 döner.
-- **Seed:** `Isdlc.Infrastructure/Seed/*.json` dosyaları, tablo boşsa uygulama açılırken yüklenir. Örnek projeler yalnızca geliştirme ortamında yüklenir.
-  Seed şimdilik Ithinka'ya (`Tenant.IthinkaId`) yüklenir; dosyaların her şirkete şablon olarak kopyalanması Faz 6 · T3'te gelir.
-  Süreç akışı (`process-flow.json`) ayrıca her açılışta mevcut veritabanıyla eşitlenir: metin, rol ve dönüş değişiklikleri için
-  yalnızca dosya değiştirilir; adım eklemek, çıkarmak veya sıralamak migration ister (bkz. data-model.md → Seed verisi).
+- **Seed:** `Isdlc.Infrastructure/Seed/` altındaki akış, doküman türü ve soru seti dosyaları **şablondur**. Uygulama her
+  açılışta **her aktif şirket** için sırayla çalışır (`DatabaseInitializer`): şirketin henüz almadığı şablonları ona kopyalar,
+  şirketin değiştirmediği kopyaları (`IsCustomized = false`) dosyayla eşitler; kopyalar `TemplateCode` ile eşleşir. Yeni şirket
+  açılırken de aynı kod çalışır: `ITenantContext.Use(yeniŞirket)` ve `ITenantTemplates.ApplyAsync()` (çağıran transaction açar).
+  `Seed/users.json` ve örnek projeler yalnızca Ithinka'nındır (örnek projeler yalnızca geliştirme ortamında).
+  Metin, rol ve dönüş değişiklikleri için yalnızca dosya değiştirilir; adım eklemek, çıkarmak veya sıralamak migration ister
+  ve migration bütün şirketlerin kopyasını değiştirir (bkz. data-model.md → Seed verisi).
 - **Migration:** Geliştirme ortamında API açılırken otomatik uygulanır. Üretmek için (repo kökünde):
   `dotnet ef migrations add <Ad> --project backend/src/Isdlc.Infrastructure --startup-project backend/src/Isdlc.Api --output-dir Persistence/Migrations`
 
@@ -314,11 +317,15 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
   değiştirmez; kendi kaydını oluşturup onunla çalışır.
 - Ortak yardımcılar (`tests/Isdlc.Application.Tests/Common/`):
   - `TestProjects.CreateAsync(database, "4.7")`: istenen adımda bekleyen yeni bir proje; seed kullanıcılarının e-postaları da burada.
+    Başka şirkette: `TestProjects.CreateAsync(database, "5", tenantId: database.DenemeId)` (şirketin akış kopyası ve kullanıcıları).
   - `TestUser`: servisi belirli bir kullanıcı giriş yapmış gibi kurmak için (`new ProcessService(db, new TestUser(id), ...)`).
     Şirketi Ithinka'dır; başka şirket için `new TestUser(id, tenantId)`.
   - **Şirket:** `database.CreateScope()` Ithinka olarak çalışır. Başka şirket için `database.CreateScope(tenantId)`:
     o kapsamdaki DbContext yalnızca o şirketi görür ve yeni kaydı ona yazar. Filtre `TestUser`'a değil kapsama bakar.
     `TestUsers.CreateAsync(…, tenantId: …)` başka şirkete kullanıcı açar. Şirketler arası ayrım testleri `Tenants/` altındadır.
+  - **İkinci şirket:** fixture Ithinka'nın yanında **Deneme A.Ş.**'yi açar (`database.DenemeId`); açılış seed'i ona şablonları
+    verir, kullanıcıları `TestTenants`'tadır (`TestTenants.DenemeAnalyst` vb.). Ayrıca seed'in atlaması gereken pasif bir şirket
+    vardır (`database.InactiveTenantId`). Şablonları değiştiren testler kendi şirketini açar.
   - `RecordingNotificationService`: gönderilen bildirimleri listede tutar; test ne gönderildiğini kontrol eder.
 - Saf kural sınıfları (`ProcessProgress`, `ProcessTransitions` gibi) veritabanısız test edilir; bütün kombinasyonlar burada denenir.
 - Test adı neyi kontrol ettiğini söyler: `Metot_Durum_Beklenen` (ör. `GetStages_Returns13StagesInOrder`).
