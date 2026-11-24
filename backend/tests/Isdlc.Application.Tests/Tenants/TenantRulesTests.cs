@@ -46,4 +46,16 @@ public class TenantRulesTests
     {
         Assert.Throws<InvalidOperationException>(() => TenantRules.ForChangedRecord("User", original, current));
     }
+
+    [Fact]
+    public void ForNewPlatformAdmin_NoCompany_IsFine()
+    {
+        TenantRules.ForNewPlatformAdmin(null);
+    }
+
+    [Fact]
+    public void ForNewPlatformAdmin_WithACompany_IsRefused()
+    {
+        Assert.Throws<InvalidOperationException>(() => TenantRules.ForNewPlatformAdmin(1));
+    }
 }

@@ -3,6 +3,7 @@
 Tek kurulumun birden fazla şirkete (tenant) hizmet etmesi: veri modeli, kimlik, okuma ve yazma kuralları, seed, yönetim
 uç noktaları ve testler. Plan ve iş dağılımı: [phase-6-plan.md](phase-6-plan.md).
 Durum: **onaylandı** (24 Kasım 2026). Sorumlu: Erva (T1). Uygulama: T2–T7. Bölüm 12'deki kurallar T2 ile AGENTS.md'ye taşındı.
+T4'ün 1. adımı (kimlik: `PlatformAdmin`, `IsTenantAdmin`, `MustChangePassword`, parola değiştirme, her istekte aktiflik kontrolü) uygulandı.
 
 Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9) taşınır (Bölüm 12).
 
@@ -138,6 +139,8 @@ builder.Entity<User>().HasQueryFilter(u => _tenant.TenantId != null && u.TenantI
 | Giriş (`AuthService`) | E-postadan kullanıcıyı ve şirketini bulmak; o anda şirket bilinmiyor |
 | E-posta benzersizliği kontrolü | E-posta bütün sistemde benzersiz |
 | Platform Yöneticisinin şirket listesi (`TenantService`) | Kullanıcı sayısı (`TenantDto.userCount`); yalnızca sayı okunur |
+| Her istekte aktiflik kontrolü (`AccountStatusService`) | Giriş yapanın **kendi** satırı, token'daki id ile. Platform Yöneticisinin şirketi boş olduğu için filtre onu bulamaz (T4) |
+| Parola değiştirme (`AuthService.ChangePasswordAsync`) | Aynı neden: giriş yapanın kendi satırı, token'daki id ile (T4) |
 
 **Seed ve şirket açma filtreyi atlamaz**, şirketi ayarlar: `ITenantContext`'i sırayla her aktif şirkete (seed) ya da yeni
 şirkete (`POST /tenants`) ayarlayıp mevcut kodu çalıştırır. Nedeni:
@@ -164,7 +167,8 @@ builder.Entity<User>().HasQueryFilter(u => _tenant.TenantId != null && u.TenantI
    pasif şirketin varlığı dışarıya söylenmez.
 3. Token'a mevcut claim'lere ek olarak `tenant` (şirket `Id`'si, Platform Yöneticisinde yok), `tenantAdmin` (`true`/`false`)
    ve parola değiştirilmesi gerekiyorsa `mustChangePassword: true` yazılır.
-4. Cevaptaki `user` nesnesine `tenant: { id, code, name }` (Platform Yöneticisinde `null`) ve `isTenantAdmin` eklenir.
+4. Cevaptaki `user` nesnesine `tenant: { id, code, name }` (Platform Yöneticisinde `null`) ve `isTenantAdmin` eklenir;
+   cevabın kendisine `mustChangePassword` (`true` / `false`) eklenir. Parola değiştirme de aynı biçimde cevap döner.
 
 ### İstek başına
 

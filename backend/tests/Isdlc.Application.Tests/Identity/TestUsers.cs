@@ -8,6 +8,7 @@ namespace Isdlc.Application.Tests.Identity;
 
 /// <summary>
 /// Users made by Identity tests, so seed users are never changed. Every call gets a new e-mail address.
+/// A Platform Administrator (role PlatformAdmin) is saved without a company whatever the scope works as.
 /// The fixture sets no test password, so seed users have an empty password hash and cannot sign in.
 /// </summary>
 public static class TestUsers
@@ -18,7 +19,9 @@ public static class TestUsers
         bool isActive = true,
         UserRole role = UserRole.SoftwareDeveloper,
         string? fullName = null,
-        int? tenantId = null)
+        int? tenantId = null,
+        bool isTenantAdmin = false,
+        bool mustChangePassword = false)
     {
         // A user of another company is saved in a scope working as that company (Ithinka by default).
         await using var scope = tenantId is { } id ? database.CreateScope(id) : database.CreateScope();
@@ -33,6 +36,8 @@ public static class TestUsers
             PasswordHash = password is null ? string.Empty : hasher.Hash(password),
             Role = role,
             IsActive = isActive,
+            IsTenantAdmin = isTenantAdmin,
+            MustChangePassword = mustChangePassword,
             CreatedAt = DateTime.UtcNow,
         };
         db.Users.Add(user);

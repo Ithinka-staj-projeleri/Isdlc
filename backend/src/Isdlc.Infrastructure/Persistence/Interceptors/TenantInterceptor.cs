@@ -39,11 +39,33 @@ public class TenantInterceptor(ITenantContext tenant) : SaveChangesInterceptor
             Check(entry, entry.Entity.GetType().Name, entry.Entity.TenantId, id => entry.Entity.TenantId = id);
         }
 
-        // A user is not ITenantOwned (its company is empty for the Platform Administrator, Faz 6 · T4); until that role
-        // exists, a user follows the same rule as every other record.
+        // A user is not ITenantOwned: the Platform Administrator belongs to no company. Every other user follows the
+        // same rule as any other record.
         foreach (var entry in context.ChangeTracker.Entries<User>())
         {
+            if (entry.Entity.Role == UserRole.PlatformAdmin)
+            {
+                CheckPlatformAdmin(entry);
+                continue;
+            }
+
             Check(entry, nameof(User), entry.Entity.TenantId ?? 0, id => entry.Entity.TenantId = id);
+        }
+    }
+
+    /// <summary>The Platform Administrator stays without a company, whatever company the code works as.</summary>
+    private static void CheckPlatformAdmin(EntityEntry<User> entry)
+    {
+        switch (entry.State)
+        {
+            case EntityState.Added:
+                TenantRules.ForNewPlatformAdmin(entry.Entity.TenantId);
+                break;
+
+            case EntityState.Modified:
+                var property = entry.Property(u => u.TenantId);
+                TenantRules.ForChangedRecord(nameof(User), property.OriginalValue, property.CurrentValue);
+                break;
         }
     }
 
@@ -89,6 +111,19 @@ public static class TenantRules
         }
 
         return currentTenantId.Value;
+    }
+
+    /// <summary>
+    /// A new Platform Administrator: never of a company, even while the code works as one (the seed opens it after the
+    /// companies). A company given to it is a programming error.
+    /// </summary>
+    public static void ForNewPlatformAdmin(int? tenantId)
+    {
+        if (tenantId is not null)
+        {
+            throw new InvalidOperationException(
+                $"A Platform Administrator belongs to no company; company {tenantId} cannot be given.");
+        }
     }
 
     /// <summary>A saved record never moves to another company.</summary>

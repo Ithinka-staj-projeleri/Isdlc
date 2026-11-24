@@ -206,6 +206,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsTenantAdmin")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("bit");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -230,7 +236,10 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", t =>
+                        {
+                            t.HasCheckConstraint("CK_Users_TenantByRole", "([Role] = 'PlatformAdmin' AND [TenantId] IS NULL AND [IsTenantAdmin] = 0) OR ([Role] <> 'PlatformAdmin' AND [TenantId] IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Meetings.Meeting", b =>

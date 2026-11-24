@@ -8,12 +8,19 @@ namespace Isdlc.Application.Tests.Common;
 /// <summary>
 /// "This user is signed in" for one service under test. Null means nobody is signed in. The company defaults to Ithinka;
 /// it is what the service reads, while the query filter follows the scope (DatabaseFixture.CreateScope(tenantId)).
+/// A Platform Administrator has no company.
 /// </summary>
-public sealed class TestUser(int? userId, int tenantId = Tenant.IthinkaId) : ICurrentUserService
+public sealed class TestUser(
+    int? userId, int tenantId = Tenant.IthinkaId, bool isTenantAdmin = false, bool isPlatformAdmin = false)
+    : ICurrentUserService
 {
     public int? UserId { get; } = userId;
 
-    public int? TenantId { get; } = userId is null ? null : tenantId;
+    public int? TenantId { get; } = userId is null || isPlatformAdmin ? null : tenantId;
+
+    public bool IsTenantAdmin { get; } = userId is not null && isTenantAdmin;
+
+    public bool IsPlatformAdmin { get; } = userId is not null && isPlatformAdmin;
 }
 
 /// <summary>Keeps every notification instead of sending it, so a test can check what was sent.</summary>

@@ -26,6 +26,8 @@ builder.Services.AddSingleton(jwt);
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, HttpCurrentUserService>();
+// AccountGateMiddleware keeps whether a user and their company are active for a minute.
+builder.Services.AddMemoryCache();
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -114,6 +116,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+// Deactivated user or company → 401; temporary password → 403 until it is changed (docs/multi-tenancy.md).
+app.UseMiddleware<AccountGateMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

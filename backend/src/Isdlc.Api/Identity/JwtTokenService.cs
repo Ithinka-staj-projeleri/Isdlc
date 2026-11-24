@@ -13,6 +13,12 @@ public class JwtTokenService(JwtOptions options, TimeProvider timeProvider) : IT
     /// <summary>The user's company (Tenant.Id); missing only for the Platform Administrator (docs/multi-tenancy.md → Kimlik).</summary>
     public const string TenantClaim = "tenant";
 
+    /// <summary>"true" for a Şirket Yöneticisi, "false" otherwise.</summary>
+    public const string TenantAdminClaim = "tenantAdmin";
+
+    /// <summary>Only on the token of a user with a temporary password: every request but changing it gets 403.</summary>
+    public const string MustChangePasswordClaim = "mustChangePassword";
+
     private readonly JsonWebTokenHandler _handler = new();
 
     public TokenResult Create(User user)
@@ -24,10 +30,16 @@ public class JwtTokenService(JwtOptions options, TimeProvider timeProvider) : IT
             new Claim("name", user.FullName),
             new Claim("email", user.Email),
             new Claim("role", user.Role.ToString()),
+            new Claim(TenantAdminClaim, user.IsTenantAdmin ? "true" : "false"),
         ];
         if (user.TenantId is { } tenantId)
         {
             claims.Add(new Claim(TenantClaim, tenantId.ToString(CultureInfo.InvariantCulture)));
+        }
+
+        if (user.MustChangePassword)
+        {
+            claims.Add(new Claim(MustChangePasswordClaim, "true"));
         }
 
         var descriptor = new SecurityTokenDescriptor

@@ -1,4 +1,5 @@
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Domain.Identity;
 
 namespace Isdlc.Api.Identity;
 
@@ -12,6 +13,11 @@ public class HttpCurrentUserService(IHttpContextAccessor httpContextAccessor) : 
 
     public int? TenantId => ReadInt(JwtTokenService.TenantClaim);
 
-    private int? ReadInt(string claim) =>
-        int.TryParse(httpContextAccessor.HttpContext?.User.FindFirst(claim)?.Value, out var value) ? value : null;
+    public bool IsTenantAdmin => Read(JwtTokenService.TenantAdminClaim) == "true";
+
+    public bool IsPlatformAdmin => Read("role") == nameof(UserRole.PlatformAdmin);
+
+    private string? Read(string claim) => httpContextAccessor.HttpContext?.User.FindFirst(claim)?.Value;
+
+    private int? ReadInt(string claim) => int.TryParse(Read(claim), out var value) ? value : null;
 }

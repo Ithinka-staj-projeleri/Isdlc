@@ -131,6 +131,10 @@ public class DatabaseFixture : IAsyncLifetime
         public int? UserId { get; set; }
 
         public int? TenantId { get; set; } = Tenant.IthinkaId;
+
+        public bool IsTenantAdmin => false;
+
+        public bool IsPlatformAdmin => false;
     }
 
     public async Task DisposeAsync()
