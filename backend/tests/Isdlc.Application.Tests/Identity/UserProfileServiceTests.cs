@@ -282,4 +282,88 @@ public class UserProfileServiceTests(DatabaseFixture database)
         var names = list.Select(u => u.FullName).ToList();
         Assert.Equal(names.OrderBy(n => n, StringComparer.Create(new("tr-TR"), ignoreCase: true)), names);
     }
+
+    // ---- Cross tests (PLANNING.md): Erva → Baran's modules ----
+
+    [Fact]
+    public async Task Get_MoreThanTenOpenIssues_ListsTenAndTheTotalIsTheWorkloadNumber()
+    {
+        // P5: at most 10 rows, and the total is the same number as the workload.
+        var owner = await TestUsers.CreateAsync(database, password: null);
+        var projectId = await NewProjectAsync("6", analystId: null);
+        for (var i = 1; i <= 12; i++)
+        {
+            await AddOpenIssueAsync(projectId, $"AK-{i:000}", owner.Id, Today.AddDays(i));
+        }
+
+        var profile = await GetAsync(owner.Id);
+
+        Assert.Equal(10, profile.OpenIssues.Items.Count);
+        Assert.Equal(12, profile.OpenIssues.TotalCount);
+        Assert.Equal(12, profile.Workload!.OpenIssues);
+    }
+
+    [Fact]
+    public async Task Get_OpenIssues_OnlyTheOnesOwnedAsAUserOnAnActiveProject()
+    {
+        // P5: an issue owned by name (not as a user) or on a postponed or closed project is not the person's work.
+        var owner = await TestUsers.CreateAsync(database, password: null);
+        var active = await NewProjectAsync("6", analystId: null);
+        var postponed = await NewProjectAsync("6", analystId: null, ProjectStatus.Postponed);
+        var closed = await NewProjectAsync("6", analystId: null, ProjectStatus.Closed);
+        var counted = await AddOpenIssueAsync(active, "AK-001", owner.Id, null);
+        await AddOpenIssueAsync(postponed, "AK-001", owner.Id, null);
+        await AddOpenIssueAsync(closed, "AK-001", owner.Id, null);
+        await using (var scope = database.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            db.OpenIssues.Add(new OpenIssue
+            {
+                ProjectId = active, Code = "AK-002", Type = OpenIssueType.Action, Title = "Adıyla atanmış",
+                OwnerName = owner.FullName,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var profile = await GetAsync(owner.Id);
+
+        Assert.Equal(counted, Assert.Single(profile.OpenIssues.Items).Id);
+        Assert.Equal(1, profile.Workload!.OpenIssues);
+    }
+
+    [Fact]
+    public async Task Get_UserOfAnotherCompany_ThrowsNotFound()
+    {
+        // Faz 6: a profile of Deneme's user does not open for Ithinka.
+        var denemeUser = await TestUsers.CreateAsync(database, password: null, tenantId: database.DenemeId);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => GetAsync(denemeUser.Id));
+    }
+
+    [Fact]
+    public async Task ListWorkload_DoesNotListAnotherCompanysUsers()
+    {
+        var denemeUser = await TestUsers.CreateAsync(database, password: null, tenantId: database.DenemeId);
+
+        var list = await WithServiceAsync(null, s => s.ListWorkloadAsync(CancellationToken.None));
+
+        Assert.DoesNotContain(list, u => u.Id == denemeUser.Id);
+        Assert.DoesNotContain(list, u => u.FullName.StartsWith("Deniz Analist"));
+    }
+
+    [Fact]
+    public async Task ListWorkload_NamesInTurkishOrder()
+    {
+        // P7: C before Ç, I (ı) before İ; a plain ordinal sort would put Ç and İ after Z.
+        var prefix = $"Qx{Guid.NewGuid():N}"[..8];
+        foreach (var name in new[] { "İnci", "Çağla", "Irmak", "Cem" })
+        {
+            await TestUsers.CreateAsync(database, password: null, fullName: $"{prefix} {name}");
+        }
+
+        var list = await WithServiceAsync(null, s => s.ListWorkloadAsync(CancellationToken.None));
+
+        var ours = list.Where(u => u.FullName.StartsWith(prefix)).Select(u => u.FullName[(prefix.Length + 1)..]);
+        Assert.Equal(new[] { "Cem", "Çağla", "Irmak", "İnci" }, ours);
+    }
 }
