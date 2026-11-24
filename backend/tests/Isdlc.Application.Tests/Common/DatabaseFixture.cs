@@ -43,12 +43,14 @@ public class DatabaseFixture : IAsyncLifetime
             })
             .Build();
 
-        var currentUser = new FixtureCurrentUser();
+        // One user per scope, so a scope working as another company also saves its records as one of that company's
+        // users (CreatedById, UpdatedById, the audit log); see CreateScope(tenantId).
         _services = new ServiceCollection()
             .AddLogging()
             .AddApplication()
             .AddInfrastructure(configuration)
-            .AddSingleton<ICurrentUserService>(currentUser)
+            .AddScoped(_ => new FixtureCurrentUser { UserId = _ithinkaUserId })
+            .AddScoped<ICurrentUserService>(sp => sp.GetRequiredService<FixtureCurrentUser>())
             .BuildServiceProvider();
 
         await _services.InitializeDatabaseAsync(isDevelopment: true);
@@ -63,11 +65,14 @@ public class DatabaseFixture : IAsyncLifetime
         // Same default as before: scope-resolved services run as the first Business Analyst.
         await using var scope = _services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IsdlcDbContext>();
-        currentUser.UserId = await db.Users
+        _ithinkaUserId = await db.Users
             .Where(u => u.Email == "elif.yilmaz@isdlc.local")
             .Select(u => (int?)u.Id)
             .SingleAsync();
     }
+
+    /// <summary>Elif Yılmaz: who an Ithinka scope saves records as (null until the seed has run).</summary>
+    private int? _ithinkaUserId;
 
     /// <summary>
     /// A fresh DI scope, like one HTTP request of an Ithinka user. Dispose it at the end of the test.
@@ -83,6 +88,17 @@ public class DatabaseFixture : IAsyncLifetime
     {
         var scope = _services.CreateAsyncScope();
         scope.ServiceProvider.GetRequiredService<ITenantContext>().Use(tenantId);
+
+        // Records are saved as the company's first active user, as in the API where the signed-in user is always the
+        // company's own. A company with no users yet (a test that just opened it) keeps the Ithinka user.
+        var user = scope.ServiceProvider.GetRequiredService<FixtureCurrentUser>();
+        user.TenantId = tenantId;
+        var firstUserId = scope.ServiceProvider.GetRequiredService<IsdlcDbContext>().Users
+            .Where(u => u.IsActive)
+            .OrderBy(u => u.Id)
+            .Select(u => (int?)u.Id)
+            .FirstOrDefault();
+        user.UserId = firstUserId ?? user.UserId;
         return scope;
     }
 
@@ -114,7 +130,7 @@ public class DatabaseFixture : IAsyncLifetime
     {
         public int? UserId { get; set; }
 
-        public int? TenantId => Tenant.IthinkaId;
+        public int? TenantId { get; set; } = Tenant.IthinkaId;
     }
 
     public async Task DisposeAsync()
