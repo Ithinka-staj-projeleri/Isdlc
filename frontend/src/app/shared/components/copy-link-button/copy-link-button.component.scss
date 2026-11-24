@@ -1,0 +1,22 @@
+@use '../../styles/ui' as ui;
+
+:host {
+    display: inline-flex;
+}
+
+.copy-link {
+    @include ui.button;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+}

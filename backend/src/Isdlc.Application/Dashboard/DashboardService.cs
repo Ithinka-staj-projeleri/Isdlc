@@ -1,10 +1,10 @@
 using Isdlc.Application.Assessment;
-using Isdlc.Application.Assessment.Dtos;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Common.Models;
 using Isdlc.Application.Dashboard.Dtos;
 using Isdlc.Application.OpenIssues.Dtos;
+using Isdlc.Application.QuestionBank;
 using Isdlc.Application.Risks;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.OpenIssues;
@@ -154,8 +154,9 @@ public class DashboardService(
     }
 
     /// <summary>
-    /// Active requests at the acceptance step (AcceptanceStepCode) with their acceptance scoring (decision 13). The weighted score and the
-    /// recommendation come from AssessmentRules, so they match the Seviye &amp; Kabul tab. Longest waiting first.
+    /// Active requests at the customer fit step (AcceptanceStepCode; only external requests reach it) with their customer fit
+    /// survey (decision 13, docs/assessment-api.md → Gösterge paneli). The rating comes from CustomerFitRules and the form's bands,
+    /// so it matches the Seviye &amp; Uygunluk tab. Longest waiting first.
     /// </summary>
     private async Task<DashboardListDto<AcceptanceQueueItemDto>> AcceptanceQueueAsync(
         IQueryable<Project> projects, CancellationToken cancellationToken)
@@ -165,6 +166,18 @@ public class DashboardService(
             && p.ProcessFlow.Code == ProcessFlowCodes.NewRequest);
 
         var totalCount = await requests.CountAsync(cancellationToken);
+
+        // The survey's questions for external requests of the new software project flow, and its thresholds.
+        var survey = await dbContext.QuestionSets
+            .AsNoTracking()
+            .Where(s => s.Code == CustomerFitRules.SetCode)
+            .Select(s => new { s.Id, s.Bands })
+            .SingleAsync(cancellationToken);
+        var listed = await dbContext.Questions
+            .Where(q => q.QuestionSetId == survey.Id)
+            .Where(QuestionnaireRules.ListedIn(QuestionnaireRules.DefaultWorkType, RequestSource.External))
+            .CountAsync(cancellationToken);
+        var bands = ScoreBands.Parse(survey.Bands);
 
         // Sorted before Select: EF cannot sort on the projected DTOs.
         var rows = await requests
@@ -183,33 +196,20 @@ public class DashboardService(
                 Project = new DashboardProjectDto(x.Project.Id, x.Project.Code, x.Project.Name),
                 StepCode = x.Project.CurrentStep!.Code,
                 x.WaitingSince,
-                Scores = dbContext.ProjectAssessments
-                    .Where(a => a.ProjectId == x.Project.Id)
-                    .Select(a => new AcceptanceScoresDto
-                    {
-                        StrategicFit = a.StrategicFit,
-                        CommercialValue = a.CommercialValue,
-                        TechnicalFeasibility = a.TechnicalFeasibility,
-                        ResourceAndSchedule = a.ResourceAndSchedule,
-                        CustomerFit = a.CustomerFit,
-                        RiskLevel = a.RiskLevel,
-                    })
-                    .FirstOrDefault(),
+                // Answered questions of the survey and the points of their chosen options.
+                Points = dbContext.QuestionAnswers
+                    .Where(a => a.ProjectId == x.Project.Id && a.Questionnaire.QuestionSetId == survey.Id && a.Option != null)
+                    .Where(a => a.Question.IsActive && a.Question.Subcategory == RequestSource.External)
+                    .Select(a => a.Option!.Points ?? 0)
+                    .ToList(),
             })
             .ToListAsync(cancellationToken);
 
         var items = rows.Select(x =>
         {
-            // No assessment yet: nothing is scored.
-            var scores = x.Scores ?? new AcceptanceScoresDto();
-            var weighted = AssessmentRules.WeightedScore(scores);
-            return new AcceptanceQueueItemDto(
-                x.Project,
-                x.StepCode,
-                weighted,
-                weighted is { } score ? AssessmentRules.RecommendationOf(score) : null,
-                AssessmentRules.AnsweredCount(scores),
-                x.WaitingSince);
+            var score = x.Points.Sum();
+            var rating = listed > 0 && x.Points.Count == listed ? CustomerFitRules.RatingOf(bands, score) : null;
+            return new AcceptanceQueueItemDto(x.Project, x.StepCode, score, rating, x.Points.Count, listed, x.WaitingSince);
         }).ToList();
 
         return new DashboardListDto<AcceptanceQueueItemDto>(totalCount, items);

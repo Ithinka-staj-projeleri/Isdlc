@@ -22,7 +22,7 @@ export class SidebarComponent {
     },
     {
       title: 'Analiz', items: [
-        { path: '/assessment', label: 'Seviye & Kabul' },
+        { path: '/assessment', label: 'Seviye & Uygunluk' },
         { path: '/requirements', label: 'Gereksinimler' },
         { path: '/risks', label: 'Risk Yönetimi' },
         { path: '/open-issues', label: 'Açık Konular' },

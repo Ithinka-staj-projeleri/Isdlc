@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
@@ -43,6 +43,19 @@ export class OpenIssueListComponent {
 
     /** True when the project is not active: records can be read but not added or changed. */
     readonly readOnly = input(false);
+
+    /** The record to open: ?id= in the address (docs/record-links.md). */
+    readonly openId = input<number | null>(null);
+
+    /** The opened record was closed, so the page can remove ?id= from the address. */
+    readonly recordClosed = output<void>();
+
+    constructor() {
+        effect(() => {
+            const id = this.openId();
+            if (id !== null) untracked(() => this.editing.set(id));
+        });
+    }
 
     protected readonly typeLabels = OPEN_ISSUE_TYPE_LABELS;
     protected readonly statusLabels = OPEN_ISSUE_STATUS_LABELS;
@@ -102,7 +115,12 @@ export class OpenIssueListComponent {
     }
 
     protected onSaved(): void {
-        this.editing.set(null);
+        this.closeForm();
         this.issues.reload();
+    }
+
+    protected closeForm(): void {
+        this.editing.set(null);
+        this.recordClosed.emit();
     }
 }

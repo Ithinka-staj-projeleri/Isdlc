@@ -1,27 +1,17 @@
-using Isdlc.Application.Assessment.Dtos;
+using Isdlc.Application.QuestionBank.Dtos;
 
 namespace Isdlc.Application.Assessment;
 
 /// <summary>
-/// Level questions (flow 2.4) and acceptance scoring (flow 3.1) of a project. Contract: docs/assessment-api.md
-/// Common errors: 404 project missing, 409 project not active (writes only).
+/// Seviye &amp; Uygunluk (Faz 4 · B2). The two forms are read and filled in with IQuestionnaireService ("level",
+/// "customer-fit"), which also fills their result; this service only applies the level form's result to the project.
+/// Contract: docs/assessment-api.md
 /// </summary>
 public interface IAssessmentService
 {
-    /// <summary>The questions, criteria, weights and rules the screen draws.</summary>
-    AssessmentDefinitionDto GetDefinition();
-
-    /// <summary>Empty answers when nothing has been saved yet.</summary>
-    Task<ProjectAssessmentDto> GetAsync(int projectId, CancellationToken cancellationToken);
-
-    /// <summary>Saves the level answers (may be partly answered). Never changes Project.Level.</summary>
-    Task<ProjectAssessmentDto> SaveLevelAnswersAsync(
-        int projectId, SaveLevelAnswersDto request, CancellationToken cancellationToken);
-
-    /// <summary>Saves the acceptance scores (may be partly scored).</summary>
-    Task<ProjectAssessmentDto> SaveAcceptanceScoresAsync(
-        int projectId, SaveAcceptanceScoresDto request, CancellationToken cancellationToken);
-
-    /// <summary>Writes the suggested level to Project.Level. 400 until every level question is answered.</summary>
-    Task<ProjectAssessmentDto> ApplyLevelAsync(int projectId, CancellationToken cancellationToken);
+    /// <summary>
+    /// Writes the level form's result to Project.Level and Project.ResearchDays and returns the level form.
+    /// 400 until both sections are answered; 404 project missing; 409 project not active or changed at the same moment.
+    /// </summary>
+    Task<QuestionnaireDto> ApplyLevelAsync(int projectId, CancellationToken cancellationToken);
 }

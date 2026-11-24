@@ -87,15 +87,16 @@ public record HighRiskDto(
 public record LevelCountsDto(int Level1, int Level2, int Level3, int NotSet);
 
 /// <summary>
-/// An active request at step 3.1 or 3.2 and its acceptance scoring. WeightedScore and Recommendation are null
-/// until all six criteria are scored (AssessmentRules).
+/// An active external request at the customer fit step and its survey (docs/assessment-api.md → Gösterge paneli):
+/// points so far (0–100), and the rating once every question is answered (CustomerFitRules).
 /// </summary>
 public record AcceptanceQueueItemDto(
     DashboardProjectDto Project,
     string StepCode,
-    decimal? WeightedScore,
-    AcceptanceRecommendation? Recommendation,
+    int Score,
+    CustomerFitRating? Rating,
     int AnsweredCount,
+    int QuestionCount,
     DateTime WaitingSince);
 
 public record RecentActivityDto(

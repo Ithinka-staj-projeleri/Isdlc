@@ -3,8 +3,10 @@ import { Component, computed, inject } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
+import { CopyLinkButtonComponent } from '../../../shared/components/copy-link-button/copy-link-button.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
+import { projectLink, recordIdOf } from '../../../shared/models/record-link';
 import { DateOnlyPipe } from '../../../shared/pipes/date-only.pipe';
 import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
 import { ProjectAssessmentComponent } from '../../assessment/project-assessment/project-assessment.component';
@@ -55,6 +57,7 @@ const LAST_REQUEST_STAGE = 2;
   selector: 'app-project-detail',
   imports: [
     RouterLink,
+    CopyLinkButtonComponent,
     DateOnlyPipe,
     LocalDatePipe,
     EmptyStateComponent,
@@ -93,7 +96,7 @@ export class ProjectDetailComponent {
     { key: 'timeline', label: 'Zaman Çizelgesi' },
     { key: 'request-analysis', label: 'Talep Analizi' },
     { key: 'add-ons', label: 'Ek Geliştirmeler' },
-    { key: 'assessment', label: 'Seviye & Kabul' },
+    { key: 'assessment', label: 'Seviye & Uygunluk' },
     { key: 'requirements', label: 'Gereksinimler' },
     { key: 'documents', label: 'Dokümanlar' },
     { key: 'risks', label: 'Riskler' },
@@ -115,6 +118,13 @@ export class ProjectDetailComponent {
     this._route.queryParamMap.pipe(map((params) => (params.get('tab') as DetailTab | null) ?? 'general')),
     { requireSync: true },
   );
+
+  /** The record the tab opens: ?id=12 (Faz 5 · F8, docs/record-links.md). */
+  readonly recordId = toSignal(this._route.queryParamMap.pipe(map((params) => recordIdOf(params.get('id')))), {
+    requireSync: true,
+  });
+
+  readonly link = computed(() => projectLink(this.projectId()));
 
   readonly project = rxResource({
     params: () => ({ projectId: this.projectId() }),
@@ -160,8 +170,21 @@ export class ProjectDetailComponent {
   selectTab(tab: DetailTab): void {
     this._router.navigate([], {
       relativeTo: this._route,
-      queryParams: { tab: tab === 'general' ? null : tab },
+      queryParams: { tab: tab === 'general' ? null : tab, id: null },
       queryParamsHandling: 'merge',
+    });
+  }
+
+  /** The tab closed the record it opened from the address, so a reload does not open it again. */
+  clearRecordId(): void {
+    if (this.recordId() === null) {
+      return;
+    }
+    this._router.navigate([], {
+      relativeTo: this._route,
+      queryParams: { id: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
   }
 }

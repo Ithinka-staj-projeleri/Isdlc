@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
@@ -29,6 +29,19 @@ export class MeetingListComponent {
     /** True when the project is not active: minutes can be read but not added or changed. */
     readonly readOnly = input(false);
 
+    /** The record to open: ?id= in the address (docs/record-links.md). */
+    readonly openId = input<number | null>(null);
+
+    /** The opened record was closed, so the page can remove ?id= from the address. */
+    readonly recordClosed = output<void>();
+
+    constructor() {
+        effect(() => {
+            const id = this.openId();
+            if (id !== null) untracked(() => this.panel.set({ kind: 'detail', meetingId: id }));
+        });
+    }
+
     protected readonly typeLabels = MEETING_TYPE_LABELS;
     protected readonly pageSize = 20;
     protected readonly page = signal(1);
@@ -47,5 +60,10 @@ export class MeetingListComponent {
     protected onSaved(meetingId: number): void {
         this.meetings.reload();
         this.panel.set({ kind: 'detail', meetingId });
+    }
+
+    protected closeDetail(): void {
+        this.panel.set(null);
+        this.recordClosed.emit();
     }
 }

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Isdlc.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(IsdlcDbContext))]
-    [Migration("20261123083936_AddUserProfileFields")]
-    partial class AddUserProfileFields
+    [Migration("20261124072345_RemoveProjectAssessmentsTable")]
+    partial class RemoveProjectAssessmentsTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,102 +24,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("Isdlc.Domain.Assessment.ProjectAssessment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("CommercialValue")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("CustomerFit")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DataSensitivity")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Effort")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("HardwareDependency")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Integrations")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ResourceAndSchedule")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("RiskLevel")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ScreensAndModules")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("StrategicFit")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("TechnicalFeasibility")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UpdatedById")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("UserRoles")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("ProjectId")
-                        .IsUnique();
-
-                    b.HasIndex("UpdatedById");
-
-                    b.ToTable("ProjectAssessments", t =>
-                        {
-                            t.HasCheckConstraint("CK_ProjectAssessments_CommercialValue", "[CommercialValue] IS NULL OR [CommercialValue] BETWEEN 1 AND 5");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_CustomerFit", "[CustomerFit] IS NULL OR [CustomerFit] BETWEEN 1 AND 5");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_DataSensitivity", "[DataSensitivity] IS NULL OR [DataSensitivity] BETWEEN 1 AND 3");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_Effort", "[Effort] IS NULL OR [Effort] BETWEEN 1 AND 3");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_HardwareDependency", "[HardwareDependency] IS NULL OR [HardwareDependency] BETWEEN 1 AND 3");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_Integrations", "[Integrations] IS NULL OR [Integrations] BETWEEN 1 AND 3");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_ResourceAndSchedule", "[ResourceAndSchedule] IS NULL OR [ResourceAndSchedule] BETWEEN 1 AND 5");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_RiskLevel", "[RiskLevel] IS NULL OR [RiskLevel] BETWEEN 1 AND 5");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_ScreensAndModules", "[ScreensAndModules] IS NULL OR [ScreensAndModules] BETWEEN 1 AND 3");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_StrategicFit", "[StrategicFit] IS NULL OR [StrategicFit] BETWEEN 1 AND 5");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_TechnicalFeasibility", "[TechnicalFeasibility] IS NULL OR [TechnicalFeasibility] BETWEEN 1 AND 5");
-
-                            t.HasCheckConstraint("CK_ProjectAssessments_UserRoles", "[UserRoles] IS NULL OR [UserRoles] BETWEEN 1 AND 3");
-                        });
-                });
 
             modelBuilder.Entity("Isdlc.Domain.Audit.AuditLog", b =>
                 {
@@ -273,10 +177,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<string>("Expertise")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -294,10 +194,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("WorkingNote")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
 
                     b.HasKey("Id");
 
@@ -1549,28 +1445,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("CK_Risks_Probability", "[Probability] BETWEEN 1 AND 5");
                         });
-                });
-
-            modelBuilder.Entity("Isdlc.Domain.Assessment.ProjectAssessment", b =>
-                {
-                    b.HasOne("Isdlc.Domain.Identity.User", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Isdlc.Domain.Projects.Project", "Project")
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Isdlc.Domain.Identity.User", null)
-                        .WithMany()
-                        .HasForeignKey("UpdatedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Audit.AuditLog", b =>

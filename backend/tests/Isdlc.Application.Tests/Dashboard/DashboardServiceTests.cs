@@ -1,5 +1,4 @@
 using Isdlc.Application.Assessment;
-using Isdlc.Application.Assessment.Dtos;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Dashboard;
@@ -443,61 +442,55 @@ public class DashboardServiceTests(DatabaseFixture database)
             levels.Level1 + levels.Level2 + levels.Level3 + levels.NotSet);
     }
 
-    // ---- Acceptance queue (decision 13) ----
+    // ---- Customer fit queue (decision 13, docs/assessment-api.md → Gösterge paneli) ----
 
     [Fact]
-    public async Task AcceptanceQueue_Mine_OnlyTheSuitabilityStep_WithRecommendationOnceFullyScored()
+    public async Task AcceptanceQueue_Mine_OnlyTheCustomerFitStep_WithRatingOnceFullyAnswered()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var notScored = await NewProjectAsync("4", analystId: analyst);
-        var accept = await NewProjectAsync("4", analystId: analyst);
+        var notAnswered = await NewProjectAsync("4", analystId: analyst);
+        var fit = await NewProjectAsync("4", analystId: analyst);
         var conditional = await NewProjectAsync("4", analystId: analyst);
         var partly = await NewProjectAsync("4", analystId: analyst);
         var notInQueue = await NewProjectAsync("5", analystId: analyst);
-        await AddAssessmentAsync(accept, 4, 4, 4, 4, 4, 4);
-        await AddAssessmentAsync(conditional, 3, 3, 3, 3, 3, 3);
-        await AddAssessmentAsync(partly, 5, 5, 5, 5, null, null);
-        await AddAssessmentAsync(notInQueue, 5, 5, 5, 5, 5, 5);
+        await AnswerFitAsync(fit, q => TestQuestionnaires.Points(q, 9));
+        await AnswerFitAsync(conditional, q => TestQuestionnaires.Points(q, 7));
+        var answeredFive = 0;
+        await AnswerFitAsync(partly, q => answeredFive++ < 5 ? TestQuestionnaires.Points(q, 10) : null);
+        await AnswerFitAsync(notInQueue, q => TestQuestionnaires.Points(q, 10));
         // Longest waiting first: give each a different last process record.
-        await AddStepRecordAsync(notScored, "4", new DateTime(2000, 1, 1, 9, 0, 0, DateTimeKind.Utc), analyst);
-        await AddStepRecordAsync(accept, "4", new DateTime(2000, 1, 2, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(notAnswered, "4", new DateTime(2000, 1, 1, 9, 0, 0, DateTimeKind.Utc), analyst);
+        await AddStepRecordAsync(fit, "4", new DateTime(2000, 1, 2, 9, 0, 0, DateTimeKind.Utc), analyst);
         await AddStepRecordAsync(conditional, "4", new DateTime(2000, 1, 3, 9, 0, 0, DateTimeKind.Utc), analyst);
         await AddStepRecordAsync(partly, "5", new DateTime(2000, 1, 4, 9, 0, 0, DateTimeKind.Utc), analyst);
 
         var dashboard = await AsAsync(analyst);
 
         Assert.Equal(4, dashboard.AcceptanceQueue.TotalCount);
-        Assert.Equal([notScored, accept, conditional, partly], dashboard.AcceptanceQueue.Items.Select(x => x.Project.Id));
+        Assert.Equal([notAnswered, fit, conditional, partly], dashboard.AcceptanceQueue.Items.Select(x => x.Project.Id));
         var items = dashboard.AcceptanceQueue.Items;
 
-        Assert.Equal(("4", 0, (decimal?)null, (AcceptanceRecommendation?)null),
-            (items[0].StepCode, items[0].AnsweredCount, items[0].WeightedScore, items[0].Recommendation));
-        Assert.Equal(("4", 6, (decimal?)4.00m, (AcceptanceRecommendation?)AcceptanceRecommendation.Accept),
-            (items[1].StepCode, items[1].AnsweredCount, items[1].WeightedScore, items[1].Recommendation));
-        Assert.Equal((decimal?)3.00m, items[2].WeightedScore);
-        Assert.Equal(AcceptanceRecommendation.Conditional, items[2].Recommendation);
-        Assert.Equal((4, (decimal?)null, (AcceptanceRecommendation?)null),
-            (items[3].AnsweredCount, items[3].WeightedScore, items[3].Recommendation));
+        Assert.Equal(("4", 0, 10, 0, (CustomerFitRating?)null),
+            (items[0].StepCode, items[0].AnsweredCount, items[0].QuestionCount, items[0].Score, items[0].Rating));
+        Assert.Equal((10, 90, (CustomerFitRating?)CustomerFitRating.Fit),
+            (items[1].AnsweredCount, items[1].Score, items[1].Rating));
+        Assert.Equal((70, (CustomerFitRating?)CustomerFitRating.ConditionallyFit), (items[2].Score, items[2].Rating));
+        Assert.Equal((5, 50, (CustomerFitRating?)null), (items[3].AnsweredCount, items[3].Score, items[3].Rating));
     }
 
     [Fact]
-    public async Task AcceptanceQueue_MatchesTheAssessmentRules()
+    public async Task AcceptanceQueue_MatchesTheSurveyResult()
     {
         var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
         var projectId = await NewProjectAsync("4", analystId: analyst);
-        var scores = new AcceptanceScoresDto
-        {
-            StrategicFit = 5, CommercialValue = 2, TechnicalFeasibility = 4,
-            ResourceAndSchedule = 1, CustomerFit = 3, RiskLevel = 5,
-        };
-        await AddAssessmentAsync(projectId, 5, 2, 4, 1, 3, 5);
+        var points = new Queue<int>([10, 2, 8, 0, 5, 6, 9, 3, 7, 4]); // 54
+        await AnswerFitAsync(projectId, q => TestQuestionnaires.Points(q, points.Dequeue()));
 
         var dashboard = await AsAsync(analyst);
 
-        // The dashboard and the Seviye & Kabul tab use the same rules, so they always show the same result.
+        // The dashboard and the Seviye & Uygunluk tab use the same rules and bands, so they always show the same result.
         var item = Assert.Single(dashboard.AcceptanceQueue.Items, x => x.Project.Id == projectId);
-        Assert.Equal(AssessmentRules.WeightedScore(scores), item.WeightedScore);
-        Assert.Equal(AssessmentRules.RecommendationOf(item.WeightedScore!.Value), item.Recommendation);
+        Assert.Equal((54, (CustomerFitRating?)CustomerFitRating.Risky), (item.Score, item.Rating));
     }
 
     // ---- Helpers ----
@@ -530,24 +523,8 @@ public class DashboardServiceTests(DatabaseFixture database)
         await db.SaveChangesAsync();
     }
 
-    private async Task AddAssessmentAsync(
-        int projectId, int? strategicFit, int? commercialValue, int? technicalFeasibility,
-        int? resourceAndSchedule, int? customerFit, int? riskLevel)
-    {
-        await using var scope = database.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        db.ProjectAssessments.Add(new ProjectAssessment
-        {
-            ProjectId = projectId,
-            StrategicFit = strategicFit,
-            CommercialValue = commercialValue,
-            TechnicalFeasibility = technicalFeasibility,
-            ResourceAndSchedule = resourceAndSchedule,
-            CustomerFit = customerFit,
-            RiskLevel = riskLevel,
-        });
-        await db.SaveChangesAsync();
-    }
+    private Task AnswerFitAsync(int projectId, Func<Domain.QuestionBank.Question, Domain.QuestionBank.QuestionOption?> choose) =>
+        TestQuestionnaires.AnswerAsync(database, projectId, CustomerFitRules.SetCode, RequestSource.External, choose);
 
     /// <summary>
     /// The list shows the 10 longest waiting rows, and other tests leave projects at the same steps.

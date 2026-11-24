@@ -17,7 +17,8 @@
             <select [value]="f.subcategory" [disabled]="readOnly() || savingId() !== null"
                 (change)="setSubcategory($any($event.target).value)">
                 @for (s of subcategories; track s) {
-                <option [value]="s">{{ subcategoryLabels[s] }}</option>
+                <!-- [selected] here: the select's own [value] is set before its options exist, so it showed the first one. -->
+                <option [value]="s" [selected]="s === f.subcategory">{{ subcategoryLabels[s] }}</option>
                 }
             </select>
         </label>
@@ -121,7 +122,8 @@
             <button type="button" class="option" [class.on]="chosen?.id === o.id" [attr.data-meaning]="o.meaning"
                 [attr.aria-pressed]="chosen?.id === o.id" [disabled]="readOnly() || isSaving(q.id)"
                 (click)="choose(item, o.id)">
-                {{ o.label }}@if (o.points !== null) {<span class="points"> · {{ o.points }}</span>}
+                <!-- The survey's options are the points themselves ("7"), so the points are not repeated there. -->
+                {{ o.label }}@if (o.points !== null && o.label !== '' + o.points) {<span class="points"> · {{ o.points }}</span>}
             </button>
             }
         </div>

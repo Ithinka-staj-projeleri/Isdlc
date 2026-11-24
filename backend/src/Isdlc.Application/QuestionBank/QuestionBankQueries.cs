@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Isdlc.Application.QuestionBank;
 
-/// <summary>A set as the services use it: its id and what the screen gets.</summary>
-internal record QuestionSetRef(int Id, QuestionSetDto Dto);
+/// <summary>A set as the services use it: its id, what the screen gets and its thresholds (QuestionSet.Bands).</summary>
+internal record QuestionSetRef(int Id, QuestionSetDto Dto, string? Bands);
 
 /// <summary>Read-only queries the question bank and the project forms share.</summary>
 internal static class QuestionBankQueries
@@ -18,7 +18,7 @@ internal static class QuestionBankQueries
         await db.QuestionSets
             .AsNoTracking()
             .Where(s => s.Code == setCode)
-            .Select(s => new QuestionSetRef(s.Id, new QuestionSetDto(s.Code, s.Name, s.SourceDocument, s.Version, s.AnswerMode)))
+            .Select(s => new QuestionSetRef(s.Id, new QuestionSetDto(s.Code, s.Name, s.SourceDocument, s.Version, s.AnswerMode), s.Bands))
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException("Soru seti bulunamadı.");
 

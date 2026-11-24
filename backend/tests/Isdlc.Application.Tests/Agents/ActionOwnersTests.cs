@@ -104,4 +104,80 @@ public class ActionOwnersTests
     {
         Assert.Equal(new ActionOwners.Owner(null, name, null), Resolve(name, "Hakan Yıldız"));
     }
+
+    // ---- Cross tests (PLANNING.md): Dide → Erva's modules ----
+
+    [Fact]
+    public void Resolve_FullNameBeatsTheParticipants()
+    {
+        // "Can Öztürk" is a user; a participant called Can Yılmaz does not change that.
+        Assert.Equal(new ActionOwners.Owner(1, null, null), Resolve("Can Öztürk", "Can Yılmaz"));
+    }
+
+    [Fact]
+    public void Resolve_ParticipantWhoIsNotAUser_WinsOverAUserWhoWasNotInTheMeeting()
+    {
+        // Can Öztürk is a user but was not in the meeting; the Can of the notes is the participant Can Kara.
+        Assert.Equal(new ActionOwners.Owner(null, "Can Kara", null), Resolve("Can", "Can Kara", "Elif Yılmaz"));
+    }
+
+    [Fact]
+    public void Resolve_ParticipantsFullNameFitsTwoUsers_KeepsTheFullNameWithAWarning()
+    {
+        ActionOwners.User[] users = [Can, new(4, "Can Öztürk")];
+
+        var owner = ActionOwners.Resolve("Öztürk", users, ["Can Öztürk"]);
+
+        Assert.Null(owner.UserId);
+        Assert.Equal("Can Öztürk", owner.Name);
+        Assert.NotNull(owner.Warning);
+    }
+
+    [Fact]
+    public void Resolve_SameParticipantWrittenTwice_IsNotAmbiguous()
+    {
+        ActionOwners.User[] users = [Can, new(4, "Can Yılmaz")];
+
+        var owner = ActionOwners.Resolve("Can", users, ["Can Öztürk", "CAN ÖZTÜRK"]);
+
+        Assert.Equal(new ActionOwners.Owner(1, null, null), owner);
+    }
+
+    [Theory]
+    [InlineData("Ayşe", 5)]
+    [InlineData("Demir", 5)]
+    public void Resolve_FirstOrLastNameWithAMiddleName_IsThatUser(string name, int userId)
+    {
+        Assert.Equal(new ActionOwners.Owner(userId, null, null), ActionOwners.Resolve(name, [new(5, "Ayşe Nur Demir")], []));
+    }
+
+    [Fact]
+    public void Resolve_MiddleName_IsNotMatched()
+    {
+        Assert.Equal(new ActionOwners.Owner(null, "Nur", null), ActionOwners.Resolve("Nur", [new(5, "Ayşe Nur Demir")], []));
+    }
+
+    [Fact]
+    public void Resolve_SingleWordParticipant_DoesNotCompleteTheName()
+    {
+        // "Hakan" alone in the participants is not a full name; nothing to complete.
+        Assert.Equal(new ActionOwners.Owner(null, "Hakan", null), Resolve("Hakan", "Hakan"));
+    }
+
+    [Fact]
+    public void Resolve_LastNameWithTurkishCapitalI_IsThatUser()
+    {
+        // "IŞIK" lowers to "ışık" the Turkish way (I → ı), not "işik".
+        Assert.Equal(new ActionOwners.Owner(7, null, null), ActionOwners.Resolve("IŞIK", [new(7, "Deniz Işık")], []));
+    }
+
+    [Fact]
+    public void Resolve_Warning_ListsTheCandidatesInTurkishOrder()
+    {
+        ActionOwners.User[] users = [new(1, "Çağrı Kaya"), new(2, "Can Kaya"), new(3, "Zeynep Kaya")];
+
+        var owner = ActionOwners.Resolve("Kaya", users, []);
+
+        Assert.Equal("“Kaya” birden fazla kişiye uyuyor: Can Kaya, Çağrı Kaya, Zeynep Kaya. Sorumluyu seçin.", owner.Warning);
+    }
 }

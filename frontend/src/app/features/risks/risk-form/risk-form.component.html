@@ -1,7 +1,10 @@
 <!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
 <div class="overlay">
     <form class="dialog" [formGroup]="form" (ngSubmit)="save()" novalidate>
-        <h3>{{ riskId() === null ? 'Yeni risk' : 'Risk ' + (code() ?? '') }}</h3>
+        <div class="dialog-head">
+            <h3>{{ riskId() === null ? 'Yeni risk' : 'Risk ' + (code() ?? '') }}</h3>
+            @if (link(); as l) { <app-copy-link-button [link]="l" /> }
+        </div>
 
         @if (loading()) {
         <p class="muted">Yükleniyor…</p>

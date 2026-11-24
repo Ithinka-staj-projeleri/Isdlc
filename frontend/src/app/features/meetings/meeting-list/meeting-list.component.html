@@ -50,7 +50,7 @@
 
 @if (detailId(); as meetingId) {
 <app-meeting-detail [projectId]="projectId()" [meetingId]="meetingId" [readOnly]="readOnly()"
-    (edit)="panel.set({ kind: 'edit', meetingId })" (closed)="panel.set(null)" />
+    (edit)="panel.set({ kind: 'edit', meetingId })" (closed)="closeDetail()" />
 }
 @if (editId(); as meetingId) {
 <app-meeting-form [projectId]="projectId()" [meetingId]="meetingId"

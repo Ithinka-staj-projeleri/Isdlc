@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 using Isdlc.Application.Agents;
 using Isdlc.Application.Agents.Dtos;
@@ -87,5 +88,122 @@ public class MeetingTranscriptTests(DatabaseFixture database)
         var status = await service.GetStatusAsync(CancellationToken.None);
 
         Assert.Equal(expected, status.TranscriptionEnabled);
+    }
+
+    // ---- Cross tests (PLANNING.md): Dide → Erva's modules ----
+
+    [Fact]
+    public async Task Transcribe_NotSignedIn_ThrowsForbiddenAndDoesNotCallTheService()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "6");
+        var agent = new FakeAgentClient();
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => TranscribeAsync(agent, projectId, email: null));
+
+        Assert.False(agent.WasCalled);
+    }
+
+    [Fact]
+    public async Task Transcribe_ProjectMissing_ThrowsNotFoundAndDoesNotCallTheService()
+    {
+        var agent = new FakeAgentClient();
+
+        await Assert.ThrowsAsync<NotFoundException>(() => TranscribeAsync(agent, int.MaxValue));
+
+        Assert.False(agent.WasCalled);
+    }
+
+    [Fact]
+    public async Task Transcribe_NoFile_IsABusinessRule()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "6");
+        var userId = await TestProjects.UserIdAsync(database, TestProjects.Analyst);
+        var agent = new FakeAgentClient();
+        await using var scope = database.CreateScope();
+        var service = new AgentService(
+            scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(), new TestUser(userId), agent);
+
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(
+            () => service.TranscribeMeetingAsync(projectId, null, 0, CancellationToken.None));
+
+        Assert.Equal("Kayıt dosyası seçilmelidir.", error.Message);
+        Assert.False(agent.WasCalled);
+    }
+
+    [Theory]
+    [InlineData(ProjectStatus.Rejected)]
+    [InlineData(ProjectStatus.Postponed)]
+    public async Task Transcribe_ProjectNotActive_IsAConflictAndDoesNotCallTheService(ProjectStatus status)
+    {
+        var projectId = await TestProjects.CreateAsync(database, null, status);
+        var agent = new FakeAgentClient();
+
+        await Assert.ThrowsAsync<ConflictException>(() => TranscribeAsync(agent, projectId));
+
+        Assert.False(agent.WasCalled);
+    }
+
+    [Fact]
+    public async Task Transcribe_CutTranscript_PassesOnTruncatedAndTheLanguage()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "6");
+        var agent = new FakeAgentClient { Transcript = new("Hello.", 3600, "en", true, "test-whisper") };
+
+        var transcript = await TranscribeAsync(agent, projectId);
+
+        Assert.Equal(new MeetingTranscriptDto("Hello.", 3600, "en", true), transcript);
+    }
+
+    [Fact]
+    public async Task Transcribe_UnreadableFile_TheServicesMessageReachesThePerson()
+    {
+        var projectId = await TestProjects.CreateAsync(database, "6");
+        var agent = new FakeAgentClient
+        {
+            Failure = new BusinessRuleException("Kayıt okunamadı; ses ya da video dosyası seçin."),
+        };
+
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(() => TranscribeAsync(agent, projectId));
+
+        Assert.Equal("Kayıt okunamadı; ses ya da video dosyası seçin.", error.Message);
+    }
+
+    // ---- Notes limits: a recording's transcript fits the minutes assistant, an e-mail keeps its own limit ----
+
+    private static List<ValidationResult> Validate(object dto)
+    {
+        var results = new List<ValidationResult>();
+        Validator.TryValidateObject(dto, new ValidationContext(dto), results, validateAllProperties: true);
+        return results;
+    }
+
+    [Fact]
+    public void MeetingNotes_AnHourLongTranscript_Fits()
+    {
+        Assert.Empty(Validate(new SuggestMeetingItemsDto
+        {
+            MeetingDate = new DateOnly(2026, 11, 5), Notes = new string('a', MeetingSuggestionLimits.MaxNotes),
+        }));
+    }
+
+    [Fact]
+    public void MeetingNotes_OverTheLimit_IsATurkishError()
+    {
+        var error = Assert.Single(Validate(new SuggestMeetingItemsDto
+        {
+            MeetingDate = new DateOnly(2026, 11, 5), Notes = new string('a', 100_001),
+        }));
+
+        Assert.Equal("Notlar en fazla 100000 karakter olabilir.", error.ErrorMessage);
+    }
+
+    [Fact]
+    public void RequestEmail_KeepsItsOwnLimit()
+    {
+        // F5 raised the meeting notes limit; the e-mail of a request (F6) stays at 20000.
+        Assert.Empty(Validate(new DraftRequestFromEmailDto { EmailText = new string('a', 20_000) }));
+
+        var error = Assert.Single(Validate(new DraftRequestFromEmailDto { EmailText = new string('a', 20_001) }));
+        Assert.Equal("E-posta en fazla 20000 karakter olabilir.", error.ErrorMessage);
     }
 }

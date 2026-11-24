@@ -34,7 +34,7 @@ Aşağıdaki liste kesin değildir; kapsam netleştikçe güncellenir.
 | Giriş ve kullanıcı/rol yönetimi | `Identity` | Kullanıcı girişi, roller |
 | Talepler ve projeler | `Projects` | Talep kaydı, proje listesi ve detayı |
 | Süreç akışı | `Process` | 13 aşamalı ISDLC adımları, Evet/Hayır kararları, onaylar |
-| Seviye ve kabul | `Assessment` | Seviye belirleme, proje kabul puanlaması |
+| Seviye ve uygunluk | `Assessment` | Seviye belirleme formu, müşteri uygunluk anketi (Faz 4 · B2) |
 | Doküman takibi | `Documents` | Proje dokümanlarının durumu |
 | Gereksinimler | `Requirements` | Gereksinim / User Story kayıtları |
 | Risk yönetimi | `Risks` | Risk kaydı, olasılık × etki skoru |
@@ -44,6 +44,7 @@ Aşağıdaki liste kesin değildir; kapsam netleştikçe güncellenir.
 | Bildirimler | `Notifications` | Uygulama içi bildirimler |
 | Denetim kaydı | `Audit` | Yapılan değişikliklerin kaydı |
 | Süreç iyileştirme (Faz 4 · E5) | `ProcessImprovements` | İyileştirme önerisi, önceliklendirme, çalışma dokümanı, pilot değerlendirme |
+| Genel arama (Faz 5 · F7) | `Search` | Üst bardaki arama: projeler, öneriler ve proje içi kayıtlar (yalnızca okur, tablo yok) |
 | Yapay zekâ yardımcıları | `Agents` | Toplantı notlarından karar ve aksiyon önerisi (ekip onayıyla MVP'ye alındı); metinden risk, risk için puan ve önleyici aksiyon önerisi; e-postadan talep taslağı (Faz 5 · F6); ses kaydından tutanak notları (Faz 5 · F5) |
 
 **Sonraki sürümlere bırakılanlar:** Test & UAT, Teklif & Maliyet, Kaynak Planlama, Faturalama,
@@ -168,8 +169,9 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | İşlem türü (Tamamlandı, Evet, Hayır, Reddedildi, Ertelendi, Değerlendirmeye geri alındı) | `StepAction` (`Postponed`, `Resumed` dahil) |
 | Oluşturan / güncelleyen bilgisi | `AuditableEntity` (`CreatedAt`, `CreatedById`, `UpdatedAt`, `UpdatedById`) |
 | Seviye | `Level` (`Project.Level`, 1–3; yalnızca `Assessment` uygular) |
-| Seviye belirleme ve kabul puanlaması | `ProjectAssessment` (seviye cevapları 1–3, kabul puanları 1–5) |
-| Kabul önerisi | `AcceptanceRecommendation` (`Accept`, `Conditional`, `RejectOrPostpone`; saklanmaz, hesaplanır) |
+| Seviye belirleme formu / sonucu | Soru seti `level` (`Questionnaire`); `LevelResultDto` (doküman seviyesi 1–3 ve araştırma süresi; saklanmaz, hesaplanır). Uygulanınca `Project.Level`, `Project.ResearchDays` |
+| Müşteri uygunluk anketi / sonucu | Soru seti `customer-fit` (yalnızca dış talep); `CustomerFitRating` (`Fit`, `ConditionallyFit`, `Risky`, `NotFit`; saklanmaz, hesaplanır) |
+| Formun eşikleri | `QuestionSet.Bands` (seed dosyasındaki `bands`), `ScoreBands`; eşikler koda yazılmaz |
 | Doküman durumu | `DocumentStatus` (`NotStarted`, `InProgress`, `InReview`, `Approved`, `NotRequired`) |
 | Doküman türü (takip edilen doküman) / projedeki dokümanı | `DocumentType` / `ProjectDocument` |
 | Gereksinim (User Story dahil) | `Requirement` |
@@ -203,6 +205,8 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Etkilediği süreç / öneriyi getiren | `ProcessImprovement.AffectedProcess`, `SuggestedBy` |
 | Çalışma dokümanı (mevcut durum, kök neden, çözüm, pilot planı, fayda / maliyet) | `CurrentState`, `RootCause`, `Solution`, `PilotPlan`, `CostBenefit` |
 | Pilot hedefi / gerçekleşen / sonuç | `PilotTarget`, `PilotActual`, `PilotResult` (`Met`, `PartiallyMet`, `NotMet`) |
+| Genel arama / sonuç grubu | `ISearchService` (`GET /search?q=`), `SearchResultDto` / `SearchGroupDto<T>` (her türden en fazla 5 satır ve toplam; bkz. [docs/search-api.md](docs/search-api.md)) |
+| Kayıt bağlantısı ("Bağlantıyı kopyala") | `RecordLink` (`shared/models/record-link.ts`), `app-copy-link-button`; proje içi kayıt `/projects/{id}?tab=risks&id=12` (bkz. [docs/record-links.md](docs/record-links.md)) |
 | Yapay zekâ yardımcısı / önerisi | `Agents` modülü; tutanak önerileri `MeetingSuggestionsDto`, risk önerileri `RiskSuggestionsDto` ve `RiskAssessmentSuggestionDto`, e-postadan talep taslağı `RequestDraftDto`, ses kaydının metni `MeetingTranscriptDto` (kaydedilmez, formu doldurur) |
 
 Yeni bir kavram gerektiğinde önce bu tabloya eklenir.
