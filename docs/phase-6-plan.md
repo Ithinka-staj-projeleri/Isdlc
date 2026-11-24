@@ -2,7 +2,7 @@
 
 Bu dosya Faz 6'da yapılacak işleri, kimin neyi yapacağını ve işlerin sırasını anlatır.
 Ortak kurallar için: [AGENTS.md](../AGENTS.md), ekip ve çalışma kuralları için: [PLANNING.md](../PLANNING.md).
-Durum: **taslak, ekip onayı bekliyor** (23 Kasım 2026).
+Durum: **onaylandı** (24 Kasım 2026).
 
 ## 1. Neden
 
@@ -14,7 +14,7 @@ ayrı bir iştir ve sonraki faza bırakılır (Bölüm 7).
 
 ## 2. Kararlar
 
-Önerilen kararlar; ekip onaylayınca bu tablo kesinleşir.
+Ekip 24 Kasım 2026'da onayladı. Uygulama ayrıntıları: [multi-tenancy.md](multi-tenancy.md).
 
 | # | Konu | Öneri | Neden |
 | --- | --- | --- | --- |
@@ -36,7 +36,7 @@ ayrı bir iştir ve sonraki faza bırakılır (Bölüm 7).
 
 | Alan | Bugün | Faz 6'da |
 | --- | --- | --- |
-| Tablolar (23) | Şirket bilgisi yok | Hepsinde `TenantId` (karar 2) ve yeni `Tenants` tablosu |
+| Tablolar (22; `ProjectAssessments` 24 Kasım 2026 kaldırıldı) | Şirket bilgisi yok | Hepsinde `TenantId` (karar 2) ve yeni `Tenants` tablosu |
 | Benzersizlik | `Project.Code`, `ProcessFlow.Code`, `DocumentType.Code`, `QuestionSet.Code`, `Question.Key`, `QuestionOption.Key` bütün sistemde benzersiz | `(TenantId, Code)` / `(TenantId, Key)` |
 | Kod numaraları | `RecordCodes.NextNumberAsync` ve servislerdeki "en büyük + 1" sorguları tüm sistemde sayar | Global filtre sayesinde şirket içinde sayar; testle doğrulanır |
 | Akış kodları | Servislerde `ProcessFlowCodes.NewRequest` gibi sabitler | Kod şirket içinde aynı kalır (`new-software-project`), sorgu filtre sayesinde şirketin akışını bulur |
@@ -103,7 +103,7 @@ Faz 6 ayrımı kurar; şirketlerin uygulamayı kendine göre ayarlaması bundan 
 
 ## 8. Açık konular
 
-1. **Kararlar:** Bölüm 2'deki 13 karar ekip onayı bekliyor; en önemlileri 1 (tek veritabanı), 5 (şirket kullanıcıdan anlaşılır) ve 10 (Platform Yöneticisi şirket verisini görmez).
+1. **Kararlar:** Bölüm 2'deki 13 karar 24 Kasım 2026'da onaylandı.
 2. **Sorumlular:** Bölüm 4'teki dağılım öneridir.
 3. **Faz 5'in kalanları:** F7–F9'un Faz 6'dan önce birleşmesi gerekiyor (Bölüm 5).
 4. **Kullanıcı birden fazla şirkette olabilir mi?** Öneri: hayır (karar 5). Danışman gibi birden fazla şirkette çalışan biri her şirkette ayrı e-postayla açılır; gerekirse sonraki faz.

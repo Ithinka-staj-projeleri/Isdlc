@@ -8,9 +8,11 @@ namespace Isdlc.Domain.Process;
 /// One action taken on a step of a project. A project can have several records
 /// for the same step (when the flow goes back). Records are never edited or deleted.
 /// </summary>
-public class StepRecord : AuditableEntity
+public class StepRecord : AuditableEntity, ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int ProjectId { get; set; }
     public Project Project { get; set; } = null!;

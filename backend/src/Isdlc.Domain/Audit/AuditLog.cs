@@ -1,3 +1,4 @@
+using Isdlc.Domain.Common;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Projects;
 
@@ -6,9 +7,11 @@ namespace Isdlc.Domain.Audit;
 /// <summary>
 /// One change to an audited record. Written automatically during SaveChanges; never edited or deleted.
 /// </summary>
-public class AuditLog
+public class AuditLog : ITenantOwned
 {
     public long Id { get; set; }
+
+    public int TenantId { get; set; }
 
     /// <summary>Entity type name, e.g. "Project", "Risk".</summary>
     public string EntityName { get; set; } = string.Empty;

@@ -157,6 +157,9 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Kullanıcı | `User` |
 | Uzmanlık alanları / "benimle nasıl çalışılır" notu | `User.Expertise` (virgülle ayrılmış metin), `User.WorkingNote` (Faz 5 · F9) |
 | Kişi profili / sorumlu önerisi | `UserProfileDto` (`GET /users/{id}/profile`), `UserWorkloadDto` (`GET /users/workload`); sayılar `ITeamWorkloadService`'ten (bkz. [docs/users-api.md](docs/users-api.md)) |
+| Şirket (uygulamayı kullanan kurum) / şirket kimliği | `Tenant` (`Code`, `Name`, `IsActive`; Faz 6) / `TenantId` (`Tenants` dışında her tabloda) |
+| Şirkete ait kayıt / isteğin şirketi | `ITenantOwned` / `ITenantContext` (bkz. [docs/multi-tenancy.md](docs/multi-tenancy.md)) |
+| Şablondan gelen kayıt (akış, doküman türü, soru seti) | `TemplateCode` (kopyalandığı `Seed/` kodu), `IsCustomized` (şirket değiştirdi mi) |
 | Rol | `UserRole` (kullanıcı başına tek rol) |
 | Ek geliştirme (devam eden projeye ek modül / geliştirme) ve ait olduğu proje | `Project` (`RequestType.AdditionalModule`, `Project.ParentProjectId`; kodu `14 / EG-01`) |
 | İş akışı (yeni yazılım projesi, ek geliştirme, süreç iyileştirme, kaynak planlama, faturalama) | `ProcessFlow` (`Project.ProcessFlowId`; türü `ProcessFlowKind`: `Request`, `Improvement`, `ResourcePlanning`, `Billing`) |
@@ -260,14 +263,26 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
 - **Metin kolonları** her zaman `HasMaxLength` ile sınırlanır.
 - **Enum'lar** veritabanında metin olarak tutulur (`"Active"`); ayrıca ayar gerekmez.
 - **Kayıt silinmez.** Bütün ilişkiler `Restrict`'tir; kullanıcı pasife alınır, süreç geçmişi korunur.
+- **Şirketler (çok şirketli yapı, Faz 6):** Kurallar [docs/multi-tenancy.md](docs/multi-tenancy.md)'de.
+  - Her yeni entity `ITenantOwned` uygular (`int TenantId`). `User` istisnadır (`TenantId` boş olabilir).
+  - `TenantId`'yi kaydederken `TenantInterceptor` doldurur; kodda elle atanmaz. Başka şirketin kaydı ya da şirketsiz kayıt
+    kaydedilemez (500, loga yazılır).
+  - Okurken global sorgu filtresi yalnızca isteğin şirketini (`ITenantContext`) gösterir; servisler ayrıca filtre yazmaz.
+    Sayaçlar ("en büyük + 1") da kendiliğinden şirket içinde sayar.
+  - `IgnoreQueryFilters()` yalnızca sözleşmenin Bölüm 3'teki yerlerinde, üstünde `// tenant: <neden>` yorumuyla kullanılır.
+  - Kodla aranan benzersizlikler şirkete göredir: `(TenantId, Code)` / `(TenantId, Key)`.
+  - Uygulama kodunda ham SQL (`FromSql`, `ExecuteSql`) yok; filtreyi atlar. Yalnızca migration'larda.
+  - İstekten gelen id (sorumlu, analist, ana proje…) yabancı anahtara okunmadan yazılmaz; okumak filtreden geçirir.
+  - Kullanıcısız çalışan kod (seed) işe başlamadan şirketi ayarlar: `ITenantContext.Use(tenantId)`.
 - **Denetim alanları:** İşlem verisi tutan entity'ler `AuditableEntity`'den türer ve yapılandırmada `builder.ConfigureAuditFields()`
   çağrılır. Alanları `AuditableEntityInterceptor` kaydederken doldurur; kodda elle atanmaz.
 - **Denetim kaydı (`AuditLog`):** Proje verisi tutan entity'ler `IAudited` arayüzünü taşır; projeye ait kayıtlar
   (Risk, Requirement vb.) ayrıca `IProjectRecord` taşır. Bu entity'lerdeki her değişiklik, alan bazında eski/yeni
   değerleriyle `AuditLogs` tablosuna otomatik yazılır (`AuditLogInterceptor`). Seed tabloları, `StepRecord` ve `User` loglanmaz.
-- **Giriş yapan kullanıcı:** `ICurrentUserService.UserId`. API'de JWT'nin `sub` claim'inden okunur
-  (`HttpCurrentUserService`). Giriş: `POST /api/v1/auth/login` (`{ email, password }`), cevap
-  `{ token, expiresAt, user }`; hatalı giriş, pasif kullanıcı ve bilinmeyen e-posta aynı 401'i alır.
+- **Giriş yapan kullanıcı:** `ICurrentUserService.UserId` ve şirketi `ICurrentUserService.TenantId`. API'de JWT'nin
+  `sub` ve `tenant` claim'lerinden okunur (`HttpCurrentUserService`). Faz 6'dan önce alınmış token'da `tenant` yoktur;
+  o kullanıcı yeniden giriş yapana kadar hiçbir kayıt görmez. Giriş: `POST /api/v1/auth/login` (`{ email, password }`), cevap
+  `{ token, expiresAt, user }`; hatalı giriş, pasif kullanıcı, pasif şirket ve bilinmeyen e-posta aynı 401'i alır.
   Girişsiz hiçbir uç nokta çalışmaz (`[AllowAnonymous]` olanlar hariç). Swagger'da token'ı "Authorize"
   düğmesine yapıştırın. Lokal test parolası ve JWT anahtarı `dotnet user-secrets` ile verilir
   (`Identity:TestPassword`, `Jwt:SigningKey`; bkz. README); repoya yazılmaz. Servis testlerinde kullanıcı
@@ -281,6 +296,7 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
   Yalnızca sahte veriyle çalışılır (şirketin veri gönderme kararı bekleniyor).
 - **Eşzamanlılık:** `Project.RowVersion` aynı kaydın aynı anda güncellenmesini yakalar ve 409 döner.
 - **Seed:** `Isdlc.Infrastructure/Seed/*.json` dosyaları, tablo boşsa uygulama açılırken yüklenir. Örnek projeler yalnızca geliştirme ortamında yüklenir.
+  Seed şimdilik Ithinka'ya (`Tenant.IthinkaId`) yüklenir; dosyaların her şirkete şablon olarak kopyalanması Faz 6 · T3'te gelir.
   Süreç akışı (`process-flow.json`) ayrıca her açılışta mevcut veritabanıyla eşitlenir: metin, rol ve dönüş değişiklikleri için
   yalnızca dosya değiştirilir; adım eklemek, çıkarmak veya sıralamak migration ister (bkz. data-model.md → Seed verisi).
 - **Migration:** Geliştirme ortamında API açılırken otomatik uygulanır. Üretmek için (repo kökünde):
@@ -299,6 +315,10 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
 - Ortak yardımcılar (`tests/Isdlc.Application.Tests/Common/`):
   - `TestProjects.CreateAsync(database, "4.7")`: istenen adımda bekleyen yeni bir proje; seed kullanıcılarının e-postaları da burada.
   - `TestUser`: servisi belirli bir kullanıcı giriş yapmış gibi kurmak için (`new ProcessService(db, new TestUser(id), ...)`).
+    Şirketi Ithinka'dır; başka şirket için `new TestUser(id, tenantId)`.
+  - **Şirket:** `database.CreateScope()` Ithinka olarak çalışır. Başka şirket için `database.CreateScope(tenantId)`:
+    o kapsamdaki DbContext yalnızca o şirketi görür ve yeni kaydı ona yazar. Filtre `TestUser`'a değil kapsama bakar.
+    `TestUsers.CreateAsync(…, tenantId: …)` başka şirkete kullanıcı açar. Şirketler arası ayrım testleri `Tenants/` altındadır.
   - `RecordingNotificationService`: gönderilen bildirimleri listede tutar; test ne gönderildiğini kontrol eder.
 - Saf kural sınıfları (`ProcessProgress`, `ProcessTransitions` gibi) veritabanısız test edilir; bütün kombinasyonlar burada denenir.
 - Test adı neyi kontrol ettiğini söyler: `Metot_Durum_Beklenen` (ör. `GetStages_Returns13StagesInOrder`).

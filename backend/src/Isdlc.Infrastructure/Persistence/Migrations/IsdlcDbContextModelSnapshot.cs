@@ -53,10 +53,15 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int?>("ProjectId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserId");
 
@@ -84,6 +89,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<bool>("IsCustomized")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -95,12 +103,19 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("ProcessStageId")
                         .HasColumnType("int");
 
+                    b.Property<string>("TemplateCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
-                        .IsUnique();
-
                     b.HasIndex("ProcessStageId");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
 
                     b.ToTable("DocumentTypes");
                 });
@@ -138,6 +153,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -149,6 +167,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("DocumentTypeId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UpdatedById");
 
@@ -196,6 +216,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("WorkingNote")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -204,6 +227,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("Users");
                 });
@@ -273,6 +298,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -289,6 +317,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("RecordedById");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UpdatedById");
 
@@ -320,12 +350,17 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("ReadAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserId", "CreatedAt");
 
@@ -384,6 +419,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -412,6 +450,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("[SourceQuestionAnswerId] IS NOT NULL");
 
+                    b.HasIndex("TenantId");
+
                     b.HasIndex("UpdatedById");
 
                     b.HasIndex("ProjectId", "Code")
@@ -438,6 +478,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<bool>("IsCustomized")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -454,9 +497,16 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int?>("ProjectStageOrder")
                         .HasColumnType("int");
 
+                    b.Property<string>("TemplateCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
+                    b.HasIndex("TenantId", "Code")
                         .IsUnique();
 
                     b.ToTable("ProcessFlows");
@@ -481,12 +531,17 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("ProcessFlowId", "Order")
                         .IsUnique();
@@ -545,6 +600,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -553,6 +611,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProcessStageId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("ProcessFlowId", "Code")
                         .IsUnique();
@@ -582,9 +642,14 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("TargetStepId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("TargetStepId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("ProcessStepId", "TargetStepId")
                         .IsUnique();
@@ -630,6 +695,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("ProjectId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -645,6 +713,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasIndex("PerformedById");
 
                     b.HasIndex("ProcessStepId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UpdatedById");
 
@@ -738,6 +808,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -750,6 +823,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ProjectId")
                         .IsUnique();
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UpdatedById");
 
@@ -879,6 +954,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -888,9 +966,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BusinessAnalystId");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
 
                     b.HasIndex("CreatedById");
 
@@ -905,6 +980,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasIndex("Status");
 
                     b.HasIndex("UpdatedById");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
 
                     b.ToTable("Projects", t =>
                         {
@@ -964,6 +1042,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("StepRecordId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -976,6 +1057,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("StepRecordId")
                         .IsUnique();
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UpdatedById");
 
@@ -1041,6 +1124,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasMaxLength(2000)
@@ -1057,7 +1143,7 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Key")
+                    b.HasIndex("TenantId", "Key")
                         .IsUnique();
 
                     b.HasIndex("QuestionSetId", "WorkType", "Subcategory", "Order");
@@ -1101,6 +1187,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int?>("Severity")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Text")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
@@ -1120,6 +1209,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProjectId");
 
                     b.HasIndex("QuestionId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UpdatedById");
 
@@ -1174,14 +1265,17 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<bool>("RequiresNote")
                         .HasColumnType("bit");
 
-                    b.HasKey("Id");
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
-                    b.HasIndex("Key")
-                        .IsUnique();
+                    b.HasKey("Id");
 
                     b.HasIndex("QuestionId");
 
                     b.HasIndex("QuestionSetId");
+
+                    b.HasIndex("TenantId", "Key")
+                        .IsUnique();
 
                     b.ToTable("QuestionOptions");
                 });
@@ -1208,6 +1302,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<bool>("IsCustomized")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1218,6 +1315,13 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("TemplateCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Version")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1225,7 +1329,7 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
+                    b.HasIndex("TenantId", "Code")
                         .IsUnique();
 
                     b.ToTable("QuestionSets");
@@ -1273,6 +1377,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -1291,6 +1398,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("QuestionSetId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UpdatedById");
 
@@ -1340,6 +1449,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -1359,6 +1471,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UpdatedById");
 
@@ -1420,6 +1534,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -1437,6 +1554,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OwnerUserId");
 
+                    b.HasIndex("TenantId");
+
                     b.HasIndex("UpdatedById");
 
                     b.HasIndex("ProjectId", "Code")
@@ -1452,12 +1571,56 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Isdlc.Domain.Tenants.Tenant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("AiDataSharingAllowed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AiEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Tenants");
+                });
+
             modelBuilder.Entity("Isdlc.Domain.Audit.AuditLog", b =>
                 {
                     b.HasOne("Isdlc.Domain.Projects.Project", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Isdlc.Domain.Identity.User", "User")
                         .WithMany()
@@ -1475,6 +1638,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasOne("Isdlc.Domain.Process.ProcessStage", "ProcessStage")
                         .WithMany()
                         .HasForeignKey("ProcessStageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1501,6 +1670,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -1509,6 +1684,14 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("DocumentType");
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.Identity.User", b =>
+                {
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Meetings.Meeting", b =>
@@ -1531,6 +1714,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -1546,6 +1735,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasOne("Isdlc.Domain.Projects.Project", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1589,6 +1784,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SourceQuestionAnswerId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -1603,11 +1804,26 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("SourceQuestionAnswer");
                 });
 
+            modelBuilder.Entity("Isdlc.Domain.Process.ProcessFlow", b =>
+                {
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Isdlc.Domain.Process.ProcessStage", b =>
                 {
                     b.HasOne("Isdlc.Domain.Process.ProcessFlow", "ProcessFlow")
                         .WithMany("Stages")
                         .HasForeignKey("ProcessFlowId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1628,6 +1844,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("ProcessFlow");
 
                     b.Navigation("ProcessStage");
@@ -1644,6 +1866,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasOne("Isdlc.Domain.Process.ProcessStep", "TargetStep")
                         .WithMany()
                         .HasForeignKey("TargetStepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1683,6 +1911,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -1708,6 +1942,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasOne("Isdlc.Domain.Projects.Project", "Project")
                         .WithOne()
                         .HasForeignKey("Isdlc.Domain.ProcessImprovements.ProcessImprovement", "ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1753,6 +1993,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ProjectManagerId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -1789,6 +2035,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -1804,6 +2056,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasOne("Isdlc.Domain.QuestionBank.QuestionSet", "QuestionSet")
                         .WithMany("Questions")
                         .HasForeignKey("QuestionSetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1841,6 +2099,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -1868,9 +2132,24 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Question");
 
                     b.Navigation("QuestionSet");
+                });
+
+            modelBuilder.Entity("Isdlc.Domain.QuestionBank.QuestionSet", b =>
+                {
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Isdlc.Domain.QuestionBank.Questionnaire", b =>
@@ -1895,6 +2174,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasOne("Isdlc.Domain.QuestionBank.QuestionSet", "QuestionSet")
                         .WithMany()
                         .HasForeignKey("QuestionSetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1924,6 +2209,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Isdlc.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -1949,6 +2240,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.HasOne("Isdlc.Domain.Projects.Project", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

@@ -1,5 +1,6 @@
 using Isdlc.Application;
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Domain.Tenants;
 using Isdlc.Infrastructure;
 using Isdlc.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -54,13 +55,27 @@ public class DatabaseFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// A fresh DI scope, like one HTTP request. Dispose it at the end of the test.
+    /// A fresh DI scope, like one HTTP request of an Ithinka user. Dispose it at the end of the test.
     /// </summary>
     public AsyncServiceScope CreateScope() => _services.CreateAsyncScope();
+
+    /// <summary>
+    /// A fresh DI scope working as the given company: its DbContext sees only that company's records and writes new
+    /// ones to it. The company comes from the scope, not from the TestUser given to a service, because the query filter
+    /// reads the scope's ITenantContext (docs/multi-tenancy.md → Testler).
+    /// </summary>
+    public AsyncServiceScope CreateScope(int tenantId)
+    {
+        var scope = _services.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<ITenantContext>().Use(tenantId);
+        return scope;
+    }
 
     private sealed class FixtureCurrentUser : ICurrentUserService
     {
         public int? UserId { get; set; }
+
+        public int? TenantId => Tenant.IthinkaId;
     }
 
     public async Task DisposeAsync()

@@ -44,7 +44,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             var flow = flows.SingleOrDefault(f => f.Code == file.Code);
             if (flow is null)
             {
-                flow = new ProcessFlow { Code = file.Code };
+                flow = new ProcessFlow { Code = file.Code, TemplateCode = file.Code };
                 db.ProcessFlows.Add(flow);
             }
 
@@ -243,6 +243,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         db.DocumentTypes.AddRange(file.DocumentTypes.Select(d => new DocumentType
         {
             Code = d.Code,
+            TemplateCode = d.Code,
             Name = d.Name,
             Description = d.Description,
             ProcessStageId = stageIds.TryGetValue(d.StageOrder, out var stageId)

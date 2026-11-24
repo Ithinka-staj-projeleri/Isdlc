@@ -9,7 +9,7 @@ namespace Isdlc.Domain.ProcessImprovements;
 /// One row per proposal. Fields are grouped by the company forms (040–042); fields those forms add later go to their group.
 /// Contract: docs/process-improvement-api.md
 /// </summary>
-public class ProcessImprovement : AuditableEntity, IAudited, IProjectRecord
+public class ProcessImprovement : AuditableEntity, IAudited, IProjectRecord, ITenantOwned
 {
     public const int MinScore = 1;
     public const int MaxScore = 5;
@@ -21,6 +21,8 @@ public class ProcessImprovement : AuditableEntity, IAudited, IProjectRecord
     public const int MaxPilotDecision = 2000;
 
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     /// <summary>The proposal's own record; unique.</summary>
     public int ProjectId { get; set; }

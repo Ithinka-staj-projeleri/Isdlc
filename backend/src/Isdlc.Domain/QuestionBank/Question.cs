@@ -1,3 +1,4 @@
+using Isdlc.Domain.Common;
 using Isdlc.Domain.Projects;
 
 namespace Isdlc.Domain.QuestionBank;
@@ -6,9 +7,11 @@ namespace Isdlc.Domain.QuestionBank;
 /// One row of a form's "Sorular" sheet. Reference data (seeded, not audited). A question that leaves the seed file
 /// is not deleted but made inactive, so its answers and their history stay.
 /// </summary>
-public class Question
+public class Question : ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int QuestionSetId { get; set; }
     public QuestionSet QuestionSet { get; set; } = null!;

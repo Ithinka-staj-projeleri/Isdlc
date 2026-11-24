@@ -1,12 +1,16 @@
+using Isdlc.Domain.Common;
+
 namespace Isdlc.Domain.QuestionBank;
 
 /// <summary>
 /// A possible answer. Belongs to the whole set (QuestionId null: "Yanıtlandı", "Risk Var"…) or to one question
 /// (level: five options, each with its own points). Reference data (seeded, not audited).
 /// </summary>
-public class QuestionOption
+public class QuestionOption : ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     public int QuestionSetId { get; set; }
     public QuestionSet QuestionSet { get; set; } = null!;

@@ -17,7 +17,10 @@ public class QuestionSetConfiguration : IEntityTypeConfiguration<QuestionSet>
         builder.Property(x => x.Version).HasMaxLength(20);
         builder.Property(x => x.Bands).HasMaxLength(QuestionSet.BandsMaxLength);
 
-        builder.HasIndex(x => x.Code).IsUnique();
+        builder.Property(x => x.TemplateCode).HasMaxLength(50);
+
+        // Every company has its own copy of the templates (docs/multi-tenancy.md → Benzersizlik).
+        builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
     }
 }
 
@@ -36,8 +39,8 @@ public class QuestionConfiguration : IEntityTypeConfiguration<Question>
         builder.Property(x => x.SuggestedAction).HasMaxLength(2000);
         builder.Property(x => x.Reference).HasMaxLength(1000);
 
-        // Answers follow the key when the seed file changes, so it can never repeat.
-        builder.HasIndex(x => x.Key).IsUnique();
+        // Answers follow the key when the seed file changes, so it never repeats within a company.
+        builder.HasIndex(x => new { x.TenantId, x.Key }).IsUnique();
         // A form lists the questions of one set, work type and subcategory, in order.
         builder.HasIndex(x => new { x.QuestionSetId, x.WorkType, x.Subcategory, x.Order });
 
@@ -52,7 +55,7 @@ public class QuestionOptionConfiguration : IEntityTypeConfiguration<QuestionOpti
         builder.Property(x => x.Key).HasMaxLength(200);
         builder.Property(x => x.Label).HasMaxLength(500);
 
-        builder.HasIndex(x => x.Key).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Key }).IsUnique();
 
         builder.HasOne(x => x.QuestionSet).WithMany(s => s.Options).HasForeignKey(x => x.QuestionSetId);
         builder.HasOne(x => x.Question).WithMany(q => q.Options).HasForeignKey(x => x.QuestionId);

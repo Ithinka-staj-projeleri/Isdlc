@@ -7,9 +7,11 @@ namespace Isdlc.Domain.Projects;
 /// <summary>
 /// A request and the project it turns into are the same record.
 /// </summary>
-public class Project : AuditableEntity, IAudited
+public class Project : AuditableEntity, IAudited, ITenantOwned
 {
     public int Id { get; set; }
+
+    public int TenantId { get; set; }
 
     /// <summary>
     /// Proje No, shown to users: a plain number kept as text, e.g. "14". Generated automatically

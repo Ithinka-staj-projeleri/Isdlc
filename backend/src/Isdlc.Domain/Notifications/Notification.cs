@@ -1,3 +1,4 @@
+using Isdlc.Domain.Common;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Projects;
 
@@ -7,11 +8,13 @@ namespace Isdlc.Domain.Notifications;
 /// One in-app notification for one user. A role notification is one row per active user of the role at sending time.
 /// Not project data: not audited, never deleted. Rules: docs/data-model.md → Notification, docs/notifications-api.md
 /// </summary>
-public class Notification
+public class Notification : ITenantOwned
 {
     public const int MessageMaxLength = 500;
 
     public long Id { get; set; }
+
+    public int TenantId { get; set; }
 
     /// <summary>Who receives it.</summary>
     public int UserId { get; set; }

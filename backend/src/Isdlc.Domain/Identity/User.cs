@@ -6,6 +6,9 @@ namespace Isdlc.Domain.Identity;
 public class User
 {
     public int Id { get; set; }
+
+    /// <summary>The company. Empty only for the Platform Administrator (Faz 6 · T4); not ITenantOwned for that reason.</summary>
+    public int? TenantId { get; set; }
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
 

@@ -1,5 +1,7 @@
+using System.Reflection;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Domain.Audit;
+using Isdlc.Domain.Common;
 using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Meetings;
@@ -11,13 +13,22 @@ using Isdlc.Domain.Projects;
 using Isdlc.Domain.QuestionBank;
 using Isdlc.Domain.Requirements;
 using Isdlc.Domain.Risks;
+using Isdlc.Domain.Tenants;
 using Isdlc.Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 
 namespace Isdlc.Infrastructure.Persistence;
 
-public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContext(options), IApplicationDbContext
+public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options, ITenantContext tenant)
+    : DbContext(options), IApplicationDbContext
 {
+    /// <summary>
+    /// Read by the query filters on every query (EF Core evaluates a DbContext member per query, not once per model).
+    /// Null: nobody of a company is signed in, so no tenant record is visible.
+    /// </summary>
+    private int? CurrentTenantId => tenant.TenantId;
+
+    public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<ProcessFlow> ProcessFlows => Set<ProcessFlow>();
@@ -62,6 +73,8 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
         // so each module only adds its own configuration class.
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IsdlcDbContext).Assembly);
 
+        ConfigureTenants(modelBuilder);
+
         // Records are never deleted (users are deactivated, history is kept),
         // so no relationship deletes its children.
         foreach (var foreignKey in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
@@ -69,4 +82,31 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options) : DbContex
             foreignKey.DeleteBehavior = DeleteBehavior.Restrict;
         }
     }
+
+    /// <summary>
+    /// Every table except Tenants belongs to a company: a TenantId foreign key (indexed) and a global query filter, so
+    /// services see only the signed-in user's company without changing. Rules: docs/multi-tenancy.md → Okuma kuralı.
+    /// </summary>
+    private void ConfigureTenants(ModelBuilder modelBuilder)
+    {
+        var tenantOwned = modelBuilder.Model.GetEntityTypes()
+            .Select(e => e.ClrType)
+            .Where(t => typeof(ITenantOwned).IsAssignableFrom(t))
+            .ToList();
+        var filter = typeof(IsdlcDbContext).GetMethod(nameof(ApplyTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+        foreach (var type in tenantOwned)
+        {
+            modelBuilder.Entity(type).HasOne(typeof(Tenant)).WithMany().HasForeignKey(nameof(ITenantOwned.TenantId));
+            filter.MakeGenericMethod(type).Invoke(this, [modelBuilder]);
+        }
+
+        // A user's TenantId is empty only for the Platform Administrator. The null check matters: EF Core keeps C#'s
+        // "null == null", so without it a context with no company would see the users that have none.
+        modelBuilder.Entity<User>().HasOne<Tenant>().WithMany().HasForeignKey(u => u.TenantId);
+        modelBuilder.Entity<User>().HasQueryFilter(u => CurrentTenantId != null && u.TenantId == CurrentTenantId);
+    }
+
+    private void ApplyTenantFilter<T>(ModelBuilder modelBuilder) where T : class, ITenantOwned =>
+        modelBuilder.Entity<T>().HasQueryFilter(e => e.TenantId == CurrentTenantId);
 }

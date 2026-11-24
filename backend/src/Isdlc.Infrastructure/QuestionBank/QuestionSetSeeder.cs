@@ -33,7 +33,7 @@ public class QuestionSetSeeder(IsdlcDbContext db, ILogger<QuestionSetSeeder> log
         {
             if (!sets.TryGetValue(file.Code, out var set))
             {
-                set = new QuestionSet { Code = file.Code };
+                set = new QuestionSet { Code = file.Code, TemplateCode = file.Code };
                 db.QuestionSets.Add(set);
                 changes++;
             }

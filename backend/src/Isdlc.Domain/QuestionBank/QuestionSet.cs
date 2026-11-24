@@ -1,3 +1,5 @@
+using Isdlc.Domain.Common;
+
 namespace Isdlc.Domain.QuestionBank;
 
 /// <summary>
@@ -5,14 +7,22 @@ namespace Isdlc.Domain.QuestionBank;
 /// Reference data: loaded from Seed/question-sets/{code}.json, never changed by users, not audited.
 /// Rules: docs/question-bank-api.md
 /// </summary>
-public class QuestionSet
+public class QuestionSet : ITenantOwned
 {
     public const int BandsMaxLength = 4000;
 
     public int Id { get; set; }
 
+    public int TenantId { get; set; }
+
     /// <summary>"level", "request-analysis", "risk-analysis", "internal-approval".</summary>
     public string Code { get; set; } = string.Empty;
+
+    /// <summary>The template (Seed/ file code) this copy came from; empty for a record the company added itself.</summary>
+    public string? TemplateCode { get; set; }
+
+    /// <summary>The company changed this copy; the startup sync no longer follows the template (docs/multi-tenancy.md → Seed).</summary>
+    public bool IsCustomized { get; set; }
 
     public string Name { get; set; } = string.Empty;
 

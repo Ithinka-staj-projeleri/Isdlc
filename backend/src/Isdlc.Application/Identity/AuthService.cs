@@ -10,11 +10,19 @@ public class AuthService(IApplicationDbContext db, IPasswordHasher passwordHashe
     public async Task<LoginResultDto?> LoginAsync(LoginDto request, CancellationToken cancellationToken = default)
     {
         var email = request.Email.Trim();
-        var user = await db.Users.AsNoTracking()
+        // tenant: the company is not known before sign-in; the e-mail is unique across companies and gives it.
+        var user = await db.Users.IgnoreQueryFilters().AsNoTracking()
             .SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
 
         // Unknown e-mail, inactive user and wrong password all give the same answer.
         if (user is null || !user.IsActive || !passwordHasher.Verify(user.PasswordHash, request.Password))
+        {
+            return null;
+        }
+
+        // The user of an inactive company gets the same answer; that the company exists is not told.
+        if (user.TenantId is { } tenantId
+            && !await db.Tenants.AnyAsync(t => t.Id == tenantId && t.IsActive, cancellationToken))
         {
             return null;
         }

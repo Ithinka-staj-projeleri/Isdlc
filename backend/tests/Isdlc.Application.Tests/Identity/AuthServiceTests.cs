@@ -3,6 +3,8 @@ using Isdlc.Application.Identity;
 using Isdlc.Application.Identity.Dtos;
 using Isdlc.Application.Tests.Common;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Tenants;
+using Isdlc.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Isdlc.Application.Tests.Identity;
@@ -124,5 +126,45 @@ public class AuthServiceTests(DatabaseFixture database)
         var (result, _) = await LoginAsync(TestProjects.Analyst, "");
 
         Assert.Null(result);
+    }
+
+    // ---- Companies (Faz 6 · T2, docs/multi-tenancy.md → Giriş) ----
+
+    private async Task<int> CreateTenantAsync(bool isActive)
+    {
+        await using var scope = database.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IsdlcDbContext>();
+        var tenant = new Tenant
+        {
+            Code = $"deneme-{Guid.NewGuid():N}"[..20], Name = "Deneme A.Ş.", IsActive = isActive, CreatedAt = DateTime.UtcNow,
+        };
+        db.Tenants.Add(tenant);
+        await db.SaveChangesAsync();
+        return tenant.Id;
+    }
+
+    [Fact]
+    public async Task Login_UserOfAnotherCompany_IsFoundAndTheTokenCarriesTheCompany()
+    {
+        // Sign-in runs before any company is known (here: in an Ithinka scope) and still finds the user.
+        var tenantId = await CreateTenantAsync(isActive: true);
+        var user = await TestUsers.CreateAsync(database, Password, tenantId: tenantId);
+
+        var (result, tokens) = await LoginAsync(user.Email, Password);
+
+        Assert.NotNull(result);
+        Assert.Equal(tenantId, Assert.Single(tokens.CreatedFor).TenantId);
+    }
+
+    [Fact]
+    public async Task Login_UserOfAnInactiveCompany_ReturnsNullLikeAWrongPassword()
+    {
+        var tenantId = await CreateTenantAsync(isActive: false);
+        var user = await TestUsers.CreateAsync(database, Password, tenantId: tenantId);
+
+        var (result, tokens) = await LoginAsync(user.Email, Password);
+
+        Assert.Null(result);
+        Assert.Empty(tokens.CreatedFor);
     }
 }
