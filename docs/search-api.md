@@ -2,7 +2,7 @@
 
 Faz 5 · F7 ([phase-5-plan.md](phase-5-plan.md)). Üst bardaki arama kutusu (Ctrl+K) projeleri, süreç iyileştirme önerilerini ve
 proje içi kayıtları (açık konular, tutanaklar, riskler, gereksinimler) tek yerden bulur; sonuca tıklayınca kayıt açılır.
-Durum: **taslak** (24 Kasım 2026). Sorumlu: Baran.
+Durum: sözleşme **taslak** (24 Kasım 2026); servis, API ve testleri uygulandı (2. adım). Sorumlu: Baran.
 
 Yeni tablo ya da kolon yoktur; arama mevcut tablolarda yapılır.
 
@@ -17,7 +17,7 @@ biçiminde, hatalar `ProblemDetails`, JSON alanları camelCase.
 | S2 | Eşleşme | Arama metni kırpılır; alanın **içinde geçmesi** yeterlidir (`Contains`). Büyük / küçük harf fark etmez (veritabanı collation'ı). **Proje No** bir istisnadır: proje listesindeki aramayla aynı kural uygulanır; tam eşleşme gerekir ("14", 114'ü bulmaz) ve projenin ek geliştirmeleri de bulunur ("14" → "14 / EG-01") |
 | S3 | En az / en çok | `q` en az **2**, en fazla **100** karakterdir (kırpıldıktan sonra). Kısa ya da uzun metin `400` döner. Ekran 2 karakterden önce istek göndermez |
 | S4 | Sonuç sayısı | Her türden en fazla **5** sonuç döner; her grubun yanında toplam eşleşme sayısı (`totalCount`) gelir. Ekran "5 / 12" gibi gösterir; "tümünü gör" sayfası MVP'de yoktur |
-| S5 | Sıralama | Her grupta önce açık olanlar (proje / öneri `Active` ya da `Postponed`; kayıt kapanmamış), sonra en yeni kayıt (`Id` büyük olan) önce |
+| S5 | Sıralama | Her grupta önce açık olanlar (proje / öneri `Active` ya da `Postponed`; açık konu ve risk `Closed` değil; gereksinim `Cancelled` değil), sonra en yeni kayıt (`Id` büyük olan) önce. Tutanak kapanmaz: en yeni toplantı tarihi önce |
 | S6 | Kapalı kayıtlar | Aranır ve gösterilir (eski bir projeyi bulmak da aramanın işi). Satırda durumu yazar |
 | S7 | Kim ne görür? | Giriş yapan herkes her şeyi bulur; proje ve kayıt listelerindeki görünürlükle aynıdır (şirket içi uygulama, rol bazlı kısıt yok) |
 | S8 | Proje içi kayıtların kodu | `RSK-001` gibi kodlar projeye göre tekrar eder; bu yüzden her satırda projenin No'su ve adı da gelir |
@@ -31,6 +31,7 @@ biçiminde, hatalar `ProblemDetails`, JSON alanları camelCase.
 | `GET /search?q=portal` | Bütün türlerde arama | `200` `SearchResultDto` | `400` `q` boş, 2 karakterden kısa ya da 100'den uzun |
 
 Doğrulama hatası `errors.q` altında döner: "En az 2 karakter girin." / "En fazla 100 karakter olabilir."
+Kenarlarındaki boşluklar atılınca kısa kalan metin (`"  a  "`) servisin `BusinessRuleException`'ıyla aynı mesajı `detail` içinde döner.
 
 ### `SearchResultDto`
 

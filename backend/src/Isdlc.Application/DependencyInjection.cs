@@ -13,6 +13,7 @@ using Isdlc.Application.QuestionBank;
 using Isdlc.Application.ProcessImprovements;
 using Isdlc.Application.Requirements;
 using Isdlc.Application.Risks;
+using Isdlc.Application.Search;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Isdlc.Application;
@@ -44,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<IQuestionnaireService, QuestionnaireService>();
         services.AddScoped<IRequestAnalysisService, RequestAnalysisService>();
         services.AddScoped<IProcessImprovementService, ProcessImprovementService>();
+        services.AddScoped<ISearchService, SearchService>();
 
         // Modules send through INotificationService; the inbox reads and marks the signed-in user's own notifications.
         services.AddScoped<INotificationService, NotificationService>();

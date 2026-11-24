@@ -44,6 +44,7 @@ Aşağıdaki liste kesin değildir; kapsam netleştikçe güncellenir.
 | Bildirimler | `Notifications` | Uygulama içi bildirimler |
 | Denetim kaydı | `Audit` | Yapılan değişikliklerin kaydı |
 | Süreç iyileştirme (Faz 4 · E5) | `ProcessImprovements` | İyileştirme önerisi, önceliklendirme, çalışma dokümanı, pilot değerlendirme |
+| Genel arama (Faz 5 · F7) | `Search` | Üst bardaki arama: projeler, öneriler ve proje içi kayıtlar (yalnızca okur, tablo yok) |
 | Yapay zekâ yardımcıları | `Agents` | Toplantı notlarından karar ve aksiyon önerisi (ekip onayıyla MVP'ye alındı); metinden risk, risk için puan ve önleyici aksiyon önerisi; e-postadan talep taslağı (Faz 5 · F6); ses kaydından tutanak notları (Faz 5 · F5) |
 
 **Sonraki sürümlere bırakılanlar:** Test & UAT, Teklif & Maliyet, Kaynak Planlama, Faturalama,
@@ -201,6 +202,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Etkilediği süreç / öneriyi getiren | `ProcessImprovement.AffectedProcess`, `SuggestedBy` |
 | Çalışma dokümanı (mevcut durum, kök neden, çözüm, pilot planı, fayda / maliyet) | `CurrentState`, `RootCause`, `Solution`, `PilotPlan`, `CostBenefit` |
 | Pilot hedefi / gerçekleşen / sonuç | `PilotTarget`, `PilotActual`, `PilotResult` (`Met`, `PartiallyMet`, `NotMet`) |
+| Genel arama / sonuç grubu | `ISearchService` (`GET /search?q=`), `SearchResultDto` / `SearchGroupDto<T>` (her türden en fazla 5 satır ve toplam; bkz. [docs/search-api.md](docs/search-api.md)) |
 | Yapay zekâ yardımcısı / önerisi | `Agents` modülü; tutanak önerileri `MeetingSuggestionsDto`, risk önerileri `RiskSuggestionsDto` ve `RiskAssessmentSuggestionDto`, e-postadan talep taslağı `RequestDraftDto`, ses kaydının metni `MeetingTranscriptDto` (kaydedilmez, formu doldurur) |
 
 Yeni bir kavram gerektiğinde önce bu tabloya eklenir.
