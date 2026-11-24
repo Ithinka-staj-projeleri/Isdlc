@@ -15,5 +15,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.WorkingNote).HasMaxLength(UserProfileLimits.WorkingNote);
 
         builder.HasIndex(x => x.Email).IsUnique();
+
+        // Only the Platform Administrator belongs to no company, and never manages one (docs/multi-tenancy.md → Users).
+        builder.ToTable(t => t.HasCheckConstraint(
+            "CK_Users_TenantByRole",
+            $"([Role] = '{nameof(UserRole.PlatformAdmin)}' AND [TenantId] IS NULL AND [IsTenantAdmin] = 0)"
+            + $" OR ([Role] <> '{nameof(UserRole.PlatformAdmin)}' AND [TenantId] IS NOT NULL)"));
     }
 }

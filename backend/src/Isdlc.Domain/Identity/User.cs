@@ -18,6 +18,15 @@ public class User
     public UserRole Role { get; set; }
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// Şirket Yöneticisi (Faz 6 · T4): manages the users of their own company. A mark, not a role, so an analyst can also
+    /// be one. Always false for the Platform Administrator.
+    /// </summary>
+    public bool IsTenantAdmin { get; set; }
+
+    /// <summary>Opened with a temporary password: every request but changing it gets 403 until it is changed.</summary>
+    public bool MustChangePassword { get; set; }
+
     /// <summary>Areas of expertise, comma separated plain text (Faz 5 · F9). Null when not filled.</summary>
     public string? Expertise { get; set; }
 
@@ -32,4 +41,11 @@ public static class UserProfileLimits
 {
     public const int Expertise = 300;
     public const int WorkingNote = 1000;
+}
+
+/// <summary>Password rules of temporary and new passwords (docs/multi-tenancy.md → Parola).</summary>
+public static class PasswordRules
+{
+    public const int MinLength = 12;
+    public const int MaxLength = 200;
 }
