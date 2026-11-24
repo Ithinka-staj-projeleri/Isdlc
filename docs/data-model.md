@@ -123,6 +123,8 @@ yapı birden fazlasına izin verir.
 | `PasswordHash` | string | `Identity` modülünde kullanılır |
 | `Role` | `UserRole` | Kullanıcı başına tek rol (MVP kararı) |
 | `IsActive` | bool | Kullanıcı silinmez, pasife alınır |
+| `Expertise` | string? | *Faz 5 · F9.* Uzmanlık alanları, virgülle ayrılmış; en fazla 300 karakter. Kişi kendisi düzenler |
+| `WorkingNote` | string? | *Faz 5 · F9.* "Benimle nasıl çalışılır" notu; en fazla 1000 karakter. Kişi kendisi düzenler |
 | `CreatedAt` | DateTime (UTC) | |
 
 ### `Project` — talep ve proje aynı kayıttır

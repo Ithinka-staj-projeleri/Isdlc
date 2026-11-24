@@ -1,0 +1,147 @@
+@if (profile.error()) {
+  <app-empty-state message="Kişi bulunamadı." />
+} @else if (profile.hasValue()) {
+  @let p = profile.value();
+  <header class="page-head">
+    <div>
+      <h2>
+        {{ p.fullName }}
+        @if (!p.isActive) { <app-status-badge label="Pasif" tone="neutral" /> }
+      </h2>
+      <p class="muted">{{ roleLabels[p.role] }} · {{ p.email }}</p>
+    </div>
+    @if (isMine() && !editing()) {
+      <button type="button" class="button" (click)="startEditing(p)">Profili düzenle</button>
+    }
+  </header>
+
+  <div class="content">
+    <div class="columns">
+      <section class="card panel">
+        <h3>Uzmanlık ve çalışma notu</h3>
+        @if (editing()) {
+          <form class="edit" [formGroup]="form" (ngSubmit)="save()" novalidate>
+            <label class="field" [class.invalid]="errorFor('expertise')">
+              Uzmanlık alanları
+              <input formControlName="expertise" [maxlength]="expertiseMax" placeholder="Ör. Ödeme sistemleri, SQL, Raporlama" />
+              <span class="hint">Alanları virgülle ayırın.</span>
+              @if (errorFor('expertise'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+            <label class="field" [class.invalid]="errorFor('workingNote')">
+              Benimle nasıl çalışılır
+              <textarea formControlName="workingNote" [maxlength]="noteMax" rows="5"
+                placeholder="Ör. Sabahları toplantıya girmiyorum; acil işler için telefon."></textarea>
+              @if (errorFor('workingNote'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+            <div class="actions">
+              <button type="button" class="button" (click)="editing.set(false)">Vazgeç</button>
+              <button type="submit" class="button primary" [disabled]="saving()">
+                {{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}
+              </button>
+            </div>
+          </form>
+        } @else {
+          <div class="about">
+            <h4>Uzmanlık alanları</h4>
+            @if (areas().length) {
+              <ul class="tags">
+                @for (area of areas(); track area) { <li>{{ area }}</li> }
+              </ul>
+            } @else {
+              <p class="muted">Belirtilmemiş.</p>
+            }
+            <h4>Benimle nasıl çalışılır</h4>
+            @if (p.workingNote) {
+              <p class="note">{{ p.workingNote }}</p>
+            } @else {
+              <p class="muted">Belirtilmemiş.</p>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="card panel">
+        <h3>İş yükü</h3>
+        @if (p.workload; as w) {
+          <div class="numbers">
+            <div><b>{{ w.openIssues }}</b><span>Açık konu</span></div>
+            <div [class.late]="w.overdueOpenIssues > 0"><b>{{ w.overdueOpenIssues }}</b><span>Geciken açık konu</span></div>
+            <div><b>{{ w.waitingSteps }}</b><span>Bekleyen adım</span></div>
+          </div>
+          <p class="muted small explain">Aktif kayıtlarda; panelin "Ekip iş yükü" sayılarıyla aynıdır.</p>
+        } @else {
+          <p class="empty">Pasif kullanıcı iş yüküne girmez.</p>
+        }
+      </section>
+    </div>
+
+    <div class="columns">
+      <section class="card panel">
+        <h3>Açık konular <span class="count">{{ p.openIssues.totalCount }}</span></h3>
+        @if (p.openIssues.items.length === 0) {
+          <p class="empty">Atanmış açık konu yok.</p>
+        } @else {
+          <ul class="rows">
+            @for (issue of p.openIssues.items; track issue.id) {
+              <li>
+                <a [routerLink]="['/projects', issue.project.id]" [queryParams]="{ tab: 'open-issues' }">
+                  <span class="main">
+                    <span class="code">{{ issue.project.code }} · {{ issue.code }}</span>
+                    <b>{{ issue.title }}</b>
+                    <span class="muted small">{{ issue.project.name }} · {{ issueTypeLabels[issue.type] }}</span>
+                  </span>
+                  <span class="side">
+                    @if (issue.isOverdue) {
+                      <app-status-badge [label]="(issue.dueDate | dateOnly) + ' · gecikti'" tone="bad" />
+                    } @else if (issue.dueDate) {
+                      <span class="small">{{ issue.dueDate | dateOnly }}</span>
+                    } @else {
+                      <span class="small muted">Termin yok</span>
+                    }
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (p.openIssues.totalCount > p.openIssues.items.length) {
+            <p class="more muted small">
+              İlk {{ p.openIssues.items.length }} kayıt gösteriliyor (toplam {{ p.openIssues.totalCount }}).
+            </p>
+          }
+        }
+      </section>
+
+      <section class="card panel">
+        <h3>Bekleyen adımlar <span class="count">{{ p.waitingSteps.totalCount }}</span></h3>
+        @if (p.waitingSteps.items.length === 0) {
+          <p class="empty">Bekleyen adım yok.</p>
+        } @else {
+          <ul class="rows">
+            @for (item of p.waitingSteps.items; track item.project.id) {
+              <li>
+                <a [routerLink]="['/projects', item.project.id]" [queryParams]="{ tab: 'process' }">
+                  <span class="main">
+                    <span class="code">{{ item.project.code }}</span>
+                    <b>{{ item.project.name }}</b>
+                    <span class="muted small">Adım {{ item.step.code }} · {{ item.step.stageShortTitle }}</span>
+                  </span>
+                  <span class="side">
+                    @if (item.isApproval) { <app-status-badge label="Onay" tone="warn" /> }
+                    <span class="small" [class.late]="item.waitingDays >= 7">{{ waitingText(item.waitingDays) }}</span>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (p.waitingSteps.totalCount > p.waitingSteps.items.length) {
+            <p class="more muted small">
+              İlk {{ p.waitingSteps.items.length }} adım gösteriliyor (toplam {{ p.waitingSteps.totalCount }}).
+            </p>
+          }
+        }
+      </section>
+    </div>
+  </div>
+} @else {
+  <p class="muted">Yükleniyor…</p>
+}

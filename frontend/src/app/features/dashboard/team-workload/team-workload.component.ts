@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
 import { TeamMemberWorkload } from '../models/dashboard';
 
@@ -9,6 +10,7 @@ import { TeamMemberWorkload } from '../models/dashboard';
  */
 @Component({
   selector: 'app-team-workload',
+  imports: [RouterLink],
   templateUrl: './team-workload.component.html',
   styleUrl: './team-workload.component.scss',
 })

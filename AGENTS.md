@@ -155,6 +155,8 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Talep Ret / Erteleme Formu (karar, karar tarihi, kararı veren, gerekçe kategorileri, açıklama, yeniden değerlendirme tarihi) | `RequestDecision` (`RequestDecisionKind`: `Reject`, `Postpone`; `DecisionReason`; `DecidedBy`, `ReevaluationDate`) |
 | Öncelik | `ProjectPriority` |
 | Kullanıcı | `User` |
+| Uzmanlık alanları / "benimle nasıl çalışılır" notu | `User.Expertise` (virgülle ayrılmış metin), `User.WorkingNote` (Faz 5 · F9) |
+| Kişi profili / sorumlu önerisi | `UserProfileDto` (`GET /users/{id}/profile`), `UserWorkloadDto` (`GET /users/workload`); sayılar `ITeamWorkloadService`'ten (bkz. [docs/users-api.md](docs/users-api.md)) |
 | Rol | `UserRole` (kullanıcı başına tek rol) |
 | Ek geliştirme (devam eden projeye ek modül / geliştirme) ve ait olduğu proje | `Project` (`RequestType.AdditionalModule`, `Project.ParentProjectId`; kodu `14 / EG-01`) |
 | İş akışı (yeni yazılım projesi, ek geliştirme, süreç iyileştirme, kaynak planlama, faturalama) | `ProcessFlow` (`Project.ProcessFlowId`; türü `ProcessFlowKind`: `Request`, `Improvement`, `ResourcePlanning`, `Billing`) |
