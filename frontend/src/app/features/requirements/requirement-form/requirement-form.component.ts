@@ -1,4 +1,7 @@
-import { Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, OnInit, output, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { CopyLinkButtonComponent } from '../../../shared/components/copy-link-button/copy-link-button.component';
+import { recordLinkFrom } from '../../../shared/models/record-link';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
 import {
@@ -14,7 +17,7 @@ const MAX_LENGTHS = { title: 300, description: 4000, acceptanceCriteria: 4000 } 
 /** Add or edit a requirement. A new one starts as a draft; the status is changed from the list. */
 @Component({
   selector: 'app-requirement-form',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CopyLinkButtonComponent],
   templateUrl: './requirement-form.component.html',
   styleUrl: './requirement-form.component.scss',
 })
@@ -25,6 +28,14 @@ export class RequirementFormComponent implements OnInit {
   readonly projectId = input.required<number>();
   /** null adds a new record. */
   readonly requirementId = input<number | null>(null);
+
+  private readonly _router = inject(Router);
+
+  /** "Bağlantıyı kopyala" (Faz 5 · F8): only for a saved record. */
+  protected readonly link = computed(() => {
+    const id = this.requirementId();
+    return id === null ? null : recordLinkFrom(this._router.url, this.projectId(), 'requirements', id);
+  });
 
   readonly saved = output<Requirement>();
   readonly cancelled = output<void>();

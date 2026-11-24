@@ -1,4 +1,7 @@
-import { Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, OnInit, output, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { CopyLinkButtonComponent } from '../../../shared/components/copy-link-button/copy-link-button.component';
+import { recordLinkFrom } from '../../../shared/models/record-link';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -12,7 +15,7 @@ type OwnerKind = 'user' | 'name';
 /** Add or edit an open issue. The owner is a team member or someone outside the system, never both. */
 @Component({
     selector: 'app-open-issue-form',
-    imports: [ReactiveFormsModule],
+    imports: [ReactiveFormsModule, CopyLinkButtonComponent],
     templateUrl: './open-issue-form.component.html',
     styleUrl: './open-issue-form.component.scss',
 })
@@ -23,6 +26,14 @@ export class OpenIssueFormComponent implements OnInit {
     readonly projectId = input.required<number>();
     /** null adds a new record. */
     readonly openIssueId = input<number | null>(null);
+
+    private readonly router = inject(Router);
+
+    /** "Bağlantıyı kopyala" (Faz 5 · F8): only for a saved record. */
+    protected readonly link = computed(() => {
+        const id = this.openIssueId();
+        return id === null ? null : recordLinkFrom(this.router.url, this.projectId(), 'open-issues', id);
+    });
 
     readonly saved = output<OpenIssue>();
     readonly cancelled = output<void>();

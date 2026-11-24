@@ -11,10 +11,13 @@
       <span class="code" title="Proje No">No {{ p.code }}</span>
       <h2>{{ p.name }}</h2>
       <app-status-badge [label]="statusLabels[p.status]" [tone]="statusTones[p.status]" />
-      @if (p.status === 'Active') {
-        <!-- A closed project keeps its information, so there is nothing to edit. -->
-        <a [routerLink]="['/projects', p.id, 'edit']" class="edit-button">Düzenle</a>
-      }
+      <span class="actions">
+        <app-copy-link-button [link]="link()" />
+        @if (p.status === 'Active') {
+          <!-- A closed project keeps its information, so there is nothing to edit. -->
+          <a [routerLink]="['/projects', p.id, 'edit']" class="edit-button">Düzenle</a>
+        }
+      </span>
     </div>
 
     <p class="meta">
@@ -67,19 +70,19 @@
         <app-project-assessment [projectId]="p.id" [readOnly]="readOnly()" (levelChanged)="project.reload()" />
       }
       @case ('requirements') {
-        <app-requirement-list [projectId]="p.id" [readOnly]="readOnly()" />
+        <app-requirement-list [projectId]="p.id" [readOnly]="readOnly()" [openId]="recordId()" (recordClosed)="clearRecordId()" />
       }
       @case ('documents') {
         <app-document-list [projectId]="p.id" [readOnly]="readOnly()" />
       }
       @case ('risks') {
-        <app-risk-list [projectId]="p.id" [readOnly]="readOnly()" />
+        <app-risk-list [projectId]="p.id" [readOnly]="readOnly()" [openId]="recordId()" (recordClosed)="clearRecordId()" />
       }
       @case ('open-issues') {
-        <app-open-issue-list [projectId]="p.id" [readOnly]="readOnly()" />
+        <app-open-issue-list [projectId]="p.id" [readOnly]="readOnly()" [openId]="recordId()" (recordClosed)="clearRecordId()" />
       }
       @case ('meetings') {
-        <app-meeting-list [projectId]="p.id" [readOnly]="readOnly()" />
+        <app-meeting-list [projectId]="p.id" [readOnly]="readOnly()" [openId]="recordId()" (recordClosed)="clearRecordId()" />
       }
       @case ('history') {
         <app-audit-log [projectId]="p.id" />

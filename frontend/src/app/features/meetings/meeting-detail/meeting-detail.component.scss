@@ -1,6 +1,7 @@
 @use '../../../shared/styles/ui' as ui;
 
 @include ui.dialog;
+@include ui.dialog-head;
 
 .button {
     @include ui.button;

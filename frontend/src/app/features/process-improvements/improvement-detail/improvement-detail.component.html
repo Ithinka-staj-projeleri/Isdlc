@@ -14,6 +14,7 @@
         @if (i.prioritization.priority; as p) {
         <app-status-badge [label]="'Öncelik: ' + priorityLabels[p] + ' · ' + i.prioritization.score" [tone]="priorityTones[p]" />
         }
+        <app-copy-link-button class="copy" [link]="link()" />
     </div>
 
     <p class="meta">
@@ -53,10 +54,10 @@
     <app-project-timeline [projectId]="i.id" />
     }
     @case ('open-issues') {
-    <app-open-issue-list [projectId]="i.id" [readOnly]="readOnly()" />
+    <app-open-issue-list [projectId]="i.id" [readOnly]="readOnly()" [openId]="recordId()" (recordClosed)="clearRecordId()" />
     }
     @case ('meetings') {
-    <app-meeting-list [projectId]="i.id" [readOnly]="readOnly()" />
+    <app-meeting-list [projectId]="i.id" [readOnly]="readOnly()" [openId]="recordId()" (recordClosed)="clearRecordId()" />
     }
     @case ('history') {
     <app-audit-log [projectId]="i.id" projectLabel="Öneri" />

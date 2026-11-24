@@ -48,7 +48,7 @@ describe('toRowGroups', () => {
     expect(groups[1].rows[0].link).toEqual({ commands: ['/process-improvements', 30] });
   });
 
-  it('links a record inside a project to the project on its tab and names the project', () => {
+  it('links a record inside a project to the record on its project tab and names the project', () => {
     const groups = toRowGroups(result({
       openIssues: { items: [{ ...record(7, 'Open'), code: 'AK-007' }], totalCount: 1 },
       meetings: { items: [{ id: 4, code: 'TT-002', title: 'Kapsam', date: '2026-11-12', projectId: 14, projectCode: '14', projectName: 'Bayi Portalı' }], totalCount: 1 },
@@ -56,7 +56,12 @@ describe('toRowGroups', () => {
       requirements: { items: [record(2, 'Draft')], totalCount: 1 },
     }));
 
-    expect(groups.map(g => g.rows[0].link.queryParams?.['tab'])).toEqual(['open-issues', 'meetings', 'risks', 'requirements']);
+    expect(groups.map(g => g.rows[0].link.queryParams)).toEqual([
+      { tab: 'open-issues', id: '7' },
+      { tab: 'meetings', id: '4' },
+      { tab: 'risks', id: '1' },
+      { tab: 'requirements', id: '2' },
+    ]);
     expect(groups.every(g => g.rows[0].link.commands.join('/') === '/projects/14')).toBe(true);
     expect(groups[0].rows[0].subtitle).toBe('14 · Bayi Portalı');
   });

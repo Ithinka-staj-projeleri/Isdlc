@@ -123,6 +123,6 @@
     [projectId]="projectId()"
     [requirementId]="target === 'new' ? null : target"
     (saved)="onSaved()"
-    (cancelled)="editing.set(null)"
+    (cancelled)="closeForm()"
   />
 }

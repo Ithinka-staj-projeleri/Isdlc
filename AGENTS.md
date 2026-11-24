@@ -203,6 +203,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Çalışma dokümanı (mevcut durum, kök neden, çözüm, pilot planı, fayda / maliyet) | `CurrentState`, `RootCause`, `Solution`, `PilotPlan`, `CostBenefit` |
 | Pilot hedefi / gerçekleşen / sonuç | `PilotTarget`, `PilotActual`, `PilotResult` (`Met`, `PartiallyMet`, `NotMet`) |
 | Genel arama / sonuç grubu | `ISearchService` (`GET /search?q=`), `SearchResultDto` / `SearchGroupDto<T>` (her türden en fazla 5 satır ve toplam; bkz. [docs/search-api.md](docs/search-api.md)) |
+| Kayıt bağlantısı ("Bağlantıyı kopyala") | `RecordLink` (`shared/models/record-link.ts`), `app-copy-link-button`; proje içi kayıt `/projects/{id}?tab=risks&id=12` (bkz. [docs/record-links.md](docs/record-links.md)) |
 | Yapay zekâ yardımcısı / önerisi | `Agents` modülü; tutanak önerileri `MeetingSuggestionsDto`, risk önerileri `RiskSuggestionsDto` ve `RiskAssessmentSuggestionDto`, e-postadan talep taslağı `RequestDraftDto`, ses kaydının metni `MeetingTranscriptDto` (kaydedilmez, formu doldurur) |
 
 Yeni bir kavram gerektiğinde önce bu tabloya eklenir.

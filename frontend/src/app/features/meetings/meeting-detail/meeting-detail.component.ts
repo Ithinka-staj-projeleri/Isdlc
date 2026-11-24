@@ -1,6 +1,8 @@
-import { Component, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
+import { CopyLinkButtonComponent } from '../../../shared/components/copy-link-button/copy-link-button.component';
+import { recordLinkFrom } from '../../../shared/models/record-link';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { BadgeTone, StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { DateOnlyPipe } from '../../../shared/pipes/date-only.pipe';
 import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
@@ -13,7 +15,7 @@ const STATUS_TONES: Record<OpenIssueStatus, BadgeTone> = { Open: 'info', InProgr
 /** The minutes with their decisions and actions, as open issues in their current status. */
 @Component({
     selector: 'app-meeting-detail',
-    imports: [RouterLink, StatusBadgeComponent, DateOnlyPipe, LocalDatePipe],
+    imports: [RouterLink, StatusBadgeComponent, DateOnlyPipe, LocalDatePipe, CopyLinkButtonComponent],
     templateUrl: './meeting-detail.component.html',
     styleUrl: './meeting-detail.component.scss',
 })
@@ -22,6 +24,14 @@ export class MeetingDetailComponent {
 
     readonly projectId = input.required<number>();
     readonly meetingId = input.required<number>();
+
+    private readonly router = inject(Router);
+
+    /** "Bağlantıyı kopyala" (Faz 5 · F8): only for a saved record. */
+    protected readonly link = computed(() => {
+        const id = this.meetingId();
+        return id === null ? null : recordLinkFrom(this.router.url, this.projectId(), 'meetings', id);
+    });
     readonly readOnly = input(false);
 
     readonly edit = output<void>();
