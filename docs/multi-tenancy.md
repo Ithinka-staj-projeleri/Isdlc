@@ -328,6 +328,8 @@ Bütün yeni uç noktalar AGENTS.md Bölüm 7'deki ortak kurallara uyar.
 - Platform Yöneticisi açılışta, şirketlerden sonra açılır (yoksa): geliştirme ortamında `platform@isdlc.local` (ya da
   `Platform:AdminEmail`) ve `Identity:TestPassword`; başka ortamda yalnızca `Platform:AdminEmail` ve `Platform:AdminPassword`
   verilmişse, geçici parolayla (`MustChangePassword`).
+- Ithinka'nın Şirket Yöneticisi seed'den gelir (`Seed/users.json` → `isTenantAdmin`, Mert Kaya). Faz 6'dan önce açılmış bir
+  veritabanında şirketin aktif yöneticisi yoksa açılış seed'i işaretli kullanıcıyı yönetici yapar; şirketin seçtiği yöneticiye dokunmaz.
 
 ### Yapay zekâ ayarlarının etkisi
 
