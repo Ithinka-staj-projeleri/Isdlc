@@ -1,0 +1,69 @@
+<header class="page-head">
+    <div>
+        <h2>Şirketler</h2>
+        <p class="hint">
+            Uygulamayı kullanan şirketler. Yeni şirket ilk yöneticisiyle açılır; şirketin kullanıcılarını o yönetici
+            ekler. Pasif şirketin kullanıcıları giriş yapamaz.
+        </p>
+    </div>
+    <button type="button" class="button primary" (click)="editing.set(null)">+ Yeni şirket</button>
+</header>
+
+@if (opened(); as o) {
+<div class="notice" role="status">
+    <span>
+        <b>{{ o.tenant.name }}</b> açıldı. İlk yönetici <b>{{ o.adminEmail }}</b>, geçici parola
+        <span class="code">{{ o.temporaryPassword }}</span>. Kişiye iletin; ilk girişte değiştirecek.
+    </span>
+    <button type="button" class="button small" (click)="opened.set(null)">Kapat</button>
+</div>
+}
+
+@if (tenants.error()) {
+<app-empty-state message="Liste yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
+} @else if (tenants.hasValue()) {
+@let result = tenants.value();
+@if (result.items.length === 0) {
+<app-empty-state message="Henüz şirket yok." />
+} @else {
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Şirket</th>
+                <th>Kod</th>
+                <th>Kullanıcı</th>
+                <th>Açılış</th>
+                <th>Durum</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (tenant of result.items; track tenant.id) {
+            <tr [class.inactive]="!tenant.isActive">
+                <td>{{ tenant.name }}</td>
+                <td class="code">{{ tenant.code }}</td>
+                <td>{{ tenant.userCount }}</td>
+                <td class="muted">{{ tenant.createdAt | date: 'dd.MM.yyyy' }}</td>
+                <td>
+                    <app-status-badge [label]="tenant.isActive ? 'Aktif' : 'Pasif'" [tone]="tenant.isActive ? 'ok' : 'neutral'" />
+                </td>
+                <td class="actions">
+                    <button type="button" class="button small" (click)="editing.set(tenant)">Düzenle</button>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@if (result.totalCount > pageSize) {
+<app-pagination [page]="page()" [pageSize]="pageSize" [totalCount]="result.totalCount" (pageChange)="page.set($event)" />
+}
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}
+
+@if (editing() !== undefined) {
+<app-tenant-form [tenant]="editing() ?? null" (saved)="onSaved($event)" (cancelled)="editing.set(undefined)" />
+}

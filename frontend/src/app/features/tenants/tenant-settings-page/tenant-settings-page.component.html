@@ -1,0 +1,47 @@
+<header class="page-head">
+    <div>
+        <h2>Şirket ayarları</h2>
+        <p class="hint">Bu ayarlar şirketinizin bütün kullanıcıları için geçerlidir.</p>
+    </div>
+</header>
+
+@if (settings.error()) {
+<app-empty-state message="Ayarlar yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
+} @else if (settings.hasValue()) {
+<form class="card" (ngSubmit)="save()">
+    <h3>Yapay zekâ yardımcıları</h3>
+
+    <label class="switch">
+        <input type="checkbox" name="aiEnabled" [(ngModel)]="aiEnabled" (ngModelChange)="changed()" />
+        <span>
+            <b>Yapay zekâ yardımcıları açık</b>
+            <span class="hint">
+                Kapalıyken ekranlarda yapay zekâ düğmeleri görünmez. Ses kaydını metne çevirme yalnızca bu ayarı ister.
+            </span>
+        </span>
+    </label>
+
+    <label class="switch">
+        <input type="checkbox" name="aiDataSharingAllowed" [(ngModel)]="aiDataSharingAllowed" (ngModelChange)="changed()" />
+        <span>
+            <b>Metinlerin dış modele gönderilmesine izin ver</b>
+            <span class="hint">
+                Tutanak notlarından karar ve aksiyon önerisi, metinden risk önerisi ve e-postadan talep taslağı,
+                yazdığınız metni yapay zekâ modeline gönderir. Bu izin ve üstteki ayar birlikte açık olmalıdır.
+                Öneriler kaydedilmez; kişi inceleyip normal ekrandan kaydeder.
+            </span>
+        </span>
+    </label>
+
+    @if (aiDataSharingAllowed && !aiEnabled) {
+    <p class="warn">Yardımcılar kapalı olduğu için veri izni tek başına bir şey açmaz.</p>
+    }
+
+    <div class="actions">
+        @if (savedMessage()) { <span class="ok" role="status">{{ savedMessage() }}</span> }
+        <button type="submit" class="button primary" [disabled]="saving()">{{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}</button>
+    </div>
+</form>
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}

@@ -415,6 +415,11 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
 
 ## 11. Ekranlar (T5)
 
+Uygulandı. Giriş cevabındaki `mustChangePassword` ve `user.tenant` / `isTenantAdmin` oturumda tutulur; yönlendirmeyi
+`layoutChildGuard` yapar (geçici parola → `/change-password`, Platform Yöneticisi → yalnızca `/platform/...`), yönetim
+sayfalarını `tenantAdminGuard` korur. Menü `navGroupsFor` ile kişiye göre çıkar. Geçici parolayı form üretir (değiştirilebilir) ve
+kayıttan sonra yöneticiye bir kez gösterir. Ekranlar: `features/identity` (parola, kullanıcılar), `features/tenants` (şirketler, ayarlar).
+
 | Ekran | Kim | İçerik |
 | --- | --- | --- |
 | Üst bar | Herkes | Şirket adı |

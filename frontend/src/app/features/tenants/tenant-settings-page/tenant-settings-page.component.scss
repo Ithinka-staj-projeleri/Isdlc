@@ -1,0 +1,53 @@
+@use '../../../shared/styles/ui' as ui;
+@use '../../../shared/styles/admin';
+
+@include admin.page;
+
+.card {
+    @include ui.card;
+    max-width: 720px;
+    padding: 20px 24px;
+
+    h3 {
+        margin: 0 0 16px;
+        font-size: 16px;
+    }
+}
+
+.switch {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
+    cursor: pointer;
+
+    input {
+        margin-top: 3px;
+    }
+
+    > span {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .hint {
+        color: var(--muted);
+        font-size: 13px;
+    }
+}
+
+.warn {
+    margin: 0 0 12px;
+    color: var(--warn, var(--muted));
+    font-size: 13px;
+}
+
+.actions {
+    align-items: center;
+}
+
+.ok {
+    color: var(--ok, var(--accent));
+    font-size: 13px;
+}

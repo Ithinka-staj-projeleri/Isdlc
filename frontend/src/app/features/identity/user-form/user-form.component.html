@@ -1,0 +1,65 @@
+<!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
+<div class="overlay">
+    <form class="dialog" (ngSubmit)="save()" novalidate>
+        <h3>{{ user() ? user()!.fullName + ' · düzenle' : 'Yeni kullanıcı' }}</h3>
+
+        <div class="grid">
+            <label class="field" [class.invalid]="errorFor('fullName')">
+                Ad soyad
+                <input name="fullName" [(ngModel)]="fullName" maxlength="100" />
+                @if (errorFor('fullName'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('email')">
+                E-posta
+                @if (user()) {
+                <input name="email" [value]="email" disabled />
+                <span class="hint">Giriş adıdır, değiştirilemez.</span>
+                } @else {
+                <input name="email" type="email" [(ngModel)]="email" maxlength="256" autocomplete="off" />
+                }
+                @if (errorFor('email'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('role')">
+                Rol
+                <select name="role" [(ngModel)]="role">
+                    <option [ngValue]="null">Seçin…</option>
+                    @for (r of roles; track r) {
+                    <option [ngValue]="r">{{ roleLabels[r] }}</option>
+                    }
+                </select>
+                @if (errorFor('role'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            @if (!user()) {
+            <label class="field" [class.invalid]="errorFor('temporaryPassword')">
+                Geçici parola
+                <span class="password">
+                    <input name="temporaryPassword" [(ngModel)]="temporaryPassword" maxlength="200" autocomplete="off" />
+                    <button type="button" class="button small" (click)="newPassword()">Yeni üret</button>
+                </span>
+                <span class="hint">Kullanıcıya iletin; ilk girişte kendi parolasını belirler.</span>
+                @if (errorFor('temporaryPassword'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+            }
+
+            <label class="check full">
+                <input type="checkbox" name="isTenantAdmin" [(ngModel)]="isTenantAdmin" />
+                Şirket yöneticisi <span class="hint">(kullanıcıları ve şirket ayarlarını yönetir)</span>
+            </label>
+
+            @if (user() && !isSelf()) {
+            <label class="check full">
+                <input type="checkbox" name="isActive" [(ngModel)]="isActive" />
+                Aktif <span class="hint">(pasif kullanıcı giriş yapamaz; açık oturumu da kapanır)</span>
+            </label>
+            }
+        </div>
+
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="cancelled.emit()">Vazgeç</button>
+            <button type="submit" class="button primary" [disabled]="saving()">{{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}</button>
+        </div>
+    </form>
+</div>
