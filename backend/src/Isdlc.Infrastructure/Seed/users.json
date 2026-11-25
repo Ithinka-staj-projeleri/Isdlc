@@ -1,7 +1,7 @@
 {
   "users": [
     { "fullName": "Elif Yılmaz", "email": "elif.yilmaz@isdlc.local", "role": "BusinessAnalyst" },
-    { "fullName": "Mert Kaya", "email": "mert.kaya@isdlc.local", "role": "SoftwareDepartmentManager" },
+    { "fullName": "Mert Kaya", "email": "mert.kaya@isdlc.local", "role": "SoftwareDepartmentManager", "isTenantAdmin": true },
     { "fullName": "Ayşe Demir", "email": "ayse.demir@isdlc.local", "role": "ProjectManager" },
     { "fullName": "Can Öztürk", "email": "can.ozturk@isdlc.local", "role": "SoftwareDeveloper" },
     { "fullName": "Zeynep Arslan", "email": "zeynep.arslan@isdlc.local", "role": "SoftwareDeveloper" },

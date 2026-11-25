@@ -68,6 +68,9 @@ test parolasıyla açılır. Başka ortamda `Platform:AdminEmail` ve `Platform:A
 değiştirilir. Yeni şirket `POST /api/v1/tenants` ile açılır; şirketin ilk yöneticisi geçici parolasıyla girip parolasını
 değiştirir, sonra kendi kullanıcılarını ekler ([docs/multi-tenancy.md](docs/multi-tenancy.md)).
 
+**Şirket Yöneticisi** (Kullanıcılar ve Şirket Ayarları ekranları): Ithinka'da `mert.kaya@isdlc.local` (`Seed/users.json`'da
+`isTenantAdmin`). Eski bir veritabanında şirketin hiç aktif yöneticisi yoksa API açılırken bu kullanıcı yönetici yapılır.
+
 API'yi çalıştır (veritabanı açık olmalı):
 
 ```bash
