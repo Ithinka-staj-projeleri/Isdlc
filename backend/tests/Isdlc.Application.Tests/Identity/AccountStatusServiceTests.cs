@@ -145,4 +145,54 @@ public class AccountStatusServiceTests(DatabaseFixture database)
 
         Assert.Null(admin.TenantId);
     }
+
+    // ---- Cross tests (PLANNING.md): Erva → Baran's modules (Faz 6 · T4) ----
+
+    [Fact]
+    public async Task IsActive_TokenWithoutACompanyForACompanyUser_IsFalse()
+    {
+        // A token taken before Faz 6 has no "tenant" claim; its user must sign in again.
+        var user = await TestUsers.CreateAsync(database, password: null);
+
+        Assert.False(await IsActiveAsync(user.Id, null));
+    }
+
+    [Fact]
+    public async Task IsActive_PlatformAdminTokenWithACompany_IsFalse()
+    {
+        var admin = await TestUsers.CreateAsync(database, password: null, role: UserRole.PlatformAdmin);
+
+        Assert.False(await IsActiveAsync(admin.Id, Tenant.IthinkaId));
+    }
+
+    [Fact]
+    public async Task IsActive_UserOfAnotherCompany_DoesNotDependOnTheScopesCompany()
+    {
+        // The check runs before the request's company is set; an Ithinka scope still finds the Deneme user.
+        var userId = await TestProjects.UserIdAsync(database, TestTenants.DenemeAnalyst, database.DenemeId);
+
+        Assert.True(await IsActiveAsync(userId, database.DenemeId));
+    }
+
+    [Fact]
+    public async Task IsActive_UserOfTheInactiveCompany_IsFalse()
+    {
+        var user = await TestUsers.CreateAsync(database, password: null, tenantId: database.InactiveTenantId);
+
+        Assert.False(await IsActiveAsync(user.Id, database.InactiveTenantId));
+    }
+
+    [Fact]
+    public async Task Save_UserMovedToAnotherCompany_IsRefused()
+    {
+        var tenantId = await CreateTenantAsync(isActive: true);
+        var user = await TestUsers.CreateAsync(database, password: null, tenantId: tenantId);
+
+        await using var scope = database.CreateScope(tenantId);
+        var db = scope.ServiceProvider.GetRequiredService<IsdlcDbContext>();
+        var saved = await db.Users.SingleAsync(u => u.Id == user.Id);
+        saved.TenantId = Tenant.IthinkaId;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync());
+    }
 }

@@ -394,6 +394,10 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
   Dide → Erva'nın modülleri uygulandı: `Tenants/OpenIssueMeetingIsolationTests` (açık konular, tutanaklar),
   `ProcessIsolationTests` (akış kopyaları, süreç, "Hayır" dönüşü, süreç iyileştirme ve `SI-` sayacı),
   `AuditAgentIsolationTests` (Kayıt Geçmişi, zaman çizelgesi, yapay zekâ yardımcıları).
+  Erva → Baran'ın T4'ü uygulandı: `Identity/AuthServiceTests` ve `AccountStatusServiceTests` sonundaki çapraz testler
+  (başka şirketin yöneticisiyle giriş, pasif şirkette doğru ve yanlış parolanın aynı cevabı, şirket kapsamında parola
+  değiştirme, parola alanı mesajları, şirketsiz eski token, şirketli Platform Yöneticisi token'ı, kullanıcıyı başka şirkete
+  taşımanın reddi).
   1. B şirketinin kullanıcısı A'nın kaydını listede görmez, detayında `404` alır, güncelleyemez.
   2. B, A'nın kullanıcısını sorumlu / analist / yönetici seçemez (mevcut "aktif kullanıcı değil" mesajı).
   3. İki şirkette sayaçlar ayrı ilerler (ikisinin de 1 numaralı projesi olur).

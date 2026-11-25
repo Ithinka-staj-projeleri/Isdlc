@@ -6,6 +6,7 @@ using Isdlc.Domain.Identity;
 using Isdlc.Domain.Tenants;
 using Isdlc.Infrastructure.Persistence;
 using Isdlc.Application.Common.Exceptions;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -275,5 +276,103 @@ public class AuthServiceTests(DatabaseFixture database)
         var user = await TestUsers.CreateAsync(database, Password, isActive: false);
 
         await Assert.ThrowsAsync<ForbiddenException>(() => ChangeAsync(user.Id, Password, "Yeni-Parola-2026!"));
+    }
+
+    // ---- Cross tests (PLANNING.md): Erva → Baran's modules (Faz 6 · T4) ----
+
+    private async Task<LoginResultDto> ChangeAsCompanyAsync(int tenantId, int userId, string current, string next)
+    {
+        // As in the API: the request of a company's user runs in a scope working as that company.
+        await using var scope = database.CreateScope(tenantId);
+        var service = new AuthService(
+            scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(),
+            scope.ServiceProvider.GetRequiredService<IPasswordHasher>(),
+            new RecordingTokenService());
+        return await service.ChangePasswordAsync(userId, new ChangePasswordDto { CurrentPassword = current, NewPassword = next });
+    }
+
+    [Fact]
+    public async Task Login_TenantAdminOfAnotherCompany_ReturnsThatCompanyAndTheMark()
+    {
+        var tenantId = await CreateTenantAsync(isActive: true);
+        var admin = await TestUsers.CreateAsync(database, Password, tenantId: tenantId, isTenantAdmin: true);
+
+        var (result, _) = await LoginAsync(admin.Email, Password);
+
+        Assert.NotNull(result);
+        Assert.True(result.User.IsTenantAdmin);
+        Assert.Equal(tenantId, result.User.Tenant?.Id);
+        Assert.Equal("Deneme A.Ş.", result.User.Tenant?.Name);
+    }
+
+    [Fact]
+    public async Task Login_UserOfAnInactiveCompanyWithAWrongPassword_LooksTheSameAsTheRightPassword()
+    {
+        // Neither answer tells that the company exists or that the password was right.
+        var tenantId = await CreateTenantAsync(isActive: false);
+        var user = await TestUsers.CreateAsync(database, Password, tenantId: tenantId);
+
+        var right = await LoginAsync(user.Email, Password);
+        var wrong = await LoginAsync(user.Email, "Yanlis-Parola-1");
+
+        Assert.Null(right.Result);
+        Assert.Null(wrong.Result);
+        Assert.Empty(right.Tokens.CreatedFor);
+    }
+
+    [Fact]
+    public async Task ChangePassword_UserOfAnotherCompany_SavesInItsOwnCompanyAndReturnsIt()
+    {
+        var tenantId = await CreateTenantAsync(isActive: true);
+        var user = await TestUsers.CreateAsync(database, Password, tenantId: tenantId, mustChangePassword: true);
+        const string next = "Sirket-Parola-2026";
+
+        var result = await ChangeAsCompanyAsync(tenantId, user.Id, Password, next);
+
+        Assert.False(result.MustChangePassword);
+        Assert.Equal(tenantId, result.User.Tenant?.Id);
+        var signedIn = (await LoginAsync(user.Email, next)).Result;
+        Assert.NotNull(signedIn);
+        Assert.False(signedIn.MustChangePassword);
+    }
+
+    [Fact]
+    public async Task ChangePassword_UnknownUser_IsForbidden()
+    {
+        await Assert.ThrowsAsync<ForbiddenException>(() => ChangeAsync(int.MaxValue, Password, "Yeni-Parola-2026!"));
+    }
+
+    [Fact]
+    public async Task ChangePassword_TemporaryPasswordStillWorksUntilChanged()
+    {
+        // A wrong attempt does not use up the temporary password: the mark and the old password stay.
+        var user = await TestUsers.CreateAsync(database, Password, mustChangePassword: true);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => ChangeAsync(user.Id, Password, Password));
+
+        var result = await ChangeAsync(user.Id, Password, "Yeni-Parola-2026!");
+
+        Assert.False(result.MustChangePassword);
+    }
+
+    [Theory]
+    [InlineData("", "Yeni-Parola-2026", "Mevcut parola zorunludur.")]
+    [InlineData("Eski-Parola-1", "", "Yeni parola zorunludur.")]
+    [InlineData("Eski-Parola-1", "Kisa-Parola", "Parola en az 12 karakter olmalıdır.")]
+    public void ChangePasswordDto_InvalidInput_IsATurkishError(string current, string next, string expected)
+    {
+        var dto = new ChangePasswordDto { CurrentPassword = current, NewPassword = next };
+        var results = new List<ValidationResult>();
+
+        Validator.TryValidateObject(dto, new ValidationContext(dto), results, validateAllProperties: true);
+
+        Assert.Equal(expected, Assert.Single(results).ErrorMessage);
+    }
+
+    [Fact]
+    public void ChangePasswordDto_TwelveCharacters_IsEnough()
+    {
+        var dto = new ChangePasswordDto { CurrentPassword = "Eski-Parola-1", NewPassword = "Yeni-Parola1" };
+
+        Assert.True(Validator.TryValidateObject(dto, new ValidationContext(dto), [], validateAllProperties: true));
     }
 }
