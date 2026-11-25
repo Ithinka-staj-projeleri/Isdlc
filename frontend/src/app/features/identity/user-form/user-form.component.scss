@@ -1,0 +1,50 @@
+@use '../../../shared/styles/ui' as ui;
+
+@include ui.dialog;
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+
+    .full {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 560px) {
+    .grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.field {
+    @include ui.field;
+}
+
+.password {
+    display: flex;
+    gap: 6px;
+
+    input {
+        flex: 1;
+        min-width: 0;
+        @include ui.code;
+    }
+}
+
+.check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.button {
+    @include ui.button;
+}
+
+.hint {
+    color: var(--muted);
+    font-size: 12px;
+}

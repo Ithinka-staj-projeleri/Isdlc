@@ -1,0 +1,74 @@
+// Shared look of the administration pages (Faz 6 · T5): page head, table and row actions.
+@use 'ui';
+
+@mixin page {
+    .page-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+
+        h2 {
+            margin: 0;
+            font-size: 20px;
+            color: var(--ink);
+        }
+
+        .hint {
+            margin: 4px 0 0;
+            color: var(--muted);
+        }
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+        @include ui.card;
+    }
+
+    table {
+        @include ui.table;
+
+        td {
+            vertical-align: middle;
+        }
+
+        td.status {
+            white-space: nowrap;
+        }
+
+        tr.inactive td:not(.actions) {
+            color: var(--muted);
+        }
+    }
+
+    .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+
+    .button {
+        @include ui.button;
+    }
+
+    .code {
+        @include ui.code;
+    }
+
+    // A one-off message after an action (e.g. the temporary password to pass on).
+    .notice {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+        padding: 10px 14px;
+        border-radius: 6px;
+        background: var(--accent-soft);
+    }
+
+    .muted {
+        color: var(--muted);
+    }
+}

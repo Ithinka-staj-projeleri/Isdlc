@@ -1,0 +1,78 @@
+<!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
+<div class="overlay">
+    <form class="dialog" (ngSubmit)="save()" novalidate>
+        <h3>{{ tenant() ? tenant()!.name + ' · düzenle' : 'Yeni şirket' }}</h3>
+
+        <div class="grid">
+            <label class="field" [class.invalid]="errorFor('name')">
+                Şirket adı
+                <input name="name" [ngModel]="name" (ngModelChange)="onNameChange($event)" maxlength="200" placeholder="Örnek Lojistik A.Ş." />
+                @if (errorFor('name'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('code')">
+                Şirket kodu
+                @if (tenant()) {
+                <input name="code" class="mono" [value]="code" disabled />
+                <span class="hint">Değiştirilemez.</span>
+                } @else {
+                <input name="code" class="mono" [ngModel]="code" (ngModelChange)="onCodeChange($event)" maxlength="50" placeholder="ornek-lojistik" />
+                <span class="hint">Küçük harf, rakam ve tire.</span>
+                }
+                @if (errorFor('code'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            @if (tenant()) {
+            <label class="check full">
+                <input type="checkbox" name="isActive" [(ngModel)]="isActive" />
+                Aktif <span class="hint">(pasif şirketin kullanıcıları giriş yapamaz; açık oturumları da kapanır)</span>
+            </label>
+            } @else {
+            <h4 class="full">Şirketin ilk yöneticisi</h4>
+            <p class="full hint">
+                Bu kişi geçici parolayla girer, kendi parolasını belirler ve şirketin diğer kullanıcılarını ekler.
+                Şirkete akışlar, doküman türleri ve soru listeleri şablondan kopyalanır.
+            </p>
+
+            <label class="field" [class.invalid]="errorFor('admin.fullName')">
+                Ad soyad
+                <input name="adminFullName" [(ngModel)]="adminFullName" maxlength="100" />
+                @if (errorFor('admin.fullName'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('admin.email')">
+                E-posta
+                <input name="adminEmail" type="email" [(ngModel)]="adminEmail" maxlength="256" autocomplete="off" />
+                @if (errorFor('admin.email'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('admin.role')">
+                Rol
+                <select name="adminRole" [(ngModel)]="adminRole">
+                    <option [ngValue]="null">Seçin…</option>
+                    @for (r of roles; track r) {
+                    <option [ngValue]="r">{{ roleLabels[r] }}</option>
+                    }
+                </select>
+                @if (errorFor('admin.role'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+
+            <label class="field" [class.invalid]="errorFor('admin.temporaryPassword')">
+                Geçici parola
+                <span class="password">
+                    <input name="temporaryPassword" class="mono" [(ngModel)]="temporaryPassword" maxlength="200" autocomplete="off" />
+                    <button type="button" class="button small" (click)="newPassword()">Yeni üret</button>
+                </span>
+                @if (errorFor('admin.temporaryPassword'); as error) { <span class="error">{{ error }}</span> }
+            </label>
+            }
+        </div>
+
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="cancelled.emit()">Vazgeç</button>
+            <button type="submit" class="button primary" [disabled]="saving()">
+                {{ saving() ? 'Kaydediliyor…' : tenant() ? 'Kaydet' : 'Şirketi aç' }}
+            </button>
+        </div>
+    </form>
+</div>

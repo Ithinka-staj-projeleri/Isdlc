@@ -1,0 +1,20 @@
+@use '../../../shared/styles/ui' as ui;
+@use '../../../shared/styles/admin';
+
+@include admin.page;
+@include ui.dialog;
+
+.field {
+    @include ui.field;
+}
+
+.password {
+    display: flex;
+    gap: 6px;
+
+    input {
+        flex: 1;
+        min-width: 0;
+        @include ui.code;
+    }
+}

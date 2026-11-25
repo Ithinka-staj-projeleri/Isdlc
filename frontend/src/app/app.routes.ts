@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { authGuard, changePasswordGuard, guestGuard, layoutChildGuard, tenantAdminGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 import { LayoutComponent } from './core/layout/layout/layout.component';
 
@@ -10,9 +10,15 @@ export const routes: Routes = [
         loadComponent: () => import('./features/identity/login-page.component').then(m => m.LoginPageComponent),
     },
     {
+        path: 'change-password',
+        canActivate: [changePasswordGuard],
+        loadComponent: () => import('./features/identity/change-password-page/change-password-page.component').then(m => m.ChangePasswordPageComponent),
+    },
+    {
         path: '',
         component: LayoutComponent,
         canActivate: [authGuard],
+        canActivateChild: [layoutChildGuard],
         children: [
             { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
             { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard-page.component').then(m => m.DashboardPageComponent) },
@@ -31,6 +37,10 @@ export const routes: Routes = [
             { path: 'notifications', loadComponent: () => import('./features/notifications/notifications-page.component').then(m => m.NotificationsPageComponent) },
             { path: 'process-improvements/:id', loadComponent: () => import('./features/process-improvements/improvement-detail/improvement-detail.component').then(m => m.ImprovementDetailComponent) },
             { path: 'process-improvements', loadComponent: () => import('./features/process-improvements/improvement-list/improvement-list.component').then(m => m.ImprovementListComponent) },
+            // Faz 6 · T5 (docs/multi-tenancy.md → Ekranlar). layoutChildGuard keeps the Platform Administrator on /platform.
+            { path: 'platform/tenants', loadComponent: () => import('./features/tenants/tenant-list-page/tenant-list-page.component').then(m => m.TenantListPageComponent) },
+            { path: 'admin/users', canActivate: [tenantAdminGuard], loadComponent: () => import('./features/identity/user-admin-page/user-admin-page.component').then(m => m.UserAdminPageComponent) },
+            { path: 'admin/settings', canActivate: [tenantAdminGuard], loadComponent: () => import('./features/tenants/tenant-settings-page/tenant-settings-page.component').then(m => m.TenantSettingsPageComponent) },
             { path: 'process-library', loadComponent: () => import('./features/process/process-library/process-library.component').then(m => m.ProcessLibraryComponent) },
         ],
     },

@@ -1,0 +1,95 @@
+<header class="page-head">
+    <div>
+        <h2>Kullanıcılar</h2>
+        <p class="hint">
+            Şirketinizin kullanıcıları, pasifler dahil. Yeni kullanıcı geçici parolayla açılır ve ilk girişte kendi
+            parolasını belirler. Kayıt silinmez; ayrılan kişi pasife alınır.
+        </p>
+    </div>
+    <button type="button" class="button primary" (click)="editing.set(null)">+ Yeni kullanıcı</button>
+</header>
+
+@if (resetDone(); as done) {
+<div class="notice" role="status">
+    <span><b>{{ done.user.fullName }}</b> için geçici parola: <span class="code">{{ done.password }}</span>.
+        Kişiye iletin; ilk girişte değiştirecek.</span>
+    <button type="button" class="button small" (click)="resetDone.set(null)">Kapat</button>
+</div>
+}
+
+@if (users.error()) {
+<app-empty-state message="Liste yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
+} @else if (users.hasValue()) {
+@if (users.value().length === 0) {
+<app-empty-state message="Kullanıcı yok." />
+} @else {
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Ad soyad</th>
+                <th>E-posta</th>
+                <th>Rol</th>
+                <th>Durum</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (user of users.value(); track user.id) {
+            <tr [class.inactive]="!user.isActive">
+                <td>
+                    {{ user.fullName }}
+                    @if (user.isTenantAdmin) { <app-status-badge label="Şirket yöneticisi" tone="info" /> }
+                </td>
+                <td>{{ user.email }}</td>
+                <td>{{ roleLabels[user.role] }}</td>
+                <td class="status">
+                    @if (!user.isActive) {
+                    <app-status-badge label="Pasif" />
+                    } @else if (user.mustChangePassword) {
+                    <app-status-badge label="Geçici parola" tone="warn" />
+                    } @else {
+                    <app-status-badge label="Aktif" tone="ok" />
+                    }
+                </td>
+                <td class="actions">
+                    <button type="button" class="button small" (click)="editing.set(user)">Düzenle</button>
+                    <!-- One's own password is changed from the top bar ("Parola"), which asks for the current one. -->
+                    @if (user.isActive && user.id !== currentUserId) {
+                    <button type="button" class="button small" (click)="openReset(user)">Geçici parola ver</button>
+                    }
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+</div>
+}
+} @else {
+<app-empty-state message="Yükleniyor…" />
+}
+
+@if (editing() !== undefined) {
+<app-user-form [user]="editing() ?? null" (saved)="onSaved()" (cancelled)="editing.set(undefined)" />
+}
+
+@if (resetting(); as user) {
+<div class="overlay">
+    <form class="dialog" (ngSubmit)="saveReset()" novalidate>
+        <h3>{{ user.fullName }} · geçici parola</h3>
+        <p class="muted">Kişi bu parolayla girer ve hemen kendi parolasını belirler. Mevcut parolası geçersiz olur.</p>
+        <label class="field" [class.invalid]="resetError()">
+            Geçici parola
+            <span class="password">
+                <input name="temporaryPassword" [(ngModel)]="resetPassword" maxlength="200" autocomplete="off" />
+                <button type="button" class="button small" (click)="newResetPassword()">Yeni üret</button>
+            </span>
+            @if (resetError(); as error) { <span class="error">{{ error }}</span> }
+        </label>
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="resetting.set(null)">Vazgeç</button>
+            <button type="submit" class="button primary" [disabled]="resetSaving()">Geçici parolayı ver</button>
+        </div>
+    </form>
+</div>
+}

@@ -1,9 +1,18 @@
 <h1>ISDLC</h1>
 @if (auth.user(); as user) {
+@if (user.tenant) { <span class="tenant" title="Şirket">{{ user.tenant.name }}</span> }
+<!-- The Platform Administrator has no company: no search, bell or profile, only the company pages. -->
+@if (!auth.isPlatformAdmin()) {
 <app-global-search />
+}
 <span class="spacer"></span>
+@if (auth.isPlatformAdmin()) {
+<span class="user">{{ user.fullName }}</span>
+} @else {
 <app-notification-bell />
 <a class="user" [routerLink]="['/users', user.id]" title="Profilim">{{ user.fullName }} · {{ roleLabels[user.role] }}</a>
+}
+<a class="user" routerLink="/change-password" title="Parolamı değiştir">Parola</a>
 <button type="button" (click)="auth.logout()">Çıkış</button>
 } @else {
 <span class="spacer"></span>
