@@ -12,6 +12,7 @@ namespace Isdlc.Application.Tests.Tenants;
 /// The template seed per company (Faz 6 · T3): the startup gives every active company the templates, a new company
 /// gets the same copy, and copies the company changed are left alone.
 /// Expectations: docs/multi-tenancy.md → Seed ve şablon. Tests that change templates open their own company.
+/// The tests under "Cross tests" are the cross test (PLANNING.md): Dide → Erva's modules.
 /// </summary>
 [Collection("Database")]
 public class TenantTemplatesTests(DatabaseFixture database)
@@ -268,4 +269,141 @@ public class TenantTemplatesTests(DatabaseFixture database)
             .OrderBy(s => s.Order)
             .Select(s => s.Text)
             .FirstAsync());
+
+    // ---- Cross tests (PLANNING.md): Dide → Erva's modules ----
+
+    /// <summary>A flow of the company's own (no template) with one stage, for records that need a stage.</summary>
+    private Task<int> AddOwnFlowStageAsync(int tenantId, string code) =>
+        InTenantAsync(tenantId, async db =>
+        {
+            var flow = new ProcessFlow { Code = code, Name = "Kendi akışımız" };
+            var stage = new ProcessStage { ProcessFlow = flow, Order = 1, Title = "Kendi aşamamız", ShortTitle = "Kendi" };
+            db.ProcessFlows.Add(flow);
+            db.ProcessStages.Add(stage);
+            await db.SaveChangesAsync();
+            return stage.Id;
+        });
+
+    [Fact]
+    public async Task Apply_CopiesPointOnlyToTheCompanysOwnRows()
+    {
+        // Document types hang on stages, "No" jumps on steps, questions and options on sets: in a copy every one of
+        // these must be the company's own row, never Ithinka's.
+        var tenantId = await CreateTenantAsync();
+        await ApplyAsync(tenantId);
+
+        var ithinkaStageIds = await InTenantAsync(Tenant.IthinkaId, db => db.ProcessStages.Select(s => s.Id).ToListAsync());
+        var ithinkaStepIds = await InTenantAsync(Tenant.IthinkaId, db => db.ProcessSteps.Select(s => s.Id).ToListAsync());
+        var ithinkaSetIds = await InTenantAsync(Tenant.IthinkaId, db => db.QuestionSets.Select(s => s.Id).ToListAsync());
+
+        var ownNewRequestStageIds = await InTenantAsync(tenantId, db => db.ProcessStages
+            .Where(s => s.ProcessFlow.TemplateCode == ProcessFlowCodes.NewRequest).Select(s => s.Id).ToListAsync());
+        var ownStepIds = await InTenantAsync(tenantId, db => db.ProcessSteps.Select(s => s.Id).ToListAsync());
+        var ownSetIds = await InTenantAsync(tenantId, db => db.QuestionSets.Select(s => s.Id).ToListAsync());
+
+        var documentStageIds = await InTenantAsync(tenantId, db => db.DocumentTypes.Select(t => t.ProcessStageId).ToListAsync());
+        var jumps = await InTenantAsync(tenantId, db => db.ProcessStepJumps.Select(j => new { j.ProcessStepId, j.TargetStepId }).ToListAsync());
+        var questionSetIds = await InTenantAsync(tenantId, db => db.Questions.Select(q => q.QuestionSetId).ToListAsync());
+        var optionSetIds = await InTenantAsync(tenantId, db => db.QuestionOptions.Select(o => o.QuestionSetId).ToListAsync());
+
+        Assert.NotEmpty(documentStageIds);
+        Assert.NotEmpty(jumps);
+        Assert.All(documentStageIds, id => Assert.Contains(id, ownNewRequestStageIds));
+        Assert.All(jumps, j =>
+        {
+            Assert.Contains(j.ProcessStepId, ownStepIds);
+            Assert.Contains(j.TargetStepId, ownStepIds);
+        });
+        Assert.All(questionSetIds.Concat(optionSetIds), id => Assert.Contains(id, ownSetIds));
+        Assert.Empty(documentStageIds.Intersect(ithinkaStageIds));
+        Assert.Empty(jumps.Select(j => j.TargetStepId).Intersect(ithinkaStepIds));
+        Assert.Empty(questionSetIds.Intersect(ithinkaSetIds));
+    }
+
+    [Fact]
+    public async Task Apply_CompanysOwnDocumentTypeWithATemplateCode_IsKeptAndNotDuplicated()
+    {
+        var templateCode = await InTenantAsync(Tenant.IthinkaId,
+            db => db.DocumentTypes.OrderBy(t => t.Id).Select(t => t.TemplateCode!).FirstAsync());
+        var tenantId = await CreateTenantAsync();
+        var stageId = await AddOwnFlowStageAsync(tenantId, "kendi-akis");
+        await InTenantAsync(tenantId, db =>
+        {
+            db.DocumentTypes.Add(new() { Code = templateCode, Name = "Kendi dokümanımız", ProcessStageId = stageId, Order = 1 });
+            return db.SaveChangesAsync();
+        });
+
+        await ApplyAsync(tenantId);
+
+        var sameCode = await InTenantAsync(tenantId, db => db.DocumentTypes.Where(t => t.Code == templateCode).ToListAsync());
+        var own = Assert.Single(sameCode);
+        Assert.Equal("Kendi dokümanımız", own.Name);
+        Assert.Null(own.TemplateCode);
+        // Only that one is skipped; the other document types are still copied.
+        Assert.Equal(
+            (await CountAsync(Tenant.IthinkaId)).DocumentTypes,
+            await InTenantAsync(tenantId, db => db.DocumentTypes.CountAsync()));
+    }
+
+    [Fact]
+    public async Task Apply_CompanysOwnQuestionSetWithATemplateCode_IsKeptAndNotDuplicated()
+    {
+        var templateCode = await InTenantAsync(Tenant.IthinkaId,
+            db => db.QuestionSets.OrderBy(s => s.Id).Select(s => s.TemplateCode!).FirstAsync());
+        var tenantId = await CreateTenantAsync();
+        await InTenantAsync(tenantId, db =>
+        {
+            db.QuestionSets.Add(new()
+            {
+                Code = templateCode, Name = "Kendi sorularımız", SourceDocument = "Şirket", Version = "1",
+                AnswerMode = Domain.QuestionBank.AnswerMode.SharedOptions,
+            });
+            return db.SaveChangesAsync();
+        });
+
+        await ApplyAsync(tenantId);
+
+        var sameCode = await InTenantAsync(tenantId, db => db.QuestionSets.Where(s => s.Code == templateCode).ToListAsync());
+        var own = Assert.Single(sameCode);
+        Assert.Equal("Kendi sorularımız", own.Name);
+        Assert.Null(own.TemplateCode);
+        Assert.Equal(0, await InTenantAsync(tenantId, db => db.Questions.CountAsync(q => q.QuestionSetId == own.Id)));
+    }
+
+    [Fact]
+    public async Task Apply_OwnNewRequestFlow_SkipsDocumentTypesButCopiesTheRest()
+    {
+        // Document types hang on the template copy of new-software-project; a company whose flow with that code is its
+        // own has no such copy, so the document types are skipped while everything else is still copied.
+        var tenantId = await CreateTenantAsync();
+        await AddOwnFlowStageAsync(tenantId, ProcessFlowCodes.NewRequest);
+
+        await ApplyAsync(tenantId);
+
+        var counts = await CountAsync(tenantId);
+        var ithinka = await CountAsync(Tenant.IthinkaId);
+        Assert.Equal(0, counts.DocumentTypes);
+        Assert.Equal(ithinka.Flows, counts.Flows); // the own new-software-project stands for the template's
+        Assert.Equal(ithinka.QuestionSets, counts.QuestionSets);
+        Assert.True(await InTenantAsync(tenantId, db => db.ProcessFlows.AnyAsync(f => f.TemplateCode == ProcessFlowCodes.AddOn)));
+    }
+
+    [Fact]
+    public async Task Apply_UnchangedQuestionSet_FollowsTheFileAgain()
+    {
+        var tenantId = await CreateTenantAsync();
+        await ApplyAsync(tenantId);
+        var original = await InTenantAsync(tenantId, async db =>
+        {
+            var set = await db.QuestionSets.OrderBy(s => s.Id).FirstAsync();
+            var name = set.Name;
+            set.Name = "Elle değiştirilmiş";
+            await db.SaveChangesAsync();
+            return name;
+        });
+
+        await ApplyAsync(tenantId);
+
+        Assert.Equal(original, await InTenantAsync(tenantId, db => db.QuestionSets.OrderBy(s => s.Id).Select(s => s.Name).FirstAsync()));
+    }
 }
