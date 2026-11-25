@@ -31,6 +31,12 @@ public static class DatabaseInitializer
         {
             await SeedCompanyAsync(services, tenantId, isDevelopment);
         }
+
+        // Last, with no company set: the Platform Administrator belongs to none (Faz 6 · T4).
+        await using (var scope = services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<PlatformAdminSeeder>().SeedAsync(isDevelopment);
+        }
     }
 
     /// <summary>

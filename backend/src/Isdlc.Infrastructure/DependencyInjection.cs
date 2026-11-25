@@ -48,6 +48,9 @@ public static class DependencyInjection
         services.AddScoped<ITenantTemplates, TenantTemplates>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddScoped<UserPasswordSeeder>();
+        services.AddScoped<PlatformAdminSeeder>();
+        services.AddSingleton(new PlatformAdminSettings(
+            configuration["Platform:AdminEmail"], configuration["Platform:AdminPassword"], configuration["Identity:TestPassword"]));
 
         AddAgents(services, configuration);
 

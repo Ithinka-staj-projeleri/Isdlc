@@ -3,7 +3,8 @@
 Tek kurulumun birden fazla şirkete (tenant) hizmet etmesi: veri modeli, kimlik, okuma ve yazma kuralları, seed, yönetim
 uç noktaları ve testler. Plan ve iş dağılımı: [phase-6-plan.md](phase-6-plan.md).
 Durum: **onaylandı** (24 Kasım 2026). Sorumlu: Erva (T1). Uygulama: T2–T7. Bölüm 12'deki kurallar T2 ile AGENTS.md'ye taşındı.
-T4'ün 1. adımı (kimlik: `PlatformAdmin`, `IsTenantAdmin`, `MustChangePassword`, parola değiştirme, her istekte aktiflik kontrolü) uygulandı.
+T4 uygulandı: kimlik (`PlatformAdmin`, `IsTenantAdmin`, `MustChangePassword`, parola değiştirme, her istekte aktiflik kontrolü; #166),
+şirket içi kullanıcı yönetimi, şirket açma / düzenleme ve Platform Yöneticisinin seed'i.
 
 Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9) taşınır (Bölüm 12).
 
@@ -141,6 +142,7 @@ builder.Entity<User>().HasQueryFilter(u => _tenant.TenantId != null && u.TenantI
 | Platform Yöneticisinin şirket listesi (`TenantService`) | Kullanıcı sayısı (`TenantDto.userCount`); yalnızca sayı okunur |
 | Her istekte aktiflik kontrolü (`AccountStatusService`) | Giriş yapanın **kendi** satırı, token'daki id ile. Platform Yöneticisinin şirketi boş olduğu için filtre onu bulamaz (T4) |
 | Parola değiştirme (`AuthService.ChangePasswordAsync`) | Aynı neden: giriş yapanın kendi satırı, token'daki id ile (T4) |
+| Platform Yöneticisinin seed'i (`PlatformAdminSeeder`) | Yalnızca bir Platform Yöneticisi var mı diye bakılır; şirketi olmadığı için filtre onu bulamaz (T4) |
 
 **Seed ve şirket açma filtreyi atlamaz**, şirketi ayarlar: `ITenantContext`'i sırayla her aktif şirkete (seed) ya da yeni
 şirkete (`POST /tenants`) ayarlayıp mevcut kodu çalıştırır. Nedeni:
@@ -314,7 +316,7 @@ Bütün yeni uç noktalar AGENTS.md Bölüm 7'deki ortak kurallara uyar.
 
 | İstek | Açıklama | Cevap |
 | --- | --- | --- |
-| `GET /users?includeInactive=true` | Bugünkü kullanıcı listesi; yönetici pasifleri de görebilir | `200` |
+| `GET /users/manage` | Şirketin bütün kullanıcıları, pasifler dahil; e-posta ve işaretlerle (`UserDto[]`). Formlardaki kişi listesi (`GET /users`, yalnızca aktifler) değişmez | `200` |
 | `POST /users` | Şirkete kullanıcı ekler (ad, e-posta, rol, şirket yöneticisi mi, geçici parola) | `201` `UserDto` |
 | `PUT /users/{id}` | Ad, rol, aktiflik, şirket yöneticisi işareti | `200` `UserDto` |
 | `POST /users/{id}/reset-password` | Geçici parola verir, `MustChangePassword = true` | `204` |
@@ -322,6 +324,10 @@ Bütün yeni uç noktalar AGENTS.md Bölüm 7'deki ortak kurallara uyar.
 
 - Kullanıcının e-postası sonradan değişmez (giriş kimliği).
 - Rol `PlatformAdmin` verilemez; Platform Yöneticisi yalnızca yapılandırmayla açılır.
+- Pasife alınan kullanıcının önbellekteki aktiflik cevabı hemen silinir; bir sonraki isteğinde çıkış yapar.
+- Platform Yöneticisi açılışta, şirketlerden sonra açılır (yoksa): geliştirme ortamında `platform@isdlc.local` (ya da
+  `Platform:AdminEmail`) ve `Identity:TestPassword`; başka ortamda yalnızca `Platform:AdminEmail` ve `Platform:AdminPassword`
+  verilmişse, geçici parolayla (`MustChangePassword`).
 
 ### Yapay zekâ ayarlarının etkisi
 
@@ -365,6 +371,9 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
 | Kendi hesabını pasife alma | `400` | "Kendi hesabınızı pasife alamazsınız." |
 | Geçici ya da yeni parola kısa | `400` | "Parola en az 12 karakter olmalıdır." |
 | Yeni parola eskisiyle aynı | `400` | "Yeni parola eskisinden farklı olmalıdır." |
+| Parola değiştirirken mevcut parola yanlış | `400` | "Mevcut parola hatalı." |
+| Formdan `PlatformAdmin` rolü verilmek istendi | `400` | "Platform yöneticisi rolü verilemez." |
+| Başka şirketin kullanıcısı ya da olmayan şirket | `404` | "Kullanıcı bulunamadı." / "Şirket bulunamadı." |
 | Yapay zekâ yardımcıları kapalı | `503` | "Yapay zekâ yardımcıları şirketiniz için kapalı." |
 | Pasif şirket ya da kullanıcı | `401` | Girişteki genel mesaj |
 

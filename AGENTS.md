@@ -165,6 +165,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Şirkete ait kayıt / isteğin şirketi | `ITenantOwned` / `ITenantContext` (bkz. [docs/multi-tenancy.md](docs/multi-tenancy.md)) |
 | Platform Yöneticisi / Şirket Yöneticisi | `UserRole.PlatformAdmin` (şirketi yok, `TenantId` boş) / `User.IsTenantAdmin` (rol değil işaret); `ICurrentUserService.IsPlatformAdmin`, `IsTenantAdmin` |
 | Geçici parola / parola değiştirme | `User.MustChangePassword`; `POST /auth/change-password` (`ChangePasswordDto`, en az 12 karakter, `PasswordRules`) |
+| Şirket içi kullanıcı yönetimi / şirket yönetimi | `IUserAdminService` (`/users/manage`, `POST`/`PUT /users`, `reset-password`; yalnızca Şirket Yöneticisi) / `ITenantService` (`/tenants`; yalnızca Platform Yöneticisi, `GET /tenants/current` herkes) |
 | Şablondan gelen kayıt (akış, doküman türü, soru seti) | `TemplateCode` (kopyalandığı `Seed/` kodu), `IsCustomized` (şirket değiştirdi mi) |
 | Rol | `UserRole` (kullanıcı başına tek rol) |
 | Ek geliştirme (devam eden projeye ek modül / geliştirme) ve ait olduğu proje | `Project` (`RequestType.AdditionalModule`, `Project.ParentProjectId`; kodu `14 / EG-01`) |
