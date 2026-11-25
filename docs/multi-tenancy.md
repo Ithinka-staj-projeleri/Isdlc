@@ -341,8 +341,15 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
   ses paketi kurulu **ve** `AiEnabled` açıksa görünür. Ekranlar bugünkü gibi yalnızca bu cevaba bakar.
 - Yardımcılar, giriş ve proje kontrollerinden sonra, servisi çağırmadan önce şirketin anahtarlarına bakar.
 - Ithinka'da iki anahtar da açık (migration); yeni şirkette ikisi de kapalı başlar.
-- Anahtarları değiştiren `PUT /tenants/current/settings` Şirket Yöneticisi gerektirdiği için T4 ile gelir (`IsTenantAdmin`).
-  O zamana kadar anahtarlar veritabanından değiştirilir.
+- Anahtarları Şirket Yöneticisi `GET` / `PUT /tenants/current/settings` ile okur ve değiştirir (`TenantsController`,
+  `Isdlc.Application/Tenants/TenantSettingsService.cs`). Uygulandı (T6, T4'ün `IsTenantAdmin`'i gelince).
+  - Yalnızca kendi şirketinin anahtarları; şirket isteğin kullanıcısından gelir, adreste id yoktur.
+  - Şirket Yöneticisi değilse ve Platform Yöneticisi için (şirketi yok) `403` "Bu işlem için şirket yöneticisi olmalısınız.";
+    giriş yoksa `403` "İşlem yapmak için giriş yapılmalıdır."
+  - `PUT` iki anahtarı da ister; eksik olan `400` olur ("Yapay zekâ ayarı belirtilmelidir.", "Veri gönderme izni
+    belirtilmelidir."), kapalı sayılmaz. İki anahtar bağımsız kaydedilir; yalnızca veri izni açıksa yine hepsi kapalıdır.
+  - Değişiklik bir sonraki `GET /agents/status` isteğinde görünür. `Tenant` denetlenen bir kayıt olmadığından değişiklik denetim kaydına yazılmaz.
+  - Ekranı (`/admin/settings`) T5'tedir.
 
 ## 8. Hata mesajları
 
