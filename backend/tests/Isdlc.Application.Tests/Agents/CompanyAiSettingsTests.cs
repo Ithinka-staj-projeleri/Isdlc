@@ -6,6 +6,7 @@ using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Tests.Common;
 using Isdlc.Application.Tests.Identity;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Projects;
 using Isdlc.Domain.Tenants;
 using Isdlc.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,7 @@ namespace Isdlc.Application.Tests.Agents;
 /// before the AI service is called. Each test opens its own company with the switches it needs, the templates and an
 /// analyst and a project manager, so Ithinka and Deneme are never changed.
 /// Expectations: docs/multi-tenancy.md → "Yapay zekâ ayarlarının etkisi".
+/// The tests under "Cross tests" are the cross test (PLANNING.md): Dide → Erva's modules.
 /// </summary>
 [Collection("Database")]
 public class CompanyAiSettingsTests(DatabaseFixture database)
@@ -179,5 +181,80 @@ public class CompanyAiSettingsTests(DatabaseFixture database)
 
         Assert.Equal(CompanyAiRules.ClosedMessage, error.Message);
         Assert.Null(agent.LastRecording);
+    }
+
+    // ---- Cross tests (PLANNING.md): Dide → Erva's modules ----
+
+    [Fact]
+    public async Task GetStatus_Ithinka_IsOnAsBeforePhase6()
+    {
+        // The migration gave Ithinka both switches on, so its screens look as they did; a closed company next to it
+        // does not change that.
+        await CreateCompanyAsync(aiEnabled: false, dataSharing: false);
+        var analystId = await TestProjects.UserIdAsync(database, TestProjects.Analyst);
+        await using var scope = database.CreateScope();
+        var service = new AgentService(
+            scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(), new TestUser(analystId), new FakeAgentClient());
+
+        Assert.Equal(new AgentStatusDto(true, true, true, true), await service.GetStatusAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetStatus_CompanyNotFound_EverythingOff()
+    {
+        // A token naming a company that is not there (never a real one): nothing is offered.
+        var analystId = await TestProjects.UserIdAsync(database, TestProjects.Analyst);
+        await using var scope = database.CreateScope();
+        var service = new AgentService(
+            scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(), new TestUser(analystId, int.MaxValue),
+            new FakeAgentClient());
+
+        Assert.Equal(new AgentStatusDto(false, false, false, false), await service.GetStatusAsync(CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    public async Task RiskAssessment_NotAllowed_Is503AndTheServiceIsNotCalled(bool aiEnabled, bool dataSharing)
+    {
+        // The fourth assistant that sends text: scoring one risk the person typed.
+        var company = await CreateCompanyAsync(aiEnabled, dataSharing);
+        var projectId = await TestProjects.CreateAsync(database, "6", tenantId: company.TenantId);
+        var agent = new FakeAgentClient();
+
+        var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() => AsCompanyAsync(company, agent,
+            s => s.SuggestRiskAssessmentAsync(projectId, new SuggestRiskAssessmentDto { Title = "Test ortamı gecikebilir" },
+                CancellationToken.None)));
+
+        Assert.Equal(CompanyAiRules.ClosedMessage, error.Message);
+        Assert.False(agent.WasCalled);
+    }
+
+    [Fact]
+    public async Task ClosedCompany_ProjectNotActive_TheProjectAnswersFirst()
+    {
+        // Order (docs/multi-tenancy.md): sign-in and the project are checked before the company's switches.
+        var company = await CreateCompanyAsync(aiEnabled: false, dataSharing: false);
+        var projectId = await TestProjects.CreateAsync(database, null, ProjectStatus.Closed, tenantId: company.TenantId);
+        var agent = new FakeAgentClient();
+
+        await Assert.ThrowsAsync<ConflictException>(() => AsCompanyAsync(company, agent,
+            s => s.SuggestMeetingItemsAsync(projectId, Notes(), CancellationToken.None)));
+        Assert.False(agent.WasCalled);
+    }
+
+    [Fact]
+    public async Task ClosedCompany_NotAnAnalyst_TheRoleAnswersFirst()
+    {
+        // The e-mail draft checks who may open a request before the company's switches.
+        var company = await CreateCompanyAsync(aiEnabled: false, dataSharing: false);
+        var developer = await TestUsers.CreateAsync(database, null, role: UserRole.SoftwareDeveloper, tenantId: company.TenantId);
+        var agent = new FakeAgentClient();
+
+        var error = await Assert.ThrowsAsync<ForbiddenException>(() => AsCompanyAsync(company with { AnalystId = developer.Id }, agent,
+            s => s.DraftRequestFromEmailAsync(new DraftRequestFromEmailDto { EmailText = "Yeni ekran istiyoruz." }, CancellationToken.None)));
+
+        Assert.Equal("Talebi yalnızca İş Analisti açabilir.", error.Message);
+        Assert.False(agent.WasCalled);
     }
 }
