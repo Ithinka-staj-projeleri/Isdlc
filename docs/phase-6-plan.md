@@ -2,7 +2,7 @@
 
 Bu dosya Faz 6'da yapılacak işleri, kimin neyi yapacağını ve işlerin sırasını anlatır.
 Ortak kurallar için: [AGENTS.md](../AGENTS.md), ekip ve çalışma kuralları için: [PLANNING.md](../PLANNING.md).
-Durum: **onaylandı** (24 Kasım 2026).
+Durum: **onaylandı** (24 Kasım 2026). 25 Kasım 2026 itibarıyla T1–T8 yapıldı; faz, ekip demoyu provada denedikten sonra kapatılır.
 
 ## 1. Neden
 
@@ -59,7 +59,7 @@ Sorumlular **öneridir**; modül sahipliğine göre dağıtıldı, ekip onaylark
 | T5 | **Yönetim ekranları:** Platform Yöneticisi için şirket listesi ve yeni şirket formu; Şirket Yöneticisi için kullanıcı listesi ve formu; üst barda şirket adı | Baran | T4 |
 | T6 | **Yapay zekâ ayarları:** şirket bazında açık / kapalı ve veri gönderme izni (karar 12); `GET /agents/status` şirkete göre döner | Erva | T2 |
 | T7 | **Ayrım testleri:** her modül için iki şirketli testler (listeleme, detay, güncelleme, sayaç, bildirim, denetim kaydı, panel, arama). Çapraz test kuralıyla dağıtılır | Herkes | T2–T6 |
-| T8 | **Belgeler ve demo:** README'ye yeni şirket açma; `docs/data-model.md`; demo senaryosuna ikinci bir şirket | Erva | Hepsi |
+| T8 | **Belgeler ve demo:** README'ye yeni şirket açma; `docs/data-model.md`; demo senaryosuna ikinci bir şirket. *Yapıldı:* README → Yeni şirket açma, data-model.md → Şirketler, [demo-scenario.md](demo-scenario.md) baştan yazıldı (F10 dahil) | Erva | Hepsi |
 
 ### Çapraz testler
 

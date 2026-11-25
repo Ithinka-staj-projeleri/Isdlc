@@ -2,7 +2,7 @@
 
 Bu dosya Faz 5'te yapılacak işleri, kimin neyi yapacağını ve işlerin sırasını anlatır.
 Ortak kurallar için: [AGENTS.md](../AGENTS.md), ekip ve çalışma kuralları için: [PLANNING.md](../PLANNING.md).
-Durum: **kapatıldı** (24 Kasım 2026). F1–F9 birleşti ve çapraz testleri yazıldı; F10 (demo) Faz 6'nın T8'iyle birlikte yapılacak ([phase-6-plan.md](phase-6-plan.md)).
+Durum: **kapatıldı** (24 Kasım 2026). F1–F9 birleşti ve çapraz testleri yazıldı; F10 (demo) Faz 6'nın T8'iyle birlikte iki şirketli olarak yazıldı ([demo-scenario.md](demo-scenario.md)).
 
 ## 1. Neden
 

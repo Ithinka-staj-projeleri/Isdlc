@@ -1,156 +1,179 @@
 # Uçtan Uca Demo Senaryosu
 
-MVP'nin baştan sona gösterimi: bir talebin açılması, yöneticinin onayıyla projeye dönüşmesi ve projede çalışılması.
-Süre: yaklaşık **25 dakika**. Sorumlu: Erva. Durum: **tamamlandı**; MVP'nin bütün modülleri senaryoda. Seviye, kabul,
-bildirim ve risk adımları 11 Kasım 2026'da uygulamada denendi.
+Platformun baştan sona gösterimi: bir talebin e-postadan açılıp süreçte ilerlemesi, projede çalışılması ve aynı uygulamayı
+kullanan ikinci bir şirketin açılması. Süre: yaklaşık **30 dakika**. Sorumlu: Erva.
+Durum: **Faz 4, 5 ve 6 ile baştan yazıldı** (Faz 5 · F10 ve Faz 6 · T8). Denendiği tarih ve kapsam en altta.
 
-Anlatılacak hikâye: *"Bir talep sisteme girdiği andan itibaren 13 aşamalı ISDLC sürecinde kimin ne yapacağı belli;
-sistem sırayı, yetkiyi ve onayları kendisi takip ediyor, sırası gelen kişiye bildirim gönderiyor; seviye ve kabul puanı,
-riskler, toplantılar, açık konular, gereksinimler ve dokümanlar projenin içinde tutuluyor; her değişiklik kayıt altında."*
+Anlatılacak hikâye: *"Bir talep sisteme girdiği andan itibaren şirketin kendi akışında kimin ne yapacağı belli: sistem
+sırayı, yetkiyi ve onayları takip ediyor, sırası gelene haber veriyor. Seviye, uygunluk, riskler, toplantılar ve açık
+konular projenin içinde. Yapay zekâ öneri hazırlıyor, kaydı kişi yapıyor. Aynı uygulamayı başka bir şirket de kendi
+kullanıcıları ve akışlarıyla kullanabiliyor; iki şirket birbirinin hiçbir kaydını görmüyor."*
 
 ## Hazırlık (demodan önce)
 
 | # | Ne | Nasıl |
 | --- | --- | --- |
-| 1 | **Temiz veritabanı** | `docker compose down -v` ve `docker compose up -d`, sonra API'yi başlat. Seed verisi (13 aşama, kullanıcılar, 9 örnek proje) baştan yüklenir. Deneme sırasında değişen kayıtlar demoya karışmaz |
+| 1 | **Temiz veritabanı** | `docker compose down -v` ve `docker compose up -d`, sonra API'yi başlat. Akışlar, 7 Ithinka kullanıcısı, Platform Yöneticisi ve örnek projeler baştan yüklenir. Whisper modelini yeniden indirmemek için yalnızca veritabanı volume'ünü silmek yeterli: `docker compose rm -sf mssql`, `docker volume rm isdlc_isdlc-mssql-data`, `docker compose up -d mssql` |
 | 2 | Gizli ayarlar | `Jwt:SigningKey` ve `Identity:TestPassword` tanımlı olmalı (README → Backend) |
-| 3 | Yapay zekâ servisi | `ai/.env` içinde `GEMINI_API_KEY`, sonra `docker compose --profile ai up -d --build`. Tutanak formunda yapay zekâ bölümü görünüyor mu kontrol et |
-| 4 | Uygulama | API (`dotnet run --project backend/src/Isdlc.Api`) ve frontend (`frontend` klasöründe `npm start`) açık: http://localhost:4200 |
-| 5 | **İki tarayıcı penceresi** | Biri normal, biri gizli pencere. Normal pencerede **Elif Yılmaz** (İş Analisti), gizli pencerede **Mert Kaya** (Yazılım Departman Yöneticisi) giriş yapmış olsun |
-| 6 | Toplantı notu | Aşağıdaki "Sahte toplantı notu" panoya kopyalanmış olsun |
-| 7 | Prova | Senaryoyu bir kez baştan sona dene; sonra 1. adımı tekrarla (veritabanını sıfırla) |
-| 8 | Sürüm | main güncel olmalı: Seviye & Kabul (#96–#98), Riskler (#91–#93), Bildirimler (#101, #108, #109) ve gösterge panelindeki risk / seviye kartları (#105, #106) |
+| 3 | Yapay zekâ servisi | `ai/.env` içinde `GEMINI_API_KEY`, sonra `docker compose --profile ai up -d --build`. Yeni talep formunda "E-postadan doldur (yapay zekâ)" görünüyor mu kontrol et |
+| 4 | Uygulama | API (`dotnet run --project backend/src/Isdlc.Api`) ve frontend (`frontend` klasöründe `npm start`): http://localhost:4200 |
+| 5 | **Üç tarayıcı penceresi** | 1: normal pencere, **Elif Yılmaz** (İş Analisti). 2: gizli pencere, **Mert Kaya** (Yazılım Departman Yöneticisi). 3: başka bir tarayıcı (ya da ikinci profil), **Platform Yöneticisi** (`platform@isdlc.local`). Aynı tarayıcının iki gizli penceresi oturumu paylaşır; üçüncü kişi için ayrı tarayıcı gerekir |
+| 6 | Metinler | Aşağıdaki "Sahte e-posta" ve "Sahte toplantı notu" panoya hazır olsun. Ses kaydı denenecekse sahte bir kayıt (kendi sesinle okunmuş not) hazırla |
+| 7 | Prova | Senaryoyu bir kez baştan sona dene; sonra 1. adımı tekrarla |
 
-**Yalnızca sahte veri kullanılır.** Toplantı notları yapay zekâ servisine gönderilir; gerçek müşteri bilgisi girme.
+**Yalnızca sahte veri kullanılır.** E-posta ve toplantı notları yapay zekâ servisine gönderilir; gerçek müşteri bilgisi girme.
+Parolalar belgeye yazılmaz: Ithinka kullanıcılarının parolası ekipçe belirlenen test parolasıdır, yeni şirketin yöneticisinin
+geçici parolası demo sırasında ekranda üretilir.
 
 ### Demodaki kişiler
 
-| Kişi | Rol | Ne yapar |
+| Kişi | Şirket · rol | Ne yapar |
 | --- | --- | --- |
-| Elif Yılmaz (`elif.yilmaz@isdlc.local`) | İş Analisti | Talebi açar, süreci yürütür; seviye ve kabul puanlaması, risk, tutanak, açık konu, gereksinim, doküman |
-| Mert Kaya (`mert.kaya@isdlc.local`) | Yazılım Departman Yöneticisi | Zildeki "onayınızı bekliyor" bildirimiyle talebe gelir, 3.2'de proje olarak kabul eder (onay adımı) |
-| Ayşe Demir | Proje Yöneticisi | Talepte proje yöneticisi olarak seçilir; yüksek risk bildirimini alır |
-| Can Öztürk | Yazılım Geliştirici | Toplantı notlarında aksiyon sahibi; riskin sorumlusu olarak "size atandı" bildirimini alır |
-
-Parola, ekipçe belirlenen test parolasıdır (`Identity:TestPassword`); belgeye yazılmaz.
+| Elif Yılmaz (`elif.yilmaz@isdlc.local`) | Ithinka · İş Analisti | Talebi e-postadan açar, süreci yürütür: uygunluk, seviye, tutanak, açık konu, risk |
+| Mert Kaya (`mert.kaya@isdlc.local`) | Ithinka · Yazılım Departman Yöneticisi, Şirket Yöneticisi | Teklifi onaylar (10. adım); zildeki "onayınızı bekliyor" bildirimiyle gelir |
+| Ayşe Demir | Ithinka · Proje Yöneticisi | Talebin proje yöneticisi; 9. adımı (zaman ve kaynak planı) yapar |
+| Can Öztürk | Ithinka · Yazılım Geliştirici | Toplantı notunda aksiyon sahibi; profili ve iş yükü gösterilir |
+| Platform Yöneticisi (`platform@isdlc.local`) | Şirketi yok | Yeni şirketi açar; şirketlerin kayıtlarını göremez |
+| Deniz Aydın (`deniz.aydin@ornek-lojistik.example`) | Örnek Lojistik A.Ş. · İş Analisti, Şirket Yöneticisi | Demo sırasında açılır; kullanıcı ekler, yapay zekâ ayarlarını yapar |
 
 ## Akış
 
-Her adımda: **Ekran** → **Yapılacak** → **Görülmesi gereken** → *Anlatım notu*.
+Her bölümde: **Ekran** → **Yapılacak** → **Görülmesi gereken** → *Anlatım notu*.
 
-### 1. Giriş ve süreç (2 dk)
+### 1. Giriş ve gösterge paneli (2 dk)
 
-| # | Ekran | Yapılacak | Görülmesi gereken |
-| --- | --- | --- | --- |
-| 1.1 | Giriş | Elif olarak giriş yap | Sağ üstte "Elif Yılmaz · İş Analisti" |
-| 1.2 | Gösterge Paneli | Göster | "Merhaba, Elif"; özet kartları (onay bekleyen talepler, aktif projeler, bana bekleyen adımlar, geciken açık konular, takvimi geçen projeler, **yüksek riskler**, bu yıl sonuçlananlar), **Bana bekleyen adımlar** listesi (her satır projenin Süreç sekmesine gider), aşamalara göre aktif kayıtlar ve altında **seviyeye göre dağılım**, **Yüksek riskler** ve **Kabul kararı bekleyen talepler** listeleri, son hareketler. "Tüm projeler / Benim projelerim" seçimi. Üst barda bildirim zili |
-| 1.3 | Menü → Süreç Kütüphanesi | 5. aşamayı seç | 13 aşama, 75 adım, 21 karar noktası, 3 onay adımı. 5.1'de "Onay: Yazılım Departman Yöneticisi", 5.3'te "Hayır ise: Talep kapanır — Kaybedildi" |
-
-*Anlatım: "Herkes giriş yapınca önce kendisini bekleyen işleri görür. Şirketin ISDLC süreci sisteme veri olarak girildi: her adımın sorumlusu, onaycısı ve 'Hayır' cevabında ne
-olacağı tanımlı. Ekranlar bu tanıma göre çalışıyor."*
-
-### 2. Talebin açılması (2 dk)
+Pencere 1 → Elif.
 
 | # | Ekran | Yapılacak | Görülmesi gereken |
 | --- | --- | --- | --- |
-| 2.1 | Menü → Talepler | "+ Yeni talep" | Buton yalnızca İş Analisti'ne görünür |
-| 2.2 | Yeni talep | Proje adı: *Saha Ekibi Stok Takibi*, açıklama: *Saha ekibinin depo stoklarını mobil cihazdan sayabilmesi ve farkların merkeze iletilmesi.*, talep türü: Yeni yazılım projesi, kaynak: Dış, kanal: Yazılı, müşteri / birim: *Demo Lojistik A.Ş.*, talep sahibi: *Hakan Yıldız*, iş analisti: Elif Yılmaz, proje yöneticisi: Ayşe Demir, başlangıç: bugün. **Talebi kaydet** | Proje kodu verilir (`ISDLC-2026-0xx`), durum **Aktif**, mevcut adım **1.1** |
-| 2.3 | Talepler listesi | Göster | Yeni talep listede (1–3. aşamadaki kayıtlar "Talepler"de, 4. aşamadan sonra "Projeler"de) |
+| 1.1 | Giriş | Elif olarak giriş yap | Üst barda "ISDLC · Ithinka" ve "Elif Yılmaz · İş Analisti" |
+| 1.2 | Gösterge Paneli | Göster | "Merhaba, Elif"; özet kartları, **Bana bekleyen adımlar** (her satır projenin Süreç sekmesine gider), **Ekip iş yükü** (kişi başına açık konu ve bekleyen adım), aşamalara göre aktif kayıtlar ve seviye dağılımı, son hareketler |
+| 1.3 | Menü → Süreç Kütüphanesi | Göster | Beş akış (Yeni Yazılım Projesi 19 adım, Ek Modül 17, Süreç İyileştirme 8, Kaynak Planlama 8, Faturalama 6). Yeni Yazılım Projesi: 4 aşama, 4 karar noktası, 1 onay adımı; 4. adımda "Yalnızca dış talepte · Teklif hazırlanacaksa" ve "Hayır ise: Talep kapanır — Reddedildi" |
 
-*Anlatım: "Talep açılınca süreç kendiliğinden 1.1'den başlar; kod sırayla verilir."*
+*Anlatım: "Şirketin akışları sisteme veri olarak girildi: her adımın sorumlusu, onaycısı, 'Hayır' cevabında ne olacağı ve
+hangi koşulda atlanacağı tanımlı. Ekranlar bu tanıma göre çalışıyor."*
 
-### 3. Süreçte ilerleme, seviye ve kabul (6 dk)
+### 2. E-postadan talep (3 dk)
 
-Proje detayı → **Süreç** sekmesi.
+| # | Ekran | Yapılacak | Görülmesi gereken |
+| --- | --- | --- | --- |
+| 2.1 | Menü → Talepler → "+ Yeni talep" | **E-postadan doldur (yapay zekâ)** bölümünü aç, sahte e-postayı yapıştır, **Yapay zekâ ile doldur** | Birkaç saniye sonra form dolar: talep türü yeni yazılım projesi, talep sahibi *Demo Lojistik A.Ş.*, talebi ileten *Hakan Yıldız*, iletişim, açıklama, kanal E-posta, kaynak Dış. Model her seferinde birebir aynı cevabı vermeyebilir |
+| 2.2 | Yeni talep | Proje adını kontrol et (*Saha Ekibi Stok Takibi*), **Talebi kaydet** | Proje sayfası açılır: **No 20**, durum Aktif, mevcut adım **1 · Talep ve Ön Analiz**. Üstte proje özeti kartları (açık konular, riskler, gereksinimler, dokümanlar, ekip iş yükü) |
+| 2.3 | Proje → **Düzenle** | Proje yöneticisi: Ayşe Demir, **Değişiklikleri kaydet** | Başlıkta "Proje yöneticisi: Ayşe Demir". Ayşe'ye "… projesine proje yöneticisi olarak atandınız." bildirimi gider |
 
-| # | Yapılacak | Görülmesi gereken |
-| --- | --- | --- |
-| 3.1 | 1.1: not yaz (*"Talep e-postayla geldi."*), "Adımı tamamla" | 1.1 "Tamamlandı", mevcut adım 1.2, ilerleme çubuğu ilerler; üstteki özet de yenilenir |
-| 3.2 | 1.2 (karar): önce **"Hayır → talep kapanır (Yönlendirildi)"** butonuna bas, sonra **Vazgeç** | Onay penceresi: talebi kapatan cevaplar geri alınamadığı için önce sorulur. Vazgeçince proje 1.2'de kalır |
-| 3.3 | 1.2: "Evet → sonraki adım"; 1.3 tamamla | Ekran 2. aşamaya kendiliğinden geçer |
-| 3.4 | 2.1 tamamla, 2.2 "Evet" | Mevcut adım **2.4** (Talep Anlama & Seviye) |
-| 3.5 | **Seviye & Kabul** sekmesi → "Seviye belirleme · Akış 2.4": efor *21–80 adam-gün*, *6–20 ekran veya 2–3 modül*, entegrasyon *1–2 servis*, *2–4 rol*, *Kişisel veri var*, *Standart cihaz (yazıcı, barkod)* | Her tıklama hemen kaydedilir ("0/6 soru" sayacı ilerler). Sonunda **Puan: 12 / 18** |
-| 3.6 | **"Seviyeyi projeye uygula"** | "Projenin seviyesi: **Seviye 2**", altında "Önerilen seviye projeye uygulanmış." Genel Bilgiler'de de Seviye 2 |
-| 3.7 | Süreç sekmesi → 2.4 tamamla | Mevcut adım **3.1** (Proje Kabul) |
-| 3.8 | Seviye & Kabul → "Proje kabul puanlaması · Akış 3.1": stratejik uyum **4**, ticari değer **4**, teknik uygulanabilirlik **4**, kaynak ve takvim **3**, müşteri uygunluğu **4**, risk düzeyi **3** | Başlıkta **3,75 · Kabul önerilir**. Altında: öneri yalnızca bilgi içindir, kararı 3.2'de yönetici verir |
-| 3.9 | Süreç → 3.1 tamamla | Mevcut adım **3.2**; butonlar yerine: *"Bu adım Yazılım Departman Yöneticisi tarafından onaylanır."* |
-
-*Anlatım: "Seviye ve kabul puanı kurumun formundaki sorulardan hesaplanıyor; sistem öneri veriyor, kararı kişi veriyor.
-Kimin hangi adımı yapabileceğine de sistem karar veriyor; analist onay adımını geçemez."*
-
-*Not:* Bir cevap kaydedilirken butonlar bir an kilitlenir; çok hızlı arka arkaya tıklanırsa ikinci tıklama alınmaz.
-Cevapları sakin sırayla seç.
-
-### 4. Bildirim ve yöneticinin onayı (3 dk)
-
-Gizli pencere → **Mert Kaya** (sayfayı yenile).
-
-| # | Yapılacak | Görülmesi gereken |
-| --- | --- | --- |
-| 4.1 | Üst bardaki zil | Zilde **1**. Tıklayınca: *"ISDLC-2026-0xx · 3.2 onayınızı bekliyor."* Elif 3.1'i tamamladığı anda gönderildi (zil dakikada bir yenilenir; beklemeden görmek için sayfayı yenile) |
-| 4.2 | Gösterge Paneli | **Bana bekleyen adımlar**'da *Saha Ekibi Stok Takibi — Adım 3.2 · Onay*; **Kabul kararı bekleyen talepler**'de aynı talep: *Adım 3.2 · Yönetici kararı*, **3,75 · Kabul önerilir**. Mert'te "+ Yeni talep" butonu yok (yalnızca İş Analisti) |
-| 4.3 | Zildeki bildirime tıkla | Proje açılır, zildeki sayı kaybolur (bildirim okundu). **Seviye & Kabul** sekmesinde Elif'in puanlaması: Seviye 2, 3,75 |
-| 4.4 | Süreç sekmesi → 3.2: "Evet → sonraki adım" (isteğe bağlı not: *"Bütçe onaylandı, öncelik yüksek."*). Diğer seçenekler: "Hayır → talep kapanır (Reddedildi)" ve "Talebi reddet…" | 3. aşama tamamlandı, mevcut adım **4.1**. Kayıt artık **Projeler** listesinde |
-
-*Anlatım: "Sırası gelen kişiye sistem haber veriyor; yönetici bildirimden talebe gidip analistin puanlamasına bakarak
-onaylıyor. Reddetmek isterse gerekçe zorunludur. Kişi kendi yaptığı işlem için bildirim almaz."*
-
-*Yedek gösterim (zaman varsa):* Mert, bir örnek projede "Talebi reddet…" ile gerekçe yazarak reddeder → aşama
-"durduruldu", "Süreç sona erdi: Reddedildi".
-
-### 5. Toplantı tutanağı ve yapay zekâ (4 dk)
-
-Normal pencere (Elif) → proje → **Toplantı Tutanakları** sekmesi → "+ Tutanak oluştur".
-
-| # | Yapılacak | Görülmesi gereken |
-| --- | --- | --- |
-| 5.1 | Tür: Analiz Oturumu, tarih: bugün | — |
-| 5.2 | "Ham toplantı notları"na sahte notu yapıştır → **"Yapay zekâ ile karar ve aksiyonları çıkar"** | Birkaç saniye sonra karar (tablet desteğinin ilk fazda olmaması) karar kutusuna, aksiyon (mobil ekran taslakları) satır olarak dolar. Can Öztürk listeden seçili gelir, "cuma" gerçek tarihe çevrilir, aksiyonun altında dayanak cümle görünür. Formda yeri olmayan bağımlılık (depo listesi — "gelecek hafta salı" da tarihe çevrilir), soru (sayım farkı onay tutarı) ve varsayım (telefon kamerası) ayrıca listelenir. *Model her seferinde birebir aynı cevabı vermeyebilir; sayılar az farklı olabilir* |
-| 5.3 | Aksiyonu kontrol et, katılımcılar (*Elif Yılmaz, Can Öztürk, Hakan Yıldız (Demo Lojistik)*) ve gündemi (*Mobil stok sayımı kapsamı*) yaz, **"Tutanağı kaydet"** | Tutanak detayı açılır: `TT-001`; aksiyon `AK-001` (açık), karar `AK-002` (kapalı) |
-
-*Anlatım: "Yapay zekâ kayıt oluşturmaz, öneri hazırlar; kaydeden her zaman kişidir. Kişisel bilgiler modele gitmeden
+*Anlatım: "Yapay zekâ kayıt açmaz, formu doldurur; kontrol edip kaydeden kişidir. E-posta adresi ve telefon modele gitmeden
 gizlenir."*
 
-### 6. Açık konular (2 dk)
+*Yedek:* Yapay zekâ "servis yoğun" derse formu elle doldur (alanlar 2.1'deki gibi). Uygulamanın geri kalanı etkilenmez.
 
-**Açık Konular** sekmesi.
+### 3. Süreç, uygunluk ve seviye (6 dk)
+
+Proje → **Süreç** sekmesi.
 
 | # | Yapılacak | Görülmesi gereken |
 | --- | --- | --- |
-| 6.1 | Göster | Tutanaktan gelen kayıtlarda "Tutanak: TT-001"; termini geçmişse "gecikti" |
-| 6.2 | "+ Kayıt ekle": tür *Soru*, konu: *Saha ekibi çevrimdışı çalışabilmeli mi?*, sorumlu: sistem dışı — *Hakan Yıldız*, termin: gelecek hafta | Yeni `AK-…` kaydı |
-| 6.3 | Bir aksiyonu "Kapat" | Durum "Kapandı" |
+| 3.1 | 1, 2 ve 3. adımlarda "Adımı tamamla" | Her adım "Tamamlandı", mevcut adım 4. Süreç geçmişi alta yazılır |
+| 3.2 | 4. adımı oku | Karar adımı: "Evet → sonraki adım" ve "Hayır → talep kapanır (Reddedildi)". Bu adım yalnızca dış taleplerde görünür; iç talepte atlanır |
+| 3.3 | **Seviye & Uygunluk** sekmesi → "Müşteri uygunluğu · Akış 4": 10 soruya 0–10 puan ver (8, 7, 8, 6, 5, 7, 8, 8, 6, 7) | Başlıkta **70 / 100 · Şartlı uygun**; altında "Sonuç bir öneridir; kararı iş analisti 4. adımda verir" |
+| 3.4 | Süreç → 4. adım: "Evet → sonraki adım" | Mevcut adım 5 |
+| 3.5 | Seviye & Uygunluk → "Seviye belirleme · Akış 5": 26 soruda her birinin ortadaki seçeneğini seç | **Doküman seviyesi: Seviye 2**, **Araştırma süresi: 5 gün** (13/13 ve 13/13 soru) |
+| 3.6 | **"Seviyeyi projeye uygula"** | "Projede: Seviye 2 · 5 gün — Önerilen sonuç projeye uygulanmış." Genel Bilgiler'de de Seviye 2 |
+| 3.7 | Süreç → 5. adımı tamamla | Mevcut adım **6 · Talep anlaşılır** |
 
-### 7. Gereksinimler, dokümanlar ve riskler (3 dk)
+*Anlatım: "Uygunluk ve seviye şirketin kendi formlarındaki sorulardan, eşikleri de form tanımından hesaplanıyor; sistem
+öneri veriyor, kararı kişi veriyor."*
 
-| # | Sekme | Yapılacak | Görülmesi gereken |
+*Not:* Bir cevap kaydedilirken butonlar bir an kilitlenir; çok hızlı tıklanırsa ikinci tıklama alınmaz. Sakin sırayla seç.
+
+### 4. Toplantı, yapay zekâ ve açık konular (5 dk)
+
+Proje → **Toplantı Tutanakları** → "+ Tutanak oluştur".
+
+| # | Yapılacak | Görülmesi gereken |
+| --- | --- | --- |
+| 4.1 | Tür: Analiz Oturumu, tarih: bugün, tutanağı yazan: Elif Yılmaz | — |
+| 4.2 | *(İsteğe bağlı)* **Ses kaydından metne çevir** → sahte kayıt | Kayıt metne çevrilip "Ham toplantı notları"na eklenir: "… dakikalık kayıt metne çevrilip notlara eklendi". Kayıt bilgisayarda işlenir, dışarı gönderilmez |
+| 4.3 | Ham notlara sahte toplantı notunu yapıştır → **Yapay zekâ ile karar ve aksiyonları çıkar** | Karar (tablet desteğinin ilk fazda olmaması) karar kutusuna, aksiyonlar satır olarak dolar. **Kişilere göre aksiyonlar**: Can Öztürk listeden seçili gelir; *Demo Lojistik BT* "(sistem dışı)" olarak yazılır. "cuma", "gelecek hafta salı" gerçek tarihe çevrilir. Formda yeri olmayan soru ve varsayım ayrıca listelenir |
+| 4.4 | Katılımcıları ve gündemi kontrol et, **Tutanağı kaydet** | `TT-001`; aksiyonlar açık, karar kapalı kayıt olarak Açık Konular'a geçer |
+| 4.5 | **Açık Konular** sekmesi → "+ Kayıt ekle": tür Soru, konu *Saha ekibi çevrimdışı çalışabilmeli mi?*, sorumlu: Ekip üyesi açılır listesini göster | Her kişinin yanında iş yükü: "Can Öztürk · 1 açık konu". Sorumluyu seçip kaydet |
+| 4.6 | Açık konuda **Bağlantıyı kopyala** | Kaydın bağlantısı panoya kopyalanır; açan kişi doğrudan bu kayda gelir |
+
+*Anlatım: "Yapay zekâ toplantıdan kimin neyi ne zamana yapacağını çıkarıyor, kişiyi ekipten eşleştiriyor; kaydeden yine kişi.
+Sorumlu seçerken herkesin elindeki iş görünüyor."*
+
+### 5. Risk, onay ve bildirim (5 dk)
+
+| # | Ekran | Yapılacak | Görülmesi gereken |
 | --- | --- | --- | --- |
-| 7.1 | Gereksinimler | "+ Gereksinim ekle": tür Fonksiyonel, öncelik Olmazsa olmaz, başlık *Saha personeli stok sayımını mobil cihazdan girebilmeli*. Kaydet | `GR-001`, durum Taslak |
-| 7.2 | Gereksinimler | Satırdaki durum seçiminden "İncelemede" | Durum hemen kaydedilir |
-| 7.3 | Dokümanlar | 4. aşamada *PKD — Proje Kapsam Dokümanı*: durumu "Hazırlanıyor" yap; "Not / bağlantı" ile bağlantı ekle (ör. *https://intranet.example/isdlc/pkd-demo.docx*) | Durum ve "Dokümanı aç ↗" bağlantısı görünür |
-| 7.4 | Riskler | "+ Risk ekle": risk tanımı *ERP stok servislerinin dokümantasyonu eksik*, kategori Teknik, sorumlu **Can Öztürk**, olasılık **4**, etki **4**, önleyici aksiyon *Servis sahibiyle teknik çalıştay; POC ile doğrulama*, "Talep Sahibi ile paylaşılır" işaretli | Formda skor kendiliğinden: **16 · Yüksek** |
-| 7.5 | Riskler | **Kaydet** | Listede `RSK-001`, *4 × 4*, **16 · Yüksek**, "Can Öztürk · Paylaşılır". Isı haritasında 4 × 4 hücresinde **1**; altta "15–25 Yüksek · 1". Hücreye tıklayınca liste o hücreye süzülür |
+| 5.1 | Süreç | 6 ve 7. adımları tamamla | Mevcut adım 8 · Riskler belirlenir |
+| 5.2 | Riskler | "+ Risk ekle": *ERP stok servislerinin dokümantasyonu eksik*, Teknik, sorumlu Can Öztürk, olasılık 4, etki 4, önleyici aksiyon *Servis sahibiyle teknik çalıştay; POC ile doğrulama*. Kaydet | Listede `RSK-001`, *4 × 4*, **16 · Yüksek**; ısı haritasında 4 × 4 hücresinde 1 |
+| 5.3 | Süreç | 8. adımı tamamla | Mevcut adım **9 · Zaman ve kaynak planlanır**; butonlar yerine "Bu adım Proje Yöneticisi tarafından yapılır." Analist geçemez |
+| 5.4 | Pencere 2 → Ayşe Demir | Zil: *"20 · RSK-001 yüksek risk (skor 16)"* ve atanma bildirimi. Proje → Süreç → 9. adımı tamamla | Mevcut adım **10 · Teklif ve Anlaşma**: "Bu adım Yazılım Departman Yöneticisi tarafından onaylanır." |
+| 5.5 | Pencere 2 → çıkış, Mert Kaya | Zil: *"20 · 10 onayınızı bekliyor."* Bildirime tıkla. Süreç → 10. adım: seçenekler "Evet → sonraki adım", "Hayır → 9 adımına dön", "Talebi reddet…". **Evet** | Mevcut adım **11**. Bildirim okundu |
 
-*Anlatım: "Risk Analiz Formu (akış 4.8) artık projenin içinde: skor olasılık × etkiden hesaplanır, saklanmaz. Risk
-yüksek seviyeye çıkınca proje yöneticisi Ayşe Demir'e, sorumlu olarak atanan Can Öztürk'e bildirim gider."*
+*Anlatım: "Sırası gelen kişiye sistem haber veriyor; kimse kendi işlemi için bildirim almaz. Onay adımını yalnızca onaycı
+geçebilir."*
 
-### 8. Kayıt geçmişi (1 dk)
+### 6. Projenin hafızası (3 dk)
 
-**Kayıt Geçmişi** sekmesi.
+Pencere 1 → Elif.
 
-| # | Yapılacak | Görülmesi gereken |
-| --- | --- | --- |
-| 8.1 | Göster | Bu demoda yapılan her şey, en yeni önce: risk (`RSK-001`), doküman bağlantısı ("Bağlantı — → https://…"), gereksinim ("Durum Taslak → İncelemede"), tutanak ve açık konular, Seviye & Kabul cevapları (her cevap ayrı satır). Yeni kayıtlarda "5 alan" gibi katlanmış ayrıntı |
-| 8.2 | Kayıt türü: *Proje* | Yalnızca projenin kendi değişiklikleri: **Mert Kaya — "Mevcut adım 3.2 → 4.1"**, Elif'in seviye uygulaması (Seviye — → 2) |
+| # | Ekran | Yapılacak | Görülmesi gereken |
+| --- | --- | --- | --- |
+| 6.1 | Proje → **Zaman Çizelgesi** | Göster | En yeni önce: süreç adımları (kimin ne zaman yaptığı), tutanak, kararlar, "Kayıt açıldı · 20" |
+| 6.2 | **Kayıt Geçmişi** | Göster | Alan bazında her değişiklik: eski → yeni değer, kim, ne zaman |
+| 6.3 | Üst bardaki arama (Ctrl+K) | *stok* yaz | Projeler grubunda *20 · Saha Ekibi Stok Takibi*; tutanak, açık konu ve risk de aranabilir |
+| 6.4 | Bir açık konunun sorumlusuna tıkla (Can Öztürk) | Profil | Uzmanlık alanları, "benimle nasıl çalışılır" notu, iş yükü, açık konuları ve bekleyen adımları |
+| 6.5 | Menü → Projeler → **14** → **Ek Geliştirmeler** | Göster | *14 / EG-01 · Servis Formuna Müşteri İmzası*: devam eden projeye ek geliştirme kendi akışında, ana projenin numarasıyla |
 
-*Anlatım: "Kayıtlar silinmez, her değişiklik kimin yaptığıyla birlikte saklanır; değiştirilemez."*
+*Anlatım: "Projede olan her şey tek yerde ve kayıtlar silinmiyor."*
+
+### 7. İkinci şirket (5 dk)
+
+Pencere 3 → Platform Yöneticisi.
+
+| # | Ekran | Yapılacak | Görülmesi gereken |
+| --- | --- | --- | --- |
+| 7.1 | Giriş | `platform@isdlc.local` ile gir | Doğrudan **Şirketler** ekranı; menüde yalnızca bu var. Listede Ithinka (7 kullanıcı) |
+| 7.2 | "+ Yeni şirket" | Ad *Örnek Lojistik A.Ş.*, kod *ornek-lojistik*; ilk yönetici *Deniz Aydın*, *deniz.aydin@ornek-lojistik.example*, İş Analisti. Geçici parola form tarafından üretilir. **Şirketi aç** | "Örnek Lojistik A.Ş. açıldı. İlk yönetici …, geçici parola …. Kişiye iletin; ilk girişte değiştirecek." Listede 1 kullanıcıyla yeni şirket |
+| 7.3 | Çıkış → Deniz ile geçici parolayla giriş | — | **Parolanızı değiştirin** ekranı; başka bir sayfaya gidilemez. Yeni parola (en az 12 karakter) → panel |
+| 7.4 | Gösterge Paneli | Göster | "Merhaba, Deniz"; her sayı 0; ekip iş yükünde yalnızca Deniz. Üst barda "Örnek Lojistik A.Ş." Menüde **Yönetim → Kullanıcılar, Şirket Ayarları** |
+| 7.5 | Süreç Kütüphanesi | Göster | Aynı beş akış, şirketin kendi kopyası olarak |
+| 7.6 | Arama | *stok* yaz | **Sonuç bulunamadı.** Ithinka'nın projesi görünmez |
+| 7.7 | Adres çubuğuna Ithinka projesinin adresini yapıştır (pencere 1'den kopyala) | — | **Proje bulunamadı.** |
+| 7.8 | Yönetim → Kullanıcılar → "+ Yeni kullanıcı" | *Ece Kurt*, Yazılım Departman Yöneticisi. Kaydet | Listede Ece Kurt, durum "Geçici parola"; "Geçici parola ver" düğmesi |
+| 7.9 | Talepler → "+ Yeni talep" | **E-postadan doldur** bölümü yok. *Filo Bakım Takibi*, iç talep, kaydet | **No 1**: numaralar her şirkette 1'den başlar |
+| 7.10 | Yönetim → Şirket Ayarları | İki anahtar da kapalı. Yalnızca **Yapay zekâ yardımcıları açık**'ı işaretle, kaydet | "Ayarlar kaydedildi." Tutanak formunda **Ses kaydından metne çevir** görünür; karar ve aksiyon önerisi ile e-posta yardımcısı kapalı kalır, çünkü metin dışarı gönderilmiyor |
+
+*Anlatım: "Aynı uygulama, ayrı şirketler. Her şirket kendi kullanıcısını kendisi yönetiyor, akışları şablondan geliyor ve
+değiştirebiliyor. Yapay zekâya ne gönderileceğine şirket karar veriyor: kayıt dışarı çıkmadan metne çevrilebilir, metnin
+dış modele gitmesi ayrı bir izin."*
 
 ### Kapanış (1 dk)
 
-Gösterge Paneli: **Son hareketler**'de demoda yapılanlar, **Aşamalara göre aktif kayıtlar**'da projenin 4. aşamada
-görünmesi ve seviye dağılımında bir Seviye 2 daha, **Yüksek riskler** kartında ve listesinde `RSK-001`. Sonraki adımlar:
-adım bazında doküman listesi, risk ajanı, yapay zekâ ile şirket formlarının (DOCX) doldurulması ve belge yükleme
-(bkz. [ai-vision.md](ai-vision.md)).
+Pencere 1 → Elif → Gösterge Paneli: **Son hareketler**'de demoda yapılanlar, **Yüksek riskler**'de `RSK-001`, **Ekip iş
+yükü**'nde Can'ın açık konuları. Örnek Lojistik'in talebi burada görünmez. Sonraki adımlar: şirketin kendi akışını ekrandan
+düzenlemesi, yapay zekâ ile şirket formlarının (DOCX) doldurulması (bkz. [ai-vision.md](ai-vision.md)).
+
+## Sahte e-posta
+
+```
+Kimden: Hakan Yıldız <hakan.yildiz@demolojistik.example>
+Tarih: 24 Kasım 2026
+Konu: Saha ekibi için stok sayım uygulaması
+
+Merhaba,
+
+Saha ekibimiz depolardaki stokları şu an kâğıda yazıp ofise taşıyor. Sayımın telefondan yapılabileceği, farkların
+merkeze anında düşeceği bir uygulama istiyoruz. Yaklaşık 40 saha personeli kullanacak; ERP'deki stok servisleriyle
+konuşması gerekiyor.
+
+Bu konuyu bir toplantıda konuşabilir miyiz?
+
+Hakan Yıldız
+Operasyon Müdürü, Demo Lojistik A.Ş.
+0212 555 00 00
+```
 
 ## Sahte toplantı notu
 
@@ -169,17 +192,29 @@ Barkod okuyucu olarak telefon kamerasının yeterli olacağı varsayılıyor.
 
 | Konu | Neden |
 | --- | --- |
-| 3.2 onaylanınca Elif'e bildirim | Süreç bu olayda bildirim göndermez; yalnızca onay bekleyen adım, geri dönüş ve kapanış bildirilir ([process-api.md](process-api.md) → Bildirim noktaları) |
-| Ayşe ve Can'ın bildirimleri | Demoda pencere yok. Soru gelirse üçüncü bir pencerede Ayşe Demir ile giriş yapıp zili göster: *"… · RSK-001 yüksek risk (skor 16)"* |
-| Menüdeki Seviye & Kabul, Risk Yönetimi, Bildirimler sayfaları | Proje sekmelerindekiyle aynı bileşenler; zaman varsa gösterilir |
+| Süreç iyileştirme (`SI-001`) | Menü → Süreç İyileştirme → "+ Yeni öneri". Zaman varsa gösterilir; akışı ayrı bir hikâye |
+| Talep Analizi sekmesi | Soru listesi uzun; soru gelirse açılıp gösterilir |
+| Şirketi pasife alma | Platform Yöneticisi → Şirketler → Düzenle. Gösterilirse o şirketin açık oturumları en geç bir dakika içinde kapanır; demodaki Örnek Lojistik'le yap, Ithinka'yla değil |
+| 10. adım onaylanınca Elif'e bildirim | Süreç bu olayda bildirim göndermez; yalnızca onay bekleyen adım, geri dönüş ve kapanış bildirilir ([process-api.md](process-api.md) → Bildirim noktaları) |
 
 ## Bir şey ters giderse
 
 | Durum | Ne yapılır |
 | --- | --- |
-| Yapay zekâ bölümü görünmüyor | Servis kapalı ya da az önce açıldı (durum en fazla 30 sn önbellekte). Sayfayı yenile; olmazsa kararları ve aksiyonları elle gir — uygulamanın geri kalanı etkilenmez |
-| Yapay zekâ "servis yoğun" diyor | Bir kez daha dene; olmazsa elle gir |
-| "Proje bu arada başka bir adıma geçti" | İki pencerede aynı projede işlem yapıldı; ekran kendini yeniler, devam et |
+| Yapay zekâ bölümü görünmüyor | Servis kapalı ya da az önce açıldı. Sayfayı yenile; olmazsa elle gir |
+| Yapay zekâ "servis yoğun" diyor | Model sağlayıcısı geçici olarak cevap vermiyor. Bir kez daha dene; olmazsa elle gir |
 | Giriş yapılamıyor | Test parolası tanımlı mı (README); veritabanı sıfırlandıysa API'yi parola tanımlıyken yeniden başlat |
-| Seviye / kabul cevabı işaretlenmedi | Önceki tıklama kaydedilirken butonlar kilitliydi; bir saniye bekleyip tekrar tıkla |
-| Zilde bildirim görünmüyor | Zil dakikada bir yenilenir; sayfayı yenile. Bildirimi işlemi yapan kişi değil, sırası gelen kişi alır |
+| İkinci şirkette giriş "E-posta veya parola hatalı" diyor | Geçici parola yanlış kopyalandı. 7.2'deki mesaj parolayı bir kez gösterir; mesajı kapatmadan kopyala |
+| Seviye / uygunluk cevabı işaretlenmedi | Önceki tıklama kaydedilirken butonlar kilitliydi; bir saniye bekleyip tekrar tıkla |
+| Zilde bildirim görünmüyor | Zil dakikada bir yenilenir; sayfayı yenile |
+| "Proje bu arada başka bir adıma geçti" | İki pencerede aynı projede işlem yapıldı; ekran kendini yeniler, devam et |
+
+## Denendi
+
+25 Kasım 2026, temiz veritabanında, uygulamada:
+
+- **Denendi:** 1, 2.2, 2.3, 3, 4.5, 5, 6.1, 6.3, 6.4, 6.5, 7. Tablolardaki ekran metinleri ve bildirimler bu denemeden alındı.
+- **Bu tarihte denenemedi:** 2.1, 4.2, 4.3, 4.4 ve 4.6. Model sağlayıcısı (Gemini) o gün sürekli 503 döndü ("model şu an
+  yoğun"); bu yardımcılar kendi PR'larında denenmişti (F4, F5, F6). Ekranları ve düğmeleri görünüyor, yalnızca model cevabı
+  alınamadı. Provada denenmeli.
+- Denerken bulunan hata: yalnızca "yapay zekâ açık" olan şirkette ses kaydı düğmesi görünmüyordu (7.10). #174 ile düzeltildi.

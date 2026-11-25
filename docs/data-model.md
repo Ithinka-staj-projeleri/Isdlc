@@ -3,13 +3,16 @@
 Faz 0'ın temel entity'leri (`ProcessStage`, `ProcessStep`, `User`, `Project`, `StepRecord`), denetim kaydı
 ve Faz 2'nin proje kayıtları (`OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `ProjectAssessment`). Diğer modüllerin entity'leri kendi fazlarında eklenir.
 Kaynak: "ISDLC Analiz Merkezi" prototipi.
-Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **kaldırıldı** (Faz 4 · B2); `Notification` (Faz 3) **uygulandı**; soru bankası (Faz 4 · B1) **taslak, ekip onayı bekliyor**; tutanak ve ziyaret alanları (Faz 4 · E4) **taslak, ekip onayı bekliyor**; süreç iyileştirme (Faz 4 · E5) **taslak, ekip onayı bekliyor.**
+Durum: temel entity'ler uygulandı; `OpenIssue` ve `Meeting` **uygulandı, ekip onayı bekliyor**; `Risk` **uygulandı**; `ProjectAssessment` **kaldırıldı** (Faz 4 · B2); `Notification` (Faz 3) **uygulandı**; soru bankası (Faz 4 · B1) **taslak, ekip onayı bekliyor**; tutanak ve ziyaret alanları (Faz 4 · E4) **taslak, ekip onayı bekliyor**; süreç iyileştirme (Faz 4 · E5) **taslak, ekip onayı bekliyor**; şirketler (Faz 6) **uygulandı**: `Tenant` ve bütün
+tablolarda `TenantId` (kurallar [multi-tenancy.md](multi-tenancy.md)).
 
 İsimlendirme AGENTS.md'ye uyar: entity tekil, tablo çoğul; `?` alanın boş bırakılabileceğini (nullable) gösterir.
 
 ## Genel bakış
 
 ```
+Tenant       1 ──── * (her tablo)         (Faz 6: TenantId; Tenants tablosunun kendisi hariç)
+Tenant       1 ──── * User                (Platform Yöneticisinde TenantId boş)
 ProcessFlow  1 ──── * ProcessStage        (Faz 4: her aşama bir akışa aittir)
 ProcessFlow  1 ──── * Project             (Faz 4: kaydın izlediği akış)
 ProcessStage 1 ──── * ProcessStep
@@ -33,7 +36,8 @@ Project      1 ──── * Notification        (bildirimin ilgili olduğu pro
 User         1 ──── * Risk                (OwnerUserId: sorumlu ekip üyesi)
 ```
 
-- **Ana veri:** `ProcessFlow`, `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `DocumentType`. Seed ile yüklenir, kullanıcı tarafından değiştirilmez.
+- **Ana veri:** `ProcessFlow`, `ProcessStage`, `ProcessStep`, `ProcessStepJump`, `DocumentType`. Seed şablonlarından her şirkete
+  kopyalanır, kullanıcı tarafından değiştirilmez (Faz 6; bkz. Şirketler).
 - **İşlem verisi:** `User`, `Project`, `StepRecord`, `OpenIssue`, `Meeting`, `Requirement`, `ProjectDocument`, `Risk`, `Notification`. Uygulama kullanıldıkça oluşur.
 
 ## Ortak temel sınıf: `AuditableEntity`
@@ -118,11 +122,14 @@ yapı birden fazlasına izin verir.
 | Alan | Tür | Not |
 | --- | --- | --- |
 | `Id` | int | |
+| `TenantId` | int? (FK → Tenant) | *Faz 6.* Kullanıcının şirketi. Yalnızca Platform Yöneticisinde boştur; bu yüzden `User` `ITenantOwned` değildir |
 | `FullName` | string | |
-| `Email` | string | Benzersiz |
+| `Email` | string | Bütün şirketlerde benzersiz (giriş kimliği; sonradan değişmez) |
 | `PasswordHash` | string | `Identity` modülünde kullanılır |
-| `Role` | `UserRole` | Kullanıcı başına tek rol (MVP kararı) |
+| `Role` | `UserRole` | Kullanıcı başına tek rol (MVP kararı). `PlatformAdmin` yalnızca yapılandırmayla açılır |
 | `IsActive` | bool | Kullanıcı silinmez, pasife alınır |
+| `IsTenantAdmin` | bool | *Faz 6.* Şirket Yöneticisi işareti (rol değil): kendi şirketinin kullanıcılarını ve ayarlarını yönetir. Platform Yöneticisinde hep `false` |
+| `MustChangePassword` | bool | *Faz 6.* Geçici parolayla açıldı; parolasını değiştirene kadar başka hiçbir istek çalışmaz (403) |
 | `Expertise` | string? | *Faz 5 · F9.* Uzmanlık alanları, virgülle ayrılmış; en fazla 300 karakter. Kişi kendisi düzenler |
 | `WorkingNote` | string? | *Faz 5 · F9.* "Benimle nasıl çalışılır" notu; en fazla 1000 karakter. Kişi kendisi düzenler |
 | `CreatedAt` | DateTime (UTC) | |
@@ -463,11 +470,49 @@ Sözleşme: [process-improvement-api.md](process-improvement-api.md).
   ilgili bölüme kolon olarak eklenir.
 - Veritabanında `Impact`, `Frequency`, `Ease` için 1–5 kontrolü ve "üçü birlikte" kontrolü (check constraint) bulunur.
 
+## Şirketler (Faz 6)
+
+Uygulama birden fazla şirketin kendi akışlarıyla kullanabileceği yapıdadır. Kurallar ve uç noktalar
+[multi-tenancy.md](multi-tenancy.md)'de; burada yalnızca veri modeli.
+
+### `Tenant` — uygulamayı kullanan şirket
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | Ithinka `1`'dir (Faz 6'dan önceki bütün kayıtlar ona taşındı) |
+| `Code` | string | Kısa ad: küçük harf, rakam ve tire, 2–50 karakter (`ornek-lojistik`). Benzersiz; değişmez |
+| `Name` | string | En fazla 200 karakter |
+| `IsActive` | bool | Pasif şirketin kullanıcıları giriş yapamaz ve açık oturumları en geç bir dakika içinde kapanır. Şirket silinmez |
+| `AiEnabled` | bool | Yapay zekâ yardımcıları açık mı. Yeni şirkette kapalı başlar |
+| `AiDataSharingAllowed` | bool | Metinlerin dış modele gönderilmesine izin. Yeni şirkette kapalı başlar |
+| `CreatedAt` | DateTime (UTC) | |
+
+`Tenant` şirkete ait bir kayıt değildir ve denetim kaydına yazılmaz.
+
+### Her tablodaki `TenantId`
+
+- `Tenants` dışındaki her entity `ITenantOwned` uygular (`int TenantId`, FK → Tenant). `User` istisnadır (yukarıda).
+- `TenantId`'yi kaydederken `TenantInterceptor` doldurur; kodda elle atanmaz. Kayıt başka şirkete taşınamaz.
+- Okurken global sorgu filtresi yalnızca isteğin şirketini gösterir. Sayaçlar (Proje No, `SI-` …) şirket içinde
+  sayar: iki şirketin de 1 numaralı projesi olabilir.
+- Kodla aranan benzersizlikler şirkete göredir: `(TenantId, Code)`.
+
+### Şablondan gelen kayıtlar
+
+`ProcessFlow`, `DocumentType` ve `QuestionSet` her şirkete `Seed/` şablonlarından kopyalanır:
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `TemplateCode` | string? | Kopyalandığı şablonun kodu (ör. `new-software-project`). Şirketin kendi eklediği kayıtta boş |
+| `IsCustomized` | bool | Şirket kopyayı değiştirdi mi. `true` ise açılıştaki eşitleme bu kopyaya dokunmaz |
+
+Ayrıntı: aşağıdaki **Seed verisi** ve [multi-tenancy.md](multi-tenancy.md) → Seed ve şablon.
+
 ## Enum'lar
 
 | Enum | Değerler |
 | --- | --- |
-| `UserRole` | `BusinessAnalyst` (İş Analisti), `SoftwareDepartmentManager` (Yazılım Departman Yöneticisi), `ProjectManager` (Proje Yöneticisi), `SoftwareDeveloper` (Yazılım Geliştirici), `TestSpecialist` (Test Uzmanı), `SalesRepresentative` (Satış Temsilcisi) |
+| `UserRole` | `BusinessAnalyst` (İş Analisti), `SoftwareDepartmentManager` (Yazılım Departman Yöneticisi), `ProjectManager` (Proje Yöneticisi), `SoftwareDeveloper` (Yazılım Geliştirici), `TestSpecialist` (Test Uzmanı), `SalesRepresentative` (Satış Temsilcisi), `PlatformAdmin` (Platform Yöneticisi; Faz 6, şirketi yok, yalnızca şirketleri yönetir) |
 | `RequestSource` | `Internal` (Kurum içi), `External` (Dış, müşteri), `Affiliated` (İlişkili şirket; soru bankası için, talep formunda yok) |
 | `RequestChannel` | `Email` (E-posta), `Phone` (Telefon), `Meeting` (Toplantı), `Other` (Diğer). Faz 4 öncesindeki `Written` / `Verbal` migration ile çevrildi |
 | `RequestType` | `NewProject` (Yeni yazılım projesi), `AdditionalModule` (Ek geliştirme; `ParentProjectId` ile, D3), `CompanyProduct` (Şirket ürünü), `Support` (Destek / ticket) |
