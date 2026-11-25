@@ -49,6 +49,12 @@ public interface IApplicationDbContext
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// For the few writes that must succeed or fail together across several saves (opening a company: the company,
+    /// its template copy and its first administrator). Services otherwise save once and need no transaction.
+    /// </summary>
+    Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade Database { get; }
+
     /// <summary>Change tracking details of a loaded entity (e.g. to mark a property as modified).</summary>
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;
 }

@@ -63,6 +63,11 @@ açıldığında kullanıcının parolası boşsa yazılır. Parolayı sonradan 
 (`docker compose down -v`, sonra `docker compose up -d`). API açıkken Swagger'da önce `POST /api/v1/auth/login`
 ile token al, sonra sağ üstteki "Authorize" düğmesine yapıştır. Girişsiz hiçbir uç nokta çalışmaz.
 
+**Platform Yöneticisi** (şirket açar, pasife alır): geliştirme ortamında API açılırken `platform@isdlc.local` adıyla, aynı
+test parolasıyla açılır. Başka ortamda `Platform:AdminEmail` ve `Platform:AdminPassword` verilir; bu parola ilk girişte
+değiştirilir. Yeni şirket `POST /api/v1/tenants` ile açılır; şirketin ilk yöneticisi geçici parolasıyla girip parolasını
+değiştirir, sonra kendi kullanıcılarını ekler ([docs/multi-tenancy.md](docs/multi-tenancy.md)).
+
 API'yi çalıştır (veritabanı açık olmalı):
 
 ```bash

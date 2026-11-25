@@ -28,6 +28,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, HttpCurrentUserService>();
 // AccountGateMiddleware keeps whether a user and their company are active for a minute.
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<IAccountStatusCache, AccountStatusCache>();
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
