@@ -68,7 +68,8 @@ internal static class SeedFiles
 
     public record UsersFile(List<UserSeed> Users);
 
-    public record UserSeed(string FullName, string Email, UserRole Role);
+    /// <summary>IsTenantAdmin: Ithinka's company administrator (Faz 6 · T4); optional in the file.</summary>
+    public record UserSeed(string FullName, string Email, UserRole Role, bool IsTenantAdmin = false);
 
     public record DocumentTypesFile(List<DocumentTypeSeed> DocumentTypes);
 

@@ -315,21 +315,47 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
 
     private async Task SeedUsersAsync(CancellationToken cancellationToken)
     {
+        var file = Read<UsersFile>("users.json");
         if (await db.Users.AnyAsync(cancellationToken))
         {
+            await EnsureTenantAdminAsync(file, cancellationToken);
             return;
         }
 
-        var file = Read<UsersFile>("users.json");
         db.Users.AddRange(file.Users.Select(u => new User
         {
             FullName = u.FullName,
             Email = u.Email,
             Role = u.Role,
+            IsTenantAdmin = u.IsTenantAdmin,
         }));
         await db.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Seeded {Users} users.", file.Users.Count);
+    }
+
+    /// <summary>
+    /// A database seeded before Faz 6 has Ithinka's users but no company administrator, so nobody could open the user and
+    /// settings pages. Only then the users marked in the file become administrators; an administrator the company chose
+    /// is never changed.
+    /// </summary>
+    private async Task EnsureTenantAdminAsync(UsersFile file, CancellationToken cancellationToken)
+    {
+        if (await db.Users.AnyAsync(u => u.IsTenantAdmin && u.IsActive, cancellationToken))
+        {
+            return;
+        }
+
+        var emails = file.Users.Where(u => u.IsTenantAdmin).Select(u => u.Email).ToList();
+        var admins = await db.Users.Where(u => emails.Contains(u.Email) && u.IsActive).ToListAsync(cancellationToken);
+        if (admins.Count == 0)
+        {
+            return;
+        }
+
+        admins.ForEach(u => u.IsTenantAdmin = true);
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Made {Users} seed user(s) the company administrator.", admins.Count);
     }
 
     private async Task SeedSampleProjectsAsync(CancellationToken cancellationToken)

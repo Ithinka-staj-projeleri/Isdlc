@@ -35,8 +35,12 @@ export class AgentService {
         return this.status().pipe(map(status => status.riskAssistantEnabled));
     }
 
+    /**
+     * On its own: a company may allow turning recordings into text (done on the AI service's machine) while keeping the
+     * text assistants off (docs/multi-tenancy.md → Yapay zekâ ayarlarının etkisi).
+     */
     transcriptionEnabled(): Observable<boolean> {
-        return this.status().pipe(map(status => status.meetingAssistantEnabled && status.transcriptionEnabled));
+        return this.status().pipe(map(status => status.transcriptionEnabled));
     }
 
     /** A recording turned into text on the AI service's machine. Can take minutes; 400 when the file is not audio. */

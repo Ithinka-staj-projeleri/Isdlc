@@ -130,6 +130,9 @@ karakterdir. Sonra menüde **Yönetim** bölümünü görür:
 
 **4. Kullanıcılar çalışmaya başlar.** Proje numaraları ve kayıt kodları her şirkette 1'den başlar.
 
+Ithinka'nın Şirket Yöneticisi seed'den gelir: `mert.kaya@isdlc.local` (`Seed/users.json` → `isTenantAdmin`). Eski bir
+veritabanında şirketin hiç aktif yöneticisi yoksa API açılırken bu kullanıcı yönetici yapılır.
+
 Şirketi pasife almak için Platform Yöneticisi şirketler listesinde **Düzenle**'yi kullanır; o şirketin kullanıcıları giriş
 yapamaz, açık oturumları en geç bir dakika içinde kapanır.
 

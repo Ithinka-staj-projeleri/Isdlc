@@ -30,7 +30,7 @@ geçici parolası demo sırasında ekranda üretilir.
 | Kişi | Şirket · rol | Ne yapar |
 | --- | --- | --- |
 | Elif Yılmaz (`elif.yilmaz@isdlc.local`) | Ithinka · İş Analisti | Talebi e-postadan açar, süreci yürütür: uygunluk, seviye, tutanak, açık konu, risk |
-| Mert Kaya (`mert.kaya@isdlc.local`) | Ithinka · Yazılım Departman Yöneticisi | Teklifi onaylar (10. adım); zildeki "onayınızı bekliyor" bildirimiyle gelir |
+| Mert Kaya (`mert.kaya@isdlc.local`) | Ithinka · Yazılım Departman Yöneticisi, Şirket Yöneticisi | Teklifi onaylar (10. adım); zildeki "onayınızı bekliyor" bildirimiyle gelir |
 | Ayşe Demir | Ithinka · Proje Yöneticisi | Talebin proje yöneticisi; 9. adımı (zaman ve kaynak planı) yapar |
 | Can Öztürk | Ithinka · Yazılım Geliştirici | Toplantı notunda aksiyon sahibi; profili ve iş yükü gösterilir |
 | Platform Yöneticisi (`platform@isdlc.local`) | Şirketi yok | Yeni şirketi açar; şirketlerin kayıtlarını göremez |
@@ -217,5 +217,4 @@ Barkod okuyucu olarak telefon kamerasının yeterli olacağı varsayılıyor.
 - **Bu tarihte denenemedi:** 2.1, 4.2, 4.3, 4.4 ve 4.6. Model sağlayıcısı (Gemini) o gün sürekli 503 döndü ("model şu an
   yoğun"); bu yardımcılar kendi PR'larında denenmişti (F4, F5, F6). Ekranları ve düğmeleri görünüyor, yalnızca model cevabı
   alınamadı. Provada denenmeli.
-- Denerken bulunan hata: yalnızca "yapay zekâ açık" olan şirkette ses kaydı düğmesi görünmüyordu (7.10). Ayrı PR ile
-  düzeltildi; düzeltme birleşmeden 7.10'un son cümlesi görülmez.
+- Denerken bulunan hata: yalnızca "yapay zekâ açık" olan şirkette ses kaydı düğmesi görünmüyordu (7.10). #174 ile düzeltildi.
