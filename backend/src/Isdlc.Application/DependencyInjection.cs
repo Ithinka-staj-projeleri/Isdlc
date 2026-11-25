@@ -14,6 +14,7 @@ using Isdlc.Application.ProcessImprovements;
 using Isdlc.Application.Requirements;
 using Isdlc.Application.Risks;
 using Isdlc.Application.Search;
+using Isdlc.Application.Tenants;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Isdlc.Application;
@@ -48,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IRequestAnalysisService, RequestAnalysisService>();
         services.AddScoped<IProcessImprovementService, ProcessImprovementService>();
         services.AddScoped<ISearchService, SearchService>();
+        services.AddScoped<ITenantSettingsService, TenantSettingsService>();
 
         // Modules send through INotificationService; the inbox reads and marks the signed-in user's own notifications.
         services.AddScoped<INotificationService, NotificationService>();
