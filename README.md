@@ -1,6 +1,7 @@
 # Isdlc
 
-ISDLC sürecini yöneten, şirket içi iş analizi platformu (MVP).
+ISDLC sürecini yöneten iş analizi platformu. Birden fazla şirket, her biri kendi kullanıcıları, akışları ve kayıtlarıyla
+aynı uygulamayı kullanabilir (Faz 6; kurallar [docs/multi-tenancy.md](docs/multi-tenancy.md)).
 Proje kuralları için [AGENTS.md](AGENTS.md), plan ve iş dağılımı için [PLANNING.md](PLANNING.md).
 
 ## Gerekenler
@@ -63,11 +64,6 @@ açıldığında kullanıcının parolası boşsa yazılır. Parolayı sonradan 
 (`docker compose down -v`, sonra `docker compose up -d`). API açıkken Swagger'da önce `POST /api/v1/auth/login`
 ile token al, sonra sağ üstteki "Authorize" düğmesine yapıştır. Girişsiz hiçbir uç nokta çalışmaz.
 
-**Platform Yöneticisi** (şirket açar, pasife alır): geliştirme ortamında API açılırken `platform@isdlc.local` adıyla, aynı
-test parolasıyla açılır. Başka ortamda `Platform:AdminEmail` ve `Platform:AdminPassword` verilir; bu parola ilk girişte
-değiştirilir. Yeni şirket `POST /api/v1/tenants` ile açılır; şirketin ilk yöneticisi geçici parolasıyla girip parolasını
-değiştirir, sonra kendi kullanıcılarını ekler ([docs/multi-tenancy.md](docs/multi-tenancy.md)).
-
 API'yi çalıştır (veritabanı açık olmalı):
 
 ```bash
@@ -86,6 +82,16 @@ Geliştirme ortamında API açılırken migration'lar uygulanır ve seed verisi 
 boş tablolara yüklenir. Veritabanını sıfırdan kurmak için `docker compose down -v` ve `docker compose up -d`,
 ardından API'yi yeniden başlat.
 
+### 3. Frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Uygulama: http://localhost:4200. API'ye giden istekler geliştirme sunucusu üzerinden 5091'e yönlendirilir.
+
 ### Yapay zekâ servisi (isteğe bağlı)
 
 Tutanak formundaki "Yapay zekâ ile karar ve aksiyonları çıkar" butonu bu servisle çalışır. Servis kapalıyken buton
@@ -97,3 +103,35 @@ docker compose --profile ai up -d --build
 ```
 
 Python ile lokalde çalıştırma ve ayrıntılar: [ai/README.md](ai/README.md). Yalnızca sahte veriyle kullan.
+
+## Yeni şirket açma
+
+Uygulamayı kullanan her şirketin kendi kullanıcıları, akış kopyaları, soru listeleri ve kayıtları vardır; bir şirket
+başkasının hiçbir kaydını göremez. Geliştirme ortamında hazır gelen şirket **Ithinka**'dır (seed kullanıcıları ve örnek
+projeler onundur).
+
+**1. Platform Yöneticisi girer.** Şirketleri yalnızca Platform Yöneticisi açar; başka bir işi yoktur, şirketlerin kayıtlarını
+göremez.
+- Geliştirme ortamında API açılırken `platform@isdlc.local` adıyla, test parolasıyla oluşturulur.
+- Başka ortamda yapılandırmayla verilir: `Platform:AdminEmail` ve `Platform:AdminPassword`. Bu parola ilk girişte değiştirilir.
+
+**2. Şirketi açar.** Menü → **Şirketler** → **+ Yeni şirket** (`/platform/tenants`):
+- Şirket adı ve kodu (küçük harf, rakam ve tire; sonradan değişmez).
+- Şirketin ilk yöneticisi: ad soyad, e-posta, rol ve geçici parola (form üretir; "Yeni üret" ile değişir).
+- **Şirketi aç** denince şirkete beş akış, doküman türleri ve soru listeleri şablondan kopyalanır. Geçici parola ekranda bir
+  kez gösterilir; kişiye uygulama dışından iletilir.
+
+**3. Şirket Yöneticisi ilk kez girer.** Geçici parolayla girince parola değiştirme ekranı açılır; yeni parola en az 12
+karakterdir. Sonra menüde **Yönetim** bölümünü görür:
+- **Kullanıcılar** (`/admin/users`): kullanıcı ekler (geçici parolayla), rol ve şirket yöneticisi işareti verir, pasife
+  alır, yeniden geçici parola verir. Kullanıcı silinmez.
+- **Şirket Ayarları** (`/admin/settings`): yapay zekâ yardımcıları ve metinlerin dış modele gönderilme izni. Yeni şirkette
+  ikisi de kapalıdır; ne anlama geldikleri ekranda yazar.
+
+**4. Kullanıcılar çalışmaya başlar.** Proje numaraları ve kayıt kodları her şirkette 1'den başlar.
+
+Şirketi pasife almak için Platform Yöneticisi şirketler listesinde **Düzenle**'yi kullanır; o şirketin kullanıcıları giriş
+yapamaz, açık oturumları en geç bir dakika içinde kapanır.
+
+API ile aynı işler: `POST /api/v1/tenants`, `POST /api/v1/users`, `PUT /api/v1/tenants/current/settings`
+([docs/multi-tenancy.md](docs/multi-tenancy.md) → Uç noktalar).

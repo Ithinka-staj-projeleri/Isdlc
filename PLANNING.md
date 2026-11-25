@@ -24,7 +24,7 @@ entity, API ve ekranını uçtan uca yazar.
 | **3 — Bitiriş** | `Audit` ekranı + uçtan uca demo senaryosu | `Dashboard` | `Notifications` |
 | **4 — Şirket akışları** (kapatıldı) | Toplantı ve ziyaret tutanakları, süreç iyileştirme | Akış altyapısı, akış seed'leri, talep analizi; talepler, ret / erteleme, ek geliştirme | Soru bankası, seviye ve uygunluk |
 | **5 — Takım çalışması** (kapatıldı) | Zaman çizelgesi, tutanak aksiyonları, ses kaydından tutanak, e-postadan talep, demo | Proje özeti, panel eklemeleri | Genel arama, bağlantıyı kopyala, kişi profili |
-| **6 — Çok şirketli yapı** (öneri) | Sözleşme, şirket başına seed, yapay zekâ ayarları, belgeler ve demo | Ayrım altyapısı (`TenantId`, filtre, migration) | Platform ve şirket yönetimi, yönetim ekranları |
+| **6 — Çok şirketli yapı** (T1–T8 yapıldı) | Sözleşme, şirket başına seed, yapay zekâ ayarları, belgeler ve demo | Ayrım altyapısı (`TenantId`, filtre, migration) | Platform ve şirket yönetimi, yönetim ekranları |
 | **7 — Ayarlanabilirlik** (yol haritası) | Faz 6 biterken planlanır | | |
 | **8+ — Entegrasyonlar** (yol haritası) | Faz 7 biterken planlanır | | |
 
@@ -97,7 +97,7 @@ Ayrıntı: [docs/phase-4-plan.md](docs/phase-4-plan.md) → Kapanış.
 proje zaman çizelgesi, tutanaktan kişi kişi aksiyon, ses kaydından tutanak ve e-postadan talep taslağı, genel arama,
 kişi profili. İşler, sıra ve açık konular: [docs/phase-5-plan.md](docs/phase-5-plan.md).
 
-**Kapatıldı (24 Kasım 2026).** F1–F9 ve çapraz testleri birleşti. Demo (F10), Faz 6'nın T8'iyle iki şirketli olarak yazılacak.
+**Kapatıldı (24 Kasım 2026).** F1–F9 ve çapraz testleri birleşti. Demo (F10), Faz 6'nın T8'iyle iki şirketli olarak yazıldı.
 
 ### Faz 6 — Çok şirketli yapı (multi-tenant)
 
