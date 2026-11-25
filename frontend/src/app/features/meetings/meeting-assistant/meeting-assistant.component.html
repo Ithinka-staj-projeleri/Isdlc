@@ -1,4 +1,4 @@
-@if (enabled()) {
+@if (enabled() || transcriptionEnabled()) {
 <section class="assistant" aria-label="Yapay zekâ yardımcısı">
     <label class="field">
         Ham toplantı notları (isteğe bağlı)
@@ -21,6 +21,7 @@
     </p>
     }
     }
+    @if (enabled()) {
     <p class="privacy">
         Notlar yapay zekâ servisine gönderilir; e-posta, telefon gibi bilgiler göndermeden önce gizlenir.
         Şimdilik yalnızca deneme verisi girin.
@@ -28,6 +29,12 @@
     <button type="button" class="button ai" [disabled]="busy() || !notes().trim() || !meetingDate()" (click)="ask()">
         {{ busy() ? 'Notlar inceleniyor…' : 'Yapay zekâ ile karar ve aksiyonları çıkar' }}
     </button>
+    } @else {
+    <p class="muted small">
+        Şirketiniz metinlerin yapay zekâ modeline gönderilmesine izin vermediği için karar ve aksiyon önerisi kapalı.
+        Kaydı metne çevirip notlardan tutanağı kendiniz doldurabilirsiniz.
+    </p>
+    }
 
     @if (result(); as r) {
     <div class="result" role="status">
