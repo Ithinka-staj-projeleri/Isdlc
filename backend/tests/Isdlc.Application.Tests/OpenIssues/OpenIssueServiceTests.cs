@@ -74,7 +74,7 @@ public class OpenIssueServiceTests(DatabaseFixture database)
         {
             FullName = "Pasif Kullanıcı",
             Email = $"pasif-{Guid.NewGuid():N}@isdlc.local",
-            Role = UserRole.SoftwareDeveloper,
+            Permissions = [new UserPermission { Permission = Permission.Development }],
             IsActive = false,
             CreatedAt = DateTime.UtcNow,
         };

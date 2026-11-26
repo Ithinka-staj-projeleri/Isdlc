@@ -12,16 +12,16 @@ public static class TestTenants
     public const string DenemeCode = "deneme";
     public const string DenemeName = "Deneme A.Ş.";
 
-    public const string DenemeAnalyst = "analist@deneme.local";               // BusinessAnalyst
-    public const string DenemeManager = "yonetici@deneme.local";              // SoftwareDepartmentManager
-    public const string DenemeProjectManager = "proje.yoneticisi@deneme.local"; // ProjectManager
-    public const string DenemeDeveloper = "gelistirici@deneme.local";         // SoftwareDeveloper
+    public const string DenemeAnalyst = "analist@deneme.local";               // Analysis
+    public const string DenemeManager = "yonetici@deneme.local";              // Approval
+    public const string DenemeProjectManager = "proje.yoneticisi@deneme.local"; // ProjectManagement
+    public const string DenemeDeveloper = "gelistirici@deneme.local";         // Development
 
-    internal static readonly (string Email, string FullName, UserRole Role)[] DenemeUsers =
+    internal static readonly (string Email, string FullName, Permission Permission)[] DenemeUsers =
     [
-        (DenemeAnalyst, "Deniz Analist", UserRole.BusinessAnalyst),
-        (DenemeManager, "Derya Yönetici", UserRole.SoftwareDepartmentManager),
-        (DenemeProjectManager, "Doruk Proje", UserRole.ProjectManager),
-        (DenemeDeveloper, "Duru Geliştirici", UserRole.SoftwareDeveloper),
+        (DenemeAnalyst, "Deniz Analist", Permission.Analysis),
+        (DenemeManager, "Derya Yönetici", Permission.Approval),
+        (DenemeProjectManager, "Doruk Proje", Permission.ProjectManagement),
+        (DenemeDeveloper, "Duru Geliştirici", Permission.Development),
     ];
 }

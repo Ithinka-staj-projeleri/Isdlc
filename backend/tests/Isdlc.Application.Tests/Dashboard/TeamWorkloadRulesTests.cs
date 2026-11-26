@@ -13,25 +13,25 @@ public class TeamWorkloadRulesTests
 {
     private static readonly DateOnly Today = new(2026, 11, 25); // a Wednesday
 
-    private static WorkloadStepRow Step(UserRole responsible, UserRole? approver = null, int? analyst = null, int? manager = null) =>
+    private static WorkloadStepRow Step(Permission responsible, Permission? approver = null, int? analyst = null, int? manager = null) =>
         new(responsible, approver, analyst, manager);
 
     // ---- Who a waiting step belongs to ----
 
     [Fact]
-    public void IsWaitingFor_ResponsibleRole_WhenThereIsNoApprover()
+    public void IsWaitingFor_ResponsiblePermission_WhenThereIsNoApprover()
     {
-        Assert.True(TeamWorkloadRules.IsWaitingFor(Step(UserRole.SoftwareDeveloper), 7, UserRole.SoftwareDeveloper));
-        Assert.False(TeamWorkloadRules.IsWaitingFor(Step(UserRole.SoftwareDeveloper), 7, UserRole.TestSpecialist));
+        Assert.True(TeamWorkloadRules.IsWaitingFor(Step(Permission.Development), 7, [Permission.Development]));
+        Assert.False(TeamWorkloadRules.IsWaitingFor(Step(Permission.Development), 7, [Permission.Testing]));
     }
 
     [Fact]
     public void IsWaitingFor_ApprovalStep_OnlyTheApprover()
     {
-        var step = Step(UserRole.SalesRepresentative, approver: UserRole.SoftwareDepartmentManager);
+        var step = Step(Permission.Sales, approver: Permission.Approval);
 
-        Assert.True(TeamWorkloadRules.IsWaitingFor(step, 2, UserRole.SoftwareDepartmentManager));
-        Assert.False(TeamWorkloadRules.IsWaitingFor(step, 3, UserRole.SalesRepresentative));
+        Assert.True(TeamWorkloadRules.IsWaitingFor(step, 2, [Permission.Approval]));
+        Assert.False(TeamWorkloadRules.IsWaitingFor(step, 3, [Permission.Sales]));
     }
 
     [Theory]
@@ -41,7 +41,7 @@ public class TeamWorkloadRulesTests
     public void IsWaitingFor_Analyst_OnlyOnTheirRecordsOrUnassigned(int? assignedAnalyst, bool expected)
     {
         Assert.Equal(expected, TeamWorkloadRules.IsWaitingFor(
-            Step(UserRole.BusinessAnalyst, analyst: assignedAnalyst), 1, UserRole.BusinessAnalyst));
+            Step(Permission.Analysis, analyst: assignedAnalyst), 1, [Permission.Analysis]));
     }
 
     [Theory]
@@ -51,7 +51,18 @@ public class TeamWorkloadRulesTests
     public void IsWaitingFor_ProjectManager_OnlyOnTheirRecordsOrUnassigned(int? assignedManager, bool expected)
     {
         Assert.Equal(expected, TeamWorkloadRules.IsWaitingFor(
-            Step(UserRole.ProjectManager, manager: assignedManager), 4, UserRole.ProjectManager));
+            Step(Permission.ProjectManagement, manager: assignedManager), 4, [Permission.ProjectManagement]));
+    }
+
+    [Fact]
+    public void IsWaitingFor_SeveralPermissions_AnyOfThem()
+    {
+        var both = new[] { Permission.Development, Permission.Testing };
+
+        Assert.True(TeamWorkloadRules.IsWaitingFor(Step(Permission.Testing), 7, both));
+        Assert.True(TeamWorkloadRules.IsWaitingFor(Step(Permission.Development), 7, both));
+        Assert.False(TeamWorkloadRules.IsWaitingFor(Step(Permission.Sales), 7, both));
+        Assert.False(TeamWorkloadRules.IsWaitingFor(Step(Permission.Development), 7, []));
     }
 
     // ---- The load ----
@@ -61,9 +72,9 @@ public class TeamWorkloadRulesTests
     {
         var users = new[]
         {
-            new WorkloadUserRow(1, "Elif Yılmaz", UserRole.BusinessAnalyst),
-            new WorkloadUserRow(5, "Can Öztürk", UserRole.SoftwareDeveloper),
-            new WorkloadUserRow(6, "Zeynep Arslan", UserRole.SoftwareDeveloper),
+            new WorkloadUserRow(1, "Elif Yılmaz", [Permission.Analysis]),
+            new WorkloadUserRow(5, "Can Öztürk", [Permission.Development]),
+            new WorkloadUserRow(6, "Zeynep Arslan", [Permission.Development]),
         };
         var issues = new[]
         {
@@ -74,9 +85,9 @@ public class TeamWorkloadRulesTests
         };
         var steps = new[]
         {
-            Step(UserRole.SoftwareDeveloper),
-            Step(UserRole.BusinessAnalyst, analyst: 1),
-            Step(UserRole.BusinessAnalyst, analyst: 1),
+            Step(Permission.Development),
+            Step(Permission.Analysis, analyst: 1),
+            Step(Permission.Analysis, analyst: 1),
         };
 
         var workload = TeamWorkloadRules.Compute(users, issues, steps, Today);
@@ -94,11 +105,11 @@ public class TeamWorkloadRulesTests
     public void Compute_EveryUserIsListed_EvenWithNothing()
     {
         var workload = TeamWorkloadRules.Compute(
-            [new WorkloadUserRow(3, "Burak Şahin", UserRole.TestSpecialist)], [], [], Today);
+            [new WorkloadUserRow(3, "Burak Şahin", [Permission.Testing])], [], [], Today);
 
         var member = Assert.Single(workload);
         Assert.Equal((0, 0, 0), (member.OpenIssues, member.OverdueOpenIssues, member.WaitingSteps));
-        Assert.Equal(UserRole.TestSpecialist, member.Role);
+        Assert.Equal([Permission.Testing], member.Permissions);
     }
 
     [Fact]
@@ -106,9 +117,9 @@ public class TeamWorkloadRulesTests
     {
         var workload = TeamWorkloadRules.Compute(
             [
-                new WorkloadUserRow(1, "Şule Kaya", UserRole.TestSpecialist),
-                new WorkloadUserRow(2, "Selin Koç", UserRole.TestSpecialist),
-                new WorkloadUserRow(3, "Ufuk Er", UserRole.TestSpecialist),
+                new WorkloadUserRow(1, "Şule Kaya", [Permission.Testing]),
+                new WorkloadUserRow(2, "Selin Koç", [Permission.Testing]),
+                new WorkloadUserRow(3, "Ufuk Er", [Permission.Testing]),
             ],
             [], [], Today);
 

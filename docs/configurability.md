@@ -4,7 +4,7 @@ Faz 7'nin uygulama ayrıntıları. Bu belgede şunlar yazılıdır: veri modeli,
 hata mesajları ve testler. Konular: yetkiler, adım ön koşulları, atlama kuralları, şirkete özel alanlar, akış düzenleme,
 yapay zekâ modeli ve kullanımı. Plan, kararlar ve iş dağılımı: [phase-7-plan.md](phase-7-plan.md).
 Durum: **onaylandı** (26 Kasım 2026, #178). Sorumlu: Erva (A1). Uygulama: A2–A9.
-A4 (adım ön koşulları), A5 (atlama kuralları) ve A6 (şirkete özel alanlar) uygulandı.
+A2 (yetkiler, backend), A4 (adım ön koşulları), A5 (atlama kuralları) ve A6 (şirkete özel alanlar) uygulandı.
 
 Kurallar uygulandıkça AGENTS.md'ye taşınır (Bölüm 10). Bölüm numaraları plandaki kararlara göndermede kullanılır:
 "karar 8", plan Bölüm 3'teki 8 numaralı karardır.
@@ -117,8 +117,10 @@ Atama yalnızca ekip iş yükü ve "Bana bekleyen adımlar" içindir.
 - JWT'deki `role` claim'i kalkar; `platformAdmin` (`"true"` / `"false"`) eklenir. `tenant`, `tenantAdmin`, `mustChangePassword`
   değişmez.
 - Yetkiler **token'a yazılmaz.** Şirket yöneticisi yetkiyi değiştirince bir sonraki istekte geçerli olsun diye servis gerekince
-  veritabanından okur. Bunun için `ICurrentUserService` içinde `HasPermissionAsync(Permission, CancellationToken)` vardır;
-  istek boyunca önbelleklenir.
+  veritabanından okur. *Uygulandı (A2):* `ICurrentUserService`'e metot eklenmedi; servisler `IApplicationDbContext` üzerindeki
+  `LoadAccessAsync(userId)` (yetkiler ve şirket yöneticilerinin adları, `UserAccess`) ve `IsActiveUserWithAsync(userId, yetki)` ile
+  okur (`Isdlc.Application/Identity/UserAccess.cs`). Şirket filtresinden geçtikleri için başka şirketin kullanıcısı bulunmaz;
+  testlerde `TestUser` değişmeden çalışır. Süreç servisi kullanıcıyı zaten her komutta okuyordu, ayrıca önbellek gerekmedi.
 - Giriş cevabının `user` nesnesinde `role` yerine `permissions: ["Analysis", …]` ve `isPlatformAdmin` döner.
 - Frontend oturumdaki yetkileri `GET /api/v1/users/me` ile tazeler: sayfa açılınca ve 403 alınca.
   Cevap: `{ id, fullName, email, tenant, isTenantAdmin, isPlatformAdmin, permissions }`.
@@ -160,6 +162,22 @@ böylece ekranda sabit liste kalmaz:
   ]
 }
 ```
+
+### A2'de netleşenler
+
+Sözleşmede yazmayan ama unvan kullanan yerler; A2 böyle uyguladı:
+
+| Yer | Bugün | Sonra |
+| --- | --- | --- |
+| Onay bildirimi ("… onayınızı bekliyor") | `NotifyRoleAsync(unvan)` | `INotificationService.NotifyPermissionAsync(yetki)`: adımın onaylayan yetkisine sahip aktif kullanıcılar |
+| `Seed/users.json` | `"role": "BusinessAnalyst"` | `"permissions": ["Analysis"]` (eşleme tablosu) |
+| `GET /users` cevabı (`UserLookupDto`) | `role` | `permissions: Permission[]` |
+| `TenantInterceptor`, `PlatformAdminSeeder` | `Role == PlatformAdmin` | `IsPlatformAdmin` |
+| Ertelenmiş talepte yetkisiz kişiye mesaj | "… Yazılım Departman Yöneticisi değerlendirmeye geri alınca devam eder." | "Talep ertelendi; «Onay ve karar» yetkisi olan biri değerlendirmeye geri alınca devam eder." (`MissingPermission = Approval`) |
+| Analist / yönetici seçimi, kişi pasif | "… aktif bir İş Analisti değil." | Yetkisi olmayanla aynı: "Seçilen kişinin «…» yetkisi yok." |
+| Yetki alma | — | Kaldırılan yetkinin `UserPermissions` satırı silinir: kayıt değil ayardır, geçmiş ona bağlı değildir |
+| `PUT /users/{id}` içinde `permissions` yok | — | Yetkiler değişmez (`null`); boş liste (`[]`) hepsini kaldırır. Yetki kutucukları olmayan eski form yetkileri silmesin diye |
+| JWT | `role` | `platformAdmin`. Eski `role`'lü token'la Platform Yöneticisi yeniden giriş yapana kadar yönetici sayılmaz |
 
 ### Uç noktalar (değişenler)
 
@@ -380,8 +398,17 @@ etkilenmez; geçmişte adımın bugünkü numarası görünür.
   - Karar adımında "Hayır" ya kaydı kapatır (`NoOutcome`) ya da geri döner (`NoJumps`); ikisi birden olmaz.
   - Dönüş yalnızca aynı akıştaki daha önceki aktif bir adıma yapılabilir.
   - Onaylayan yetkisi (`ApproverPermission`) yalnızca karar adımında verilebilir.
-- **Doğrulama:** Ön koşul ve atlama kuralları Bölüm 4 ve 5'e göre doğrulanır; hata anahtarı alan adıdır
-  (`prerequisites[0].value`).
+- **Doğrulama:** Ön koşul ve atlama kuralları Bölüm 4 ve 5'e göre doğrulanır; hata anahtarı listedeki yeridir
+  (`conditions[1]`, `prerequisites[0]`). Uygulandı: `StepRuleValidation` (saf sınıf; A7'nin ilk parçası). Kurallar:
+  - Bir adımda en fazla 10 kural ve 10 ön koşul.
+  - Kural alanı şunlardan biri olmalı: kaydın dört alanı (`StepRuleValidation.BuiltInFields`) ya da şirketin aktif özel
+    alanı (`custom:{key}`, A6 verir).
+  - "En az / en çok" yalnızca sayı ve tarih alanlarında kullanılır. "Dolu / boş" değer almaz; diğerleri değer ister
+    (en fazla 100 karakter).
+  - Değer alanın türüne uymalı: seçimde seçeneklerden biri (büyük-küçük harf fark etmez), evet-hayırda `true` / `false`,
+    sayıda sayı (seviye 1–3), tarihte `yyyy-MM-dd`.
+  - Ön koşulda form ve doküman türü kodu şirkette olmalı; diğer türler değer almaz; aynı ön koşul iki kez eklenemez.
+  - Seed dosyalarındaki bütün kurallar ve ön koşullar da bu kontrolden geçer (`SeedRuleValidationTests`).
 
 ### Uç noktalar
 
@@ -471,6 +498,11 @@ Sürükle-bırak isteğe bağlıdır; yukarı / aşağı yeterlidir.
 | Özel alan anahtarı biçimi | `400` | "Anahtar küçük harf, rakam ve tireden oluşmalıdır (2–50 karakter)." |
 | Kuralda kullanılan seçenek çıkarılıyor | `409` | "Bu seçenek bir atlama kuralında kullanılıyor: {akış} · Adım {no}." |
 | Bilinmeyen ön koşul ya da kural | `400` | "Geçersiz ön koşul." / "Geçersiz atlama kuralı." |
+| Kuralın alanı yok / bilinmiyor | `400` | "Kural alanı seçilmelidir." / "Bilinmeyen alan: «{alan}»." |
+| Karşılaştırma alana uymuyor | `400` | "«{alan adı}» için «en az» ve «en çok» kullanılamaz." |
+| Kuralın değeri | `400` | "Değer girilmelidir." / "«Dolu» ve «boş» karşılaştırmalarında değer girilmez." / "Değer en fazla 100 karakter olabilir." / "«{değer}», «{alan adı}» alanının seçeneklerinden biri değil." / "Değer «Evet» ya da «Hayır» olmalıdır." / "Değer bir sayı olmalıdır." / "Seviye 1 ile 3 arasında olmalıdır." / "Tarih yyyy-aa-gg biçiminde olmalıdır." |
+| Ön koşulun değeri | `400` | "Bu ön koşul için form seçilmelidir." / "Bu ön koşul için doküman seçilmelidir." / "Şirkette «{kod}» kodlu bir form yok." / "Şirkette «{kod}» kodlu bir doküman türü yok." / "Bu ön koşul bir değer almaz." / "Aynı ön koşul iki kez eklenemez." |
+| Çok fazla kural / ön koşul | `400` | "Bir adımda en fazla 10 kural olabilir." / "Bir adımda en fazla 10 ön koşul olabilir." |
 | Model kullanılamıyor | `400` | "Seçilen model kullanılamıyor." |
 | Aylık sınır doldu | `503` | "Şirketinizin bu ayki yapay zekâ kullanım sınırı doldu." |
 

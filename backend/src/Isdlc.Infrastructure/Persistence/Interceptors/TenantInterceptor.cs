@@ -43,7 +43,7 @@ public class TenantInterceptor(ITenantContext tenant) : SaveChangesInterceptor
         // same rule as any other record.
         foreach (var entry in context.ChangeTracker.Entries<User>())
         {
-            if (entry.Entity.Role == UserRole.PlatformAdmin)
+            if (entry.Entity.IsPlatformAdmin)
             {
                 CheckPlatformAdmin(entry);
                 continue;

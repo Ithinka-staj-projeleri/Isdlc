@@ -112,7 +112,7 @@ public class RequestDraftTests(DatabaseFixture database)
     [Fact]
     public async Task Draft_InactiveAnalyst_IsForbiddenAndTheServiceIsNotCalled()
     {
-        var user = await TestUsers.CreateAsync(database, password: null, isActive: false, role: UserRole.BusinessAnalyst);
+        var user = await TestUsers.CreateAsync(database, password: null, isActive: false, permission: Permission.Analysis);
         var agent = new FakeAgentClient();
         await using var scope = database.CreateScope();
         var service = new AgentService(
@@ -121,7 +121,8 @@ public class RequestDraftTests(DatabaseFixture database)
         var error = await Assert.ThrowsAsync<ForbiddenException>(() =>
             service.DraftRequestFromEmailAsync(new DraftRequestFromEmailDto { EmailText = Email }, CancellationToken.None));
 
-        Assert.Equal("Talebi yalnızca İş Analisti açabilir.", error.Message);
+        Assert.StartsWith("Talep açmak için «Analiz adımları» yetkisi gerekir. Şirket yöneticinizden isteyin: ", error.Message);
+        Assert.Contains("Mert Kaya", error.Message);
         Assert.False(agent.WasCalled);
     }
 

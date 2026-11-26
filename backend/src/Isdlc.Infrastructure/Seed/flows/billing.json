@@ -34,8 +34,8 @@
       "text": "Müşteri talebi Jira’da ticket olarak açılır. Müşteri her destek veya geliştirme talebi için Jira’da proje, konu, açıklama ve öncelik bilgisiyle ticket açar; e-posta veya telefonla gelen talepler müşteriden Jira’da ticket açması istenerek kayda alınır.",
       "isDecision": false,
       "noBranchText": null,
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": null,
+      "responsiblePermission": "Analysis",
+      "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
       "conditions": []
@@ -47,8 +47,8 @@
       "text": "Aylık ticket ve efor listesi çıkarılır. Ay sonunda Jira’dan o aya ait ticket’lar indirilir.",
       "isDecision": false,
       "noBranchText": null,
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": null,
+      "responsiblePermission": "Analysis",
+      "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
       "conditions": []
@@ -60,8 +60,8 @@
       "text": "Faturalanacak işler belirlenir ve müşteri bazında tablolanır. Her ticket’ın faturalanıp faturalanmayacağı müşterinin sözleşme veya bakım anlaşması kapsamına göre belirlenir; faturalanacak ticket’ların efor saati adam/güne çevrilir, adam/gün × birim fiyat ile tutar hesaplanır ve müşteri bazında tablolanır.",
       "isDecision": false,
       "noBranchText": null,
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": null,
+      "responsiblePermission": "Analysis",
+      "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
       "conditions": []
@@ -73,8 +73,8 @@
       "text": "Proje Yöneticisi ile gözden geçirilir. Tablo, Proje Yöneticisi ile ticket bazında gözden geçirilir ve Ortak Proje Yönetimi › Proje Gözden Geçirme Toplantı Takip › Ticket Listeleri dizininden ilgili müşteri klasörüne eklenir. Tablo onaylandı mı?",
       "isDecision": true,
       "noBranchText": "Düzeltme gerekirse tablo yeniden hazırlanır (3. adım).",
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": "ProjectManager",
+      "responsiblePermission": "Analysis",
+      "approverPermission": "ProjectManagement",
       "noOutcome": null,
       "noJumps": [
         {
@@ -91,8 +91,8 @@
       "text": "Fatura kesimi talep edilir. Fatura kesimi için hem müşteriye, hem ilgili projenin satış temsilcisine ve fatura kesiminin onaylanması için Satış Departmanı’na e-posta iletilerek fatura kesimi talep edilir.",
       "isDecision": false,
       "noBranchText": null,
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": null,
+      "responsiblePermission": "Analysis",
+      "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
       "conditions": []
@@ -104,8 +104,8 @@
       "text": "Fatura takip edilir ve ay kapatılır. Fatura kesimi takip edilir; fatura kesildiyse klasörüne eklenir ve ay kapatılır.",
       "isDecision": false,
       "noBranchText": null,
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": null,
+      "responsiblePermission": "Analysis",
+      "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
       "conditions": []

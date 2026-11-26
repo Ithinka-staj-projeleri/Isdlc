@@ -27,7 +27,11 @@ public class UserProfileService(
         var user = await dbContext.Users
             .AsNoTracking()
             .Where(u => u.Id == userId)
-            .Select(u => new { u.Id, u.FullName, u.Email, u.Role, u.IsActive, u.Expertise, u.WorkingNote })
+            .Select(u => new
+            {
+                u.Id, u.FullName, u.Email, u.IsActive, u.Expertise, u.WorkingNote,
+                Permissions = u.Permissions.OrderBy(p => p.Permission).Select(p => p.Permission).ToList(),
+            })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Kullanıcı bulunamadı.");
 
@@ -46,11 +50,11 @@ public class UserProfileService(
         {
             var row = (await teamWorkload.GetAsync(cancellationToken)).Single(w => w.User.Id == user.Id);
             workload = new UserWorkloadCountsDto(row.OpenIssues, row.OverdueOpenIssues, row.WaitingSteps);
-            waitingSteps = await DashboardService.WaitingStepsAsync(dbContext, user.Id, user.Role, now, cancellationToken);
+            waitingSteps = await DashboardService.WaitingStepsAsync(dbContext, user.Id, user.Permissions, now, cancellationToken);
         }
 
         return new UserProfileDto(
-            user.Id, user.FullName, user.Email, user.Role, user.IsActive, user.Expertise, user.WorkingNote,
+            user.Id, user.FullName, user.Email, user.Permissions, user.IsActive, user.Expertise, user.WorkingNote,
             workload, openIssues, waitingSteps);
     }
 
@@ -80,7 +84,7 @@ public class UserProfileService(
 
         return workload
             .Select(w => new UserWorkloadDto(
-                w.User.Id, w.User.FullName, w.Role, expertise.GetValueOrDefault(w.User.Id),
+                w.User.Id, w.User.FullName, w.Permissions, expertise.GetValueOrDefault(w.User.Id),
                 w.OpenIssues, w.OverdueOpenIssues, w.WaitingSteps))
             .OrderBy(w => w.FullName, TurkishNames)
             .ToList();

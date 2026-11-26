@@ -7,18 +7,19 @@ namespace Isdlc.Application.Identity;
 
 public class UserService(IApplicationDbContext dbContext) : IUserService
 {
-    public async Task<IReadOnlyList<UserLookupDto>> ListActiveAsync(UserRole? role, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<UserLookupDto>> ListActiveAsync(Permission? permission, CancellationToken cancellationToken)
     {
         var query = dbContext.Users.AsNoTracking().Where(u => u.IsActive);
 
-        if (role is { } wanted)
+        if (permission is { } wanted)
         {
-            query = query.Where(u => u.Role == wanted);
+            query = query.Where(u => u.Permissions.Any(p => p.Permission == wanted));
         }
 
         return await query
             .OrderBy(u => u.FullName)
-            .Select(u => new UserLookupDto(u.Id, u.FullName, u.Role))
+            .Select(u => new UserLookupDto(
+                u.Id, u.FullName, u.Permissions.OrderBy(p => p.Permission).Select(p => p.Permission).ToList()))
             .ToListAsync(cancellationToken);
     }
 }

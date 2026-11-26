@@ -14,6 +14,6 @@ public interface ICurrentUserService
     /// <summary>Şirket Yöneticisi: manages the users of their company (JWT "tenantAdmin").</summary>
     bool IsTenantAdmin { get; }
 
-    /// <summary>Platform Yöneticisi: opens and deactivates companies (JWT "role" = PlatformAdmin).</summary>
+    /// <summary>Platform Yöneticisi: opens and deactivates companies (JWT "platformAdmin").</summary>
     bool IsPlatformAdmin { get; }
 }

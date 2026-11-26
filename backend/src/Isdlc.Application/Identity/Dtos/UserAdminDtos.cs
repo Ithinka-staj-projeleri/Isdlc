@@ -5,9 +5,15 @@ namespace Isdlc.Application.Identity.Dtos;
 
 // Contract: docs/multi-tenancy.md → Uç noktalar, Şirket Yöneticisi.
 
-/// <summary>A user of the company as the user list shows them (GET /users).</summary>
+/// <summary>A user of the company as the user list shows them (GET /users/manage). Permissions: Faz 7 · A2.</summary>
 public record UserDto(
-    int Id, string FullName, string Email, UserRole Role, bool IsActive, bool IsTenantAdmin, bool MustChangePassword);
+    int Id,
+    string FullName,
+    string Email,
+    IReadOnlyList<Permission> Permissions,
+    bool IsActive,
+    bool IsTenantAdmin,
+    bool MustChangePassword);
 
 /// <summary>POST /users: a new user of the signed-in administrator's company, with a temporary password.</summary>
 public class CreateUserDto
@@ -21,8 +27,8 @@ public class CreateUserDto
     [MaxLength(256, ErrorMessage = "En fazla 256 karakter olabilir.")]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Rol seçilmelidir.")]
-    public UserRole? Role { get; set; }
+    /// <summary>May be empty: the user then does only work outside the flow. An unknown value is a 400.</summary>
+    public List<Permission>? Permissions { get; set; }
 
     public bool IsTenantAdmin { get; set; }
 
@@ -39,8 +45,8 @@ public class UpdateUserDto
     [MaxLength(100, ErrorMessage = "En fazla 100 karakter olabilir.")]
     public string FullName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Rol seçilmelidir.")]
-    public UserRole? Role { get; set; }
+    /// <summary>The user's whole permission list after the change; empty takes them all away, null leaves them as they are.</summary>
+    public List<Permission>? Permissions { get; set; }
 
     public bool IsActive { get; set; } = true;
 

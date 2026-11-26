@@ -9,7 +9,10 @@ namespace Isdlc.Application.Tenants.Dtos;
 /// <summary>A company as the Platform Administrator sees it: only how many users it has.</summary>
 public record TenantDto(int Id, string Code, string Name, bool IsActive, int UserCount, DateTime CreatedAt);
 
-/// <summary>The company's first administrator, opened with a temporary password.</summary>
+/// <summary>
+/// The company's first administrator, opened with a temporary password. No title or permission: the account starts as
+/// company administrator only and gives itself permissions if it also works in the flow (Faz 7 · A2, karar 4).
+/// </summary>
 public class TenantAdminDto
 {
     [Required(ErrorMessage = "Ad soyad zorunludur.")]
@@ -20,9 +23,6 @@ public class TenantAdminDto
     [EmailAddress(ErrorMessage = "Geçerli bir e-posta adresi girin.")]
     [MaxLength(256, ErrorMessage = "En fazla 256 karakter olabilir.")]
     public string Email { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Rol seçilmelidir.")]
-    public UserRole? Role { get; set; }
 
     [Required(ErrorMessage = "Geçici parola zorunludur.")]
     [MinLength(PasswordRules.MinLength, ErrorMessage = "Parola en az 12 karakter olmalıdır.")]
@@ -54,3 +54,6 @@ public class UpdateTenantDto
 
     public bool IsActive { get; set; } = true;
 }
+
+/// <summary>GET /tenants/current: the user's company, with its active administrators' names ("whom to ask", karar 2b).</summary>
+public record CurrentTenantDto(int Id, string Code, string Name, IReadOnlyList<string> Admins);

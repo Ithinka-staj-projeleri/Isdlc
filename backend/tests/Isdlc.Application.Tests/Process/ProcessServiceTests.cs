@@ -238,8 +238,8 @@ public class ProcessServiceTests(DatabaseFixture database)
     {
         var step = await StepAsync(ProcessFlowCodes.NewRequest, "10");
 
-        Assert.Equal(UserRole.SalesRepresentative, step.ResponsibleRole);
-        Assert.Equal(UserRole.SoftwareDepartmentManager, step.ApproverRole);
+        Assert.Equal(Permission.Sales, step.ResponsiblePermission);
+        Assert.Equal(Permission.Approval, step.ApproverPermission);
     }
 
     [Fact]
@@ -249,17 +249,17 @@ public class ProcessServiceTests(DatabaseFixture database)
         foreach (var code in AllFlowCodes)
         {
             approvals.AddRange(AllSteps(await GetFlowAsync(code))
-                .Where(s => s.ApproverRole is not null)
-                .Select(s => $"{code}/{s.Code}:{s.ApproverRole}"));
+                .Where(s => s.ApproverPermission is not null)
+                .Select(s => $"{code}/{s.Code}:{s.ApproverPermission}"));
         }
 
         Assert.Equal(
             [
-                "new-software-project/10:SoftwareDepartmentManager",
-                "add-on/8:ProjectManager",
-                "process-improvement/4:SoftwareDepartmentManager",
-                "process-improvement/8:SoftwareDepartmentManager",
-                "billing/4:ProjectManager",
+                "new-software-project/10:Approval",
+                "add-on/8:ProjectManagement",
+                "process-improvement/4:Approval",
+                "process-improvement/8:Approval",
+                "billing/4:ProjectManagement",
             ],
             approvals);
     }

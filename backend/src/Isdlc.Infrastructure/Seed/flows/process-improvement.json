@@ -34,8 +34,8 @@
       "text": "İyileştirme önerisi kayda alınır. Süreçle ilgili bir sorun veya iyileştirme fikri olan her çalışan öneride bulunabilir (proje kapanışı / retrospektif, hata, sapma, müşteri şikâyeti, çalışan önerisi, yönetim hedefi). Öneri; sorunun kısa tanımı, etkilediği süreç ve varsa çözüm fikriyle Süreç İyileştirme Kayıt Listesi’ne eklenir ve sıradaki No verilir.",
       "isDecision": false,
       "noBranchText": null,
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": null,
+      "responsiblePermission": "Analysis",
+      "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
       "conditions": []
@@ -47,8 +47,8 @@
       "text": "Öneri değerlendirilir ve önceliklendirilir. Yazılım Departman Yöneticisi öneriyi etki, uygulama sıklığı ve uygulama kolaylığına göre değerlendirir ve önceliklendirir. Öneri çalışmaya alındı mı?",
       "isDecision": true,
       "noBranchText": "Öneri reddedilir ve kayıt kapanır. Bekletilecek öneri cevaplanmadan bu adımda kalır.",
-      "responsibleRole": "SoftwareDepartmentManager",
-      "approverRole": null,
+      "responsiblePermission": "Approval",
+      "approverPermission": null,
       "noOutcome": "Rejected",
       "noJumps": [],
       "conditions": []
@@ -60,8 +60,8 @@
       "text": "İyileştirme çalışması hazırlanır. Mevcut süreç, süreci uygulayan kişilerle birlikte incelenir; problemler kök neden analiziyle tespit edilir. Mevcut durum, kök neden, çözüm ve pilot planıyla Süreç İyileştirme Çalışma Dokümanı hazırlanır.",
       "isDecision": false,
       "noBranchText": null,
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": null,
+      "responsiblePermission": "Analysis",
+      "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
       "conditions": []
@@ -73,8 +73,8 @@
       "text": "Yönetim onayı alınır. Çalışma dokümanı Yazılım Departman Yöneticisine sunulur; fayda / maliyet ve etki analizi yapılır. Pilot için onay verildi mi?",
       "isDecision": true,
       "noBranchText": "Revizyon istenirse 3. adıma dönülür; reddedilirse gerekçe Kayıt Listesi’ne yazılır ve öneri kapatılır.",
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": "SoftwareDepartmentManager",
+      "responsiblePermission": "Analysis",
+      "approverPermission": "Approval",
       "noOutcome": null,
       "noJumps": [
         {
@@ -91,8 +91,8 @@
       "text": "Pilot hazırlanır. Yeni veya değişen sürecin akışı ve dokümanları hazırlanır; EB Move › 00. Standart Dokümanlar › ISDLC › Çalışmalar klasörüne kaydedilir.",
       "isDecision": false,
       "noBranchText": null,
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": null,
+      "responsiblePermission": "Analysis",
+      "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
       "conditions": []
@@ -104,8 +104,8 @@
       "text": "Pilot uygulanır. Değişiklik, planda belirlenen proje veya ekipte belirlenen süre boyunca gerçek iş üzerinde uygulanır.",
       "isDecision": false,
       "noBranchText": null,
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": null,
+      "responsiblePermission": "Analysis",
+      "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
       "conditions": []
@@ -117,8 +117,8 @@
       "text": "Pilot sonuçları değerlendirilir. Ölçüm sonuçları hedefle karşılaştırılır ve pilot ekibinin geri bildirimi alınır; sonuç ve karar Pilot Değerlendirme Raporu’na yazılır. Hedef karşılandı mı?",
       "isDecision": true,
       "noBranchText": "Kısmen karşılandıysa doküman ve akışlar düzeltilerek pilot tekrarlanır; karşılanmadıysa 3. adıma dönülür.",
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": null,
+      "responsiblePermission": "Analysis",
+      "approverPermission": null,
       "noOutcome": null,
       "noJumps": [
         {
@@ -139,8 +139,8 @@
       "text": "Süreç standart hâle getirilir ve periyodik olarak izlenir. Sürecin akış ve dokümanlarının son hâli hazırlanır; dokümana sürüm numarası verilir, EB Move › 00. Standart Dokümanlar › ISDLC klasörüne konur, eski sürüm Arşiv’e taşınır ve Dokümanlar Excel’i güncellenir. Yazılım Departman Yöneticisi onayıyla yürürlüğe alınır.",
       "isDecision": false,
       "noBranchText": null,
-      "responsibleRole": "BusinessAnalyst",
-      "approverRole": "SoftwareDepartmentManager",
+      "responsiblePermission": "Analysis",
+      "approverPermission": "Approval",
       "noOutcome": null,
       "noJumps": [],
       "conditions": []

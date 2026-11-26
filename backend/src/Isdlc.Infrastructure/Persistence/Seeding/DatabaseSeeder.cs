@@ -114,8 +114,8 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 Text = s.Text,
                 IsDecision = s.IsDecision,
                 NoBranchText = s.NoBranchText,
-                ResponsibleRole = s.ResponsibleRole,
-                ApproverRole = s.ApproverRole,
+                ResponsiblePermission = s.ResponsiblePermission,
+                ApproverPermission = s.ApproverPermission,
                 NoOutcome = s.NoOutcome,
                 Conditions = s.Conditions ?? [],
                 Prerequisites = s.Prerequisites ?? [],
@@ -186,8 +186,8 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             changed += Set(step.Text, stepSeed.Text, v => step.Text = v);
             changed += Set(step.NoBranchText, stepSeed.NoBranchText, v => step.NoBranchText = v);
             changed += Set(step.IsDecision, stepSeed.IsDecision, v => step.IsDecision = v);
-            changed += Set(step.ResponsibleRole, stepSeed.ResponsibleRole, v => step.ResponsibleRole = v);
-            changed += Set(step.ApproverRole, stepSeed.ApproverRole, v => step.ApproverRole = v);
+            changed += Set(step.ResponsiblePermission, stepSeed.ResponsiblePermission, v => step.ResponsiblePermission = v);
+            changed += Set(step.ApproverPermission, stepSeed.ApproverPermission, v => step.ApproverPermission = v);
             changed += Set(step.NoOutcome, stepSeed.NoOutcome, v => step.NoOutcome = v);
             changed += SyncConditions(step, stepSeed);
             changed += SyncPrerequisites(step, stepSeed);
@@ -350,8 +350,8 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         {
             FullName = u.FullName,
             Email = u.Email,
-            Role = u.Role,
             IsTenantAdmin = u.IsTenantAdmin,
+            Permissions = u.Permissions.Select(p => new UserPermission { Permission = p }).ToList(),
         }));
         await db.SaveChangesAsync(cancellationToken);
 
@@ -402,7 +402,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             .GroupBy(s => s.ProcessFlowId)
             .ToDictionary(g => g.Key, g => g.ToList());
         var projectsByCode = new Dictionary<string, Project>();
-        var users = await db.Users.OrderBy(u => u.Id).ToListAsync(cancellationToken);
+        var users = await db.Users.Include(u => u.Permissions).OrderBy(u => u.Id).ToListAsync(cancellationToken);
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
         foreach (var seed in file.Projects)
@@ -418,7 +418,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
 
             var businessAnalyst = FindUser(users, seed.BusinessAnalystEmail, seed.Code);
             var projectManager = FindUser(users, seed.ProjectManagerEmail, seed.Code);
-            var createdById = businessAnalyst?.Id ?? FirstUserWithRole(users, UserRole.BusinessAnalyst).Id;
+            var createdById = businessAnalyst?.Id ?? FirstUserWith(users, Permission.Analysis).Id;
 
             // Active and postponed records wait on a step; closed ones were closed on one.
             var keepsStep = seed.Status is ProjectStatus.Active or ProjectStatus.Postponed;
@@ -481,10 +481,10 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 var (step, action) = history[i];
                 // One day per step from the start date, never in the future, always increasing.
                 var performedAt = Min(ToUtc(seed.RequestDate).AddDays(i), now.AddMinutes(i - history.Count));
-                // Postponing is the manager's; everything else is the step's own role.
+                // Postponing needs the approval permission; everything else the step's own permission.
                 var performedById = action == StepAction.Postponed
-                    ? FirstUserWithRole(users, UserRole.SoftwareDepartmentManager).Id
-                    : FirstUserWithRole(users, step.ApproverRole ?? step.ResponsibleRole).Id;
+                    ? FirstUserWith(users, Permission.Approval).Id
+                    : FirstUserWith(users, step.ApproverPermission ?? step.ResponsiblePermission).Id;
 
                 lastRecord = new StepRecord
                 {
@@ -541,9 +541,9 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             : users.SingleOrDefault(u => u.Email == email)
                 ?? throw new InvalidOperationException($"Sample project {projectCode}: user '{email}' does not exist.");
 
-    private static User FirstUserWithRole(List<User> users, UserRole role) =>
-        users.FirstOrDefault(u => u.Role == role)
-            ?? throw new InvalidOperationException($"Seed error: no user with role {role}.");
+    private static User FirstUserWith(List<User> users, Permission permission) =>
+        users.FirstOrDefault(u => u.Permissions.Any(p => p.Permission == permission))
+            ?? throw new InvalidOperationException($"Seed error: no user with permission {permission}.");
 
     private static DateTime ToUtc(DateOnly date) => date.ToDateTime(new TimeOnly(9, 0), DateTimeKind.Utc);
 

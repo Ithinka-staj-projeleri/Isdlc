@@ -15,11 +15,19 @@ public class User
     /// <summary>Set by the Identity module. Empty until then.</summary>
     public string PasswordHash { get; set; } = string.Empty;
 
-    public UserRole Role { get; set; }
     public bool IsActive { get; set; } = true;
 
     /// <summary>
-    /// Şirket Yöneticisi (Faz 6 · T4): manages the users of their own company. A mark, not a role, so an analyst can also
+    /// Platform Yöneticisi: opens and deactivates companies. Belongs to no company (TenantId empty), sees no company's records
+    /// and has no permissions. Only from configuration (docs/multi-tenancy.md, docs/configurability.md).
+    /// </summary>
+    public bool IsPlatformAdmin { get; set; }
+
+    /// <summary>What the user can do in the flow (Faz 7 · A2). Empty: work outside the flow only.</summary>
+    public ICollection<UserPermission> Permissions { get; set; } = new List<UserPermission>();
+
+    /// <summary>
+    /// Şirket Yöneticisi (Faz 6 · T4): manages the users of their own company. A mark, not a permission, so anyone can also
     /// be one. Always false for the Platform Administrator.
     /// </summary>
     public bool IsTenantAdmin { get; set; }

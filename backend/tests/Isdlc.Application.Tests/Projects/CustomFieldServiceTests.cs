@@ -41,8 +41,8 @@ public class CustomFieldServiceTests(DatabaseFixture database)
         }
 
         var admin = await TestUsers.CreateAsync(
-            database, null, role: UserRole.BusinessAnalyst, tenantId: tenantId, isTenantAdmin: true);
-        var member = await TestUsers.CreateAsync(database, null, role: UserRole.BusinessAnalyst, tenantId: tenantId);
+            database, null, permission: Permission.Analysis, tenantId: tenantId, isTenantAdmin: true);
+        var member = await TestUsers.CreateAsync(database, null, permission: Permission.Analysis, tenantId: tenantId);
 
         await using (var scope = database.CreateScope(tenantId))
         {
