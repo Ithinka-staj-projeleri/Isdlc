@@ -1,5 +1,6 @@
 using System.Reflection;
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Domain.Agents;
 using Isdlc.Domain.Audit;
 using Isdlc.Domain.Common;
 using Isdlc.Domain.Documents;
@@ -53,6 +54,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options, ITenantCon
     public DbSet<QuestionAnswer> QuestionAnswers => Set<QuestionAnswer>();
     public DbSet<ProcessImprovement> ProcessImprovements => Set<ProcessImprovement>();
     public DbSet<CustomField> CustomFields => Set<CustomField>();
+    public DbSet<AiUsage> AiUsages => Set<AiUsage>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

@@ -61,6 +61,11 @@ kullanabildiği modelleri listeleyip `GEMINI_MODEL` değerini değiştirin:
 .venv/Scripts/python -m isdlc_ai models
 ```
 
+Faz 7 · A9: Her şirket Şirket Ayarları'ndan kendi modelini seçebilir; backend modeli her istekte `model` alanında gönderir
+(liste: `GET /v1/models`). Servis önce bu modeli, sonra `GEMINI_MODEL`'i, sonra `GEMINI_FALLBACK_MODELS`'taki modelleri
+(virgülle ayrılmış) sırayla dener; biri yoğunsa (503) ya da kotası dolduysa (429) bir sonrakine geçer. Her cevaptaki `usage`
+alanı cevap veren modeli ve toplam token'ı (ses kaydında saniyeyi) verir; backend bunu şirketin kullanımına yazar.
+
 ## Testler
 
 Testler gerçek modeli çağırmaz (`FakeLlmClient`); anahtar ve internet gerekmez.

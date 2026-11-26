@@ -318,6 +318,10 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
   Her şirketin iki anahtarı vardır (`Tenant.AiEnabled`, `AiDataSharingAllowed`): metni dış modele gönderen yardımcılar ikisini,
   ses kaydını metne çevirme yalnızca birincisini ister; kural `CompanyAiRules`, kapalıysa servis çağrılmadan 503
   ("Yapay zekâ yardımcıları şirketiniz için kapalı."). Anahtarları Şirket Yöneticisi `PUT /api/v1/tenants/current/settings` ile değiştirir.
+  Faz 7 · A9: şirketin modeli (`Tenant.AiModel`, boşsa servisin varsayılanı) her istekte servise gönderilir; servis meşgulse
+  kendi yedeklerini dener (`GEMINI_FALLBACK_MODELS`). Her çağrı, başarısızı da, `AiUsage`'a yazılır (`AgentService.TrackAsync`;
+  kayıt yazılamazsa yalnızca loglanır). Aylık token sınırı (`Tenant.AiMonthlyTokenLimit`) dolduysa metin gönderen yardımcılar
+  servis çağrılmadan 503 döner (`AiUsageRules`). Yeni bir yardımcı da `TrackAsync` ile çağrılır.
   Yalnızca sahte veriyle çalışılır (şirketin veri gönderme kararı bekleniyor).
 - **Eşzamanlılık:** `Project.RowVersion` aynı kaydın aynı anda güncellenmesini yakalar ve 409 döner.
 - **Seed:** `Isdlc.Infrastructure/Seed/` altındaki akış, doküman türü ve soru seti dosyaları **şablondur**. Uygulama her

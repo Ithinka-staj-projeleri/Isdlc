@@ -33,10 +33,14 @@ public interface IAgentClient
     /// audio or too large; 503 when the service fails or does not answer in 30 minutes.
     /// </summary>
     Task<MeetingAgentTranscript> TranscribeAsync(Stream recording, CancellationToken cancellationToken);
+
+    /// <summary>The text models the service can use (GET /v1/models); empty when the service is off or fails. Never throws.</summary>
+    Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken cancellationToken);
 }
 
 /// <summary>What the agent gets: only the project code, the date, the current step and the notes.</summary>
-public record MeetingAgentRequest(string ProjectCode, DateOnly MeetingDate, string Notes, string? CurrentStep);
+public record MeetingAgentRequest(
+    string ProjectCode, DateOnly MeetingDate, string Notes, string? CurrentStep, string? Model = null);
 
 /// <summary>Minutes is null when the agent could not draft them; the open issues are still usable.</summary>
 public record MeetingAgentResult(
@@ -44,7 +48,8 @@ public record MeetingAgentResult(
     IReadOnlyList<MeetingAgentItem> Items,
     int InvalidCount,
     string ModelName,
-    MeetingAgentMinutes? Minutes = null);
+    MeetingAgentMinutes? Minutes = null,
+    AgentUsage? Usage = null);
 
 /// <summary>
 /// The minutes' info as the agent drafts it. Type is a MeetingType name; agenda and next steps have one "- " line each.
@@ -72,9 +77,10 @@ public record MeetingAgentItem(
     IReadOnlyList<string> Warnings);
 
 /// <summary>What the risk agent gets: only the project code, the current step and the text.</summary>
-public record RiskAgentRequest(string ProjectCode, string SourceText, string? CurrentStep);
+public record RiskAgentRequest(string ProjectCode, string SourceText, string? CurrentStep, string? Model = null);
 
-public record RiskAgentResult(IReadOnlyList<RiskAgentItem> Items, int InvalidCount, string ModelName);
+public record RiskAgentResult(
+    IReadOnlyList<RiskAgentItem> Items, int InvalidCount, string ModelName, AgentUsage? Usage = null);
 
 /// <summary>
 /// One risk as the agent returns it. Category is a RiskCategory name or null; probability and impact are null
@@ -92,7 +98,8 @@ public record RiskAgentItem(
     IReadOnlyList<string> Warnings);
 
 /// <summary>One risk a person is typing: only its title and description, the project code and the current step.</summary>
-public record RiskAssessmentAgentRequest(string ProjectCode, string Title, string? Description, string? CurrentStep);
+public record RiskAssessmentAgentRequest(
+    string ProjectCode, string Title, string? Description, string? CurrentStep, string? Model = null);
 
 public record RiskAssessmentAgentResult(
     int? Probability,
@@ -100,10 +107,11 @@ public record RiskAssessmentAgentResult(
     string? AssessmentReason,
     string? Mitigation,
     IReadOnlyList<string> Warnings,
-    string ModelName);
+    string ModelName,
+    AgentUsage? Usage = null);
 
 /// <summary>What the request agent gets: only the e-mail and today's date (for "yıl sonuna kadar" style dates).</summary>
-public record RequestAgentRequest(string EmailText, DateOnly Today);
+public record RequestAgentRequest(string EmailText, DateOnly Today, string? Model = null);
 
 /// <summary>
 /// The request form as the agent fills it; a field is null when the e-mail does not say it.
@@ -120,7 +128,15 @@ public record RequestAgentDraft(
     DateOnly? DueDate,
     string? Notes,
     IReadOnlyList<string> Warnings,
-    string ModelName);
+    string ModelName,
+    AgentUsage? Usage = null);
 
 /// <summary>A recording as text: one segment per line; Truncated when it was cut to the notes limit.</summary>
-public record MeetingAgentTranscript(string Text, int DurationSeconds, string Language, bool Truncated, string ModelName);
+public record MeetingAgentTranscript(
+    string Text, int DurationSeconds, string Language, bool Truncated, string ModelName, AgentUsage? Usage = null);
+
+/// <summary>
+/// What one request used (Faz 7 · A9), as the service reports it: the model that answered, tokens for text, seconds for a
+/// recording. Written to AiUsage.
+/// </summary>
+public record AgentUsage(string Model, int? InputTokens, int? OutputTokens, int? AudioSeconds);

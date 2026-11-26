@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Isdlc.Application.Agents.Dtos;
 using Isdlc.Application.Common;
 using Isdlc.Application.Common.Exceptions;
@@ -11,19 +12,25 @@ using Isdlc.Domain.Meetings;
 using Isdlc.Domain.OpenIssues;
 using Isdlc.Domain.Projects;
 using Isdlc.Domain.Risks;
+using Isdlc.Domain.Agents;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Isdlc.Application.Agents;
 
 public class AgentService(
     IApplicationDbContext dbContext,
     ICurrentUserService currentUser,
-    IAgentClient agents) : IAgentService
+    IAgentClient agents,
+    ILogger<AgentService>? logger = null) : IAgentService
 {
+    private readonly ILogger _logger = (ILogger?)logger ?? NullLogger.Instance;
+
     public async Task<AgentStatusDto> GetStatusAsync(CancellationToken cancellationToken)
     {
         var available = await agents.IsAvailableAsync(cancellationToken);
-        var company = await CompanyAiAsync(cancellationToken);
+        var company = (await CompanyAiAsync(cancellationToken)).Switches;
 
         // The company's switches come on top of the service (docs/multi-tenancy.md → Yapay zekâ ayarlarının etkisi).
         var sendsText = available && CompanyAiRules.MaySendText(company);
@@ -44,7 +51,12 @@ public class AgentService(
             throw new BusinessRuleException("Kayıt dosyası seçilmelidir.");
         }
 
-        var transcript = await agents.TranscribeAsync(recording, cancellationToken);
+        // Speech to text runs on the service's own model (Whisper): the company's text model is not sent.
+        var transcript = await TrackAsync(
+            AiAssistant.Transcription, projectId, null,
+            () => agents.TranscribeAsync(recording, cancellationToken),
+            t => t.Usage ?? new AgentUsage(t.ModelName, null, null, t.DurationSeconds),
+            cancellationToken);
         return new MeetingTranscriptDto(transcript.Text, transcript.DurationSeconds, transcript.Language, transcript.Truncated);
     }
 
@@ -52,11 +64,15 @@ public class AgentService(
         int projectId, SuggestMeetingItemsDto request, CancellationToken cancellationToken)
     {
         // The current step tells the agent what kind of meeting this probably was (e.g. 7.1 analysis meetings).
-        var (project, currentStep) = await PrepareAsync(projectId, cancellationToken);
+        var (project, currentStep, model) = await PrepareAsync(projectId, cancellationToken);
 
         // [Required] on the DTO guarantees these values.
-        var result = await agents.SuggestOpenIssuesAsync(
-            new MeetingAgentRequest(project.Code, request.MeetingDate!.Value, request.Notes!.Trim(), currentStep),
+        var result = await TrackAsync(
+            AiAssistant.MeetingSuggestions, projectId, model,
+            () => agents.SuggestOpenIssuesAsync(
+                new MeetingAgentRequest(project.Code, request.MeetingDate!.Value, request.Notes!.Trim(), currentStep, model),
+                cancellationToken),
+            r => r.Usage,
             cancellationToken);
 
         var users = await dbContext.Users
@@ -155,11 +171,15 @@ public class AgentService(
     public async Task<RiskSuggestionsDto> SuggestRisksAsync(
         int projectId, SuggestRisksDto request, CancellationToken cancellationToken)
     {
-        var (project, currentStep) = await PrepareAsync(projectId, cancellationToken);
+        var (project, currentStep, model) = await PrepareAsync(projectId, cancellationToken);
 
         // [Required] on the DTO guarantees the value.
-        var result = await agents.SuggestRisksAsync(
-            new RiskAgentRequest(project.Code, request.SourceText!.Trim(), currentStep), cancellationToken);
+        var result = await TrackAsync(
+            AiAssistant.RiskSuggestions, projectId, model,
+            () => agents.SuggestRisksAsync(
+                new RiskAgentRequest(project.Code, request.SourceText!.Trim(), currentStep, model), cancellationToken),
+            r => r.Usage,
+            cancellationToken);
 
         var items = new List<SuggestedRiskDto>();
         var skipped = result.InvalidCount;
@@ -194,12 +214,16 @@ public class AgentService(
     public async Task<RiskAssessmentSuggestionDto> SuggestRiskAssessmentAsync(
         int projectId, SuggestRiskAssessmentDto request, CancellationToken cancellationToken)
     {
-        var (project, currentStep) = await PrepareAsync(projectId, cancellationToken);
+        var (project, currentStep, model) = await PrepareAsync(projectId, cancellationToken);
 
         // [Required] on the DTO guarantees the title.
-        var result = await agents.AssessRiskAsync(
-            new RiskAssessmentAgentRequest(
-                project.Code, request.Title!.Trim(), OpenIssueRules.Clean(request.Description), currentStep),
+        var result = await TrackAsync(
+            AiAssistant.RiskAssessment, projectId, model,
+            () => agents.AssessRiskAsync(
+                new RiskAssessmentAgentRequest(
+                    project.Code, request.Title!.Trim(), OpenIssueRules.Clean(request.Description), currentStep, model),
+                cancellationToken),
+            r => r.Usage,
             cancellationToken);
 
         var warnings = result.Warnings.ToList();
@@ -236,11 +260,16 @@ public class AgentService(
             throw new ServiceUnavailableException("Yapay zekâ servisi bu ortamda açık değil.");
         }
 
-        await EnsureCompanyAllowsAsync(sendsText: true, cancellationToken);
+        var model = await EnsureCompanyAllowsAsync(sendsText: true, cancellationToken);
 
         // [Required] on the DTO guarantees the text.
-        var draft = await agents.DraftRequestAsync(
-            new RequestAgentRequest(request.EmailText!.Trim(), DateOnly.FromDateTime(DateTime.UtcNow)), cancellationToken);
+        var draft = await TrackAsync(
+            AiAssistant.RequestDraft, null, model,
+            () => agents.DraftRequestAsync(
+                new RequestAgentRequest(request.EmailText!.Trim(), DateOnly.FromDateTime(DateTime.UtcNow), model),
+                cancellationToken),
+            d => d.Usage,
+            cancellationToken);
 
         // The agent checks the same limits; checked again here so a suggestion never breaks the form.
         RequestType? type = Enum.TryParse<RequestType>(draft.RequestType, out var parsed) && Enum.IsDefined(parsed)
@@ -266,7 +295,7 @@ public class AgentService(
     /// Checks shared by the project's assistants: signed in, project active, service configured, and the company
     /// allows it. sendsText: the assistant sends the person's text to the model provider (all but transcription).
     /// </summary>
-    private async Task<(ProjectRef Project, string? CurrentStep)> PrepareAsync(
+    private async Task<(ProjectRef Project, string? CurrentStep, string? Model)> PrepareAsync(
         int projectId, CancellationToken cancellationToken, bool sendsText = true)
     {
         if (currentUser.UserId is null)
@@ -281,7 +310,7 @@ public class AgentService(
             throw new ServiceUnavailableException("Yapay zekâ servisi bu ortamda açık değil.");
         }
 
-        await EnsureCompanyAllowsAsync(sendsText, cancellationToken);
+        var model = await EnsureCompanyAllowsAsync(sendsText, cancellationToken);
 
         var currentStep = await dbContext.Projects
             .AsNoTracking()
@@ -289,35 +318,124 @@ public class AgentService(
             .Select(p => p.CurrentStep!.Code + " " + p.CurrentStep.Text)
             .SingleOrDefaultAsync(cancellationToken);
 
-        return (project, currentStep);
+        return (project, currentStep, model);
     }
 
-    /// <summary>The service is never called for a company that switched the assistant off: 503.</summary>
-    private async Task EnsureCompanyAllowsAsync(bool sendsText, CancellationToken cancellationToken)
+    /// <summary>
+    /// The service is never called for a company that switched the assistant off, or whose monthly token limit is used
+    /// up (text assistants only; a recording costs no tokens): 503. Returns the company's model (null: the default).
+    /// </summary>
+    private async Task<string?> EnsureCompanyAllowsAsync(bool sendsText, CancellationToken cancellationToken)
     {
         var company = await CompanyAiAsync(cancellationToken);
-        var allowed = sendsText ? CompanyAiRules.MaySendText(company) : CompanyAiRules.MayTranscribe(company);
+        var allowed = sendsText
+            ? CompanyAiRules.MaySendText(company.Switches)
+            : CompanyAiRules.MayTranscribe(company.Switches);
         if (!allowed)
         {
             throw new ServiceUnavailableException(CompanyAiRules.ClosedMessage);
         }
+
+        if (sendsText && company.MonthlyTokenLimit is { } limit)
+        {
+            var used = await dbContext.AiUsages.TokensInMonthAsync(AiUsageRules.MonthOf(DateTime.UtcNow), cancellationToken);
+            if (used >= limit)
+            {
+                throw new ServiceUnavailableException(AiUsageRules.LimitReachedMessage);
+            }
+        }
+
+        return company.Model;
     }
 
-    /// <summary>The signed-in user's company switches; nobody signed in (or no company) means both off.</summary>
-    private async Task<CompanyAiRules.Settings> CompanyAiAsync(CancellationToken cancellationToken)
+    private sealed record CompanyAi(CompanyAiRules.Settings Switches, string? Model, int? MonthlyTokenLimit);
+
+    /// <summary>The signed-in user's company AI settings; nobody signed in (or no company) means both switches off.</summary>
+    private async Task<CompanyAi> CompanyAiAsync(CancellationToken cancellationToken)
     {
+        var off = new CompanyAi(CompanyAiRules.Settings.Off, null, null);
         if (currentUser.TenantId is not { } tenantId)
         {
-            return CompanyAiRules.Settings.Off;
+            return off;
         }
 
         // Tenants has no query filter; the company is the one of the signed-in user.
         return await dbContext.Tenants
             .AsNoTracking()
             .Where(t => t.Id == tenantId)
-            .Select(t => new CompanyAiRules.Settings(t.AiEnabled, t.AiDataSharingAllowed))
+            .Select(t => new CompanyAi(
+                new CompanyAiRules.Settings(t.AiEnabled, t.AiDataSharingAllowed), t.AiModel, t.AiMonthlyTokenLimit))
             .SingleOrDefaultAsync(cancellationToken)
-            ?? CompanyAiRules.Settings.Off;
+            ?? off;
+    }
+
+    /// <summary>
+    /// Calls the service and writes what it used to AiUsage (Faz 7 · A9), a failed call too. Writing the record never
+    /// breaks the assistant: a failure is logged and the answer is still returned.
+    /// </summary>
+    private async Task<T> TrackAsync<T>(
+        AiAssistant assistant,
+        int? projectId,
+        string? requestedModel,
+        Func<Task<T>> call,
+        Func<T, AgentUsage?> usageOf,
+        CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.GetTimestamp();
+        T result;
+        try
+        {
+            result = await call();
+        }
+        catch (Exception error) when (error is ServiceUnavailableException or BusinessRuleException)
+        {
+            await RecordAsync(assistant, projectId, null, requestedModel, false, started, cancellationToken);
+            throw;
+        }
+
+        await RecordAsync(assistant, projectId, usageOf(result), requestedModel, true, started, cancellationToken);
+        return result;
+    }
+
+    private async Task RecordAsync(
+        AiAssistant assistant,
+        int? projectId,
+        AgentUsage? usage,
+        string? requestedModel,
+        bool succeeded,
+        long started,
+        CancellationToken cancellationToken)
+    {
+        if (currentUser.UserId is not { } userId)
+        {
+            return;
+        }
+
+        var model = usage?.Model ?? requestedModel ?? string.Empty;
+        var record = new AiUsage
+        {
+            UserId = userId,
+            ProjectId = projectId,
+            Assistant = assistant,
+            Model = model.Length > AiUsage.MaxModelLength ? model[..AiUsage.MaxModelLength] : model,
+            InputTokens = usage?.InputTokens,
+            OutputTokens = usage?.OutputTokens,
+            AudioSeconds = usage?.AudioSeconds,
+            DurationMs = (int)Math.Min(int.MaxValue, Stopwatch.GetElapsedTime(started).TotalMilliseconds),
+            Succeeded = succeeded,
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        dbContext.AiUsages.Add(record);
+        try
+        {
+            await dbContext.SaveChangesAsync(CancellationToken.None);
+        }
+        catch (Exception error)
+        {
+            dbContext.Entry(record).State = EntityState.Detached;
+            _logger.LogError(error, "AI usage could not be written for {Assistant}", assistant);
+        }
     }
 
     /// <summary>Both values 1–5, or neither: a half or out-of-range score is dropped and the person scores it.</summary>

@@ -83,6 +83,7 @@ public class HttpAgentClient(
                 meetingDate = request.MeetingDate,
                 notes = request.Notes,
                 currentStep = request.CurrentStep,
+                model = request.Model,
             },
             cancellationToken);
 
@@ -107,14 +108,21 @@ public class HttpAgentClient(
                     m.Summary,
                     m.NextSteps,
                     m.Warnings ?? [])
-                : null);
+                : null,
+            UsageOf(body.Usage));
     }
 
     public async Task<RiskAgentResult> SuggestRisksAsync(RiskAgentRequest request, CancellationToken cancellationToken)
     {
         var body = await PostAsync<RiskServiceResponse>(
             "v1/risk/suggestions",
-            new { projectCode = request.ProjectCode, sourceText = request.SourceText, currentStep = request.CurrentStep },
+            new
+            {
+                projectCode = request.ProjectCode,
+                sourceText = request.SourceText,
+                currentStep = request.CurrentStep,
+                model = request.Model,
+            },
             cancellationToken);
 
         return new RiskAgentResult(
@@ -129,7 +137,8 @@ public class HttpAgentClient(
                 i.Evidence,
                 i.Warnings ?? [])).ToList(),
             body.InvalidCount,
-            ModelNameOf(body.Runs));
+            ModelNameOf(body.Runs),
+            UsageOf(body.Usage));
     }
 
     public async Task<RiskAssessmentAgentResult> AssessRiskAsync(
@@ -143,6 +152,7 @@ public class HttpAgentClient(
                 title = request.Title,
                 description = request.Description,
                 currentStep = request.CurrentStep,
+                model = request.Model,
             },
             cancellationToken);
 
@@ -152,14 +162,15 @@ public class HttpAgentClient(
             body.AssessmentReason,
             body.Mitigation,
             body.Warnings ?? [],
-            ModelNameOf(body.Runs));
+            ModelNameOf(body.Runs),
+            UsageOf(body.Usage));
     }
 
     public async Task<RequestAgentDraft> DraftRequestAsync(RequestAgentRequest request, CancellationToken cancellationToken)
     {
         var body = await PostAsync<RequestServiceResponse>(
             "v1/request/draft",
-            new { emailText = request.EmailText, today = request.Today },
+            new { emailText = request.EmailText, today = request.Today, model = request.Model },
             cancellationToken);
 
         return new RequestAgentDraft(
@@ -173,7 +184,8 @@ public class HttpAgentClient(
             body.DueDate,
             body.Notes,
             body.Warnings ?? [],
-            body.Run?.ModelName ?? string.Empty);
+            body.Run?.ModelName ?? string.Empty,
+            UsageOf(body.Usage));
     }
 
     public async Task<MeetingAgentTranscript> TranscribeAsync(Stream recording, CancellationToken cancellationToken)
@@ -195,7 +207,28 @@ public class HttpAgentClient(
         var body = await ReadAsync<TranscriptServiceResponse>(response, cancellationToken);
         return new MeetingAgentTranscript(
             body.Text ?? string.Empty, body.DurationSeconds, body.Language ?? string.Empty, body.Truncated,
-            body.ModelName ?? string.Empty);
+            body.ModelName ?? string.Empty, UsageOf(body.Usage));
+    }
+
+    public async Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken cancellationToken)
+    {
+        if (!IsConfigured)
+        {
+            return [];
+        }
+
+        try
+        {
+            using var message = new HttpRequestMessage(HttpMethod.Get, "v1/models");
+            using var response = await SendAsync(message, HealthTimeout * 5, cancellationToken);
+            var body = await ReadAsync<ModelsServiceResponse>(response, cancellationToken);
+            return body.Models ?? [];
+        }
+        catch (Exception error) when (error is ServiceUnavailableException or JsonException)
+        {
+            logger.LogInformation("AI service model list not available: {Message}", error.Message);
+            return [];
+        }
     }
 
     /// <summary>Sends JSON with the service key; any failure becomes a 503 with a Turkish message.</summary>
@@ -252,6 +285,12 @@ public class HttpAgentClient(
             ?? throw new ServiceUnavailableException("Yapay zekâ servisinden boş cevap geldi.");
     }
 
+    /// <summary>What the request used; null when the service did not report it (an older service).</summary>
+    private static AgentUsage? UsageOf(ServiceUsage? usage) =>
+        usage is { Model: { Length: > 0 } model }
+            ? new AgentUsage(model, usage.InputTokens, usage.OutputTokens, usage.AudioSeconds)
+            : null;
+
     /// <summary>The model of the last call; every task of one request uses the same model.</summary>
     private static string ModelNameOf(List<ServiceRun>? runs) => runs?.LastOrDefault()?.ModelName ?? string.Empty;
 
@@ -271,7 +310,7 @@ public class HttpAgentClient(
 
     // Shapes of the AI service's JSON (camelCase, see ai/isdlc_ai/server.py).
     private record ServiceResponse(
-        string? Summary, List<ServiceItem>? Items, int InvalidCount, ServiceRun? Run, ServiceMinutes? Minutes);
+        string? Summary, List<ServiceItem>? Items, int InvalidCount, ServiceRun? Run, ServiceMinutes? Minutes, ServiceUsage? Usage);
 
     private record ServiceMinutes(
         string? Type,
@@ -289,7 +328,8 @@ public class HttpAgentClient(
 
     private record ServiceRun(string? ModelName);
 
-    private record RiskServiceResponse(List<RiskServiceItem>? Items, int InvalidCount, List<ServiceRun>? Runs);
+    private record RiskServiceResponse(
+        List<RiskServiceItem>? Items, int InvalidCount, List<ServiceRun>? Runs, ServiceUsage? Usage);
 
     private record RiskServiceItem(
         string? Title,
@@ -304,7 +344,7 @@ public class HttpAgentClient(
 
     private record RiskAssessmentServiceResponse(
         int? Probability, int? Impact, string? AssessmentReason, string? Mitigation, List<string>? Warnings,
-        List<ServiceRun>? Runs);
+        List<ServiceRun>? Runs, ServiceUsage? Usage);
 
     private record RequestServiceResponse(
         string? Name,
@@ -317,10 +357,15 @@ public class HttpAgentClient(
         DateOnly? DueDate,
         string? Notes,
         List<string>? Warnings,
-        ServiceRun? Run);
+        ServiceRun? Run,
+        ServiceUsage? Usage);
 
     private record TranscriptServiceResponse(
-        string? Text, int DurationSeconds, string? Language, bool Truncated, string? ModelName);
+        string? Text, int DurationSeconds, string? Language, bool Truncated, string? ModelName, ServiceUsage? Usage);
+
+    private record ServiceUsage(string? Model, int? InputTokens, int? OutputTokens, int? AudioSeconds);
+
+    private record ModelsServiceResponse(List<string>? Models, string? DefaultModel);
 
     private record ServiceError(JsonElement? Detail);
 

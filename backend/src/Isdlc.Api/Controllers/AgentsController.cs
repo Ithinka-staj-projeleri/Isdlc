@@ -10,7 +10,7 @@ namespace Isdlc.Api.Controllers;
 /// /api/v1/agents/status, /api/v1/agents/request-draft and the project sub-resources .../meetings/suggestions, .../risks/suggestions
 /// and .../risks/assessment-suggestion.
 /// </summary>
-public class AgentsController(IAgentService agentService) : ApiControllerBase
+public class AgentsController(IAgentService agentService, IAiUsageService usageService) : ApiControllerBase
 {
     /// <summary>500 MB: an hour of video fits (docs/open-issues-meetings-api.md → Ses kaydından notlar).</summary>
     private const long MaxRecordingBytes = 500L * 1024 * 1024;
@@ -20,6 +20,13 @@ public class AgentsController(IAgentService agentService) : ApiControllerBase
     [ProducesResponseType<AgentStatusDto>(StatusCodes.Status200OK)]
     public async Task<AgentStatusDto> Status(CancellationToken cancellationToken) =>
         await agentService.GetStatusAsync(cancellationToken);
+
+    /// <summary>The text models the company can choose in Şirket Ayarları (Faz 7 · A9). Company administrators only.</summary>
+    [HttpGet("models")]
+    [ProducesResponseType<AiModelsDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public async Task<AiModelsDto> Models(CancellationToken cancellationToken) =>
+        await usageService.ListModelsAsync(cancellationToken);
 
     /// <summary>
     /// Decisions, actions and other open issues found in raw meeting notes, for the new minutes form.

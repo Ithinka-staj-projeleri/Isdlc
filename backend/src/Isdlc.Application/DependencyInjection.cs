@@ -53,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<ITenantSettingsService, TenantSettingsService>();
         services.AddScoped<ICustomFieldService, CustomFieldService>();
+        services.AddScoped<IAiUsageService, AiUsageService>();
 
         // Modules send through INotificationService; the inbox reads and marks the signed-in user's own notifications.
         services.AddScoped<INotificationService, NotificationService>();

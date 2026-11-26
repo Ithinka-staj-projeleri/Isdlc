@@ -53,6 +53,7 @@ class CamelModel(BaseModel):
 
 
 class MeetingSuggestionsRequest(CamelModel):
+    model: str | None = Field(default=None, max_length=100)  # the company's model; empty: the service default
     project_code: str = Field(min_length=1, max_length=50)
     meeting_date: date
     notes: str = Field(min_length=1, max_length=MAX_MEETING_NOTES)
@@ -76,6 +77,20 @@ class RunDto(CamelModel):
     masked_count: int
     input_tokens: int | None
     output_tokens: int | None
+
+
+class UsageDto(CamelModel):
+    """What one request used, for the company's usage record (AiUsage in the backend)."""
+
+    model: str  # the model that answered (a fallback one when the chosen model was busy)
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    audio_seconds: int | None = None  # only for a recording
+
+
+class ModelsResponse(CamelModel):
+    models: list[str]  # text models this service can use, for the company's choice
+    default_model: str | None
 
 
 class ParticipantDto(CamelModel):
@@ -103,9 +118,11 @@ class MeetingSuggestionsResponse(CamelModel):
     # (the items above still count).
     minutes: MinutesDraft | None = None
     minutes_run: RunDto | None = None
+    usage: UsageDto | None = None
 
 
 class RiskSuggestionsRequest(CamelModel):
+    model: str | None = Field(default=None, max_length=100)
     project_code: str = Field(min_length=1, max_length=50)
     source_text: str = Field(min_length=1, max_length=MAX_NOTES)
     current_step: str | None = Field(default=None, max_length=1000)
@@ -127,9 +144,11 @@ class RiskSuggestionsResponse(CamelModel):
     items: list[SuggestedRisk]
     invalid_count: int
     runs: list[RunDto]  # identify, assess, mitigate (only identify when no risk was found)
+    usage: UsageDto | None = None
 
 
 class RiskAssessmentRequest(CamelModel):
+    model: str | None = Field(default=None, max_length=100)
     project_code: str = Field(min_length=1, max_length=50)
     title: str = Field(min_length=1, max_length=300)
     description: str | None = Field(default=None, max_length=2000)
@@ -143,9 +162,11 @@ class RiskAssessmentResponse(CamelModel):
     mitigation: str | None
     warnings: list[str]
     runs: list[RunDto]  # assess, mitigate
+    usage: UsageDto | None = None
 
 
 class RequestDraftRequest(CamelModel):
+    model: str | None = Field(default=None, max_length=100)
     email_text: str = Field(min_length=1, max_length=MAX_NOTES)
     today: date  # relative dates ("yıl sonuna kadar") are worked out from the e-mail's date, or from today
 
@@ -163,6 +184,7 @@ class RequestDraftResponse(CamelModel):
     notes: str | None
     warnings: list[str]
     run: RunDto
+    usage: UsageDto | None = None
 
 
 class TranscriptResponse(CamelModel):
@@ -171,25 +193,39 @@ class TranscriptResponse(CamelModel):
     language: str
     truncated: bool  # cut at MAX_MEETING_NOTES so it fits the minutes assistant
     model_name: str
+    usage: UsageDto | None = None
 
 
 def create_app(
     settings: Settings | None = None,
-    llm_factory: Callable[[], LlmClient] | None = None,
+    llm_factory: Callable[[str | None], LlmClient] | None = None,
     transcriber: Transcriber | None = None,
+    model_lister: Callable[[], list[str]] | None = None,
 ) -> FastAPI:
-    """llm_factory and transcriber let tests use fakes instead of the real models."""
+    """llm_factory (called with the requested model), transcriber and model_lister let tests use fakes."""
     settings = settings or load_settings()
     model_configured = bool(settings.gemini_api_key and settings.gemini_model)
     if transcriber is None and transcription_available():
         transcriber = Transcriber(settings.whisper_model, settings.whisper_device, settings.whisper_compute_type)
 
-    def default_llm() -> LlmClient:
+    def default_llm(model: str | None) -> LlmClient:
+        """The company's model first, then the service default, then GEMINI_FALLBACK_MODELS."""
         if not model_configured:
             raise HTTPException(503, "Yapay zekâ modeli yapılandırılmamış (GEMINI_API_KEY, GEMINI_MODEL).")
-        return GeminiClient(settings.gemini_api_key, settings.gemini_model)
+        return GeminiClient(
+            settings.gemini_api_key,
+            model or settings.gemini_model,
+            fallback_models=list(dict.fromkeys([settings.gemini_model, *settings.gemini_fallback_models])),
+        )
 
     make_llm = llm_factory or default_llm
+
+    def default_models() -> list[str]:
+        if not model_configured:
+            return []
+        return GeminiClient(settings.gemini_api_key, settings.gemini_model).list_text_models()
+
+    list_models = model_lister or default_models
 
     def check_key(x_agent_key: str | None = Header(default=None)) -> None:
         expected = settings.agent_service_key
@@ -206,6 +242,21 @@ def create_app(
             "transcriptionAvailable": transcriber is not None,
         }
 
+    @app.get(
+        "/v1/models",
+        response_model=ModelsResponse,
+        response_model_by_alias=True,
+        dependencies=[Depends(check_key)],
+    )
+    def models() -> ModelsResponse:
+        """The text models a company can choose in Şirket Ayarları. Empty when no model is configured."""
+        try:
+            names = list_models()
+        except LlmError as error:
+            logger.warning("Model list failed: %s (code %s)", error, error.code)
+            raise HTTPException(503, _llm_error_message(error.code)) from error
+        return ModelsResponse(models=names, default_model=settings.gemini_model)
+
     @app.post(
         "/v1/meeting/suggestions",
         response_model=MeetingSuggestionsResponse,
@@ -213,7 +264,7 @@ def create_app(
         dependencies=[Depends(check_key)],
     )
     def meeting_suggestions(request: MeetingSuggestionsRequest) -> MeetingSuggestionsResponse:
-        agent = MeetingAgent(make_llm())
+        agent = MeetingAgent(make_llm(request.model))
         meeting = MeetingInput(
             project_code=request.project_code,
             meeting_date=request.meeting_date,
@@ -224,9 +275,11 @@ def create_app(
 
         # The minutes draft is a help on top: when it fails, the decisions and actions are still returned.
         minutes, minutes_run = None, None
+        runs = [result.run]
         try:
             draft = agent.draft_minutes(meeting)
             minutes_run = _run_dto(draft.run)
+            runs.append(draft.run)
             if draft.minutes is not None:
                 minutes = MinutesDraft(
                     type=draft.minutes.type.value,
@@ -260,6 +313,7 @@ def create_app(
             ],
             invalid_count=len(result.invalid),
             run=_run_dto(result.run),
+            usage=_usage(runs),
         )
 
     @app.post(
@@ -269,7 +323,7 @@ def create_app(
         dependencies=[Depends(check_key)],
     )
     def risk_suggestions(request: RiskSuggestionsRequest) -> RiskSuggestionsResponse:
-        agent = RiskAgent(make_llm())
+        agent = RiskAgent(make_llm(request.model))
         source = RiskInput(
             project_code=request.project_code,
             source_text=request.source_text,
@@ -294,6 +348,7 @@ def create_app(
             ],
             invalid_count=len(result.invalid),
             runs=[_run_dto(run) for run in result.runs],
+            usage=_usage(result.runs),
         )
 
     @app.post(
@@ -303,7 +358,7 @@ def create_app(
         dependencies=[Depends(check_key)],
     )
     def risk_assessment(request: RiskAssessmentRequest) -> RiskAssessmentResponse:
-        agent = RiskAgent(make_llm())
+        agent = RiskAgent(make_llm(request.model))
         result = RiskAgent.from_risk(request.project_code, request.title, request.description, request.current_step)
         _run(lambda: agent.mitigate(agent.assess(result)))
 
@@ -315,6 +370,7 @@ def create_app(
             mitigation=item.risk.mitigation,
             warnings=item.warnings,
             runs=[_run_dto(run) for run in result.runs],
+            usage=_usage(result.runs),
         )
 
     @app.post(
@@ -324,7 +380,7 @@ def create_app(
         dependencies=[Depends(check_key)],
     )
     def request_draft(request: RequestDraftRequest) -> RequestDraftResponse:
-        agent = RequestAgent(make_llm())
+        agent = RequestAgent(make_llm(request.model))
         result = _run(lambda: agent.draft_from_email(request.email_text, request.today))
 
         draft = result.draft
@@ -340,6 +396,7 @@ def create_app(
             notes=draft.notes,
             warnings=draft.warnings,
             run=_run_dto(result.run),
+            usage=_usage([result.run]),
         )
 
     @app.post(
@@ -382,6 +439,7 @@ def create_app(
             language=result.language,
             truncated=truncated,
             model_name=result.model_name,
+            usage=UsageDto(model=result.model_name, audio_seconds=round(result.duration_seconds)),
         )
 
     return app
@@ -407,6 +465,19 @@ def _run_dto(run: RunInfo) -> RunDto:
         masked_count=run.masked_count,
         input_tokens=run.input_tokens,
         output_tokens=run.output_tokens,
+    )
+
+
+def _usage(runs: list[RunInfo]) -> UsageDto | None:
+    """The model calls of one request added up; the model is the one that answered last."""
+    if not runs:
+        return None
+    inputs = [run.input_tokens for run in runs if run.input_tokens is not None]
+    outputs = [run.output_tokens for run in runs if run.output_tokens is not None]
+    return UsageDto(
+        model=runs[-1].model_name,
+        input_tokens=sum(inputs) if inputs else None,
+        output_tokens=sum(outputs) if outputs else None,
     )
 
 
