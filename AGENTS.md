@@ -167,7 +167,13 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Geçici parola / parola değiştirme | `User.MustChangePassword`; `POST /auth/change-password` (`ChangePasswordDto`, en az 12 karakter, `PasswordRules`) |
 | Şirket içi kullanıcı yönetimi / şirket yönetimi | `IUserAdminService` (`/users/manage`, `POST`/`PUT /users`, `reset-password`; yalnızca Şirket Yöneticisi) / `ITenantService` (`/tenants`; yalnızca Platform Yöneticisi, `GET /tenants/current` herkes) |
 | Şablondan gelen kayıt (akış, doküman türü, soru seti) | `TemplateCode` (kopyalandığı `Seed/` kodu), `IsCustomized` (şirket değiştirdi mi) |
-| Rol | `UserRole` (kullanıcı başına tek rol) |
+| Rol | `UserRole` (kullanıcı başına tek rol). *Faz 7'de kalkar:* yerine yetkiler gelir (aşağıda) |
+| Yetki / kullanıcının yetkileri (Faz 7, A2) | `Permission` (`Analysis`, `ProjectManagement`, `Approval`, `Sales`, `Development`, `Testing`) / `UserPermission`; yalnızca akış işleri için istenir (bkz. [docs/configurability.md](docs/configurability.md)) |
+| Adım ön koşulu (Faz 7, A4) | `ProcessStep.Prerequisites` (`RequestFormComplete`, `QuestionnaireComplete`, `LevelApplied`, `MeetingExists`, `RiskExists`, `RequirementsApproved`, `DocumentApproved`) |
+| Atlama kuralı (Faz 7, A5) | `ProcessStep.Conditions` (`field`, `op`, `value`, `whenEmpty`); `RequiresExternalRequest`, `RequiresOffer`, `MinLevel`'in yerini alır |
+| Şirkete özel alan (Faz 7, A6) | `CustomField` / değeri `Project.CustomValues` |
+| Akışın kullanımı (Faz 7, A7) | `ProcessFlow.UsedFor` (`NewRequest`, `AdditionalModule`, `Improvement`, `ResourcePlanning`, `Billing`); `ProcessFlowCodes`'un yerini alır |
+| Yapay zekâ kullanım kaydı (Faz 7, A9) | `AiUsage`; şirketin modeli `Tenant.AiModel` |
 | Ek geliştirme (devam eden projeye ek modül / geliştirme) ve ait olduğu proje | `Project` (`RequestType.AdditionalModule`, `Project.ParentProjectId`; kodu `14 / EG-01`) |
 | İş akışı (yeni yazılım projesi, ek geliştirme, süreç iyileştirme, kaynak planlama, faturalama) | `ProcessFlow` (`Project.ProcessFlowId`; türü `ProcessFlowKind`: `Request`, `Improvement`, `ResourcePlanning`, `Billing`) |
 | Aşama (akıştaki "bölüm") | `ProcessStage` |
