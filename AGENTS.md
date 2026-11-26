@@ -237,6 +237,7 @@ Backend iskeletinde uygulanmıştır; yeni kod bu yapıları kullanır.
 | Hatalar | Her hata `ProblemDetails` biçiminde döner (`title`, `status`, `detail`, `traceId`) | `Isdlc.Api/Common/GlobalExceptionHandler.cs` |
 | Kayıt yok | Servis `NotFoundException` fırlatır → 404 | `Isdlc.Application/Common/Exceptions/` |
 | İş kuralı ihlali | Servis `BusinessRuleException` fırlatır → 400. Mesaj kullanıcıya gösterilir, Türkçe yazılır | `Isdlc.Application/Common/Exceptions/` |
+| Alan hatası (serviste) | DTO özniteliğinin bilemediği alan kuralı (ör. şirkete özel alanlar) için servis `FieldValidationException` fırlatır → 400, otomatik doğrulama hatalarıyla aynı biçim (`errors: { "customValues.bolge": [...] }`) | `Isdlc.Application/Common/Exceptions/` |
 | Yetki yok | Servis `ForbiddenException` fırlatır → 403 | `Isdlc.Application/Common/Exceptions/` |
 | Servis kullanılamıyor | Bağlı olunan servis (ör. yapay zekâ servisi) kapalıysa `ServiceUnavailableException` → 503. Mesaj Türkçe | `Isdlc.Application/Common/Exceptions/` |
 | Çakışma | Servis `ConflictException` fırlatır → 409. `RowVersion` uyuşmazlığı (`DbUpdateConcurrencyException`) da otomatik 409 olur | `Isdlc.Application/Common/Exceptions/` |

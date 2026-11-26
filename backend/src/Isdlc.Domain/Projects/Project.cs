@@ -81,6 +81,13 @@ public class Project : AuditableEntity, IAudited, ITenantOwned
     public DateOnly RequestDate { get; set; }
     public DateOnly? DueDate { get; set; }
 
+    /// <summary>
+    /// The company's own fields (Faz 7 · A6), a JSON object by field key: {"butce-onayli":true,"sozlesme-no":"S-14"}.
+    /// Empty when the record has no value. Kept as text so the audit log shows the old and new JSON as one field.
+    /// Read and written only through CustomValues (Isdlc.Application/Projects).
+    /// </summary>
+    public string? CustomValues { get; set; }
+
     /// <summary>Concurrency token: a stale update fails instead of overwriting.</summary>
     public byte[] RowVersion { get; set; } = [];
 

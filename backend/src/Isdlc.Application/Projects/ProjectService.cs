@@ -161,8 +161,10 @@ public class ProjectService(
 
         var project = new Project { Status = ProjectStatus.Active, ProcessFlowId = flowId, ParentProjectId = parent?.Id };
         ApplyContent(project, request);
+        await ApplyCustomValuesAsync(project, request, cancellationToken);
         project.CurrentStepId = StepConditions.FirstStepId(
-                flowSteps, new ConditionContext(project.Source, project.RequestType, project.RequiresOffer, project.Level))
+                flowSteps, new ConditionContext(project.Source, project.RequestType, project.RequiresOffer, project.Level,
+                    CustomValueRules.ToText(project.CustomValues)))
             ?? throw new InvalidOperationException($"Flow {flowCode} has no step for this request.");
         dbContext.Projects.Add(project);
 
@@ -208,6 +210,7 @@ public class ProjectService(
         var previousAnalystId = project.BusinessAnalystId;
         var previousManagerId = project.ProjectManagerId;
         ApplyContent(project, request);
+        await ApplyCustomValuesAsync(project, request, cancellationToken);
 
         // A save at the same moment as another change to this project fails on RowVersion and returns 409.
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -242,6 +245,23 @@ public class ProjectService(
         project.ProjectManagerId = request.ProjectManagerId;
         project.RequestDate = request.RequestDate!.Value;
         project.DueDate = request.DueDate;
+    }
+
+    /// <summary>
+    /// Checks the company's own fields against its active field definitions and keeps the new values (Faz 7 · A6);
+    /// 400 with "customValues.{key}" errors. Values of inactive fields stay as they were.
+    /// </summary>
+    private async Task ApplyCustomValuesAsync(
+        Project project, CreateProjectDto request, CancellationToken cancellationToken)
+    {
+        var fields = await dbContext.CustomFields.ActiveDefinitionsAsync(cancellationToken);
+        var result = CustomValueRules.Apply(fields, project.CustomValues, request.CustomValues);
+        if (!result.IsValid)
+        {
+            throw new FieldValidationException(result.Errors);
+        }
+
+        project.CustomValues = result.Json;
     }
 
     private static string? TrimToNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -438,5 +458,6 @@ public class ProjectService(
                 .Select(u => new UserSummaryDto(u.Id, u.FullName))
                 .First(),
             p.CreatedAt,
-            p.UpdatedAt);
+            p.UpdatedAt,
+            CustomValueRules.Read(p.CustomValues));
 }

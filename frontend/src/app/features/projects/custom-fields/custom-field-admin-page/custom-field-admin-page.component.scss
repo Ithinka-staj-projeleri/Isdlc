@@ -1,0 +1,8 @@
+@use '../../../../shared/styles/admin';
+
+@include admin.page;
+
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+}

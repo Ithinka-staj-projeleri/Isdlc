@@ -1,0 +1,85 @@
+<!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
+<div class="overlay">
+  <form class="dialog" (ngSubmit)="save()" novalidate>
+    <h3>{{ field() ? field()!.label + ' · düzenle' : 'Yeni talep alanı' }}</h3>
+
+    <div class="grid">
+      <label class="field full" [class.invalid]="errorFor('label')">
+        Alan adı
+        <input name="label" [(ngModel)]="label" (ngModelChange)="onLabelChange()" maxlength="100" />
+        @if (errorFor('label'); as error) { <span class="error">{{ error }}</span> }
+      </label>
+
+      <label class="field" [class.invalid]="errorFor('key')">
+        Anahtar
+        @if (field()) {
+          <input name="key" [value]="key" disabled />
+          <span class="hint">Değiştirilemez.</span>
+        } @else {
+          <input name="key" [(ngModel)]="key" (ngModelChange)="keyTouched = true" maxlength="50" autocomplete="off" />
+          <span class="hint">Atlama kurallarında bu adla geçer; sonradan değiştirilemez.</span>
+        }
+        @if (errorFor('key'); as error) { <span class="error">{{ error }}</span> }
+      </label>
+
+      <label class="field" [class.invalid]="errorFor('type')">
+        Tür
+        @if (field()) {
+          <select name="type" [ngModel]="type" disabled>
+            @for (t of typeOptions; track t[0]) {
+              <option [ngValue]="t[0]">{{ t[1] }}</option>
+            }
+          </select>
+          <span class="hint">Değiştirilemez.</span>
+        } @else {
+          <select name="type" [(ngModel)]="type">
+            @for (t of typeOptions; track t[0]) {
+              <option [ngValue]="t[0]">{{ t[1] }}</option>
+            }
+          </select>
+        }
+        @if (errorFor('type'); as error) { <span class="error">{{ error }}</span> }
+      </label>
+
+      @if (type === 'Select') {
+        <label class="field full" [class.invalid]="errorFor('options')">
+          Seçenekler
+          <textarea name="options" [(ngModel)]="optionsText" rows="5"></textarea>
+          <span class="hint">Her satıra bir seçenek. Atlama kuralında kullanılan seçenek çıkarılamaz.</span>
+          @if (errorFor('options'); as error) { <span class="error">{{ error }}</span> }
+        </label>
+      }
+
+      <label class="field full" [class.invalid]="errorFor('helpText')">
+        Açıklama
+        <input name="helpText" [(ngModel)]="helpText" maxlength="300" />
+        <span class="hint">Formda alanın altında görünür (isteğe bağlı).</span>
+        @if (errorFor('helpText'); as error) { <span class="error">{{ error }}</span> }
+      </label>
+
+      <label class="field" [class.invalid]="errorFor('order')">
+        Sıra
+        <input name="order" type="number" [(ngModel)]="order" min="0" max="1000" />
+        <span class="hint">Boş bırakılırsa en sona eklenir.</span>
+        @if (errorFor('order'); as error) { <span class="error">{{ error }}</span> }
+      </label>
+
+      <label class="check full">
+        <input type="checkbox" name="isRequired" [(ngModel)]="isRequired" />
+        Zorunlu <span class="hint">(talep bu alan doldurulmadan kaydedilemez)</span>
+      </label>
+
+      @if (field()) {
+        <label class="check full">
+          <input type="checkbox" name="isActive" [(ngModel)]="isActive" />
+          Aktif <span class="hint">(pasif alan formda görünmez; kayıtlardaki değeri saklanır)</span>
+        </label>
+      }
+    </div>
+
+    <div class="dialog-actions">
+      <button type="button" class="button" (click)="cancelled.emit()">Vazgeç</button>
+      <button type="submit" class="button primary" [disabled]="saving()">{{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}</button>
+    </div>
+  </form>
+</div>

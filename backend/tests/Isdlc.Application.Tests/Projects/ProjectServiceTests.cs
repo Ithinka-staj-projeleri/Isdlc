@@ -220,7 +220,9 @@ public class ProjectServiceTests(DatabaseFixture database)
         var created = await CreateAsync(analyst, Request(analyst) with { ProjectManagerId = manager, RequiresNda = true });
         var read = (await AsAsync(null, s => s.GetAsync(created.Id, CancellationToken.None))).Result;
 
-        Assert.Equal(created, read);
+        // CustomValues is a dictionary, which records compare by reference: compared by content on its own.
+        Assert.Equal(created with { CustomValues = read.CustomValues }, read);
+        Assert.Equal(created.CustomValues.Keys, read.CustomValues.Keys);
         Assert.True(read.RequiresNda);
         Assert.Equal(manager, read.ProjectManager?.Id);
     }

@@ -41,6 +41,7 @@ export const routes: Routes = [
             { path: 'platform/tenants', loadComponent: () => import('./features/tenants/tenant-list-page/tenant-list-page.component').then(m => m.TenantListPageComponent) },
             { path: 'admin/users', canActivate: [tenantAdminGuard], loadComponent: () => import('./features/identity/user-admin-page/user-admin-page.component').then(m => m.UserAdminPageComponent) },
             { path: 'admin/settings', canActivate: [tenantAdminGuard], loadComponent: () => import('./features/tenants/tenant-settings-page/tenant-settings-page.component').then(m => m.TenantSettingsPageComponent) },
+            { path: 'admin/request-fields', canActivate: [tenantAdminGuard], loadComponent: () => import('./features/projects/custom-fields/custom-field-admin-page/custom-field-admin-page.component').then(m => m.CustomFieldAdminPageComponent) },
             { path: 'process-library', loadComponent: () => import('./features/process/process-library/process-library.component').then(m => m.ProcessLibraryComponent) },
         ],
     },

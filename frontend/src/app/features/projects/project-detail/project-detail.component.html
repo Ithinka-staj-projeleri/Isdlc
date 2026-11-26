@@ -124,6 +124,19 @@
           </dl>
         </div>
 
+        <!-- The fields the company added to its form (Faz 7 · A6); not shown while it has none. -->
+        @if (customFields().length > 0) {
+          <div class="card">
+            <h3>Şirkete Özel Bilgiler</h3>
+            <dl>
+              @for (field of customFields(); track field.id) {
+                <dt>{{ field.label }}</dt>
+                <dd>{{ formatCustomValue(field, p.customValues[field.key]) }}</dd>
+              }
+            </dl>
+          </div>
+        }
+
         <!-- Not on the company form: the flow and the other screens need them. -->
         <div class="card">
           <h3>Süreç Bilgileri</h3>

@@ -162,6 +162,7 @@ yapı birden fazlasına izin verir.
 | `CurrentStepId` | int? (FK → ProcessStep) | Proje aktif değilse boş. Faz 4: her zaman kaydın akışındaki bir adım |
 | `RequestDate` | DateOnly | Talep tarihi (Faz 4'ten önce `StartDate`). Talebi kayda alan kişi `CreatedById`'dir |
 | `DueDate` | DateOnly? | |
+| `CustomValues` | string? (JSON) | Faz 7 · A6. Şirkete özel alanların değerleri, alan anahtarına göre: `{"butce-onayli":true}`. Değer yoksa boş; pasif alanın değeri saklı kalır. Denetim kaydına tek alan olarak yazılır (bkz. `CustomField`) |
 | `RowVersion` | byte[] | EF Core eşzamanlılık belirteci (SQL Server `rowversion`); bkz. [process-api.md](process-api.md) |
 | + `AuditableEntity` alanları | | |
 
@@ -507,6 +508,25 @@ Uygulama birden fazla şirketin kendi akışlarıyla kullanabileceği yapıdadı
 
 Ayrıntı: aşağıdaki **Seed verisi** ve [multi-tenancy.md](multi-tenancy.md) → Seed ve şablon.
 
+### `CustomField` — şirketin talep formuna eklediği alan (Faz 7 · A6)
+
+Tanım şirket verisidir; değer projede (`Project.CustomValues`) anahtarla tutulur. Kurallar ve uç noktalar:
+[configurability.md](configurability.md) → Şirkete özel alanlar.
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `TenantId` | int | `ITenantOwned` |
+| `Key` | string | Küçük harf, rakam, tire; 2–50. Şirket içinde benzersiz (`(TenantId, Key)`); değişmez. Atlama kurallarında `custom:{key}` |
+| `Label` | string | 1–100 |
+| `Type` | `CustomFieldType` | Değişmez |
+| `Options` | string[] (JSON) | Yalnızca `Select`; 1–50 seçenek, her biri 1–100 |
+| `IsRequired` | bool | Talep kaydedilirken ve "Talep Kayıt Formu dolu" ön koşulunda aranır |
+| `HelpText` | string? | En fazla 300 |
+| `Order` | int | Formdaki sıra |
+| `IsActive` | bool | Alan silinmez, pasife alınır |
+| + `AuditableEntity` alanları | | |
+
 ## Enum'lar
 
 | Enum | Değerler |
@@ -538,6 +558,7 @@ Ayrıntı: aşağıdaki **Seed verisi** ve [multi-tenancy.md](multi-tenancy.md) 
 | `RequirementType` | `Business` (İş gereksinimi), `Functional` (Fonksiyonel), `NonFunctional` (Fonksiyonel olmayan) |
 | `RequirementPriority` | `MustHave` (Olmazsa olmaz), `ShouldHave` (Olmalı), `CouldHave` (Olabilir), `WontHave` (Bu sürümde yok) |
 | `RequirementStatus` | `Draft` (Taslak), `InReview` (İncelemede), `Approved` (Onaylandı), `Cancelled` (İptal edildi) |
+| `CustomFieldType` | *(Faz 7 · A6)* `Text` (Metin), `Number` (Sayı), `Date` (Tarih), `Select` (Seçim), `Boolean` (Evet / Hayır) |
 | `DocumentStatus` | `NotStarted` (Başlanmadı), `InProgress` (Hazırlanıyor), `InReview` (İncelemede), `Approved` (Onaylandı), `NotRequired` (Gerekmiyor) |
 
 ## Süreç ilerleme kuralları

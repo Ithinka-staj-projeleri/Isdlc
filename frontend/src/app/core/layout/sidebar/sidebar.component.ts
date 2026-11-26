@@ -33,6 +33,7 @@ const WORK_GROUPS: NavGroup[] = [
 const TENANT_ADMIN_GROUP: NavGroup = {
   title: 'Yönetim', items: [
     { path: '/admin/users', label: 'Kullanıcılar' },
+    { path: '/admin/request-fields', label: 'Talep Alanları' },
     { path: '/admin/settings', label: 'Şirket Ayarları' },
   ]
 };

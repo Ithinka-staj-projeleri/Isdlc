@@ -3,6 +3,8 @@ import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormBuilder,
+  FormControl,
+  FormRecord,
   ReactiveFormsModule,
   ValidationErrors,
   ValidatorFn,
@@ -22,6 +24,8 @@ import {
   REQUEST_SOURCE_LABELS,
   REQUEST_TYPE_LABELS,
 } from '../project-labels';
+import { CustomField, toCustomValue } from '../custom-fields/custom-field';
+import { CustomFieldService } from '../custom-fields/custom-field.service';
 import { ProjectInput, RequestChannel, RequestSource, RequestType } from '../project.model';
 import { ProjectService } from '../project.service';
 import { RequestEmailAssistantComponent } from '../request-email-assistant/request-email-assistant.component';
@@ -116,6 +120,13 @@ export class ProjectFormComponent {
   private readonly _projectService = inject(ProjectService);
   private readonly _processService = inject(ProcessService);
   private readonly _auth = inject(AuthService);
+  private readonly _customFieldService = inject(CustomFieldService);
+
+  /** The company's own fields (Faz 7 · A6), in form order. None: the section is not shown. */
+  private readonly _customFields = rxResource({ stream: () => this._customFieldService.list() });
+  readonly customFields = computed<CustomField[]>(() =>
+    this._customFields.hasValue() ? this._customFields.value() : [],
+  );
 
   readonly channelOptions = Object.entries(REQUEST_CHANNEL_LABELS) as [RequestChannel, string][];
   /**
@@ -226,6 +237,8 @@ export class ProjectFormComponent {
       ),
       projectManagerId: this._fb.control<number | null>(null),
       dueDate: this._fb.control<string | null>(null),
+      // One control per active company field, added when the fields load (keyed like the API's "customValues.{key}").
+      customValues: new FormRecord<FormControl<unknown>>({}),
     },
     { validators: [dueNotBeforeRequest, otherChannelText, addOnHasProject] },
   );
@@ -275,9 +288,32 @@ export class ProjectFormComponent {
         businessAnalystId: project.businessAnalyst?.id ?? null,
         projectManagerId: project.projectManager?.id ?? null,
         dueDate: project.dueDate,
+        customValues: project.customValues,
       });
       if (project.status !== 'Active') {
         this.form.disable();
+      }
+    });
+
+    // A control for each company field, filled with the record's value when editing. Fields and the record load
+    // separately, so whichever comes last fills the value.
+    effect(() => {
+      const fields = this.customFields();
+      const saved = this.existing()?.customValues ?? {};
+      const group = this.form.controls.customValues;
+      for (const field of fields) {
+        if (group.contains(field.key)) {
+          continue;
+        }
+        const validators = field.isRequired ? [Validators.required, notBlank] : [];
+        if (field.type === 'Text') {
+          validators.push(Validators.maxLength(500));
+        }
+        const control = new FormControl<unknown>(saved[field.key] ?? null, validators);
+        if (this.locked()) {
+          control.disable();
+        }
+        group.addControl(field.key, control);
       }
     });
 
@@ -362,6 +398,21 @@ export class ProjectFormComponent {
 
     const firstError = Object.keys(control.errors)[0];
     return MESSAGES[field]?.[firstError] ?? 'Geçersiz değer.';
+  }
+
+  /** The message under a company field, or null; the API's message wins. */
+  customErrorFor(key: string): string | null {
+    const control = this.form.controls.customValues.get(key);
+    if (!control?.errors || !(control.touched || this._submitted())) {
+      return null;
+    }
+    if (control.errors['server']) {
+      return control.errors['server'] as string;
+    }
+    if (control.errors['required']) {
+      return 'Bu alan zorunludur.';
+    }
+    return control.errors['maxlength'] ? 'En fazla 500 karakter olabilir.' : 'Geçersiz değer.';
   }
 
   /** "Diğer" without its text: a form rule shown under the text box. */
@@ -455,6 +506,19 @@ export class ProjectFormComponent {
       businessAnalystId: value.businessAnalystId ? Number(value.businessAnalystId) : null,
       projectManagerId: value.projectManagerId ? Number(value.projectManagerId) : null,
       dueDate: value.dueDate || null,
+      customValues: this.customValuesInput(value.customValues),
     };
+  }
+
+  /** Only the active fields that have a value; the API keeps the values of inactive fields itself. */
+  private customValuesInput(raw: Record<string, unknown>): ProjectInput['customValues'] {
+    const values: ProjectInput['customValues'] = {};
+    for (const field of this.customFields()) {
+      const value = toCustomValue(field, raw[field.key]);
+      if (value !== null) {
+        values[field.key] = value;
+      }
+    }
+    return values;
   }
 }

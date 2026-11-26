@@ -199,6 +199,69 @@
     </label>
   </section>
 
+  <!-- The fields the company added to its form (Faz 7 · A6); not shown while it has none. -->
+  @if (customFields().length > 0) {
+    <section class="card" formGroupName="customValues">
+      <h3>Şirkete Özel Bilgiler</h3>
+
+      @for (field of customFields(); track field.id) {
+        @switch (field.type) {
+          @case ('Boolean') {
+            <fieldset class="field choice">
+              <legend>{{ field.label }}{{ field.isRequired ? ' *' : '' }}</legend>
+              <div class="options">
+                <label class="check">
+                  <input type="radio" [formControlName]="field.key" [value]="true" />
+                  <span>Evet</span>
+                </label>
+                <label class="check">
+                  <input type="radio" [formControlName]="field.key" [value]="false" />
+                  <span>Hayır</span>
+                </label>
+              </div>
+              @if (field.helpText) {
+                <small class="muted">{{ field.helpText }}</small>
+              }
+              @if (customErrorFor(field.key); as error) {
+                <small class="error">{{ error }}</small>
+              }
+            </fieldset>
+          }
+          @default {
+            <label class="field" [class.wide]="field.type === 'Text'">
+              <span>{{ field.label }}{{ field.isRequired ? ' *' : '' }}</span>
+              @switch (field.type) {
+                @case ('Select') {
+                  <select [formControlName]="field.key" [class.invalid]="customErrorFor(field.key)">
+                    <option [ngValue]="null">{{ field.isRequired ? 'Seçin' : 'Seçilmedi' }}</option>
+                    @for (option of field.options; track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
+                }
+                @case ('Number') {
+                  <input type="number" [formControlName]="field.key" [class.invalid]="customErrorFor(field.key)" />
+                }
+                @case ('Date') {
+                  <input type="date" [formControlName]="field.key" [class.invalid]="customErrorFor(field.key)" />
+                }
+                @default {
+                  <input [formControlName]="field.key" maxlength="500" [class.invalid]="customErrorFor(field.key)" />
+                }
+              }
+              @if (field.helpText) {
+                <small class="muted">{{ field.helpText }}</small>
+              }
+              @if (customErrorFor(field.key); as error) {
+                <small class="error">{{ error }}</small>
+              }
+            </label>
+          }
+        }
+      }
+    </section>
+  }
+
   <!-- Not on the company form, so not on a new request; edited here once the request exists. -->
   @if (isEdit()) {
   <section class="card">

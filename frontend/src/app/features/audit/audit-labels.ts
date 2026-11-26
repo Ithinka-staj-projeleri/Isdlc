@@ -93,6 +93,7 @@ const FIELD_LABELS: Record<AuditEntityType, Record<string, string>> = {
         Notes: 'Notlar',
         RequiresOffer: 'Teklif hazırlanacak',
         RequiresNda: 'Gizlilik sözleşmesi (NDA)',
+        CustomValues: 'Şirkete özel bilgiler',
         BusinessAnalystId: 'İş analisti',
         ProjectManagerId: 'Proje yöneticisi',
         Level: 'Seviye',
