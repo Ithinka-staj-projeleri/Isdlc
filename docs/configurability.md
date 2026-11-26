@@ -380,8 +380,17 @@ etkilenmez; geçmişte adımın bugünkü numarası görünür.
   - Karar adımında "Hayır" ya kaydı kapatır (`NoOutcome`) ya da geri döner (`NoJumps`); ikisi birden olmaz.
   - Dönüş yalnızca aynı akıştaki daha önceki aktif bir adıma yapılabilir.
   - Onaylayan yetkisi (`ApproverPermission`) yalnızca karar adımında verilebilir.
-- **Doğrulama:** Ön koşul ve atlama kuralları Bölüm 4 ve 5'e göre doğrulanır; hata anahtarı alan adıdır
-  (`prerequisites[0].value`).
+- **Doğrulama:** Ön koşul ve atlama kuralları Bölüm 4 ve 5'e göre doğrulanır; hata anahtarı listedeki yeridir
+  (`conditions[1]`, `prerequisites[0]`). Uygulandı: `StepRuleValidation` (saf sınıf; A7'nin ilk parçası). Kurallar:
+  - Bir adımda en fazla 10 kural ve 10 ön koşul.
+  - Kural alanı şunlardan biri olmalı: kaydın dört alanı (`StepRuleValidation.BuiltInFields`) ya da şirketin aktif özel
+    alanı (`custom:{key}`, A6 verir).
+  - "En az / en çok" yalnızca sayı ve tarih alanlarında kullanılır. "Dolu / boş" değer almaz; diğerleri değer ister
+    (en fazla 100 karakter).
+  - Değer alanın türüne uymalı: seçimde seçeneklerden biri (büyük-küçük harf fark etmez), evet-hayırda `true` / `false`,
+    sayıda sayı (seviye 1–3), tarihte `yyyy-MM-dd`.
+  - Ön koşulda form ve doküman türü kodu şirkette olmalı; diğer türler değer almaz; aynı ön koşul iki kez eklenemez.
+  - Seed dosyalarındaki bütün kurallar ve ön koşullar da bu kontrolden geçer (`SeedRuleValidationTests`).
 
 ### Uç noktalar
 
@@ -471,6 +480,11 @@ Sürükle-bırak isteğe bağlıdır; yukarı / aşağı yeterlidir.
 | Özel alan anahtarı biçimi | `400` | "Anahtar küçük harf, rakam ve tireden oluşmalıdır (2–50 karakter)." |
 | Kuralda kullanılan seçenek çıkarılıyor | `409` | "Bu seçenek bir atlama kuralında kullanılıyor: {akış} · Adım {no}." |
 | Bilinmeyen ön koşul ya da kural | `400` | "Geçersiz ön koşul." / "Geçersiz atlama kuralı." |
+| Kuralın alanı yok / bilinmiyor | `400` | "Kural alanı seçilmelidir." / "Bilinmeyen alan: «{alan}»." |
+| Karşılaştırma alana uymuyor | `400` | "«{alan adı}» için «en az» ve «en çok» kullanılamaz." |
+| Kuralın değeri | `400` | "Değer girilmelidir." / "«Dolu» ve «boş» karşılaştırmalarında değer girilmez." / "Değer en fazla 100 karakter olabilir." / "«{değer}», «{alan adı}» alanının seçeneklerinden biri değil." / "Değer «Evet» ya da «Hayır» olmalıdır." / "Değer bir sayı olmalıdır." / "Seviye 1 ile 3 arasında olmalıdır." / "Tarih yyyy-aa-gg biçiminde olmalıdır." |
+| Ön koşulun değeri | `400` | "Bu ön koşul için form seçilmelidir." / "Bu ön koşul için doküman seçilmelidir." / "Şirkette «{kod}» kodlu bir form yok." / "Şirkette «{kod}» kodlu bir doküman türü yok." / "Bu ön koşul bir değer almaz." / "Aynı ön koşul iki kez eklenemez." |
+| Çok fazla kural / ön koşul | `400` | "Bir adımda en fazla 10 kural olabilir." / "Bir adımda en fazla 10 ön koşul olabilir." |
 | Model kullanılamıyor | `400` | "Seçilen model kullanılamıyor." |
 | Aylık sınır doldu | `503` | "Şirketinizin bu ayki yapay zekâ kullanım sınırı doldu." |
 
