@@ -6,7 +6,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { PROJECT_STATUS_LABELS } from '../../../shared/models/project-status';
 import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
-import { ProcessFlowListItem, ProcessStage, conditionLabels } from '../models/process-stage';
+import { ProcessFlowListItem, ProcessStage } from '../models/process-stage';
 import { ProcessService } from '../process.service';
 
 /**
@@ -26,7 +26,6 @@ export class ProcessLibraryComponent {
 
     protected readonly roleLabels = USER_ROLE_LABELS;
     protected readonly statusLabels = PROJECT_STATUS_LABELS;
-    protected readonly conditionLabels = conditionLabels;
 
     // The error interceptor already tells the user what went wrong; the page only shows it is empty.
     protected readonly flows = rxResource({ stream: () => this.processService.flows$ });

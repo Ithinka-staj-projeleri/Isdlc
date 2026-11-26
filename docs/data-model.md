@@ -85,9 +85,8 @@ Kurallar ve akış listesi: [process-api.md → Akışlar](process-api.md#akış
 | `ProcessFlowId` | int (FK → ProcessFlow) | Faz 4. Aşamanın akışıyla aynıdır; benzersizlik ve "sonraki adım" sorgusu için adımda da tutulur |
 | `Code` | string | Eski akışta "4.7", yeni akışlarda adım numarası ("12"). (`ProcessFlowId`, `Code`) benzersiz |
 | `Order` | int | Akış içindeki sıra; (`ProcessFlowId`, `Order`) benzersiz. Faz 4'te sonraki adım `Order + 1` değil, koşulları sağlanan ilk büyük `Order`'dır |
-| `RequiresExternalRequest` | bool | Faz 4. Adım yalnızca dış talepte yapılır |
-| `RequiresOffer` | bool | Faz 4. Adım yalnızca `Project.RequiresOffer` ise yapılır |
-| `MinLevel` | int? | Faz 4. Adım yalnızca `Project.Level ≥ MinLevel` ise (veya seviye henüz belirlenmediyse) yapılır |
+| `Conditions` | JSON (`StepConditionRule[]`) | Faz 7 · A5. Atlama kuralları; hepsi sağlanırsa adım yapılır, boşsa her kayıtta. Faz 4'teki `RequiresExternalRequest`, `RequiresOffer`, `MinLevel` buna çevrildi ([configurability.md](configurability.md) → Atlama kuralları) |
+| `Prerequisites` | JSON (`StepPrerequisite[]`) | Faz 7 · A4. Adım tamamlanmadan önce projede olması gereken işler |
 | `Text` | string | Adımın açıklaması |
 | `IsDecision` | bool | Evet/Hayır sorusu mu |
 | `NoBranchText` | string? | "Hayır ise" açıklaması |
@@ -608,7 +607,7 @@ Dosyanın alanları:
 - Akış: `code`, `order`, `name`, `kind`, `projectStageOrder`.
 - `stages`: 4 bölüm (`order`, `title`, `shortTitle`).
 - `steps`: `code`, `stageOrder`, `order`, `text`, `isDecision`, `noBranchText`, `responsibleRole`, `approverRole`,
-  `noOutcome`, `noJumps`, `requiresExternalRequest`, `requiresOffer`, `minLevel`.
+  `noOutcome`, `noJumps`, `conditions` (atlama kuralları, Faz 7 · A5), `prerequisites` (ön koşullar, Faz 7 · A4).
 - Adımlar birbirine ve bölümlere `Id` ile değil `code` ve `stageOrder` ile bağlanır; seeder bunları kaydederken
   `Id`'lere çevirir. Enum değerleri metin olarak yazılır.
 

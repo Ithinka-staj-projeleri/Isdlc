@@ -54,17 +54,21 @@ bilgi amaçlı kalır, akışı seçmez.
 
 ### Adım koşulları (atlanan adımlar)
 
-Bazı adımlar her kayıtta yapılmaz. Adımda en fazla üç koşul tutulur; hepsi sağlanmıyorsa adım **atlanır**:
-akış o adıma hiç uğramaz ve `StepRecord` yazılmaz.
+Bazı adımlar her kayıtta yapılmaz. Adımın **atlama kuralları** vardır (`ProcessStep.Conditions`, Faz 7 · A5); hepsi
+sağlanmıyorsa adım **atlanır**: akış o adıma hiç uğramaz ve `StepRecord` yazılmaz. Kural biçimi, alanlar ve karşılaştırmalar:
+[configurability.md](configurability.md) → Atlama kuralları. Faz 4'teki üç sabit koşul (`RequiresExternalRequest`,
+`RequiresOffer`, `MinLevel`) bir migration ile aynı anlama gelen kurallara çevrildi:
 
-| Koşul (`ProcessStep`) | Adım yapılır, eğer… | Örnek |
+| Kural | Adım yapılır, eğer… | Örnek |
 | --- | --- | --- |
-| `RequiresExternalRequest` | `Project.Source = External` | Yeni proje 4: Müşteri uygunluğu (yalnızca dış müşteri) |
-| `RequiresOffer` | `Project.RequiresOffer = true` (talep kaydında "teklif var / yok") | Yeni proje 4 ("doğrudan proje" 3 → 5) ve 10–11: Teklif ve anlaşma (teklifsizde 9 → 12) |
-| `MinLevel` | `Project.Level ≥ MinLevel` | Ek geliştirme 8: Kapsam ve efor (Seviye 2–3); 9: Teklif (Seviye 3, 8 → 10) |
+| `{ field: "source", op: "equals", value: "External" }` | `Project.Source = External` | Yeni proje 4: Müşteri uygunluğu (yalnızca dış müşteri) |
+| `{ field: "requiresOffer", op: "equals", value: true }` | `Project.RequiresOffer = true` (talep kaydında "teklif var / yok") | Yeni proje 4 ("doğrudan proje" 3 → 5) ve 10–11: Teklif ve anlaşma (teklifsizde 9 → 12) |
+| `{ field: "level", op: "atLeast", value: N, whenEmpty: "met" }` | `Project.Level ≥ N` | Ek geliştirme 8: Kapsam ve efor (Seviye 2–3); 9: Teklif (Seviye 3, 8 → 10) |
 
-- `Project.Level` henüz belirlenmediyse `MinLevel` koşulu **sağlanmış sayılır** (adım atlanmaz). Seviye, koşullu adımlardan
-  önceki bir adımda belirlendiği için normal akışta bu durum olmaz.
+- `Project.Level` henüz belirlenmediyse seviye kuralı **sağlanmış sayılır** (`whenEmpty: "met"`, adım atlanmaz). Seviye, koşullu
+  adımlardan önceki bir adımda belirlendiği için normal akışta bu durum olmaz.
+- Değerlendirme saf sınıfta: `StepConditions` (`Holds`, `Applies`, `Describe`). Ekrandaki etiketler ("Yalnızca dış talepte",
+  "Teklif hazırlanacaksa", "Seviye 2 ve üstü") API'den gelir (`conditionLabels`).
 - Koşullar her geçişte projenin o anki değerleriyle değerlendirilir. Talep sırasında "teklif yok" "teklif var"a dönerse
   teklif adımları artık atlanmaz.
 - Geri dönüşlerde (`ProcessStepJump`) hedef adımın koşulu kontrol edilmez; seed yalnızca anlamlı dönüşleri tanımlar.
@@ -176,8 +180,10 @@ talep sahibi) projede zaten var; form kaydı yalnızca karar, gerekçe ve ertele
   "noJumps": [
     { "targetStepId": 17, "targetStepCode": "4.9", "label": "Akış 4.9 adımına dön" }
   ],
-  // Faz 4: hepsi false / null ise adım her kayıtta yapılır
-  "condition": { "requiresExternalRequest": false, "requiresOffer": false, "minLevel": null }
+  // Faz 7 · A5: atlama kuralları; boşsa adım her kayıtta yapılır
+  "conditions": [ { "field": "requiresOffer", "op": "equals", "value": true } ],
+  "conditionLabels": [ "Teklif hazırlanacaksa" ],
+  "prerequisites": [] // Faz 7 · A4
 }
 
 // ProjectProcessDto

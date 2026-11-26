@@ -575,11 +575,13 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<string>("Conditions")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<bool>("IsDecision")
                         .HasColumnType("bit");
-
-                    b.Property<int?>("MinLevel")
-                        .HasColumnType("int");
 
                     b.Property<string>("NoBranchText")
                         .HasMaxLength(500)
@@ -602,12 +604,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("ProcessStageId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("RequiresExternalRequest")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("RequiresOffer")
-                        .HasColumnType("bit");
 
                     b.Property<string>("ResponsibleRole")
                         .IsRequired()

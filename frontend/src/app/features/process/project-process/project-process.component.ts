@@ -6,7 +6,7 @@ import { BadgeTone, StatusBadgeComponent } from '../../../shared/components/stat
 import { PROJECT_STATUS_LABELS } from '../../../shared/models/project-status';
 import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
 import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
-import { ProcessStage, ProcessStep, conditionLabels } from '../models/process-stage';
+import { ProcessStage, ProcessStep } from '../models/process-stage';
 import { ProcessStageState, ProjectProcess, STEP_ACTION_LABELS, StepRecord } from '../models/project-process';
 import { ProcessService } from '../process.service';
 import { StepActionsComponent } from '../step-actions/step-actions.component';
@@ -71,7 +71,6 @@ export class ProjectProcessComponent {
     private readonly skippedStepIds = computed(() =>
         new Set(this.process.hasValue() ? this.process.value().skippedStepIds : []));
 
-    protected readonly conditionLabels = conditionLabels;
 
     /** The filled-in Talep Ret / Erteleme Formları, newest first. */
     protected readonly decisions = rxResource({

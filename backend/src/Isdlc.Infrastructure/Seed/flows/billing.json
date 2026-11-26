@@ -38,9 +38,7 @@
       "approverRole": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "2",
@@ -53,9 +51,7 @@
       "approverRole": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "3",
@@ -68,9 +64,7 @@
       "approverRole": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "4",
@@ -88,9 +82,7 @@
           "label": "Düzeltme: 3. adıma dön"
         }
       ],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "5",
@@ -103,9 +95,7 @@
       "approverRole": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "6",
@@ -118,9 +108,7 @@
       "approverRole": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     }
   ]
 }

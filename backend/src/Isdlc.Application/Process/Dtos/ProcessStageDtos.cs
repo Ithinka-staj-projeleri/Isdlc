@@ -41,8 +41,12 @@ public record ProcessStepDto(
     UserRole? ApproverRole,
     ProjectStatus? NoOutcome,
     IReadOnlyList<ProcessStepJumpDto> NoJumps,
-    StepConditionDto Condition,
-    IReadOnlyList<StepPrerequisite> Prerequisites);
+    IReadOnlyList<StepConditionRule> Conditions,
+    IReadOnlyList<StepPrerequisite> Prerequisites)
+{
+    /// <summary>The rules as the screens show them ("Yalnızca dış talepte"); empty when the step is done on every record.</summary>
+    public IReadOnlyList<string> ConditionLabels => StepConditions.Describe(Conditions);
+}
 
 /// <summary>A step the flow can return to when the decision is answered "No".</summary>
 public record ProcessStepJumpDto(
@@ -50,8 +54,3 @@ public record ProcessStepJumpDto(
     string TargetStepCode,
     string Label);
 
-/// <summary>When the step is done. All false / null: on every record. Rules: StepConditions.</summary>
-public record StepConditionDto(
-    bool RequiresExternalRequest,
-    bool RequiresOffer,
-    int? MinLevel);

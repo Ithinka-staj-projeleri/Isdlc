@@ -79,7 +79,7 @@ public class ProcessService(
                 p.ProcessFlowId,
                 Flow = new ProcessFlowSummaryDto(p.ProcessFlow.Code, p.ProcessFlow.Name, p.ProcessFlow.Kind),
                 p.ProcessFlow.ProjectStageOrder,
-                Context = new ConditionContext(p.Source, p.RequiresOffer, p.Level),
+                Context = new ConditionContext(p.Source, p.RequestType, p.RequiresOffer, p.Level),
             })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
@@ -126,7 +126,7 @@ public class ProcessService(
 
         var flowSteps = await LoadFlowStepsAsync(project.ProcessFlowId, cancellationToken);
         var appliedOrders = flowSteps
-            .Where(s => StepConditions.Applies(s.Condition, project.Context))
+            .Where(s => StepConditions.Applies(s.Conditions, project.Context))
             .Select(s => s.Order)
             .ToList();
 
@@ -427,7 +427,7 @@ public class ProcessService(
         Project project, CurrentStepInfo step, CancellationToken cancellationToken)
     {
         var flowSteps = await LoadFlowStepsAsync(project.ProcessFlowId, cancellationToken);
-        var context = new ConditionContext(project.Source, project.RequiresOffer, project.Level);
+        var context = new ConditionContext(project.Source, project.RequestType, project.RequiresOffer, project.Level);
 
         return StepConditions.NextStepId(flowSteps, step.Order, context) is { } nextStepId
             ? await LoadStepRefAsync(nextStepId, cancellationToken)
@@ -441,8 +441,7 @@ public class ProcessService(
             .AsNoTracking()
             .Where(s => s.ProcessFlowId == flowId)
             .OrderBy(s => s.Order)
-            .Select(s => new ConditionalStep(
-                s.Id, s.Order, new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel)))
+            .Select(s => new ConditionalStep(s.Id, s.Order, s.Conditions))
             .ToListAsync(cancellationToken);
 
     private Task<StepRef?> LoadStepRefAsync(int stepId, CancellationToken cancellationToken) =>
