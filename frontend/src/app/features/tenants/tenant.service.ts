@@ -1,9 +1,9 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { showsFieldErrors } from '../../core/http/problem-details';
 import { PagedResult } from '../../shared/models/paged-result';
-import { CreateTenantInput, Tenant, TenantSettings, UpdateTenantInput } from './models/tenant';
+import { AiUsageSummary, CreateTenantInput, Tenant, TenantSettings, UpdateTenantInput } from './models/tenant';
 
 /**
  * Companies (Faz 6). List, opening and editing are the Platform Administrator's; the settings are the company
@@ -33,6 +33,17 @@ export class TenantService {
     }
 
     updateSettings(settings: TenantSettings): Observable<TenantSettings> {
-        return this.http.put<TenantSettings>(`${this.url}/current/settings`, settings);
+        return this.http.put<TenantSettings>(`${this.url}/current/settings`, settings, { context: showsFieldErrors() });
+    }
+
+    /** This month when month is not given. */
+    aiUsage(month?: string): Observable<AiUsageSummary> {
+        const params = month ? new HttpParams().set('month', month) : undefined;
+        return this.http.get<AiUsageSummary>(`${this.url}/current/ai-usage`, { params });
+    }
+
+    /** The models the company can choose; empty while the AI service is off. */
+    aiModels(): Observable<string[]> {
+        return this.http.get<{ models: string[] }>('/api/v1/agents/models').pipe(map(r => r.models));
     }
 }

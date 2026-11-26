@@ -1,3 +1,4 @@
+using Isdlc.Domain.Agents;
 using Isdlc.Domain.Audit;
 using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
@@ -48,6 +49,7 @@ public interface IApplicationDbContext
     DbSet<QuestionAnswer> QuestionAnswers { get; }
     DbSet<ProcessImprovement> ProcessImprovements { get; }
     DbSet<CustomField> CustomFields { get; }
+    DbSet<AiUsage> AiUsages { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

@@ -67,6 +67,11 @@ public sealed class FakeAgentClient : IAgentClient
         return Answer(RiskAssessmentResult);
     }
 
+    /// <summary>What GET /v1/models answers (Faz 7 · A9).</summary>
+    public IReadOnlyList<string> Models { get; init; } = ["gemini-test-flash", "gemini-test-pro"];
+
+    public Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken cancellationToken) => Task.FromResult(Models);
+
     public Task<RequestAgentDraft> DraftRequestAsync(RequestAgentRequest request, CancellationToken cancellationToken)
     {
         LastRequestDraftRequest = request;

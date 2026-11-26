@@ -485,9 +485,30 @@ Uygulama birden fazla şirketin kendi akışlarıyla kullanabileceği yapıdadı
 | `IsActive` | bool | Pasif şirketin kullanıcıları giriş yapamaz ve açık oturumları en geç bir dakika içinde kapanır. Şirket silinmez |
 | `AiEnabled` | bool | Yapay zekâ yardımcıları açık mı. Yeni şirkette kapalı başlar |
 | `AiDataSharingAllowed` | bool | Metinlerin dış modele gönderilmesine izin. Yeni şirkette kapalı başlar |
+| `AiModel` | string? | Faz 7 · A9. Şirketin seçtiği model, en fazla 100; boşsa yapay zekâ servisinin varsayılanı |
+| `AiMonthlyTokenLimit` | int? | Faz 7 · A9. Takvim ayında (UTC) girdi + çıktı token sınırı, 0'dan büyük; boşsa sınırsız |
 | `CreatedAt` | DateTime (UTC) | |
 
 `Tenant` şirkete ait bir kayıt değildir ve denetim kaydına yazılmaz.
+
+### `AiUsage` — yapay zekâ çağrısı (Faz 7 · A9)
+
+Her yardımcı çağrısı, başarısız olanlar da. Şirkete aittir (`ITenantOwned`), denetim kaydına yazılmaz, sonradan değişmez.
+Kurallar: [configurability.md](configurability.md) → Yapay zekâ modeli ve kullanımı.
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | long | |
+| `TenantId` | int | |
+| `UserId` | int (FK → User) | Yardımcıyı kullanan kişi |
+| `ProjectId` | int? (FK → Project) | E-postadan talep taslağında boş |
+| `Assistant` | `AiAssistant` | |
+| `Model` | string | Cevap veren model (yedek model devreye girdiyse o); başarısız çağrıda istenen model |
+| `InputTokens`, `OutputTokens` | int? | Ses kaydında ve sağlayıcı bildirmediğinde boş |
+| `AudioSeconds` | int? | Yalnızca ses kaydında |
+| `DurationMs` | int | |
+| `Succeeded` | bool | |
+| `CreatedAt` | DateTime (UTC) | İndeks: `(TenantId, CreatedAt)` |
 
 ### Her tablodaki `TenantId`
 
@@ -559,6 +580,7 @@ Tanım şirket verisidir; değer projede (`Project.CustomValues`) anahtarla tutu
 | `RequirementPriority` | `MustHave` (Olmazsa olmaz), `ShouldHave` (Olmalı), `CouldHave` (Olabilir), `WontHave` (Bu sürümde yok) |
 | `RequirementStatus` | `Draft` (Taslak), `InReview` (İncelemede), `Approved` (Onaylandı), `Cancelled` (İptal edildi) |
 | `CustomFieldType` | *(Faz 7 · A6)* `Text` (Metin), `Number` (Sayı), `Date` (Tarih), `Select` (Seçim), `Boolean` (Evet / Hayır) |
+| `AiAssistant` | *(Faz 7 · A9)* `MeetingSuggestions` (Tutanak önerileri), `RiskSuggestions` (Metinden risk önerisi), `RiskAssessment` (Risk puanı önerisi), `RequestDraft` (E-postadan talep taslağı), `Transcription` (Ses kaydından metin) |
 | `DocumentStatus` | `NotStarted` (Başlanmadı), `InProgress` (Hazırlanıyor), `InReview` (İncelemede), `Approved` (Onaylandı), `NotRequired` (Gerekmiyor) |
 
 ## Süreç ilerleme kuralları

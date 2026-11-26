@@ -35,6 +35,33 @@ export interface UpdateTenantInput {
 export interface TenantSettings {
     aiEnabled: boolean;
     aiDataSharingAllowed: boolean;
+    /** The company's model (Faz 7 · A9); null: the AI service's default. */
+    aiModel: string | null;
+    /** Input + output tokens a UTC month; null: no limit. */
+    aiMonthlyTokenLimit: number | null;
+}
+
+export type AiAssistant = 'MeetingSuggestions' | 'RiskSuggestions' | 'RiskAssessment' | 'RequestDraft' | 'Transcription';
+
+export const AI_ASSISTANT_LABELS: Record<AiAssistant, string> = {
+    MeetingSuggestions: 'Tutanak önerileri',
+    RiskSuggestions: 'Metinden risk önerisi',
+    RiskAssessment: 'Risk puanı önerisi',
+    RequestDraft: 'E-postadan talep taslağı',
+    Transcription: 'Ses kaydından metin',
+};
+
+/** GET /tenants/current/ai-usage?month=2026-11 (Faz 7 · A9). */
+export interface AiUsageSummary {
+    /** "2026-11" (UTC month). */
+    month: string;
+    requests: number;
+    failedRequests: number;
+    inputTokens: number;
+    outputTokens: number;
+    audioSeconds: number;
+    limit: number | null;
+    byAssistant: { assistant: AiAssistant; requests: number; tokens: number }[];
 }
 
 /** Same rule as the backend's TenantRules: "Şirket kodu küçük harf, rakam ve tireden oluşmalıdır (2–50 karakter)." */

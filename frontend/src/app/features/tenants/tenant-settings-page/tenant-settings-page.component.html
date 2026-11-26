@@ -37,11 +37,98 @@
     <p class="warn">Yardımcılar kapalı olduğu için veri izni tek başına bir şey açmaz.</p>
     }
 
+    <h3 class="section">Model ve kullanım sınırı</h3>
+
+    <div class="fields">
+        <label class="field" [class.invalid]="errorFor('aiModel')">
+            <span>Model</span>
+            <select name="aiModel" [(ngModel)]="aiModel" (ngModelChange)="changed()">
+                <option value="">Servisin varsayılanı</option>
+                @for (model of modelOptions(); track model) {
+                <option [value]="model">{{ model }}</option>
+                }
+            </select>
+            @if (errorFor('aiModel'); as error) { <span class="error">{{ error }}</span> }
+            @if (models.hasValue() && models.value().length === 0) {
+            <span class="hint">Yapay zekâ servisi şu an model listesi vermiyor; servis açıkken yeni model seçilebilir.</span>
+            } @else {
+            <span class="hint">Seçilen model yoğunsa servis kendi yedek modellerini dener.</span>
+            }
+        </label>
+
+        <label class="field" [class.invalid]="errorFor('aiMonthlyTokenLimit')">
+            <span>Aylık sınır (token)</span>
+            <input type="number" name="aiMonthlyTokenLimit" min="1" step="1000" placeholder="Sınırsız"
+                [(ngModel)]="aiMonthlyTokenLimit" (ngModelChange)="changed()" />
+            @if (errorFor('aiMonthlyTokenLimit'); as error) { <span class="error">{{ error }}</span> }
+            <span class="hint">Girdi + çıktı token'ları, takvim ayı (UTC). Dolunca metin gönderen yardımcılar ay sonuna
+                kadar çalışmaz. Boş bırakılırsa sınır yoktur.</span>
+        </label>
+    </div>
+
     <div class="actions">
         @if (savedMessage()) { <span class="ok" role="status">{{ savedMessage() }}</span> }
         <button type="submit" class="button primary" [disabled]="saving()">{{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}</button>
     </div>
 </form>
+
+<section class="card usage">
+    <h3>Bu ayın kullanımı</h3>
+    @if (usage.error()) {
+    <p class="hint">Kullanım bilgisi yüklenemedi.</p>
+    } @else if (usage.hasValue()) {
+    @let u = usage.value();
+    <dl class="totals">
+        <div>
+            <dt>İstek</dt>
+            <dd>{{ u.requests | number }}
+                @if (u.failedRequests) { <span class="hint">({{ u.failedRequests | number }} başarısız)</span> }
+            </dd>
+        </div>
+        <div>
+            <dt>Token (girdi + çıktı)</dt>
+            <dd>{{ u.inputTokens + u.outputTokens | number }}</dd>
+        </div>
+        <div>
+            <dt>Ses kaydı</dt>
+            <dd>{{ u.audioSeconds / 60 | number: '1.0-0' }} dk</dd>
+        </div>
+        <div>
+            <dt>Aylık sınır</dt>
+            <dd>{{ u.limit ? (u.limit | number) : 'Sınırsız' }}</dd>
+        </div>
+    </dl>
+    @if (usedPercent() !== null) {
+    <div class="meter" role="meter" [attr.aria-valuenow]="usedPercent()" aria-valuemin="0" aria-valuemax="100"
+        aria-label="Sınırın kullanılan kısmı">
+        <span [style.width.%]="usedPercent()" [class.full]="usedPercent()! >= 100"></span>
+    </div>
+    <p class="hint">Sınırın %{{ usedPercent() }} kadarı kullanıldı.</p>
+    }
+    @if (u.byAssistant.length > 0) {
+    <table>
+        <thead>
+            <tr>
+                <th>Yardımcı</th>
+                <th class="num">İstek</th>
+                <th class="num">Token</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (row of u.byAssistant; track row.assistant) {
+            <tr>
+                <td>{{ assistantLabels[row.assistant] }}</td>
+                <td class="num">{{ row.requests | number }}</td>
+                <td class="num">{{ row.tokens | number }}</td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    } @else {
+    <p class="hint">Bu ay henüz yapay zekâ yardımcısı kullanılmadı.</p>
+    }
+    }
+</section>
 } @else {
 <app-empty-state message="Yükleniyor…" />
 }
