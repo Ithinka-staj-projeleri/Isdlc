@@ -57,8 +57,8 @@ hangi koşulda atlanacağı tanımlı. Ekranlar bu tanıma göre çalışıyor."
 
 | # | Ekran | Yapılacak | Görülmesi gereken |
 | --- | --- | --- | --- |
-| 2.1 | Menü → Talepler → "+ Yeni talep" | **E-postadan doldur (yapay zekâ)** bölümünü aç, sahte e-postayı yapıştır, **Yapay zekâ ile doldur** | Birkaç saniye sonra form dolar: talep türü yeni yazılım projesi, talep sahibi *Demo Lojistik A.Ş.*, talebi ileten *Hakan Yıldız*, iletişim, açıklama, kanal E-posta, kaynak Dış. Model her seferinde birebir aynı cevabı vermeyebilir |
-| 2.2 | Yeni talep | Proje adını kontrol et (*Saha Ekibi Stok Takibi*), **Talebi kaydet** | Proje sayfası açılır: **No 20**, durum Aktif, mevcut adım **1 · Talep ve Ön Analiz**. Üstte proje özeti kartları (açık konular, riskler, gereksinimler, dokümanlar, ekip iş yükü) |
+| 2.1 | Menü → Talepler → "+ Yeni talep" | **E-postadan doldur (yapay zekâ)** bölümünü aç, sahte e-postayı yapıştır, **Yapay zekâ ile doldur** | 10–15 saniye sonra form dolar: talep türü yeni yazılım projesi, proje adı, talep tarihi (e-postadaki tarih), talep sahibi *Demo Lojistik A.Ş.*, talebi ileten *Hakan Yıldız*, iletişim, açıklama, notlar, kanal E-posta. **Talep Kaynağı boş kalabilir**: "Dış Talepler (Müşteri)"yi elle seç. Model her seferinde birebir aynı cevabı vermeyebilir |
+| 2.2 | Yeni talep | Proje adını *Saha Ekibi Stok Takibi* yap (model daha uzun bir ad önerebilir), **Talebi kaydet** | Proje sayfası açılır: **No 20**, durum Aktif, mevcut adım **1 · Talep ve Ön Analiz**. Üstte proje özeti kartları (açık konular, riskler, gereksinimler, dokümanlar, ekip iş yükü) |
 | 2.3 | Proje → **Düzenle** | Proje yöneticisi: Ayşe Demir, **Değişiklikleri kaydet** | Başlıkta "Proje yöneticisi: Ayşe Demir". Ayşe'ye "… projesine proje yöneticisi olarak atandınız." bildirimi gider |
 
 *Anlatım: "Yapay zekâ kayıt açmaz, formu doldurur; kontrol edip kaydeden kişidir. E-posta adresi ve telefon modele gitmeden
@@ -92,11 +92,11 @@ Proje → **Toplantı Tutanakları** → "+ Tutanak oluştur".
 | # | Yapılacak | Görülmesi gereken |
 | --- | --- | --- |
 | 4.1 | Tür: Analiz Oturumu, tarih: bugün, tutanağı yazan: Elif Yılmaz | — |
-| 4.2 | *(İsteğe bağlı)* **Ses kaydından metne çevir** → sahte kayıt | Kayıt metne çevrilip "Ham toplantı notları"na eklenir: "… dakikalık kayıt metne çevrilip notlara eklendi". Kayıt bilgisayarda işlenir, dışarı gönderilmez |
-| 4.3 | Ham notlara sahte toplantı notunu yapıştır → **Yapay zekâ ile karar ve aksiyonları çıkar** | Karar (tablet desteğinin ilk fazda olmaması) karar kutusuna, aksiyonlar satır olarak dolar. **Kişilere göre aksiyonlar**: Can Öztürk listeden seçili gelir; *Demo Lojistik BT* "(sistem dışı)" olarak yazılır. "cuma", "gelecek hafta salı" gerçek tarihe çevrilir. Formda yeri olmayan soru ve varsayım ayrıca listelenir |
-| 4.4 | Katılımcıları ve gündemi kontrol et, **Tutanağı kaydet** | `TT-001`; aksiyonlar açık, karar kapalı kayıt olarak Açık Konular'a geçer |
+| 4.2 | *(İsteğe bağlı)* **Ses kaydından metne çevir** → sahte kayıt | Kayıt metne çevrilip "Ham toplantı notları"na eklenir: "… dakikalık kayıt metne çevrilip notlara eklendi". Kayıt bilgisayarda işlenir, dışarı gönderilmez. Birkaç saniyelik kayıt birkaç saniyede çevrilir; ilk çağrıda model indirilecekse daha uzun sürer. Metni okuyup düzelt, sonra 4.3'teki notu yapıştır |
+| 4.3 | Ham notlara sahte toplantı notunu yapıştır → **Yapay zekâ ile karar ve aksiyonları çıkar** | Yarım dakika kadar sürer ("Notlar inceleniyor…"). Sonra "1 karar ve 1 aksiyon forma eklendi". Karar (tablet desteğinin ilk fazda olmaması) karar kutusuna, aksiyon (mobil ekran taslakları) satır olarak dolar: **Can Öztürk** ekip üyesi olarak seçili, termin "cuma"nın tarihi. **Kişilere göre aksiyonlar**: "Can Öztürk · 1 aksiyon". Katılımcılar (Hakan Yıldız · Demo Lojistik dahil), gündem, özet ve sonraki adımlar boş alanlara önerilir. **Formda yeri olmayan öneriler**: bağımlılık (depo listesi, Demo Lojistik BT, "gelecek hafta salı"nın tarihi), soru (sayım farkı onay limiti, Hakan Yıldız), varsayım (telefon kamerası) |
+| 4.4 | Katılımcıları ve gündemi kontrol et, **Tutanağı kaydet** | `TT-001` · "1 karar · 1 aksiyon · 1 aksiyon açık". Açık Konular'da `AK-001` (aksiyon, Can Öztürk, açık) ve `AK-002` (karar, kapandı), ikisinde de "Tutanak: TT-001" |
 | 4.5 | **Açık Konular** sekmesi → "+ Kayıt ekle": tür Soru, konu *Saha ekibi çevrimdışı çalışabilmeli mi?*, sorumlu: Ekip üyesi açılır listesini göster | Her kişinin yanında iş yükü: "Can Öztürk · 1 açık konu". Sorumluyu seçip kaydet |
-| 4.6 | Açık konuda **Bağlantıyı kopyala** | Kaydın bağlantısı panoya kopyalanır; açan kişi doğrudan bu kayda gelir |
+| 4.6 | `AK-001` satırında **Düzenle** → pencerenin üstündeki **Bağlantıyı kopyala** | Düğme "Kopyalandı" olur; bağlantıyı açan kişi doğrudan bu kayda gelir |
 
 *Anlatım: "Yapay zekâ toplantıdan kimin neyi ne zamana yapacağını çıkarıyor, kişiyi ekipten eşleştiriyor; kaydeden yine kişi.
 Sorumlu seçerken herkesin elindeki iş görünüyor."*
@@ -211,10 +211,12 @@ Barkod okuyucu olarak telefon kamerasının yeterli olacağı varsayılıyor.
 
 ## Denendi
 
-25 Kasım 2026, temiz veritabanında, uygulamada:
+Bütün adımlar temiz veritabanında, uygulamada denendi; tablolardaki ekran metinleri ve bildirimler bu denemelerden alındı.
 
-- **Denendi:** 1, 2.2, 2.3, 3, 4.5, 5, 6.1, 6.3, 6.4, 6.5, 7. Tablolardaki ekran metinleri ve bildirimler bu denemeden alındı.
-- **Bu tarihte denenemedi:** 2.1, 4.2, 4.3, 4.4 ve 4.6. Model sağlayıcısı (Gemini) o gün sürekli 503 döndü ("model şu an
-  yoğun"); bu yardımcılar kendi PR'larında denenmişti (F4, F5, F6). Ekranları ve düğmeleri görünüyor, yalnızca model cevabı
-  alınamadı. Provada denenmeli.
-- Denerken bulunan hata: yalnızca "yapay zekâ açık" olan şirkette ses kaydı düğmesi görünmüyordu (7.10). #174 ile düzeltildi.
+- **25 Kasım 2026:** 1, 2.2, 2.3, 3, 4.5, 5, 6, 7. Yapay zekâ adımları denenemedi: Gemini gün boyu 503 döndü.
+  Denerken bulunan hata: yalnızca "yapay zekâ açık" olan şirkette ses kaydı düğmesi görünmüyordu (7.10); #174 ile düzeltildi.
+- **26 Kasım 2026 (prova):** 2.1–2.3, 3, 4.1–4.6 ve Ithinka'nın Şirket Yöneticisi (Mert Kaya: Kullanıcılar ve Şirket
+  Ayarları açılıyor). Prova sırasında ses kaydı ekrandan değil, aynı API ucuna kısa bir sahte kayıt gönderilerek denendi
+  (`POST /projects/{id}/meetings/transcript`); düğme 7.10'da ekranda denenmişti. Bulunanlar: e-posta yardımcısı talep kaynağını
+  boş bırakabiliyor (2.1), tutanak önerisi yarım dakika kadar sürüyor (4.3), kayıt bağlantısı açık konunun düzenleme
+  penceresinde (4.6). Belge bunlara göre düzeltildi.

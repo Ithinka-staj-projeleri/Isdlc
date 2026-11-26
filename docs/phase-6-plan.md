@@ -2,7 +2,8 @@
 
 Bu dosya Faz 6'da yapılacak işleri, kimin neyi yapacağını ve işlerin sırasını anlatır.
 Ortak kurallar için: [AGENTS.md](../AGENTS.md), ekip ve çalışma kuralları için: [PLANNING.md](../PLANNING.md).
-Durum: **onaylandı** (24 Kasım 2026). 25 Kasım 2026 itibarıyla T1–T8 yapıldı; faz, ekip demoyu provada denedikten sonra kapatılır.
+Durum: **onaylandı** (24 Kasım 2026). 25 Kasım 2026 itibarıyla T1–T8 yapıldı; demo 26 Kasım'da provada baştan sona
+denendi ([demo-scenario.md](demo-scenario.md) → Denendi). Faz, ekip onaylayınca kapatılır.
 
 ## 1. Neden
 
