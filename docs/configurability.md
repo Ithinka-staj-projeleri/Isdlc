@@ -4,7 +4,7 @@ Faz 7'nin uygulama ayrıntıları. Bu belgede şunlar yazılıdır: veri modeli,
 hata mesajları ve testler. Konular: yetkiler, adım ön koşulları, atlama kuralları, şirkete özel alanlar, akış düzenleme,
 yapay zekâ modeli ve kullanımı. Plan, kararlar ve iş dağılımı: [phase-7-plan.md](phase-7-plan.md).
 Durum: **onaylandı** (26 Kasım 2026, #178). Sorumlu: Erva (A1). Uygulama: A2–A9.
-A4 (adım ön koşulları) uygulandı.
+A4 (adım ön koşulları) ve A5 (atlama kuralları) uygulandı.
 
 Kurallar uygulandıkça AGENTS.md'ye taşınır (Bölüm 10). Bölüm numaraları plandaki kararlara göndermede kullanılır:
 "karar 8", plan Bölüm 3'teki 8 numaralı karardır.

@@ -1,22 +1,33 @@
+using System.Text.Json;
 using Isdlc.Application.Process;
+using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 
 namespace Isdlc.Application.Tests.Process;
 
 /// <summary>
-/// Which steps are done on a record and which step comes next. No database.
-/// Rules: docs/process-api.md → "Adım koşulları".
+/// Which steps are done on a record and which step comes next, with skip rules (Faz 7 · A5). No database.
+/// The first group keeps the Faz 4 cases with the three rules the migration wrote; the rest tries every field type,
+/// comparison and empty value. Rules: docs/configurability.md → Atlama kuralları.
 /// </summary>
 public class StepConditionsTests
 {
-    private static readonly StepCondition Always = new(false, false, null);
+    private static readonly StepConditionRule[] Always = [];
+    private static readonly StepConditionRule External = new(StepConditionRule.Source, ConditionOperator.Equals, "External");
+    private static readonly StepConditionRule Offer = new(StepConditionRule.RequiresOffer, ConditionOperator.Equals, "true");
+
+    private static StepConditionRule MinLevel(int level) =>
+        new(StepConditionRule.Level, ConditionOperator.AtLeast, level.ToString(), ConditionWhenEmpty.Met);
 
     private static ConditionContext Context(
-        RequestSource source = RequestSource.Internal, bool requiresOffer = false, int? level = null) =>
-        new(source, requiresOffer, level);
+        RequestSource source = RequestSource.Internal, bool requiresOffer = false, int? level = null,
+        RequestType requestType = RequestType.NewProject, Dictionary<string, string>? custom = null) =>
+        new(source, requestType, requiresOffer, level, custom);
+
+    // ---- The three Faz 4 conditions, as rules ----
 
     [Fact]
-    public void Applies_StepWithoutConditions_IsDoneOnEveryRecord()
+    public void Applies_StepWithoutRules_IsDoneOnEveryRecord()
     {
         Assert.True(StepConditions.Applies(Always, Context()));
         Assert.True(StepConditions.Applies(Always, Context(RequestSource.External, true, 3)));
@@ -25,11 +36,10 @@ public class StepConditionsTests
     [Theory]
     [InlineData(RequestSource.External, true)]
     [InlineData(RequestSource.Internal, false)]
+    [InlineData(RequestSource.Affiliated, false)]
     public void Applies_ExternalOnlyStep_DependsOnTheSource(RequestSource source, bool expected)
     {
-        var condition = new StepCondition(RequiresExternalRequest: true, RequiresOffer: false, MinLevel: null);
-
-        Assert.Equal(expected, StepConditions.Applies(condition, Context(source)));
+        Assert.Equal(expected, StepConditions.Applies([External], Context(source)));
     }
 
     [Theory]
@@ -37,9 +47,7 @@ public class StepConditionsTests
     [InlineData(false, false)]
     public void Applies_OfferStep_DependsOnWhetherAnOfferIsPrepared(bool requiresOffer, bool expected)
     {
-        var condition = new StepCondition(RequiresExternalRequest: false, RequiresOffer: true, MinLevel: null);
-
-        Assert.Equal(expected, StepConditions.Applies(condition, Context(requiresOffer: requiresOffer)));
+        Assert.Equal(expected, StepConditions.Applies([Offer], Context(requiresOffer: requiresOffer)));
     }
 
     [Theory]
@@ -48,17 +56,13 @@ public class StepConditionsTests
     [InlineData(3, true)]
     public void Applies_LevelStep_IsDoneFromItsMinimumLevel(int level, bool expected)
     {
-        var condition = new StepCondition(RequiresExternalRequest: false, RequiresOffer: false, MinLevel: 2);
-
-        Assert.Equal(expected, StepConditions.Applies(condition, Context(level: level)));
+        Assert.Equal(expected, StepConditions.Applies([MinLevel(2)], Context(level: level)));
     }
 
     [Fact]
     public void Applies_LevelStep_IsDoneWhileTheLevelIsNotDecided()
     {
-        var condition = new StepCondition(RequiresExternalRequest: false, RequiresOffer: false, MinLevel: 3);
-
-        Assert.True(StepConditions.Applies(condition, Context(level: null)));
+        Assert.True(StepConditions.Applies([MinLevel(3)], Context(level: null)));
     }
 
     [Theory]
@@ -66,23 +70,171 @@ public class StepConditionsTests
     [InlineData(RequestSource.Internal, true, 3, false)]
     [InlineData(RequestSource.External, false, 3, false)]
     [InlineData(RequestSource.External, true, 2, false)]
-    public void Applies_StepWithSeveralConditions_NeedsAllOfThem(
+    public void Applies_StepWithSeveralRules_NeedsAllOfThem(
         RequestSource source, bool requiresOffer, int level, bool expected)
     {
-        var condition = new StepCondition(RequiresExternalRequest: true, RequiresOffer: true, MinLevel: 3);
-
-        Assert.Equal(expected, StepConditions.Applies(condition, Context(source, requiresOffer, level)));
+        Assert.Equal(expected, StepConditions.Applies([External, Offer, MinLevel(3)], Context(source, requiresOffer, level)));
     }
 
-    // A flow like the new software project flow: 3, then 4 only for external requests,
+    // ---- Comparisons, fields and empty values ----
+
+    [Theory]
+    [InlineData(ConditionOperator.Equals, "AdditionalModule", true)]
+    [InlineData(ConditionOperator.Equals, "NewProject", false)]
+    [InlineData(ConditionOperator.NotEquals, "NewProject", true)]
+    [InlineData(ConditionOperator.NotEquals, "AdditionalModule", false)]
+    public void Holds_RequestType_ComparesTheChoice(ConditionOperator op, string value, bool expected)
+    {
+        var rule = new StepConditionRule(StepConditionRule.RequestType, op, value);
+
+        Assert.Equal(expected, StepConditions.Holds(rule, Context(requestType: RequestType.AdditionalModule)));
+    }
+
+    [Fact]
+    public void Holds_Equals_IgnoresCaseAndSpaces()
+    {
+        Assert.True(StepConditions.Holds(new StepConditionRule(StepConditionRule.Source, ConditionOperator.Equals, " external "),
+            Context(RequestSource.External)));
+    }
+
+    [Theory]
+    [InlineData(ConditionOperator.AtLeast, "2", 2, true)]
+    [InlineData(ConditionOperator.AtLeast, "3", 2, false)]
+    [InlineData(ConditionOperator.AtMost, "2", 2, true)]
+    [InlineData(ConditionOperator.AtMost, "1", 2, false)]
+    public void Holds_Level_ComparesNumbers(ConditionOperator op, string value, int level, bool expected)
+    {
+        Assert.Equal(expected, StepConditions.Holds(new StepConditionRule(StepConditionRule.Level, op, value), Context(level: level)));
+    }
+
+    [Theory]
+    [InlineData(ConditionWhenEmpty.NotMet, false)]
+    [InlineData(ConditionWhenEmpty.Met, true)]
+    public void Holds_EmptyField_GivesTheRulesWhenEmpty(ConditionWhenEmpty whenEmpty, bool expected)
+    {
+        var rule = new StepConditionRule(StepConditionRule.Level, ConditionOperator.AtLeast, "2", whenEmpty);
+
+        Assert.Equal(expected, StepConditions.Holds(rule, Context(level: null)));
+    }
+
+    [Fact]
+    public void Holds_IsSetAndIsNotSet_AskWhetherTheFieldIsFilled()
+    {
+        var isSet = new StepConditionRule(StepConditionRule.Level, ConditionOperator.IsSet);
+        var isNotSet = new StepConditionRule(StepConditionRule.Level, ConditionOperator.IsNotSet, WhenEmpty: ConditionWhenEmpty.Met);
+
+        Assert.True(StepConditions.Holds(isSet, Context(level: 1)));
+        Assert.False(StepConditions.Holds(isSet, Context(level: null)));
+        Assert.True(StepConditions.Holds(isNotSet, Context(level: null)));
+        Assert.False(StepConditions.Holds(isNotSet, Context(level: 1)));
+    }
+
+    public static TheoryData<string, ConditionOperator, string, bool> CustomFieldCases => new()
+    {
+        // Evet-hayır, seçim, sayı, tarih.
+        { "true", ConditionOperator.Equals, "true", true },
+        { "false", ConditionOperator.Equals, "true", false },
+        { "Altın", ConditionOperator.Equals, "Altın", true },
+        { "Altın", ConditionOperator.NotEquals, "Gümüş", true },
+        { "250000", ConditionOperator.AtLeast, "100000", true },
+        { "50000", ConditionOperator.AtLeast, "100000", false },
+        { "2026-12-01", ConditionOperator.AtMost, "2026-12-31", true },
+        { "2027-01-15", ConditionOperator.AtMost, "2026-12-31", false },
+    };
+
+    [Theory]
+    [MemberData(nameof(CustomFieldCases))]
+    public void Holds_CustomField_ComparesItsValue(string recordValue, ConditionOperator op, string ruleValue, bool expected)
+    {
+        var rule = new StepConditionRule("custom:butce", op, ruleValue);
+
+        Assert.Equal(expected, StepConditions.Holds(rule, Context(custom: new() { ["butce"] = recordValue })));
+    }
+
+    [Fact]
+    public void Holds_CustomFieldTheRecordHasNoValueFor_IsEmpty()
+    {
+        var rule = new StepConditionRule("custom:butce", ConditionOperator.Equals, "true");
+
+        Assert.False(StepConditions.Holds(rule, Context()));
+        Assert.False(StepConditions.Holds(rule, Context(custom: new() { ["butce"] = "  " })));
+        Assert.True(StepConditions.Holds(rule with { WhenEmpty = ConditionWhenEmpty.Met }, Context()));
+    }
+
+    [Theory]
+    [InlineData("unknown")]
+    [InlineData("custom:")]
+    public void Holds_FieldTheRecordDoesNotHave_DoesNotHold(string field)
+    {
+        Assert.False(StepConditions.Holds(new StepConditionRule(field, ConditionOperator.Equals, "x"), Context()));
+    }
+
+    [Fact]
+    public void Holds_TextCannotBeComparedAsANumber_DoesNotHold()
+    {
+        var rule = new StepConditionRule("custom:not", ConditionOperator.AtLeast, "10");
+
+        Assert.False(StepConditions.Holds(rule, Context(custom: new() { ["not"] = "on" })));
+    }
+
+    [Fact]
+    public void DependsOn_FindsTheFieldAmongTheRules()
+    {
+        Assert.True(StepConditions.DependsOn([External, MinLevel(2)], StepConditionRule.Source));
+        Assert.False(StepConditions.DependsOn([MinLevel(2)], StepConditionRule.RequiresOffer));
+    }
+
+    // ---- Labels ----
+
+    [Fact]
+    public void Describe_TheThreeFaz4Rules_KeepTheirLabels()
+    {
+        Assert.Equal(["Yalnızca dış talepte", "Teklif hazırlanacaksa", "Seviye 2 ve üstü"],
+            StepConditions.Describe([External, Offer, MinLevel(2)]));
+    }
+
+    [Theory]
+    [InlineData(StepConditionRule.Source, ConditionOperator.NotEquals, "Internal", "Talep kaynağı ≠ Kurum içi")]
+    [InlineData(StepConditionRule.RequiresOffer, ConditionOperator.Equals, "false", "Teklif = hazırlanmayacak")]
+    [InlineData(StepConditionRule.Level, ConditionOperator.AtMost, "1", "Seviye ≤ 1")]
+    [InlineData("custom:butce-onayli", ConditionOperator.Equals, "true", "butce-onayli = Evet")]
+    [InlineData("custom:sozlesme-no", ConditionOperator.IsSet, null, "sozlesme-no doluysa")]
+    public void Describe_OtherRules_ReadAsText(string field, ConditionOperator op, string? value, string expected)
+    {
+        Assert.Equal(expected, StepConditions.Describe(new StepConditionRule(field, op, value)));
+    }
+
+    // ---- JSON: the seed files and the column ----
+
+    [Fact]
+    public void Json_ValuesKeepTheirKind_AndReadBackTheSame()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+        };
+        StepConditionRule[] rules = [External, Offer, MinLevel(2)];
+
+        var json = JsonSerializer.Serialize(rules, options);
+
+        Assert.Contains("\"value\":\"External\"", json);
+        Assert.Contains("\"value\":true", json);
+        Assert.Contains("\"value\":2", json);
+        Assert.Equal(rules, JsonSerializer.Deserialize<StepConditionRule[]>(json, options));
+    }
+
+    // ---- A flow: next, first and skipped steps ----
+
+    // Like the new software project flow: 3, then 4 only for external requests,
     // then 5, then 10 and 11 only when an offer is prepared, then 12.
     private static readonly IReadOnlyList<ConditionalStep> Flow =
     [
         new(Id: 103, Order: 3, Always),
-        new(Id: 104, Order: 4, new StepCondition(true, false, null)),
+        new(Id: 104, Order: 4, [External]),
         new(Id: 105, Order: 5, Always),
-        new(Id: 110, Order: 10, new StepCondition(false, true, null)),
-        new(Id: 111, Order: 11, new StepCondition(false, true, null)),
+        new(Id: 110, Order: 10, [Offer]),
+        new(Id: 111, Order: 11, [Offer]),
         new(Id: 112, Order: 12, Always),
     ];
 
@@ -122,7 +274,7 @@ public class StepConditionsTests
         IReadOnlyList<ConditionalStep> flow =
         [
             new(Id: 1, Order: 1, Always),
-            new(Id: 2, Order: 2, new StepCondition(false, true, null)),
+            new(Id: 2, Order: 2, [Offer]),
         ];
 
         Assert.Null(StepConditions.NextStepId(flow, currentOrder: 1, Context(requiresOffer: false)));
@@ -137,11 +289,11 @@ public class StepConditionsTests
     }
 
     [Fact]
-    public void FirstStepId_SkipsLeadingStepsWhoseConditionsDoNotHold()
+    public void FirstStepId_SkipsLeadingStepsWhoseRulesDoNotHold()
     {
         IReadOnlyList<ConditionalStep> flow =
         [
-            new(Id: 1, Order: 1, new StepCondition(true, false, null)),
+            new(Id: 1, Order: 1, [External]),
             new(Id: 2, Order: 2, Always),
         ];
 

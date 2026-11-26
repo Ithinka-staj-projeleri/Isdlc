@@ -60,9 +60,7 @@ internal static class SeedFiles
         UserRole? ApproverRole,
         ProjectStatus? NoOutcome,
         List<JumpSeed> NoJumps,
-        bool RequiresExternalRequest = false,
-        bool RequiresOffer = false,
-        int? MinLevel = null,
+        List<StepConditionRule>? Conditions = null,
         List<StepPrerequisite>? Prerequisites = null);
 
     public record JumpSeed(string TargetStepCode, string Label);

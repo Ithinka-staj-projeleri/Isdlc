@@ -117,9 +117,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 ResponsibleRole = s.ResponsibleRole,
                 ApproverRole = s.ApproverRole,
                 NoOutcome = s.NoOutcome,
-                RequiresExternalRequest = s.RequiresExternalRequest,
-                RequiresOffer = s.RequiresOffer,
-                MinLevel = s.MinLevel,
+                Conditions = s.Conditions ?? [],
                 Prerequisites = s.Prerequisites ?? [],
             });
 
@@ -191,9 +189,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             changed += Set(step.ResponsibleRole, stepSeed.ResponsibleRole, v => step.ResponsibleRole = v);
             changed += Set(step.ApproverRole, stepSeed.ApproverRole, v => step.ApproverRole = v);
             changed += Set(step.NoOutcome, stepSeed.NoOutcome, v => step.NoOutcome = v);
-            changed += Set(step.RequiresExternalRequest, stepSeed.RequiresExternalRequest, v => step.RequiresExternalRequest = v);
-            changed += Set(step.RequiresOffer, stepSeed.RequiresOffer, v => step.RequiresOffer = v);
-            changed += Set(step.MinLevel, stepSeed.MinLevel, v => step.MinLevel = v);
+            changed += SyncConditions(step, stepSeed);
             changed += SyncPrerequisites(step, stepSeed);
             changed += SyncJumps(step, stepSeed, stepsByCode);
         }
@@ -202,6 +198,19 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         {
             logger.LogInformation("Flow {Flow}: updated {Changes} values from its seed file.", file.Code, changed);
         }
+    }
+
+    /// <summary>Skip rules follow the file as a whole list (Faz 7 · A5).</summary>
+    private static int SyncConditions(ProcessStep step, StepSeed stepSeed)
+    {
+        var wanted = stepSeed.Conditions ?? [];
+        if (step.Conditions.SequenceEqual(wanted))
+        {
+            return 0;
+        }
+
+        step.Conditions = wanted.ToList();
+        return 1;
     }
 
     /// <summary>Prerequisites follow the file as a whole list (Faz 7 · A4).</summary>
@@ -450,11 +459,10 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             // History: one record per step before the marker step; closed projects also get the closing step and
             // postponed ones the postponement.
             // Steps whose conditions do not hold for the project are skipped, as the flow itself does.
-            var context = new ConditionContext(seed.Source, seed.RequiresOffer, seed.Level);
+            var context = new ConditionContext(seed.Source, seed.RequestType, seed.RequiresOffer, seed.Level);
             var history = steps
                 .Where(s => s.Order < markerStep.Order)
-                .Where(s => StepConditions.Applies(
-                    new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel), context))
+                .Where(s => StepConditions.Applies(s.Conditions, context))
                 .Select(s => (Step: s, Action: s.IsDecision ? StepAction.Yes : StepAction.Completed))
                 .ToList();
             if (seed.Status == ProjectStatus.Postponed)

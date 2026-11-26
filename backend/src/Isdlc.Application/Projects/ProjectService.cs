@@ -156,14 +156,13 @@ public class ProjectService(
             .SingleAsync(cancellationToken);
         var flowSteps = await dbContext.ProcessSteps
             .Where(s => s.ProcessFlowId == flowId)
-            .Select(s => new ConditionalStep(
-                s.Id, s.Order, new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel)))
+            .Select(s => new ConditionalStep(s.Id, s.Order, s.Conditions))
             .ToListAsync(cancellationToken);
 
         var project = new Project { Status = ProjectStatus.Active, ProcessFlowId = flowId, ParentProjectId = parent?.Id };
         ApplyContent(project, request);
         project.CurrentStepId = StepConditions.FirstStepId(
-                flowSteps, new ConditionContext(project.Source, project.RequiresOffer, project.Level))
+                flowSteps, new ConditionContext(project.Source, project.RequestType, project.RequiresOffer, project.Level))
             ?? throw new InvalidOperationException($"Flow {flowCode} has no step for this request.");
         dbContext.Projects.Add(project);
 
@@ -253,12 +252,16 @@ public class ProjectService(
     /// </summary>
     private async Task EnsureStepConditionsCanChangeAsync(Project project, CancellationToken cancellationToken)
     {
-        var firstDependentStep = await dbContext.ProcessSteps
+        // The rules are a JSON column: the flow's steps (a few dozen) are read and checked here.
+        var flowSteps = await dbContext.ProcessSteps
             .AsNoTracking()
-            .Where(s => s.ProcessFlowId == project.ProcessFlowId && (s.RequiresExternalRequest || s.RequiresOffer))
+            .Where(s => s.ProcessFlowId == project.ProcessFlowId)
             .OrderBy(s => s.Order)
-            .Select(s => new { s.Order, s.Code })
-            .FirstOrDefaultAsync(cancellationToken);
+            .Select(s => new { s.Order, s.Code, s.Conditions })
+            .ToListAsync(cancellationToken);
+        var firstDependentStep = flowSteps.FirstOrDefault(s =>
+            StepConditions.DependsOn(s.Conditions, StepConditionRule.Source)
+            || StepConditions.DependsOn(s.Conditions, StepConditionRule.RequiresOffer));
         if (firstDependentStep is null)
         {
             return;

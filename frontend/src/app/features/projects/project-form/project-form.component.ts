@@ -14,7 +14,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
 import { UserLookup, UserSummary } from '../../../shared/models/user-summary';
 import { RequestDraft } from '../../agents/models/request-draft';
-import { ProcessFlow, ProcessStep } from '../../process/models/process-stage';
+import { ProcessFlow, ProcessStep, dependsOn } from '../../process/models/process-stage';
 import { ProcessService } from '../../process/process.service';
 import {
   REQUEST_CHANNEL_LABELS,
@@ -74,7 +74,7 @@ function textOrNull(value: string): string | null {
 function conditionsLockedAt(flow: ProcessFlow, currentStep: ProcessStep | null): string | null {
   const first = flow.stages
     .flatMap((stage) => stage.steps)
-    .filter((step) => step.condition.requiresExternalRequest || step.condition.requiresOffer)
+    .filter((step) => dependsOn(step, 'source') || dependsOn(step, 'requiresOffer'))
     .sort((a, b) => a.order - b.order)[0];
   return first && currentStep && currentStep.order >= first.order ? first.code : null;
 }
