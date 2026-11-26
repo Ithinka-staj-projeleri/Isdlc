@@ -39,8 +39,8 @@ export class AddOnListComponent {
 
   readonly items = computed(() => (this.addOns.hasValue() ? this.addOns.value() : []));
 
-  /** Only a Business Analyst opens requests, add-ons included. */
-  readonly canAdd = computed(() => this.acceptsAddOns() && this._auth.user()?.role === 'BusinessAnalyst');
+  /** Opening a request, an add-on included, is the flow's first step: it needs "Analiz adımları". */
+  readonly canAdd = computed(() => this.acceptsAddOns() && this._auth.hasPermission('Analysis'));
 
   open(id: number): void {
     this._router.navigate(['/projects', id]);

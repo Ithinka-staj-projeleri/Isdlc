@@ -56,8 +56,11 @@ export class ProjectListComponent {
   });
   private readonly _query = toSignal(this._route.queryParamMap, { requireSync: true });
 
-  /** Only a business analyst can open a request (the API answers 403 to others). */
-  readonly canOpenRequest = computed(() => this._auth.hasRole('BusinessAnalyst'));
+  /**
+   * The button is shown to everyone (karar 2b): without "Analiz adımları" the request page explains what is missing and
+   * whom to ask, instead of the button disappearing without a reason.
+   */
+  readonly canOpenRequest = computed(() => !!this._auth.user());
 
   readonly title = computed(() => (this.mode() === 'requests' ? 'Talepler' : 'Projeler'));
   readonly view = computed(() => (this._query().get('view') as ProjectView | null) ?? 'active');
@@ -93,7 +96,7 @@ export class ProjectListComponent {
   });
 
   private readonly _analysts = rxResource({
-    stream: () => this._projectService.users('BusinessAnalyst'),
+    stream: () => this._projectService.users('Analysis'),
   });
 
   // A resource throws when its value is read in the error state (e.g. the API is down),

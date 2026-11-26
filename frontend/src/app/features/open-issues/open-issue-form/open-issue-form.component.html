@@ -54,7 +54,7 @@
                 @if (selectedOwner(); as owner) {
                 <div class="owner-info">
                     <span class="muted">
-                        {{ roleLabels[owner.role] }} · {{ owner.waitingSteps }} bekleyen adım
+                        {{ permissionNames(owner.permissions, 'Yetkisiz') }} · {{ owner.waitingSteps }} bekleyen adım
                         · <a [href]="'/users/' + owner.id" target="_blank" rel="noopener">Profili gör</a>
                     </span>
                     @if (expertiseAreas(owner.expertise); as areas) {

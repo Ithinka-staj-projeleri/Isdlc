@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
-import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
 import { GlobalSearchComponent } from '../../../features/search/global-search/global-search.component';
 import { NotificationBellComponent } from '../../../features/notifications/notification-bell/notification-bell.component';
 
@@ -13,5 +12,4 @@ import { NotificationBellComponent } from '../../../features/notifications/notif
 })
 export class TopbarComponent {
   protected readonly auth = inject(AuthService);
-  protected readonly roleLabels = USER_ROLE_LABELS;
 }

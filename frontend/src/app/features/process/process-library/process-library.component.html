@@ -51,12 +51,12 @@
                 <div class="body">
                     <p class="text">{{ step.text }}</p>
                     <div class="meta">
-                        <span class="role">{{ roleLabels[step.responsibleRole] }}</span>
+                        <span class="role">{{ permissionLabels[step.responsiblePermission] }}</span>
                         @if (step.isDecision) {
                         <app-status-badge label="Karar" tone="info" />
                         }
-                        @if (step.approverRole) {
-                        <app-status-badge [label]="'Onay: ' + roleLabels[step.approverRole]" tone="warn" />
+                        @if (step.approverPermission) {
+                        <app-status-badge [label]="'Onay: ' + permissionLabels[step.approverPermission]" tone="warn" />
                         }
                         @for (label of step.conditionLabels; track label) {
                         <app-status-badge [label]="label" tone="neutral" />

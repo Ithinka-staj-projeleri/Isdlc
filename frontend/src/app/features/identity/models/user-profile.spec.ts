@@ -17,7 +17,7 @@ describe('expertiseAreas', () => {
 
 describe('ownerOptionLabel', () => {
   const user: UserWorkload = {
-    id: 1, fullName: 'Elif Yılmaz', role: 'BusinessAnalyst', expertise: null,
+    id: 1, fullName: 'Elif Yılmaz', permissions: ['Analysis'], expertise: null,
     openIssues: 3, overdueOpenIssues: 0, waitingSteps: 2,
   };
 

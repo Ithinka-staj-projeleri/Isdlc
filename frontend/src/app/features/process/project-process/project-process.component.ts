@@ -4,7 +4,7 @@ import { catchError, of } from 'rxjs';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { BadgeTone, StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { PROJECT_STATUS_LABELS } from '../../../shared/models/project-status';
-import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
+import { PERMISSION_LABELS } from '../../../shared/models/permission';
 import { LocalDatePipe } from '../../../shared/pipes/local-date-pipe';
 import { ProcessStage, ProcessStep } from '../models/process-stage';
 import { ProcessStageState, ProjectProcess, STEP_ACTION_LABELS, StepRecord } from '../models/project-process';
@@ -48,7 +48,7 @@ export class ProjectProcessComponent {
      */
     readonly processChanged = output<void>();
 
-    protected readonly roleLabels = USER_ROLE_LABELS;
+    protected readonly permissionLabels = PERMISSION_LABELS;
     protected readonly statusLabels = PROJECT_STATUS_LABELS;
     protected readonly actionLabels = STEP_ACTION_LABELS;
     protected readonly stageStateLabels = STAGE_STATE_LABELS;

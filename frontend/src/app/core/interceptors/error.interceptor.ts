@@ -2,7 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
-import { AuthService, LOGIN_URL } from '../auth/auth.service';
+import { AuthService, LOGIN_URL, ME_URL } from '../auth/auth.service';
 import { problemOf, SHOWS_FIELD_ERRORS, SILENT_ERRORS } from '../http/problem-details';
 
 /** Used when the API sends no message of its own (server down, unexpected error, ...). */
@@ -38,6 +38,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           auth.logout(router.url);
         }
         return throwError(() => err);
+      }
+
+      // A refusal may come from a permission the company administrator has just changed: read the user again,
+      // so the buttons follow (docs/configurability.md → Giriş ve istek).
+      if (status === 403 && req.url !== ME_URL) {
+        auth.refreshMe();
       }
 
       // Background requests (the bell asking every minute) must not open an alert every time the server is down.

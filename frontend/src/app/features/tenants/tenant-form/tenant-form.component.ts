@@ -1,7 +1,6 @@
 import { Component, OnInit, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
-import { ASSIGNABLE_ROLES, USER_ROLE_LABELS, UserRole } from '../../../shared/models/user-role';
 import { PASSWORD_MIN_LENGTH, generateTemporaryPassword } from '../../identity/models/password';
 import { Tenant, isValidTenantCode, suggestTenantCode } from '../models/tenant';
 import { TenantService } from '../tenant.service';
@@ -24,8 +23,6 @@ export class TenantFormComponent implements OnInit {
     readonly saved = output<{ tenant: Tenant; adminEmail?: string; temporaryPassword?: string }>();
     readonly cancelled = output<void>();
 
-    protected readonly roles = ASSIGNABLE_ROLES;
-    protected readonly roleLabels = USER_ROLE_LABELS;
 
     protected name = '';
     protected code = '';
@@ -34,7 +31,6 @@ export class TenantFormComponent implements OnInit {
     protected isActive = true;
     protected adminFullName = '';
     protected adminEmail = '';
-    protected adminRole: UserRole | null = 'BusinessAnalyst';
     protected temporaryPassword = generateTemporaryPassword();
 
     protected readonly saving = signal(false);
@@ -81,7 +77,6 @@ export class TenantFormComponent implements OnInit {
             case 'admin.fullName': return !isNew || this.adminFullName.trim() ? null : 'Ad soyad zorunludur.';
             case 'admin.email':
                 return !isNew || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.adminEmail.trim()) ? null : 'Geçerli bir e-posta adresi girin.';
-            case 'admin.role': return !isNew || this.adminRole ? null : 'Rol seçilmelidir.';
             case 'admin.temporaryPassword':
                 return !isNew || this.temporaryPassword.length >= PASSWORD_MIN_LENGTH
                     ? null : `Parola en az ${PASSWORD_MIN_LENGTH} karakter olmalıdır.`;
@@ -92,7 +87,7 @@ export class TenantFormComponent implements OnInit {
     protected save(): void {
         this.submitted.set(true);
         this.serverErrors.set({});
-        const fields = ['name', 'code', 'admin.fullName', 'admin.email', 'admin.role', 'admin.temporaryPassword'];
+        const fields = ['name', 'code', 'admin.fullName', 'admin.email', 'admin.temporaryPassword'];
         if (fields.some(f => this.errorFor(f))) {
             return;
         }
@@ -112,7 +107,7 @@ export class TenantFormComponent implements OnInit {
         this.service.create({
             code: this.code,
             name: this.name.trim(),
-            admin: { fullName: this.adminFullName.trim(), email: adminEmail, role: this.adminRole!, temporaryPassword },
+            admin: { fullName: this.adminFullName.trim(), email: adminEmail, temporaryPassword },
         }).subscribe({
             next: tenant => this.done({ tenant, adminEmail, temporaryPassword }),
             error: err => this.failed(err),

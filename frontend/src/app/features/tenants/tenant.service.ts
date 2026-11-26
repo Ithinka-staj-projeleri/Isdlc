@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { showsFieldErrors } from '../../core/http/problem-details';
 import { PagedResult } from '../../shared/models/paged-result';
-import { CreateTenantInput, Tenant, TenantSettings, UpdateTenantInput } from './models/tenant';
+import { CreateTenantInput, CurrentTenant, Tenant, TenantSettings, UpdateTenantInput } from './models/tenant';
 
 /**
  * Companies (Faz 6). List, opening and editing are the Platform Administrator's; the settings are the company
@@ -26,6 +26,11 @@ export class TenantService {
 
     update(id: number, input: UpdateTenantInput): Observable<Tenant> {
         return this.http.put<Tenant>(`${this.url}/${id}`, input, { context: showsFieldErrors() });
+    }
+
+    /** The signed-in user's company with its active administrators (for "whom to ask"). */
+    current(): Observable<CurrentTenant> {
+        return this.http.get<CurrentTenant>(`${this.url}/current`);
     }
 
     getSettings(): Observable<TenantSettings> {

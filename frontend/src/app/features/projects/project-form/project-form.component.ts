@@ -11,10 +11,12 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { map, switchMap } from 'rxjs';
+import { catchError, map, of, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
+import { newRequestBlockedMessage } from '../../../shared/models/permission';
 import { UserLookup, UserSummary } from '../../../shared/models/user-summary';
+import { TenantService } from '../../tenants/tenant.service';
 import { RequestDraft } from '../../agents/models/request-draft';
 import { ProcessFlow, ProcessStep, dependsOn } from '../../process/models/process-stage';
 import { ProcessService } from '../../process/process.service';
@@ -146,6 +148,19 @@ export class ProjectFormComponent {
   );
   readonly isEdit = computed(() => this.projectId() !== null);
 
+  /** The company's administrators, for "whom to ask" when a new request cannot be opened (karar 2b). */
+  private readonly _admins = toSignal(
+    inject(TenantService).current().pipe(map(t => t.admins), catchError(() => of([] as string[]))),
+    { initialValue: [] as string[] },
+  );
+
+  /**
+   * A new request without "Analiz adımları": the form is replaced by what is missing and whom to ask
+   * (the API answers 403 with the same text). The button that leads here is shown to everyone.
+   */
+  readonly newRequestBlocked = computed(() =>
+    !this.isEdit() && !this._auth.hasPermission('Analysis') ? newRequestBlockedMessage(this._admins()) : null);
+
   /** /requests/new?parentProjectId=14 (from a project's "Ek Geliştirmeler" tab) opens an add-on of that project. */
   private readonly _parentFromLink = toSignal(
     this._route.queryParamMap.pipe(map((params) => Number(params.get('parentProjectId')) || null)),
@@ -200,8 +215,8 @@ export class ProjectFormComponent {
   /** The step code from which source and offer are locked ("4"), or null while they can change. */
   readonly conditionsLockedAt = computed(() => (this._conditionLock.hasValue() ? this._conditionLock.value() : null));
 
-  private readonly _analysts = rxResource({ stream: () => this._projectService.users('BusinessAnalyst') });
-  private readonly _managers = rxResource({ stream: () => this._projectService.users('ProjectManager') });
+  private readonly _analysts = rxResource({ stream: () => this._projectService.users('Analysis') });
+  private readonly _managers = rxResource({ stream: () => this._projectService.users('ProjectManagement') });
 
   // The assigned person stays in the list even if they were deactivated since, so the form does not
   // silently show "Atanmadı" for them.
@@ -231,9 +246,9 @@ export class ProjectFormComponent {
       requesterContact: this._fb.nonNullable.control('', Validators.maxLength(200)),
       requiresNda: this._fb.nonNullable.control(false),
       notes: this._fb.nonNullable.control('', Validators.maxLength(2000)),
-      // Only a Business Analyst opens requests: the one who registers it is its analyst until changed.
+      // Opening a request needs "Analiz adımları": the one who registers it is its analyst until changed.
       businessAnalystId: this._fb.control<number | null>(
-        this._auth.user()?.role === 'BusinessAnalyst' ? this._auth.user()!.id : null,
+        this._auth.hasPermission('Analysis') ? this._auth.user()!.id : null,
       ),
       projectManagerId: this._fb.control<number | null>(null),
       dueDate: this._fb.control<string | null>(null),

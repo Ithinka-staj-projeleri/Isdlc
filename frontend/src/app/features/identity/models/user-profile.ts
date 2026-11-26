@@ -1,4 +1,4 @@
-import { UserRole } from '../../../shared/models/user-role';
+import { Permission } from '../../../shared/models/permission';
 import { DashboardList, DashboardOpenIssue, WaitingStep } from '../../dashboard/models/dashboard';
 
 /** The person's numbers from the team workload (the same as the dashboard's "Ekip iş yükü" row). */
@@ -13,7 +13,7 @@ export interface UserProfile {
   id: number;
   fullName: string;
   email: string;
-  role: UserRole;
+  permissions: Permission[];
   isActive: boolean;
   /** Comma separated areas, e.g. "Ödeme sistemleri, SQL". */
   expertise: string | null;
@@ -34,7 +34,7 @@ export interface UpdateMyProfile {
 export interface UserWorkload extends UserWorkloadCounts {
   id: number;
   fullName: string;
-  role: UserRole;
+  permissions: Permission[];
   expertise: string | null;
 }
 

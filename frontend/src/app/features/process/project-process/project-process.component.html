@@ -55,10 +55,10 @@
                 <div class="body">
                     <p class="text">{{ step.text }}</p>
                     <div class="meta">
-                        <span class="muted small">{{ roleLabels[step.responsibleRole] }}</span>
+                        <span class="muted small">{{ permissionLabels[step.responsiblePermission] }}</span>
                         @if (step.isDecision) { <app-status-badge label="Karar" tone="info" /> }
-                        @if (step.approverRole) {
-                        <app-status-badge [label]="'Onay: ' + roleLabels[step.approverRole]" tone="warn" />
+                        @if (step.approverPermission) {
+                        <app-status-badge [label]="'Onay: ' + permissionLabels[step.approverPermission]" tone="warn" />
                         }
                         @if (state !== 'current' && latestRecordByStep().get(step.id); as record) {
                         @let badge = recordBadge(record);

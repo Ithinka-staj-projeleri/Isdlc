@@ -3,7 +3,8 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { showsFieldErrors } from '../../core/http/problem-details';
 import { PagedResult } from '../../shared/models/paged-result';
-import { UserLookup, UserRole } from '../../shared/models/user-summary';
+import { Permission } from '../../shared/models/permission';
+import { UserLookup } from '../../shared/models/user-summary';
 import { Project, ProjectFilter, ProjectInput, ProjectListItem } from './project.model';
 import { ProjectSummary } from './project-summary/project-summary.model';
 
@@ -50,9 +51,9 @@ export class ProjectService {
     return this._http.put<Project>(`${this._baseUrl}/${projectId}`, input, { context: showsFieldErrors() });
   }
 
-  /** Active users for pickers, e.g. business analysts. */
-  users(role?: UserRole): Observable<UserLookup[]> {
-    const params = role ? new HttpParams().set('role', role) : undefined;
+  /** Active users for pickers: ?permission=Analysis for analysts, ProjectManagement for project managers. */
+  users(permission?: Permission): Observable<UserLookup[]> {
+    const params = permission ? new HttpParams().set('permission', permission) : undefined;
     return this._http.get<UserLookup[]>('/api/v1/users', { params });
   }
 }

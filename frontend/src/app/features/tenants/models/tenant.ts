@@ -1,5 +1,3 @@
-import { UserRole } from '../../../shared/models/user-role';
-
 // Contract: docs/multi-tenancy.md → Uç noktalar (Faz 6 · T4, T6).
 
 /** A company as the Platform Administrator sees it: only how many users it has (backend: TenantDto). */
@@ -20,7 +18,6 @@ export interface CreateTenantInput {
     admin: {
         fullName: string;
         email: string;
-        role: UserRole;
         temporaryPassword: string;
     };
 }
@@ -29,6 +26,14 @@ export interface CreateTenantInput {
 export interface UpdateTenantInput {
     name: string;
     isActive: boolean;
+}
+
+/** GET /tenants/current: the user's company and its active administrators' names ("whom to ask"). */
+export interface CurrentTenant {
+    id: number;
+    code: string;
+    name: string;
+    admins: string[];
 }
 
 /** GET / PUT /tenants/current/settings. */

@@ -30,8 +30,9 @@
             } @else {
             <h4 class="full">Şirketin ilk yöneticisi</h4>
             <p class="full hint">
-                Bu kişi geçici parolayla girer, kendi parolasını belirler ve şirketin diğer kullanıcılarını ekler.
-                Şirkete akışlar, doküman türleri ve soru listeleri şablondan kopyalanır.
+                Bu kişi geçici parolayla girer, kendi parolasını belirler, şirketin kullanıcılarını ekler ve yetkilerini
+                verir. Hesap yetkisiz açılır; kişi süreçte de çalışacaksa kendine yetki verir. Şirkete akışlar, doküman
+                türleri ve soru listeleri şablondan kopyalanır.
             </p>
 
             <label class="field" [class.invalid]="errorFor('admin.fullName')">
@@ -44,17 +45,6 @@
                 E-posta
                 <input name="adminEmail" type="email" [(ngModel)]="adminEmail" maxlength="256" autocomplete="off" />
                 @if (errorFor('admin.email'); as error) { <span class="error">{{ error }}</span> }
-            </label>
-
-            <label class="field" [class.invalid]="errorFor('admin.role')">
-                Rol
-                <select name="adminRole" [(ngModel)]="adminRole">
-                    <option [ngValue]="null">Seçin…</option>
-                    @for (r of roles; track r) {
-                    <option [ngValue]="r">{{ roleLabels[r] }}</option>
-                    }
-                </select>
-                @if (errorFor('admin.role'); as error) { <span class="error">{{ error }}</span> }
             </label>
 
             <label class="field" [class.invalid]="errorFor('admin.temporaryPassword')">

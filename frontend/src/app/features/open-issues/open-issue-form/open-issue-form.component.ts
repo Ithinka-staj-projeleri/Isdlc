@@ -6,7 +6,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of, startWith } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
-import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
+import { permissionNames } from '../../../shared/models/permission';
 import { expertiseAreas, ownerOptionLabel } from '../../identity/models/user-profile';
 import { UserProfileService } from '../../identity/user-profile.service';
 import { OPEN_ISSUE_TYPE_LABELS, OpenIssue, OpenIssueType, SaveOpenIssue } from '../models/open-issue';
@@ -42,7 +42,7 @@ export class OpenIssueFormComponent implements OnInit {
 
     protected readonly typeLabels = OPEN_ISSUE_TYPE_LABELS;
     protected readonly types = Object.keys(OPEN_ISSUE_TYPE_LABELS) as OpenIssueType[];
-    protected readonly roleLabels = USER_ROLE_LABELS;
+    protected readonly permissionNames = permissionNames;
     protected readonly ownerOptionLabel = ownerOptionLabel;
     protected readonly expertiseAreas = expertiseAreas;
     // Sorumlu önerisi (Faz 5 · F9): active users with their expertise and workload, loaded fresh each time the form opens.

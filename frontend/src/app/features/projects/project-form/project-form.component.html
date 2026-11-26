@@ -17,7 +17,9 @@
   }
 </header>
 
-@if (isEdit() && loadFailed()) {
+@if (newRequestBlocked(); as message) {
+  <p class="notice bad" role="alert">{{ message }}</p>
+} @else if (isEdit() && loadFailed()) {
   <p class="notice bad">Proje yüklenemedi. Proje silinmiş ya da adres yanlış olabilir.</p>
 } @else if (isEdit() && !existing()) {
   <p class="notice">Yükleniyor…</p>
