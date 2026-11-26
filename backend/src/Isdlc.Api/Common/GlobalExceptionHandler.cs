@@ -20,6 +20,7 @@ public class GlobalExceptionHandler(
         {
             NotFoundException => (StatusCodes.Status404NotFound, "Kayıt bulunamadı", exception.Message),
             BusinessRuleException => (StatusCodes.Status400BadRequest, "İşlem yapılamadı", exception.Message),
+            FieldValidationException => (StatusCodes.Status400BadRequest, ValidationConfiguration.Title, exception.Message),
             ForbiddenException => (StatusCodes.Status403Forbidden, "Yetkiniz yok", exception.Message),
             ConflictException => (StatusCodes.Status409Conflict, "Kayıt güncel değil", exception.Message),
             ServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Servis kullanılamıyor", exception.Message),
@@ -38,16 +39,26 @@ public class GlobalExceptionHandler(
 
         httpContext.Response.StatusCode = status;
 
-        return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            Exception = exception,
-            ProblemDetails = new ProblemDetails
+        // Field errors found by a service look exactly like the automatic validation errors (ValidationConfiguration).
+        var problem = exception is FieldValidationException fieldErrors
+            ? new ValidationProblemDetails(fieldErrors.Errors.ToDictionary(e => e.Key, e => e.Value))
+            {
+                Status = status,
+                Title = ValidationConfiguration.Title,
+                Detail = "Lütfen işaretli alanları düzeltin.",
+            }
+            : new ProblemDetails
             {
                 Status = status,
                 Title = title,
                 Detail = detail,
-            },
+            };
+
+        return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = httpContext,
+            Exception = exception,
+            ProblemDetails = problem,
         });
     }
 }

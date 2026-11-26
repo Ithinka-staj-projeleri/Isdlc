@@ -47,6 +47,7 @@ public interface IApplicationDbContext
     DbSet<Questionnaire> Questionnaires { get; }
     DbSet<QuestionAnswer> QuestionAnswers { get; }
     DbSet<ProcessImprovement> ProcessImprovements { get; }
+    DbSet<CustomField> CustomFields { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

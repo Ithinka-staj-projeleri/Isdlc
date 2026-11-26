@@ -30,6 +30,8 @@ import {
   REQUEST_TYPE_LABELS,
 } from '../project-labels';
 import { ProjectService } from '../project.service';
+import { formatCustomValue } from '../custom-fields/custom-field';
+import { CustomFieldService } from '../custom-fields/custom-field.service';
 
 type DetailTab =
   | 'general'
@@ -125,6 +127,12 @@ export class ProjectDetailComponent {
   });
 
   readonly link = computed(() => projectLink(this.projectId()));
+
+  /** The company's active fields, for "Şirkete Özel Bilgiler" (Faz 7 · A6). */
+  private readonly _customFieldService = inject(CustomFieldService);
+  private readonly _customFields = rxResource({ stream: () => this._customFieldService.list() });
+  readonly customFields = computed(() => (this._customFields.hasValue() ? this._customFields.value() : []));
+  readonly formatCustomValue = formatCustomValue;
 
   readonly project = rxResource({
     params: () => ({ projectId: this.projectId() }),

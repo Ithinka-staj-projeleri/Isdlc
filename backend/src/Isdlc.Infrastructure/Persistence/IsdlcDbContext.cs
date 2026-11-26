@@ -52,6 +52,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options, ITenantCon
     public DbSet<Questionnaire> Questionnaires => Set<Questionnaire>();
     public DbSet<QuestionAnswer> QuestionAnswers => Set<QuestionAnswer>();
     public DbSet<ProcessImprovement> ProcessImprovements => Set<ProcessImprovement>();
+    public DbSet<CustomField> CustomFields => Set<CustomField>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

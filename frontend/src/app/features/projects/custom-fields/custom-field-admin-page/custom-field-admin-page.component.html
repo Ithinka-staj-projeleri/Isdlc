@@ -1,0 +1,66 @@
+<header class="page-head">
+  <div>
+    <h2>Talep Alanları</h2>
+    <p class="hint">
+      Şirketinizin Talep Kayıt Formu'na eklediği alanlar. Talep formunda ve projenin Genel Bilgiler sekmesinde
+      "Şirkete Özel Bilgiler" bölümünde görünür; akışta adım atlatmak için de kullanılabilir. Alan silinmez, pasife
+      alınır.
+    </p>
+  </div>
+  <button type="button" class="button primary" (click)="editing.set(null)">+ Yeni alan</button>
+</header>
+
+@if (fields.error()) {
+  <app-empty-state message="Liste yüklenemedi. Sayfayı yenileyip tekrar deneyin." />
+} @else if (fields.hasValue()) {
+  @if (fields.value().length === 0) {
+    <app-empty-state message="Henüz alan eklenmedi. Talep formu yalnızca standart alanlarla açılır." />
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sıra</th>
+            <th>Alan adı</th>
+            <th>Anahtar</th>
+            <th>Tür</th>
+            <th>Durum</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (field of fields.value(); track field.id) {
+            <tr [class.inactive]="!field.isActive">
+              <td>{{ field.order }}</td>
+              <td>
+                {{ field.label }}
+                @if (field.isRequired) { <app-status-badge label="Zorunlu" tone="info" /> }
+                @if (field.type === 'Select') {
+                  <div class="muted">{{ field.options.join(' · ') }}</div>
+                }
+              </td>
+              <td><span class="code">{{ field.key }}</span></td>
+              <td>{{ typeLabels[field.type] }}</td>
+              <td class="status">
+                @if (field.isActive) {
+                  <app-status-badge label="Aktif" tone="ok" />
+                } @else {
+                  <app-status-badge label="Pasif" />
+                }
+              </td>
+              <td class="actions">
+                <button type="button" class="button small" (click)="editing.set(field)">Düzenle</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+} @else {
+  <app-empty-state message="Yükleniyor…" />
+}
+
+@if (editing() !== undefined) {
+  <app-custom-field-form [field]="editing() ?? null" (saved)="onSaved()" (cancelled)="editing.set(undefined)" />
+}

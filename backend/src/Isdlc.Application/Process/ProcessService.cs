@@ -5,6 +5,7 @@ using Isdlc.Application.Common.Models;
 using Isdlc.Application.Identity;
 using Isdlc.Application.Notifications;
 using Isdlc.Application.Process.Dtos;
+using Isdlc.Application.Projects;
 using Isdlc.Application.QuestionBank;
 using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
@@ -80,7 +81,8 @@ public class ProcessService(
                 p.ProcessFlowId,
                 Flow = new ProcessFlowSummaryDto(p.ProcessFlow.Code, p.ProcessFlow.Name, p.ProcessFlow.Kind),
                 p.ProcessFlow.ProjectStageOrder,
-                Context = new ConditionContext(p.Source, p.RequestType, p.RequiresOffer, p.Level),
+                Context = new ConditionContext(
+                    p.Source, p.RequestType, p.RequiresOffer, p.Level, CustomValueRules.ToText(p.CustomValues)),
             })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
@@ -422,7 +424,9 @@ public class ProcessService(
         Project project, CurrentStepInfo step, CancellationToken cancellationToken)
     {
         var flowSteps = await LoadFlowStepsAsync(project.ProcessFlowId, cancellationToken);
-        var context = new ConditionContext(project.Source, project.RequestType, project.RequiresOffer, project.Level);
+        var context = new ConditionContext(
+            project.Source, project.RequestType, project.RequiresOffer, project.Level,
+            CustomValueRules.ToText(project.CustomValues));
 
         return StepConditions.NextStepId(flowSteps, step.Order, context) is { } nextStepId
             ? await LoadStepRefAsync(nextStepId, cancellationToken)
@@ -491,15 +495,18 @@ public class ProcessService(
                 .Select(p => new
                 {
                     p.Name, p.Description, p.CustomerName, p.RequesterName, p.RequestChannel, p.RequestChannelOther, p.Level,
+                    p.CustomValues,
                 })
                 .SingleAsync(cancellationToken);
 
-            // The same required fields as the request form (CreateProjectDto).
+            // The same required fields as the request form (CreateProjectDto), and the company's required fields (A6).
             requestFormComplete = !string.IsNullOrWhiteSpace(project.Name)
                 && !string.IsNullOrWhiteSpace(project.Description)
                 && !string.IsNullOrWhiteSpace(project.CustomerName)
                 && !string.IsNullOrWhiteSpace(project.RequesterName)
-                && (project.RequestChannel != RequestChannel.Other || !string.IsNullOrWhiteSpace(project.RequestChannelOther));
+                && (project.RequestChannel != RequestChannel.Other || !string.IsNullOrWhiteSpace(project.RequestChannelOther))
+                && CustomValueRules.RequiredFieldsFilled(
+                    await dbContext.CustomFields.ActiveDefinitionsAsync(cancellationToken), project.CustomValues);
             levelApplied = project.Level is not null;
         }
 

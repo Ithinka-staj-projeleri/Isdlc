@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using Isdlc.Application.Common.Models;
 using Isdlc.Domain.Projects;
 
@@ -90,7 +91,8 @@ public record ProjectDto(
     DateOnly? DueDate,
     UserSummaryDto CreatedBy, // talebi kayda alan
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    IReadOnlyDictionary<string, JsonElement> CustomValues); // the company's own fields by key (Faz 7 · A6); inactive ones too
 
 /// <summary>
 /// POST /api/v1/projects — a new request always starts Active at the first step of its flow.
@@ -157,6 +159,12 @@ public record CreateProjectDto : IValidatableObject
     public DateOnly? RequestDate { get; init; }
 
     public DateOnly? DueDate { get; init; }
+
+    /// <summary>
+    /// The company's own fields by key: {"butce-onayli": true}. Checked by the service against the active fields
+    /// (400 "customValues.{key}"); keys that are not active fields are ignored. Inactive fields keep their saved value.
+    /// </summary>
+    public Dictionary<string, JsonElement>? CustomValues { get; init; }
 
     /// <summary>Rules that involve more than one field (shared by create and update).</summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

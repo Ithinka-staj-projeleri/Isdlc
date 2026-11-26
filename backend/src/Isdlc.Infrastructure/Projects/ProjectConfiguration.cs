@@ -23,6 +23,7 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(x => x.RequesterContact).HasMaxLength(200);
         builder.Property(x => x.RequestChannelOther).HasMaxLength(200);
         builder.Property(x => x.Notes).HasMaxLength(2000);
+        builder.Property(x => x.CustomValues); // nvarchar(max): the number of fields is up to the company
         builder.Property(x => x.RowVersion).IsRowVersion();
 
         // Each company numbers its own records (docs/multi-tenancy.md → Benzersizlik).

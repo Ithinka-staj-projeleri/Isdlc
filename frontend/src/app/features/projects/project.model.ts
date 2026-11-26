@@ -1,5 +1,6 @@
 import { ProjectStatus } from '../../shared/models/project-status';
 import { UserSummary } from '../../shared/models/user-summary';
+import { CustomValue } from './custom-fields/custom-field';
 
 // Shapes of the Projects API. Contract: docs/projects-api.md
 // Enum values are the backend's text values; Turkish labels are in project-labels.ts.
@@ -73,6 +74,8 @@ export interface Project extends ProjectListItem {
   /** UTC date and time, e.g. "2026-11-05T09:00:00Z". */
   createdAt: string;
   updatedAt: string | null;
+  /** The company's own fields by key (Faz 7 · A6); values of inactive fields too. */
+  customValues: Record<string, CustomValue>;
 }
 
 /**
@@ -99,6 +102,8 @@ export interface ProjectInput {
   /** Date only, e.g. "2026-11-05". */
   requestDate: string;
   dueDate: string | null;
+  /** The company's active fields by key; empty values are left out. Inactive fields keep their saved value. */
+  customValues: Record<string, CustomValue>;
 }
 
 /** List filters; all optional. */
