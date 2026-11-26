@@ -25,6 +25,7 @@ public interface IApplicationDbContext
 {
     DbSet<Tenant> Tenants { get; }
     DbSet<User> Users { get; }
+    DbSet<UserPermission> UserPermissions { get; }
     DbSet<Project> Projects { get; }
     DbSet<ProcessFlow> ProcessFlows { get; }
     DbSet<ProcessStage> ProcessStages { get; }

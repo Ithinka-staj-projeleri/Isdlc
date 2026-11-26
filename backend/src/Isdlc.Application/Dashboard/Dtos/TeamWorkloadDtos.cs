@@ -11,16 +11,17 @@ namespace Isdlc.Application.Dashboard.Dtos;
 /// </summary>
 public record TeamMemberWorkloadDto(
     UserSummaryDto User,
-    UserRole Role,
+    IReadOnlyList<Permission> Permissions, // what the user can do in the flow (Faz 7 · A2), in the list's order
     int OpenIssues,         // not closed, owned by the user
     int OverdueOpenIssues,  // of those, past the due date
     int WaitingSteps);      // current steps the user can act on (the "Bana bekleyen adımlar" rule)
 
 // ---- What the rules count (one row per record) ----
 
-public record WorkloadUserRow(int Id, string FullName, UserRole Role);
+public record WorkloadUserRow(int Id, string FullName, IReadOnlyList<Permission> Permissions);
 
 public record WorkloadOpenIssueRow(int OwnerUserId, OpenIssueStatus Status, DateOnly? DueDate);
 
 /// <summary>An active record's current step: who can act on it, and who is assigned to the record.</summary>
-public record WorkloadStepRow(UserRole ResponsibleRole, UserRole? ApproverRole, int? BusinessAnalystId, int? ProjectManagerId);
+public record WorkloadStepRow(
+    Permission ResponsiblePermission, Permission? ApproverPermission, int? BusinessAnalystId, int? ProjectManagerId);

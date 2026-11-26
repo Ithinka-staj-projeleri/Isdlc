@@ -1,3 +1,4 @@
+using Isdlc.Application.Identity;
 using Isdlc.Application.Process;
 using Isdlc.Application.Process.Dtos;
 using Isdlc.Domain.Identity;
@@ -12,10 +13,10 @@ namespace Isdlc.Application.Tests.Process;
 public class ProcessProgressTests
 {
     // Step shapes from the seed (process-flow.json).
-    private static readonly StepPermissionInfo NormalStep = new(IsDecision: false, UserRole.BusinessAnalyst, ApproverRole: null);   // 1.1
-    private static readonly StepPermissionInfo DecisionStep = new(IsDecision: true, UserRole.BusinessAnalyst, ApproverRole: null);  // 2.2
-    private static readonly StepPermissionInfo ApprovalDecision = new(true, UserRole.BusinessAnalyst, UserRole.SoftwareDepartmentManager); // 4.5
-    private static readonly StepPermissionInfo SalesApproval = new(false, UserRole.SalesRepresentative, UserRole.SoftwareDepartmentManager); // 5.1
+    private static readonly StepPermissionInfo NormalStep = new(IsDecision: false, Permission.Analysis, ApproverPermission: null);   // 1.1
+    private static readonly StepPermissionInfo DecisionStep = new(IsDecision: true, Permission.Analysis, ApproverPermission: null);  // 2.2
+    private static readonly StepPermissionInfo ApprovalDecision = new(true, Permission.Analysis, Permission.Approval); // 4.5
+    private static readonly StepPermissionInfo SalesApproval = new(false, Permission.Sales, Permission.Approval); // 5.1
 
     // ---- Progress percent ----
 
@@ -88,18 +89,25 @@ public class ProcessProgressTests
 
     // ---- Who can act (buttons) ----
 
+    private static readonly string[] Admins = ["Deniz Aydın", "Mert Kaya"];
+
+    /// <summary>A signed-in user with these permissions; the company's administrators are Deniz Aydın and Mert Kaya.</summary>
+    private static UserAccess As(params Permission[] permissions) => new(1, permissions.ToHashSet(), Admins);
+
+    private const string AskAdmins = "Şirket yöneticinizden isteyin: Deniz Aydın, Mert Kaya.";
+
     [Fact]
-    public void AvailableActions_ResponsibleRoleOnNormalStep_CanComplete()
+    public void AvailableActions_ResponsiblePermissionOnNormalStep_CanComplete()
     {
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, UserRole.BusinessAnalyst);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, As(Permission.Analysis));
 
         Assert.Equal(new AvailableActionsDto(CanComplete: true, CanAnswer: false, CanReject: false, CanPostpone: false, CanResume: false, BlockedReason: null), actions);
     }
 
     [Fact]
-    public void AvailableActions_ResponsibleRoleOnDecisionStep_CanAnswer()
+    public void AvailableActions_ResponsiblePermissionOnDecisionStep_CanAnswer()
     {
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, DecisionStep, UserRole.BusinessAnalyst);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, DecisionStep, As(Permission.Analysis));
 
         Assert.False(actions.CanComplete);
         Assert.True(actions.CanAnswer);
@@ -107,43 +115,64 @@ public class ProcessProgressTests
     }
 
     [Fact]
-    public void AvailableActions_OtherRole_IsBlockedWithTheResponsibleRoleName()
+    public void AvailableActions_WithoutThePermission_NamesItAndTheAdministrators()
     {
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, UserRole.SoftwareDeveloper);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, As(Permission.Development));
 
         Assert.False(actions.CanComplete);
         Assert.False(actions.CanAnswer);
         Assert.False(actions.CanReject);
-        Assert.Equal("Bu adım İş Analisti tarafından yapılır.", actions.BlockedReason);
+        Assert.Equal($"Bu adım için «Analiz adımları» yetkisi gerekir. {AskAdmins}", actions.BlockedReason);
+        Assert.Equal(Permission.Analysis, actions.MissingPermission);
     }
 
     [Fact]
-    public void AvailableActions_ApprovalStep_ResponsibleRoleCannotCloseIt()
+    public void AvailableActions_NoPermissionsAtAll_IsBlocked()
     {
-        // 4.5: the analyst prepares, only the manager answers.
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, ApprovalDecision, UserRole.BusinessAnalyst);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, As());
+
+        Assert.False(actions.CanComplete);
+        Assert.Equal(Permission.Analysis, actions.MissingPermission);
+    }
+
+    [Fact]
+    public void AvailableActions_ApprovalStep_ResponsiblePermissionCannotCloseIt()
+    {
+        // 4.5: the analyst prepares, only someone with "Onay ve karar" answers.
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, ApprovalDecision, As(Permission.Analysis));
 
         Assert.False(actions.CanAnswer);
-        Assert.Equal("Bu adım Yazılım Departman Yöneticisi tarafından onaylanır.", actions.BlockedReason);
+        Assert.Equal($"Bu adımı onaylamak için «Onay ve karar» yetkisi gerekir. {AskAdmins}", actions.BlockedReason);
+        Assert.Equal(Permission.Approval, actions.MissingPermission);
     }
 
     [Fact]
-    public void AvailableActions_ApprovalStep_ManagerCanAnswerAndReject()
+    public void AvailableActions_ApprovalStep_ApproverCanAnswerAndReject()
     {
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, ApprovalDecision, UserRole.SoftwareDepartmentManager);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, ApprovalDecision, As(Permission.Approval));
 
         Assert.Equal(new AvailableActionsDto(CanComplete: false, CanAnswer: true, CanReject: true, CanPostpone: false, CanResume: false, BlockedReason: null), actions);
     }
 
     [Fact]
-    public void AvailableActions_ManagerOnAnalystStep_CannotActButCanReject()
+    public void AvailableActions_ApproverOnAnalysisStep_CannotActButCanReject()
     {
         // Rejecting is allowed on any step; acting on it is not.
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, UserRole.SoftwareDepartmentManager);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, As(Permission.Approval));
 
         Assert.False(actions.CanComplete);
         Assert.True(actions.CanReject);
-        Assert.Equal("Bu adım İş Analisti tarafından yapılır.", actions.BlockedReason);
+        Assert.Equal(Permission.Analysis, actions.MissingPermission);
+    }
+
+    [Fact]
+    public void AvailableActions_SeveralPermissions_DoBoth()
+    {
+        // One person with both permissions closes the analysis step and can decide on the request.
+        var actions = ProcessProgress.GetAvailableActions(
+            ProjectStatus.Active, NormalStep, As(Permission.Analysis, Permission.Approval), inRequestPhase: true);
+
+        Assert.Equal(new AvailableActionsDto(CanComplete: true, CanAnswer: false, CanReject: true, CanPostpone: true, CanResume: false, BlockedReason: null), actions);
     }
 
     [Theory]
@@ -153,7 +182,7 @@ public class ProcessProgressTests
     [InlineData(ProjectStatus.Redirected)]
     public void AvailableActions_InactiveProject_NothingAllowed(ProjectStatus status)
     {
-        var actions = ProcessProgress.GetAvailableActions(status, NormalStep, UserRole.SoftwareDepartmentManager);
+        var actions = ProcessProgress.GetAvailableActions(status, NormalStep, As(Permission.Approval));
 
         Assert.Equal(new AvailableActionsDto(false, false, false, false, false, "Proje aktif değil; süreçte işlem yapılamaz."), actions);
     }
@@ -163,10 +192,10 @@ public class ProcessProgressTests
     [Theory]
     [InlineData(true, true)]   // a request: can be postponed
     [InlineData(false, false)] // past the request stages: only rejected
-    public void AvailableActions_Manager_CanPostponeOnlyARequest(bool inRequestPhase, bool canPostpone)
+    public void AvailableActions_Approver_CanPostponeOnlyARequest(bool inRequestPhase, bool canPostpone)
     {
         var actions = ProcessProgress.GetAvailableActions(
-            ProjectStatus.Active, NormalStep, UserRole.SoftwareDepartmentManager, inRequestPhase);
+            ProjectStatus.Active, NormalStep, As(Permission.Approval), inRequestPhase);
 
         Assert.True(actions.CanReject);
         Assert.Equal(canPostpone, actions.CanPostpone);
@@ -174,17 +203,17 @@ public class ProcessProgressTests
     }
 
     [Fact]
-    public void AvailableActions_OtherRoleOnARequest_CannotPostpone()
+    public void AvailableActions_WithoutApprovalOnARequest_CannotPostpone()
     {
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, UserRole.BusinessAnalyst, inRequestPhase: true);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, As(Permission.Analysis), inRequestPhase: true);
 
         Assert.False(actions.CanPostpone);
     }
 
     [Fact]
-    public void AvailableActions_PostponedForManager_OnlyResume()
+    public void AvailableActions_PostponedForApprover_OnlyResume()
     {
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Postponed, NormalStep, UserRole.SoftwareDepartmentManager, true);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Postponed, NormalStep, As(Permission.Approval), true);
 
         Assert.Equal(
             new AvailableActionsDto(false, false, false, false, CanResume: true,
@@ -193,20 +222,21 @@ public class ProcessProgressTests
     }
 
     [Fact]
-    public void AvailableActions_PostponedForOtherRoles_NothingAllowed()
+    public void AvailableActions_PostponedWithoutApproval_NothingAllowed()
     {
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Postponed, NormalStep, UserRole.BusinessAnalyst, true);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Postponed, NormalStep, As(Permission.Analysis), true);
 
         Assert.Equal(
             new AvailableActionsDto(false, false, false, false, false,
-                "Talep ertelendi; Yazılım Departman Yöneticisi değerlendirmeye geri alınca devam eder."),
+                "Talep ertelendi; «Onay ve karar» yetkisi olan biri değerlendirmeye geri alınca devam eder.",
+                Permission.Approval),
             actions);
     }
 
     [Fact]
     public void AvailableActions_NoSignedInUser_NothingAllowed()
     {
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, userRole: null);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, NormalStep, user: null);
 
         Assert.Equal(new AvailableActionsDto(false, false, false, false, false, "İşlem yapmak için giriş yapılmalıdır."), actions);
     }
@@ -214,7 +244,7 @@ public class ProcessProgressTests
     [Fact]
     public void AvailableActions_NoCurrentStep_NothingAllowed()
     {
-        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, currentStep: null, UserRole.BusinessAnalyst);
+        var actions = ProcessProgress.GetAvailableActions(ProjectStatus.Active, currentStep: null, As(Permission.Analysis));
 
         Assert.False(actions.CanComplete || actions.CanAnswer || actions.CanReject);
         Assert.NotNull(actions.BlockedReason);
@@ -223,29 +253,38 @@ public class ProcessProgressTests
     // ---- Permission rules used by the commands ----
 
     [Theory]
-    [InlineData(UserRole.SalesRepresentative, false)] // prepares the offer, but cannot close the step
-    [InlineData(UserRole.SoftwareDepartmentManager, true)]
-    [InlineData(UserRole.BusinessAnalyst, false)]
-    public void CanActOnStep_Step51_OnlyTheApproverClosesIt(UserRole role, bool expected)
+    [InlineData(Permission.Sales, false)] // prepares the offer, but cannot close the step
+    [InlineData(Permission.Approval, true)]
+    [InlineData(Permission.Analysis, false)]
+    public void CanActOnStep_Step51_OnlyTheApproverClosesIt(Permission permission, bool expected)
     {
-        Assert.Equal(expected, ProcessProgress.CanActOnStep(SalesApproval, role));
+        Assert.Equal(expected, ProcessProgress.CanActOnStep(SalesApproval, As(permission)));
     }
 
     [Theory]
-    [InlineData(UserRole.SoftwareDepartmentManager, true)]
-    [InlineData(UserRole.BusinessAnalyst, false)]
-    [InlineData(UserRole.ProjectManager, false)]
-    [InlineData(UserRole.SalesRepresentative, false)]
-    public void CanReject_OnlyTheManager(UserRole role, bool expected)
+    [InlineData(Permission.Approval, true)]
+    [InlineData(Permission.Analysis, false)]
+    [InlineData(Permission.ProjectManagement, false)]
+    [InlineData(Permission.Sales, false)]
+    public void CanDecide_OnlyWithApproval(Permission permission, bool expected)
     {
-        Assert.Equal(expected, ProcessProgress.CanReject(role));
+        Assert.Equal(expected, ProcessProgress.CanDecide(As(permission)));
     }
 
     [Fact]
-    public void WhyCannotReject_OtherRole_ExplainsWhoCan()
+    public void WhyCannotDecide_WithoutApproval_NamesThePermissionAndTheAdministrators()
     {
-        Assert.Equal("Talebi yalnızca Yazılım Departman Yöneticisi reddedebilir.",
-            ProcessProgress.WhyCannotReject(NormalStep, UserRole.BusinessAnalyst));
-        Assert.Null(ProcessProgress.WhyCannotReject(NormalStep, UserRole.SoftwareDepartmentManager));
+        Assert.Equal($"Talep hakkında karar vermek için «Onay ve karar» yetkisi gerekir. {AskAdmins}",
+            ProcessProgress.WhyCannotDecide(NormalStep, As(Permission.Analysis)));
+        Assert.Null(ProcessProgress.WhyCannotDecide(NormalStep, As(Permission.Approval)));
+    }
+
+    [Fact]
+    public void WhyCannotActOnStep_CompanyWithoutAdministrators_EndsTheSentence()
+    {
+        var user = new UserAccess(1, new HashSet<Permission>(), []);
+
+        Assert.Equal("Bu adım için «Analiz adımları» yetkisi gerekir. Şirket yöneticinizden isteyin.",
+            ProcessProgress.WhyCannotActOnStep(NormalStep, user));
     }
 }

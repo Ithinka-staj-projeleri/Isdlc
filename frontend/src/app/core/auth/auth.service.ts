@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
-import { UserRole } from '../../shared/models/user-role';
+import { UserRole, roleFromPermissions } from '../../shared/models/user-role';
 
 /** The signed-in user's company (backend: TenantSummaryDto). */
 export interface AuthTenant {
@@ -16,7 +16,11 @@ export interface AuthUser {
     id: number;
     fullName: string;
     email: string;
+    /** Worked out from the permissions until A3 (roleFromPermissions); the API no longer sends it. */
     role: UserRole;
+    /** Faz 7 · A2: what the user can do in the flow. */
+    permissions?: string[];
+    isPlatformAdmin?: boolean;
     /** null for the Platform Administrator. Missing in a session saved before Faz 6. */
     tenant?: AuthTenant | null;
     isTenantAdmin?: boolean;
@@ -99,6 +103,7 @@ export class AuthService {
     }
 
     private saveSession(res: LoginResponse): void {
+        res = withRole(res);
         try {
             localStorage.setItem(SESSION_KEY, JSON.stringify(res));
         } catch {
@@ -123,6 +128,14 @@ export function homeUrlFor(session: Pick<LoginResponse, 'user' | 'mustChangePass
         return '/change-password';
     }
     return session?.user.role === 'PlatformAdmin' ? PLATFORM_HOME : '/dashboard';
+}
+
+/** A2 bridge (removed by A3): the old screens read user.role, so it is worked out from the permissions. */
+function withRole(session: LoginResponse): LoginResponse {
+    if (!session.user.permissions && !session.user.isPlatformAdmin) {
+        return session; // a session saved before A2 still has its role
+    }
+    return { ...session, user: { ...session.user, role: roleFromPermissions(session.user.permissions, session.user.isPlatformAdmin) } };
 }
 
 function isExpired(session: LoginResponse): boolean {

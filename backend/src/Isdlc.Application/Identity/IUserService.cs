@@ -9,6 +9,9 @@ namespace Isdlc.Application.Identity;
 /// </summary>
 public interface IUserService
 {
-    /// <summary>Active users only, sorted by name. Without a role, all active users.</summary>
-    Task<IReadOnlyList<UserLookupDto>> ListActiveAsync(UserRole? role, CancellationToken cancellationToken);
+    /// <summary>
+    /// Active users only, sorted by name. With a permission, only those who have it (the analyst selector asks for
+    /// Analysis, the project manager selector for ProjectManagement); without one, all active users.
+    /// </summary>
+    Task<IReadOnlyList<UserLookupDto>> ListActiveAsync(Permission? permission, CancellationToken cancellationToken);
 }

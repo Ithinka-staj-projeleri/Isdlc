@@ -17,8 +17,8 @@ public static class ProcessMappings
         step.Text,
         step.IsDecision,
         step.NoBranchText,
-        step.ResponsibleRole,
-        step.ApproverRole,
+        step.ResponsiblePermission,
+        step.ApproverPermission,
         step.NoOutcome,
         step.NoJumps
             .OrderBy(jump => jump.TargetStep.Order)

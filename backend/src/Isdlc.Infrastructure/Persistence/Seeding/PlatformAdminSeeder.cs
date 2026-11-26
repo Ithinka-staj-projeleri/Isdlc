@@ -29,7 +29,7 @@ public class PlatformAdminSeeder(
     {
         // tenant: the Platform Administrator has no company, so with no company set the filter finds nobody;
         // only whether one exists is read (docs/multi-tenancy.md → Okuma kuralı).
-        if (await db.Users.IgnoreQueryFilters().AnyAsync(u => u.Role == UserRole.PlatformAdmin, cancellationToken))
+        if (await db.Users.IgnoreQueryFilters().AnyAsync(u => u.IsPlatformAdmin, cancellationToken))
         {
             return;
         }
@@ -47,7 +47,7 @@ public class PlatformAdminSeeder(
         {
             FullName = "Platform Yöneticisi",
             Email = email.Trim(),
-            Role = UserRole.PlatformAdmin,
+            IsPlatformAdmin = true,
             PasswordHash = passwordHasher.Hash(password),
             MustChangePassword = !isDevelopment,
             CreatedAt = timeProvider.GetUtcNow().UtcDateTime,

@@ -56,8 +56,8 @@ internal static class SeedFiles
         string Text,
         bool IsDecision,
         string? NoBranchText,
-        UserRole ResponsibleRole,
-        UserRole? ApproverRole,
+        Permission ResponsiblePermission,
+        Permission? ApproverPermission,
         ProjectStatus? NoOutcome,
         List<JumpSeed> NoJumps,
         bool RequiresExternalRequest = false,
@@ -68,8 +68,11 @@ internal static class SeedFiles
 
     public record UsersFile(List<UserSeed> Users);
 
-    /// <summary>IsTenantAdmin: Ithinka's company administrator (Faz 6 · T4); optional in the file.</summary>
-    public record UserSeed(string FullName, string Email, UserRole Role, bool IsTenantAdmin = false);
+    /// <summary>
+    /// Permissions: what the user can do in the flow (Faz 7 · A2). IsTenantAdmin: Ithinka's company administrator
+    /// (Faz 6 · T4); optional in the file.
+    /// </summary>
+    public record UserSeed(string FullName, string Email, List<Permission> Permissions, bool IsTenantAdmin = false);
 
     public record DocumentTypesFile(List<DocumentTypeSeed> DocumentTypes);
 

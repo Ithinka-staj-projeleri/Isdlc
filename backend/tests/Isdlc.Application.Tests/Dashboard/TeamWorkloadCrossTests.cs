@@ -43,15 +43,15 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
         return await service.GetAsync(scope, CancellationToken.None);
     }
 
-    private async Task<int> NewUserAsync(UserRole role, string? name = null)
+    private async Task<int> NewUserAsync(Permission permission, string? name = null)
     {
         await using var scope = database.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var user = new User
         {
-            FullName = name ?? $"Çapraz {role}",
+            FullName = name ?? $"Çapraz {permission}",
             Email = $"workload-{Guid.NewGuid():N}@isdlc.local",
-            Role = role,
+            Permissions = [new UserPermission { Permission = permission }],
             CreatedAt = DateTime.UtcNow,
         };
         db.Users.Add(user);
@@ -108,9 +108,9 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
     [Fact]
     public async Task WaitingSteps_AnalystStep_OnlyTheAssignedAnalyst_UnassignedForEveryAnalyst()
     {
-        var step = await StepAsync(s => s.ApproverRole == null && s.ResponsibleRole == UserRole.BusinessAnalyst);
-        var mine = await NewUserAsync(UserRole.BusinessAnalyst);
-        var other = await NewUserAsync(UserRole.BusinessAnalyst);
+        var step = await StepAsync(s => s.ApproverPermission == null && s.ResponsiblePermission == Permission.Analysis);
+        var mine = await NewUserAsync(Permission.Analysis);
+        var other = await NewUserAsync(Permission.Analysis);
         var before = (Mine: (await RowAsync(mine)).WaitingSteps, Other: (await RowAsync(other)).WaitingSteps);
 
         await NewProjectAsync(step.Code, analystId: mine);      // only mine
@@ -121,12 +121,12 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task WaitingSteps_ApprovalStep_CountsForTheApproverRoleNotTheResponsible()
+    public async Task WaitingSteps_ApprovalStep_CountsForTheApproverPermissionNotTheResponsible()
     {
         // Step 10: done by Sales, approved by the department manager.
-        var step = await StepAsync(s => s.ApproverRole == UserRole.SoftwareDepartmentManager
-            && s.ResponsibleRole == UserRole.SalesRepresentative);
-        var approver = await NewUserAsync(UserRole.SoftwareDepartmentManager);
+        var step = await StepAsync(s => s.ApproverPermission == Permission.Approval
+            && s.ResponsiblePermission == Permission.Sales);
+        var approver = await NewUserAsync(Permission.Approval);
         // The seed's Sales user: a new one would change UserServiceTests' "exactly one Sales Representative".
         var responsible = await TestProjects.UserIdAsync(database, TestProjects.Sales);
         var before = (Approver: (await RowAsync(approver)).WaitingSteps, Responsible: (await RowAsync(responsible)).WaitingSteps);
@@ -144,8 +144,8 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
     [InlineData(ProjectStatus.Rejected)]
     public async Task Workload_RecordNotActive_CountsNothing(ProjectStatus status)
     {
-        var step = await StepAsync(s => s.ApproverRole == null && s.ResponsibleRole == UserRole.BusinessAnalyst);
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var step = await StepAsync(s => s.ApproverPermission == null && s.ResponsiblePermission == Permission.Analysis);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var before = (await RowAsync(analyst)).WaitingSteps;
 
         // A postponed request keeps its current step; it still waits for nobody.
@@ -159,7 +159,7 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
     [Fact]
     public async Task Workload_EveryFlowCounts_ProcessImprovementToo()
     {
-        var developer = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var developer = await NewUserAsync(Permission.Development);
         var proposalId = await NewProjectAsync(null, flowCode: ProcessFlowCodes.ProcessImprovement);
         await AddIssueAsync(proposalId, "AK-001", developer);
 
@@ -169,7 +169,7 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
     [Fact]
     public async Task Workload_OutsideOwner_IsNobodysLoad()
     {
-        var developer = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var developer = await NewUserAsync(Permission.Development);
         var projectId = await NewProjectAsync("12");
         await AddIssueAsync(projectId, "AK-001", developer, Today.AddDays(-1));
         await AddIssueAsync(projectId, "AK-002", ownerUserId: null, Today.AddDays(-1));   // "Müşteri BT", outside the system
@@ -181,7 +181,7 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
     [Fact]
     public async Task Workload_DueToday_IsNotOverdue()
     {
-        var developer = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var developer = await NewUserAsync(Permission.Development);
         var projectId = await NewProjectAsync("12");
         await AddIssueAsync(projectId, "AK-001", developer, Today);
 
@@ -195,10 +195,10 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
     public async Task Workload_Order_BusiestThenMostOverdueThenTurkishName()
     {
         // Same role, so the same waiting steps: only their open issues tell them apart.
-        var tolga = await NewUserAsync(UserRole.SoftwareDeveloper, "Tolga Çapraz");
-        var sule = await NewUserAsync(UserRole.SoftwareDeveloper, "Şule Çapraz");     // Ş comes before T in Turkish
-        var busy = await NewUserAsync(UserRole.SoftwareDeveloper, "Zeynep Çapraz");
-        var late = await NewUserAsync(UserRole.SoftwareDeveloper, "Ahmet Çapraz");
+        var tolga = await NewUserAsync(Permission.Development, "Tolga Çapraz");
+        var sule = await NewUserAsync(Permission.Development, "Şule Çapraz");     // Ş comes before T in Turkish
+        var busy = await NewUserAsync(Permission.Development, "Zeynep Çapraz");
+        var late = await NewUserAsync(Permission.Development, "Ahmet Çapraz");
         var projectId = await NewProjectAsync("12");
         await AddIssueAsync(projectId, "AK-001", busy);
         await AddIssueAsync(projectId, "AK-002", busy);
@@ -215,7 +215,7 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
     [Fact]
     public async Task Dashboard_TeamWorkload_IsTheSharedServicesRows_ForEveryScope()
     {
-        var me = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var me = await NewUserAsync(Permission.Development);
         var projectId = await NewProjectAsync("12");
         await AddIssueAsync(projectId, "AK-001", me, Today.AddDays(-2));
 
@@ -224,8 +224,11 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
         var all = (await DashboardAsync(me, DashboardScope.All)).TeamWorkload;
 
         // The dashboard, the person profile and the owner suggestion (F9) show the same numbers.
-        Assert.Equal(shared, mine);
-        Assert.Equal(shared, all);
+        // Rows are compared by value: the permission lists are new lists on each read.
+        static object Row(TeamMemberWorkloadDto w) =>
+            (w.User, string.Join(",", w.Permissions), w.OpenIssues, w.OverdueOpenIssues, w.WaitingSteps);
+        Assert.Equal(shared.Select(Row), mine.Select(Row));
+        Assert.Equal(shared.Select(Row), all.Select(Row));
     }
 
     // ---- Due this week (F2-1) ----
@@ -233,7 +236,7 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
     [Fact]
     public async Task DueThisWeek_PostponedProject_IsLeftOut_InProgressIncluded()
     {
-        var me = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var me = await NewUserAsync(Permission.Development);
         var active = await NewProjectAsync("12");
         var postponed = await NewProjectAsync(null, status: ProjectStatus.Postponed);
         var inProgress = await AddIssueAsync(active, "AK-001", me, Today, OpenIssueStatus.InProgress);
@@ -247,7 +250,7 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
     [Fact]
     public async Task DueThisWeek_MoreThanTen_ListsTenAndCountsAll()
     {
-        var me = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var me = await NewUserAsync(Permission.Development);
         var projectId = await NewProjectAsync("12");
         for (var i = 1; i <= 12; i++)
         {

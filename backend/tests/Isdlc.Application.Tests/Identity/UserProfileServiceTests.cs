@@ -113,14 +113,14 @@ public class UserProfileServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_ReturnsUserFieldsAndProfile()
     {
-        var user = await TestUsers.CreateAsync(database, password: null, role: UserRole.TestSpecialist);
+        var user = await TestUsers.CreateAsync(database, password: null, permission: Permission.Testing);
         await SetProfileAsync(user.Id, "Performans testi, Otomasyon", "Sabahları toplantıya girmiyorum.");
 
         var profile = await GetAsync(user.Id);
 
         Assert.Equal(user.FullName, profile.FullName);
         Assert.Equal(user.Email, profile.Email);
-        Assert.Equal(UserRole.TestSpecialist, profile.Role);
+        Assert.Equal([Permission.Testing], profile.Permissions);
         Assert.True(profile.IsActive);
         Assert.Equal("Performans testi, Otomasyon", profile.Expertise);
         Assert.Equal("Sabahları toplantıya girmiyorum.", profile.WorkingNote);
@@ -148,7 +148,7 @@ public class UserProfileServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_ActiveUser_WorkloadIsTheTeamWorkloadRow()
     {
-        var analyst = await TestUsers.CreateAsync(database, password: null, role: UserRole.BusinessAnalyst);
+        var analyst = await TestUsers.CreateAsync(database, password: null, permission: Permission.Analysis);
         var projectId = await NewProjectAsync("6", analyst.Id);
         await AddOpenIssueAsync(projectId, "AK-001", analyst.Id, Today.AddDays(-1));
         await AddOpenIssueAsync(projectId, "AK-002", analyst.Id, null);
@@ -167,8 +167,8 @@ public class UserProfileServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_WaitingSteps_AnalystSeesTheirProjectNotAnotherAnalysts()
     {
-        var analyst = await TestUsers.CreateAsync(database, password: null, role: UserRole.BusinessAnalyst);
-        var other = await TestUsers.CreateAsync(database, password: null, role: UserRole.BusinessAnalyst);
+        var analyst = await TestUsers.CreateAsync(database, password: null, permission: Permission.Analysis);
+        var other = await TestUsers.CreateAsync(database, password: null, permission: Permission.Analysis);
         var mine = await NewProjectAsync("6", analyst.Id);
         var theirs = await NewProjectAsync("6", other.Id);
         // Unassigned analyst steps of other tests count for every analyst too (F2-3): waiting the longest puts
@@ -186,7 +186,7 @@ public class UserProfileServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_InactiveUser_HasNoWorkloadOrWaitingSteps_ButKeepsOpenIssues()
     {
-        var user = await TestUsers.CreateAsync(database, password: null, role: UserRole.SoftwareDepartmentManager);
+        var user = await TestUsers.CreateAsync(database, password: null, permission: Permission.Approval);
         var projectId = await NewProjectAsync("6", analystId: null);
         var issueId = await AddOpenIssueAsync(projectId, "AK-001", user.Id, null);
         await using (var scope = database.CreateScope())

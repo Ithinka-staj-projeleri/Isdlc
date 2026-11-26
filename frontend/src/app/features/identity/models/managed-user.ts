@@ -7,7 +7,9 @@ export interface ManagedUser {
     id: number;
     fullName: string;
     email: string;
+    /** Worked out from permissions until A3 (UserAdminService). */
     role: UserRole;
+    permissions?: string[];
     isActive: boolean;
     isTenantAdmin: boolean;
     /** Has a temporary password they have not changed yet. */

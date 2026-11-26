@@ -63,7 +63,7 @@ public class ProcessCommandTests(DatabaseFixture database)
     // ---- Complete ----
 
     [Fact]
-    public async Task Complete_ResponsibleRole_MovesToTheNextStepAndWritesHistory()
+    public async Task Complete_ResponsiblePermission_MovesToTheNextStepAndWritesHistory()
     {
         var projectId = await TestProjects.CreateAsync(database, "1");
         await using var analyst = await SignInAsync(TestProjects.Analyst);
@@ -82,7 +82,7 @@ public class ProcessCommandTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task Complete_OtherRole_IsForbidden()
+    public async Task Complete_WithoutThePermission_IsForbidden()
     {
         var projectId = await TestProjects.CreateAsync(database, "1");
         await using var developer = await SignInAsync(TestProjects.Developer);
@@ -90,7 +90,8 @@ public class ProcessCommandTests(DatabaseFixture database)
         var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await developer.Service.CompleteStepAsync(
             projectId, new CompleteStepDto { ExpectedStepId = await Step("1") }, default));
 
-        Assert.Equal("Bu adım İş Analisti tarafından yapılır.", error.Message);
+        Assert.StartsWith("Bu adım için «Analiz adımları» yetkisi gerekir. Şirket yöneticinizden isteyin: ", error.Message);
+        Assert.Contains("Mert Kaya", error.Message);
         Assert.Empty(await RecordsAsync(projectId));
     }
 
@@ -105,7 +106,7 @@ public class ProcessCommandTests(DatabaseFixture database)
         {
             var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await analyst.Service.CompleteStepAsync(
                 projectId, new CompleteStepDto { ExpectedStepId = step8 }, default));
-            Assert.Equal("Bu adım Yazılım Departman Yöneticisi tarafından onaylanır.", error.Message);
+            Assert.StartsWith("Bu adımı onaylamak için «Onay ve karar» yetkisi gerekir. Şirket yöneticinizden isteyin: ", error.Message);
         }
 
         await using var manager = await SignInAsync(TestProjects.Manager);
@@ -127,7 +128,7 @@ public class ProcessCommandTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task Complete_ArrivingAtAnApprovalStep_NotifiesTheApproverRole()
+    public async Task Complete_ArrivingAtAnApprovalStep_NotifiesTheApproverPermission()
     {
         // 9 → 10: the offer step is approved by the department manager.
         var projectId = await TestProjects.CreateAsync(database, "9");
@@ -137,7 +138,7 @@ public class ProcessCommandTests(DatabaseFixture database)
         await projectManager.Service.CompleteStepAsync(projectId, new CompleteStepDto { ExpectedStepId = await Step("9") }, default);
 
         var sent = Assert.Single(projectManager.Notifications.Sent);
-        Assert.Equal(UserRole.SoftwareDepartmentManager, sent.Role);
+        Assert.Equal(Permission.Approval, sent.Permission);
         Assert.Equal($"{code} · 10 onayınızı bekliyor.", sent.Message);
     }
 
@@ -350,7 +351,7 @@ public class ProcessCommandTests(DatabaseFixture database)
         {
             var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await sales.Service.AnswerStepAsync(
                 projectId, new AnswerStepDto { ExpectedStepId = step10, Answer = StepAnswer.Yes }, default));
-            Assert.Equal("Bu adım Yazılım Departman Yöneticisi tarafından onaylanır.", error.Message);
+            Assert.StartsWith("Bu adımı onaylamak için «Onay ve karar» yetkisi gerekir. Şirket yöneticinizden isteyin: ", error.Message);
         }
 
         await using var manager = await SignInAsync(TestProjects.Manager);
@@ -518,7 +519,7 @@ public class ProcessCommandTests(DatabaseFixture database)
     [Theory]
     [InlineData(TestProjects.Analyst)]
     [InlineData(TestProjects.ProjectManager)]
-    public async Task Reject_OtherRole_IsForbidden(string email)
+    public async Task Reject_WithoutApproval_IsForbidden(string email)
     {
         var projectId = await TestProjects.CreateAsync(database, "14");
         await using var user = await SignInAsync(email);
@@ -526,7 +527,8 @@ public class ProcessCommandTests(DatabaseFixture database)
         var error = await Assert.ThrowsAsync<ForbiddenException>(async () => await user.Service.RejectAsync(projectId,
             new RejectProjectDto { ExpectedStepId = await Step("14"), Decision = TestDecisions.Form() }, default));
 
-        Assert.Equal("Talebi yalnızca Yazılım Departman Yöneticisi reddedebilir.", error.Message);
+        Assert.StartsWith("Talep hakkında karar vermek için «Onay ve karar» yetkisi gerekir. Şirket yöneticinizden isteyin: ", error.Message);
+        Assert.Contains("Mert Kaya", error.Message);
         Assert.Equal(ProjectStatus.Active, (await TestProjects.GetAsync(database, projectId)).Status);
     }
 }

@@ -11,11 +11,11 @@ namespace Isdlc.Application.Tests.Identity;
 [Collection("Database")]
 public class UserServiceTests(DatabaseFixture database)
 {
-    private async Task<IReadOnlyList<UserLookupDto>> ListAsync(UserRole? role = null)
+    private async Task<IReadOnlyList<UserLookupDto>> ListAsync(Permission? permission = null)
     {
         await using var scope = database.CreateScope();
         var service = new UserService(scope.ServiceProvider.GetRequiredService<IApplicationDbContext>());
-        return await service.ListActiveAsync(role, CancellationToken.None);
+        return await service.ListActiveAsync(permission, CancellationToken.None);
     }
 
     [Fact]
@@ -31,13 +31,15 @@ public class UserServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task List_SeedUsers_AreIncludedWithNameAndRole()
+    public async Task List_SeedUsers_AreIncludedWithNameAndPermissions()
     {
         var analystId = await TestProjects.UserIdAsync(database, TestProjects.Analyst);
 
         var users = await ListAsync();
 
-        Assert.Contains(new UserLookupDto(analystId, "Elif Yılmaz", UserRole.BusinessAnalyst), users);
+        var analyst = Assert.Single(users, u => u.Id == analystId);
+        Assert.Equal("Elif Yılmaz", analyst.FullName);
+        Assert.Equal([Permission.Analysis], analyst.Permissions);
     }
 
     [Fact]
@@ -50,25 +52,25 @@ public class UserServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task List_WithRole_ReturnsOnlyThatRole()
+    public async Task List_WithPermission_ReturnsOnlyThoseWhoHaveIt()
     {
-        var tester = await TestUsers.CreateAsync(database, password: null, role: UserRole.TestSpecialist);
-        await TestUsers.CreateAsync(database, password: null, isActive: false, role: UserRole.TestSpecialist);
+        var tester = await TestUsers.CreateAsync(database, password: null, permission: Permission.Testing);
+        await TestUsers.CreateAsync(database, password: null, isActive: false, permission: Permission.Testing);
 
-        var users = await ListAsync(UserRole.TestSpecialist);
+        var users = await ListAsync(Permission.Testing);
 
         Assert.NotEmpty(users);
-        Assert.All(users, u => Assert.Equal(UserRole.TestSpecialist, u.Role));
+        Assert.All(users, u => Assert.Contains(Permission.Testing, u.Permissions));
         Assert.Contains(users, u => u.Id == tester.Id);
     }
 
     [Fact]
-    public async Task List_RoleWithOnlyInactiveUsers_ReturnsOnlySeedPeopleOfThatRole()
+    public async Task List_PermissionWithOnlyInactiveNewUsers_ReturnsOnlySeedPeopleWithIt()
     {
-        // Seed has exactly one Sales Representative; an inactive one must not be added to the list.
-        await TestUsers.CreateAsync(database, password: null, isActive: false, role: UserRole.SalesRepresentative);
+        // Seed has exactly one person with Sales; an inactive one must not be added to the list.
+        await TestUsers.CreateAsync(database, password: null, isActive: false, permission: Permission.Sales);
 
-        var users = await ListAsync(UserRole.SalesRepresentative);
+        var users = await ListAsync(Permission.Sales);
 
         var sales = Assert.Single(users);
         Assert.Equal(await TestProjects.UserIdAsync(database, TestProjects.Sales), sales.Id);

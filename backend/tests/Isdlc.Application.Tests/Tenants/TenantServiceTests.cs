@@ -61,7 +61,6 @@ public class TenantServiceTests(DatabaseFixture database)
         {
             FullName = "Deniz Aydın",
             Email = email ?? $"deniz.{Guid.NewGuid():N}@ornek.local",
-            Role = UserRole.BusinessAnalyst,
             TemporaryPassword = Temporary,
         },
     };
@@ -109,8 +108,9 @@ public class TenantServiceTests(DatabaseFixture database)
         var ithinkaFlows = await InCompanyAsync(Tenant.IthinkaId, db => db.ProcessFlows.CountAsync(f => f.TemplateCode != null));
         Assert.Equal(ithinkaFlows, flows);
         Assert.True(sets > 0 && documentTypes > 0);
-        Assert.Equal((request.Admin!.Email, UserRole.BusinessAnalyst, true, true),
-            (admin.Email, admin.Role, admin.IsTenantAdmin, admin.MustChangePassword));
+        Assert.Equal((request.Admin!.Email, true, true), (admin.Email, admin.IsTenantAdmin, admin.MustChangePassword));
+        // The administrator account starts with no permission (karar 4); it gives itself some if it also works in the flow.
+        Assert.Equal(0, await InCompanyAsync(tenant.Id, db => db.UserPermissions.CountAsync()));
     }
 
     [Fact]

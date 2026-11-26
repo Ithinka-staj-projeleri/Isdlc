@@ -9,7 +9,7 @@ public record UserProfileDto(
     int Id,
     string FullName,
     string Email,
-    UserRole Role,
+    IReadOnlyList<Permission> Permissions, // Faz 7 · A2: in place of the title
     bool IsActive,
     string? Expertise,
     string? WorkingNote,
@@ -17,7 +17,7 @@ public record UserProfileDto(
     DashboardListDto<DashboardOpenIssueDto> OpenIssues,   // the dashboard's row shape (P5)
     DashboardListDto<WaitingStepDto> WaitingSteps);       // empty for an inactive user (P6)
 
-/// <summary>The person's row of the team workload (ITeamWorkloadService), without the name and role.</summary>
+/// <summary>The person's row of the team workload (ITeamWorkloadService), without the name and permissions.</summary>
 public record UserWorkloadCountsDto(int OpenIssues, int OverdueOpenIssues, int WaitingSteps);
 
 /// <summary>PUT /api/v1/users/me/profile: the signed-in user's own expertise and note (P2). Empty text is saved as null.</summary>
@@ -34,7 +34,7 @@ public class UpdateMyProfileDto
 public record UserWorkloadDto(
     int Id,
     string FullName,
-    UserRole Role,
+    IReadOnlyList<Permission> Permissions,
     string? Expertise,
     int OpenIssues,
     int OverdueOpenIssues,

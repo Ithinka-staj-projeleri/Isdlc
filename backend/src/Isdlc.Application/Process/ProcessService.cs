@@ -2,6 +2,7 @@ using Isdlc.Application.Common;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Common.Models;
+using Isdlc.Application.Identity;
 using Isdlc.Application.Notifications;
 using Isdlc.Application.Process.Dtos;
 using Isdlc.Domain.Identity;
@@ -101,7 +102,7 @@ public class ProcessService(
                 {
                     s.Order,
                     StageOrder = s.ProcessStage.Order,
-                    Permission = new StepPermissionInfo(s.IsDecision, s.ResponsibleRole, s.ApproverRole),
+                    Permission = new StepPermissionInfo(s.IsDecision, s.ResponsiblePermission, s.ApproverPermission),
                 })
                 .SingleOrDefaultAsync(cancellationToken);
 
@@ -131,13 +132,7 @@ public class ProcessService(
             ? null
             : appliedOrders.Count(order => order < referenceStep.Order) + 1;
 
-        var userRole = currentUser.UserId is null
-            ? null
-            : await dbContext.Users
-                .AsNoTracking()
-                .Where(u => u.Id == currentUser.UserId && u.IsActive)
-                .Select(u => (UserRole?)u.Role)
-                .SingleOrDefaultAsync(cancellationToken);
+        var access = await dbContext.LoadAccessAsync(currentUser.UserId, cancellationToken);
 
         return new ProjectProcessDto(
             project.Id,
@@ -158,7 +153,7 @@ public class ProcessService(
             ProcessProgress.GetAvailableActions(
                 project.Status,
                 hasCurrentStep ? referenceStep?.Permission : null,
-                userRole,
+                access,
                 // Only a request can be postponed: a record of a request flow before its project stage.
                 inRequestPhase: project.Flow.Kind == ProcessFlowKind.Request
                     && referenceStep is not null
@@ -285,7 +280,7 @@ public class ProcessService(
         int projectId, RejectProjectDto request, CancellationToken cancellationToken)
     {
         var (project, step, user) = await LoadForCommandAsync(
-            projectId, request.ExpectedStepId, ProcessProgress.WhyCannotReject, cancellationToken);
+            projectId, request.ExpectedStepId, ProcessProgress.WhyCannotDecide, cancellationToken);
 
         // The record is written on the step the request was on, with the explanation as its note, and the form with it.
         var decision = NewDecision(project, RequestDecisionKind.Reject, request.Decision!, reevaluationDate: null);
@@ -400,7 +395,7 @@ public class ProcessService(
         int Id, string Code, int Order, bool IsDecision, ProjectStatus? NoOutcome, StepPermissionInfo Permission);
 
     /// <summary>A step the project moves to: enough to save the move and send notifications.</summary>
-    private record StepRef(int Id, string Code, UserRole? ApproverRole);
+    private record StepRef(int Id, string Code, Permission? ApproverPermission);
 
     /// <summary>
     /// The next step of the project's flow whose conditions hold (StepConditions); null after the last one.
@@ -432,18 +427,16 @@ public class ProcessService(
         dbContext.ProcessSteps
             .AsNoTracking()
             .Where(s => s.Id == stepId)
-            .Select(s => new StepRef(s.Id, s.Code, s.ApproverRole))
+            .Select(s => new StepRef(s.Id, s.Code, s.ApproverPermission))
             .SingleOrDefaultAsync(cancellationToken);
-
-    private record ActingUser(int Id, UserRole Role);
 
     /// <summary>
     /// Loads the project (tracked, so RowVersion is checked on save), its current step and the acting user,
     /// and runs the checks every command shares, in this order: 404, 409 not active, 409 step changed, 403 role.
     /// whyForbidden is the command's own permission rule (ProcessProgress.WhyCannot...): null means allowed.
     /// </summary>
-    private async Task<(Project Project, CurrentStepInfo Step, ActingUser User)> LoadForCommandAsync(
-        int projectId, int expectedStepId, Func<StepPermissionInfo, UserRole, string?> whyForbidden,
+    private async Task<(Project Project, CurrentStepInfo Step, UserAccess User)> LoadForCommandAsync(
+        int projectId, int expectedStepId, Func<StepPermissionInfo, UserAccess, string?> whyForbidden,
         CancellationToken cancellationToken, ProjectStatus expectedStatus = ProjectStatus.Active)
     {
         var project = await dbContext.Projects.SingleOrDefaultAsync(p => p.Id == projectId, cancellationToken)
@@ -468,23 +461,17 @@ public class ProcessService(
             .Where(s => s.Id == project.CurrentStepId)
             .Select(s => new CurrentStepInfo(
                 s.Id, s.Code, s.Order, s.IsDecision, s.NoOutcome,
-                new StepPermissionInfo(s.IsDecision, s.ResponsibleRole, s.ApproverRole)))
+                new StepPermissionInfo(s.IsDecision, s.ResponsiblePermission, s.ApproverPermission)))
             .SingleAsync(cancellationToken);
 
-        var user = currentUser.UserId is null
-            ? null
-            : await dbContext.Users
-                .AsNoTracking()
-                .Where(u => u.Id == currentUser.UserId && u.IsActive)
-                .Select(u => new ActingUser(u.Id, u.Role))
-                .SingleOrDefaultAsync(cancellationToken);
+        var user = await dbContext.LoadAccessAsync(currentUser.UserId, cancellationToken);
 
         if (user is null)
         {
             throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
         }
 
-        if (whyForbidden(step.Permission, user.Role) is { } reason)
+        if (whyForbidden(step.Permission, user) is { } reason)
         {
             throw new ForbiddenException(reason);
         }
@@ -497,7 +484,7 @@ public class ProcessService(
     /// If someone else changed the project after it was loaded, RowVersion makes SaveChanges fail (409).
     /// </summary>
     private async Task SaveTransitionAsync(
-        Project project, CurrentStepInfo step, ActingUser user, StepAction action, string? note,
+        Project project, CurrentStepInfo step, UserAccess user, StepAction action, string? note,
         ProcessTransition transition, CancellationToken cancellationToken, RequestDecision? decision = null)
     {
         var record = new StepRecord
@@ -507,7 +494,7 @@ public class ProcessService(
             Action = action,
             JumpedToStepId = transition.JumpedToStepId,
             Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
-            PerformedById = user.Id,
+            PerformedById = user.UserId,
             PerformedAt = timeProvider.GetUtcNow().UtcDateTime,
         };
         dbContext.StepRecords.Add(record);
@@ -556,9 +543,9 @@ public class ProcessService(
                 $"{project.Code} · {fromStep.Code} adımından {toStep.Code} adımına dönüldü.", cancellationToken);
         }
 
-        if (toStep.ApproverRole is { } approver)
+        if (toStep.ApproverPermission is { } approver)
         {
-            await notifications.NotifyRoleAsync(
+            await notifications.NotifyPermissionAsync(
                 approver, project.Id, $"{project.Code} · {toStep.Code} onayınızı bekliyor.", cancellationToken);
         }
     }

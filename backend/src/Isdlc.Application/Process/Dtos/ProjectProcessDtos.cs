@@ -1,3 +1,4 @@
+using Isdlc.Domain.Identity;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
 
@@ -40,4 +41,5 @@ public record AvailableActionsDto(
     bool CanReject,
     bool CanPostpone, // a request (before the project stage) can be put on hold
     bool CanResume,   // a postponed request can be taken back
-    string? BlockedReason); // why the user cannot act on the current step; null when they can
+    string? BlockedReason, // why the user cannot act on the current step; null when they can
+    Permission? MissingPermission = null); // the permission the user lacks for it (karar 2b); null when none is missing

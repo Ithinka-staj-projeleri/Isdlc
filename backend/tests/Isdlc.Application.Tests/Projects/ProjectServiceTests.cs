@@ -44,15 +44,15 @@ public class ProjectServiceTests(DatabaseFixture database)
         (await AsAsync(null, s => s.ListAsync(filter, FirstPage, CancellationToken.None))).Result;
 
     /// <summary>A user of this test only, so seed users are never changed.</summary>
-    private async Task<int> NewUserAsync(UserRole role, bool isActive = true, string? fullName = null)
+    private async Task<int> NewUserAsync(Permission permission, bool isActive = true, string? fullName = null)
     {
         await using var scope = database.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var user = new User
         {
-            FullName = fullName ?? $"Test {role}",
+            FullName = fullName ?? $"Test {permission}",
             Email = $"projects-{Guid.NewGuid():N}@isdlc.local",
-            Role = role,
+            Permissions = [new UserPermission { Permission = permission }],
             IsActive = isActive,
             CreatedAt = DateTime.UtcNow,
         };
@@ -101,7 +101,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_AsBusinessAnalyst_StartsActiveAtFirstStepWithoutPriorityOrLevel()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst, fullName: "Test Analist");
+        var analyst = await NewUserAsync(Permission.Analysis, fullName: "Test Analist");
 
         var project = await CreateAsync(analyst, Request(analyst));
 
@@ -121,7 +121,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_TextWithSpaces_IsSavedTrimmed()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
 
         var project = await CreateAsync(analyst, Request(analyst) with
         {
@@ -144,7 +144,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_OptionalTextOnlySpaces_IsSavedAsEmpty()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
 
         var project = await CreateAsync(analyst, Request(analyst) with { RequesterContact = "   ", Notes = " " });
 
@@ -155,7 +155,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_OtherChannel_KeepsItsTextTrimmed()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
 
         var project = await CreateAsync(analyst, Request(analyst) with
         {
@@ -171,7 +171,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task Update_ChannelNoLongerOther_DropsTheOtherText()
     {
         // The text belongs to "Diğer" only; it is not kept behind another channel.
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var created = await CreateAsync(analyst, Request(analyst) with
         {
             RequestChannel = RequestChannel.Other,
@@ -191,7 +191,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_SavesTheRequestFormFields()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
 
         var project = await CreateAsync(analyst, Request(analyst) with
         {
@@ -214,8 +214,8 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_ReturnsWhatGetReturns()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var manager = await NewUserAsync(UserRole.ProjectManager);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var manager = await NewUserAsync(Permission.ProjectManagement);
 
         var created = await CreateAsync(analyst, Request(analyst) with { ProjectManagerId = manager, RequiresNda = true });
         var read = (await AsAsync(null, s => s.GetAsync(created.Id, CancellationToken.None))).Result;
@@ -228,7 +228,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_ProjectNo_IsOneMoreThanTheHighest()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
 
         var first = await CreateAsync(analyst, Request(analyst));
         var second = await CreateAsync(analyst, Request(analyst));
@@ -240,7 +240,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task Create_AfterANumberWithMoreDigits_GetsItsSuccessorNotA999Successor()
     {
         // Ordering by text alone would take "999…" as the highest number and give the taken "1000…" again.
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var digits = (await CreateAsync(analyst, Request(analyst))).Code.Length + 1;
         var nines = new string('9', digits);            // e.g. "999"
         var power = "1" + new string('0', digits);      // e.g. "1000"
@@ -256,7 +256,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task Create_RecordsWithOtherCodes_DoNotChangeTheNumbering()
     {
         // Test records written straight to the database have codes like "T-…"; they are not Proje No values.
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var before = await CreateAsync(analyst, Request(analyst));
         await InsertProjectAsync(analyst, "1", code: $"ZZ-{Guid.NewGuid():N}"[..19]);
 
@@ -266,25 +266,28 @@ public class ProjectServiceTests(DatabaseFixture database)
     }
 
     [Theory]
-    [InlineData(UserRole.SoftwareDepartmentManager)]
-    [InlineData(UserRole.ProjectManager)]
-    [InlineData(UserRole.SoftwareDeveloper)]
-    [InlineData(UserRole.TestSpecialist)]
-    [InlineData(UserRole.SalesRepresentative)]
-    public async Task Create_NotABusinessAnalyst_Throws403(UserRole role)
+    [InlineData(Permission.Approval)]
+    [InlineData(Permission.ProjectManagement)]
+    [InlineData(Permission.Development)]
+    [InlineData(Permission.Testing)]
+    [InlineData(Permission.Sales)]
+    public async Task Create_WithoutAnalysisPermission_Throws403NamingTheAdministrators(Permission permission)
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var someone = await NewUserAsync(role);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var someone = await NewUserAsync(permission);
 
         var error = await Assert.ThrowsAsync<ForbiddenException>(() => CreateAsync(someone, Request(analyst)));
 
-        Assert.Equal("Talebi yalnızca İş Analisti açabilir.", error.Message);
+        // Ithinka's company administrator is Mert Kaya (Seed/users.json); other tests may add more, so the start is checked.
+        Assert.StartsWith(
+            "Talep açmak için «Analiz adımları» yetkisi gerekir. Şirket yöneticinizden isteyin: ", error.Message);
+        Assert.Contains("Mert Kaya", error.Message);
     }
 
     [Fact]
     public async Task Create_InactiveBusinessAnalyst_Throws403()
     {
-        var inactive = await NewUserAsync(UserRole.BusinessAnalyst, isActive: false);
+        var inactive = await NewUserAsync(Permission.Analysis, isActive: false);
 
         await Assert.ThrowsAsync<ForbiddenException>(() => CreateAsync(inactive, Request(inactive)));
     }
@@ -292,40 +295,40 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_NotSignedIn_Throws403()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
 
         await Assert.ThrowsAsync<ForbiddenException>(
             () => AsAsync(null, s => s.CreateAsync(Request(analyst), CancellationToken.None)));
     }
 
     [Fact]
-    public async Task Create_AnalystFieldIsNotABusinessAnalyst_Throws400()
+    public async Task Create_AnalystWithoutAnalysisPermission_Throws400()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var developer = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var developer = await NewUserAsync(Permission.Development);
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(
             () => CreateAsync(analyst, Request(analyst) with { BusinessAnalystId = developer }));
 
-        Assert.Equal("Seçilen iş analisti aktif bir İş Analisti değil.", error.Message);
+        Assert.Equal("Seçilen kişinin «Analiz adımları» yetkisi yok.", error.Message);
     }
 
     [Fact]
-    public async Task Create_ManagerFieldIsNotAProjectManager_Throws400()
+    public async Task Create_ManagerWithoutProjectManagementPermission_Throws400()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(
             () => CreateAsync(analyst, Request(analyst) with { ProjectManagerId = analyst }));
 
-        Assert.Equal("Seçilen proje yöneticisi aktif bir Proje Yöneticisi değil.", error.Message);
+        Assert.Equal("Seçilen kişinin «Proje yönetimi adımları» yetkisi yok.", error.Message);
     }
 
     [Fact]
     public async Task Create_InactiveProjectManager_Throws400()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var inactiveManager = await NewUserAsync(UserRole.ProjectManager, isActive: false);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var inactiveManager = await NewUserAsync(Permission.ProjectManagement, isActive: false);
 
         await Assert.ThrowsAsync<BusinessRuleException>(
             () => CreateAsync(analyst, Request(analyst) with { ProjectManagerId = inactiveManager }));
@@ -334,7 +337,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_RejectedRequest_SavesNothing()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var uniqueName = $"Kaydedilmemeli {Guid.NewGuid():N}";
 
         await Assert.ThrowsAsync<BusinessRuleException>(
@@ -346,9 +349,9 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_AssignsAnotherAnalystAndAManager_NotifiesBoth()
     {
-        var opener = await NewUserAsync(UserRole.BusinessAnalyst);
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var manager = await NewUserAsync(UserRole.ProjectManager);
+        var opener = await NewUserAsync(Permission.Analysis);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var manager = await NewUserAsync(Permission.ProjectManagement);
 
         var (project, notifications) = await AsAsync(opener, s => s.CreateAsync(
             Request(analyst, "Bayi Portalı") with { ProjectManagerId = manager }, CancellationToken.None));
@@ -363,7 +366,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_AssignsThemselves_NotifiesNobody()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
 
         var (_, notifications) = await AsAsync(analyst, s => s.CreateAsync(Request(analyst), CancellationToken.None));
 
@@ -384,7 +387,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Get_ClosedProject_HasNoCurrentStep()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var projectId = await InsertProjectAsync(analyst, stepCode: null, ProjectStatus.Lost);
 
         var project = (await AsAsync(null, s => s.GetAsync(projectId, CancellationToken.None))).Result;
@@ -417,7 +420,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_AddOn_FollowsTheAddOnFlowUnderItsProjectsNumber()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst);
 
         var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
@@ -432,7 +435,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_SecondAddOn_GetsTheNextNumberOfThatProject()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst);
         var other = await AcceptedProjectAsync(analyst);
         await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
@@ -446,7 +449,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_AddOn_DoesNotTakeAProjectNo()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst);
         var before = await CreateAsync(analyst, Request(analyst));
         await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
@@ -460,7 +463,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task Create_AddOnOfAClosedProject_IsAllowed()
     {
         // A delivered project still gets add-ons.
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst, stepCode: null, ProjectStatus.Closed);
 
         var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
@@ -476,7 +479,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [InlineData(null, ProjectStatus.Redirected)]
     public async Task Create_AddOnOfAProjectNotAcceptedOrClosed_Throws400(string? stepCode, ProjectStatus status)
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst, stepCode, status);
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(
@@ -488,7 +491,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_AddOnOfAnAddOn_Throws400()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst);
         var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
 
@@ -501,7 +504,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Create_AddOnOfAMissingProject_Throws400()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(
             () => CreateAsync(analyst, AddOnRequest(analyst, int.MaxValue)));
@@ -512,7 +515,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_AddOnOfAnotherProject_Throws400()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst);
         var other = await AcceptedProjectAsync(analyst);
         var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
@@ -526,7 +529,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_NewProjectIntoAnAddOn_Throws400()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst);
         var created = await CreateAsync(analyst, Request(analyst));
 
@@ -539,7 +542,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_AddOnWithItsOwnProject_ChangesTheInformation()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst);
         var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
 
@@ -554,7 +557,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_ParentProjectId_ListsOnlyThatProjectsAddOnsNewestFirst()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst);
         var other = await AcceptedProjectAsync(analyst);
         var first = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
@@ -569,7 +572,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_AcceptsAddOns_ListsOnlyAcceptedOrClosedNewProjects()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var accepted = await AcceptedProjectAsync(analyst);
         var closed = await AcceptedProjectAsync(analyst, stepCode: null, ProjectStatus.Closed);
         await AcceptedProjectAsync(analyst, "1");                               // waiting request
@@ -584,7 +587,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_SearchByProjectNo_AlsoFindsItsAddOns()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var parent = await AcceptedProjectAsync(analyst);
         var addOn = await CreateAsync(analyst, AddOnRequest(analyst, parent.Id));
 
@@ -621,8 +624,8 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task Update_AnyActiveUser_ChangesTheInformationButNotCodeStatusOrStep()
     {
         // Decision 1: editing is open to every active user, not only analysts.
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var developer = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var developer = await NewUserAsync(Permission.Development);
         var created = await CreateAsync(analyst, Request(analyst));
 
         var update = UpdateOf(Request(analyst)) with
@@ -661,7 +664,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [InlineData("3")]
     public async Task Update_SourceAndOffer_BeforeStep4_Change(string stepCode)
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var projectId = await InsertProjectAsync(analyst, stepCode, source: RequestSource.Internal, requiresOffer: true);
 
         var updated = await UpdateSourceAndOfferAsync(analyst, projectId, RequestSource.External, requiresOffer: false);
@@ -677,7 +680,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [InlineData("14", RequestSource.Internal, true)]
     public async Task Update_SourceOrOffer_FromStep4On_Throws409(string stepCode, RequestSource source, bool requiresOffer)
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var projectId = await InsertProjectAsync(analyst, stepCode, source: RequestSource.External, requiresOffer: true);
 
         var error = await Assert.ThrowsAsync<ConflictException>(
@@ -690,7 +693,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task Update_SameSourceAndOfferAfterStep4_OtherFieldsStillChange()
     {
         // Sending the same values again is not a change, so the rest of the form can still be saved.
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var projectId = await InsertProjectAsync(analyst, "10", source: RequestSource.External, requiresOffer: true);
 
         var updated = (await AsAsync(analyst, s => s.UpdateAsync(projectId, UpdateOf(Request(analyst)) with
@@ -710,7 +713,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [InlineData(ProjectStatus.Redirected)]
     public async Task Update_ProjectNotActive_Throws409(ProjectStatus status)
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var projectId = await InsertProjectAsync(analyst, stepCode: null, status);
 
         var error = await Assert.ThrowsAsync<ConflictException>(() => AsAsync(analyst,
@@ -722,7 +725,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_MissingProject_Throws404()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
 
         await Assert.ThrowsAsync<NotFoundException>(() => AsAsync(analyst,
             s => s.UpdateAsync(int.MaxValue, UpdateOf(Request(analyst)), CancellationToken.None)));
@@ -731,7 +734,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_NotSignedIn_Throws403()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var created = await CreateAsync(analyst, Request(analyst));
 
         await Assert.ThrowsAsync<ForbiddenException>(() => AsAsync(null,
@@ -741,7 +744,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_ManagerIsNotAProjectManager_Throws400AndChangesNothing()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var created = await CreateAsync(analyst, Request(analyst));
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => AsAsync(analyst, s => s.UpdateAsync(
@@ -755,8 +758,8 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_NewManager_NotifiesOnlyTheNewlyAssignedPerson()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var manager = await NewUserAsync(UserRole.ProjectManager);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var manager = await NewUserAsync(Permission.ProjectManagement);
         var created = await CreateAsync(analyst, Request(analyst));
 
         var (_, notifications) = await AsAsync(analyst, s => s.UpdateAsync(
@@ -770,8 +773,8 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Update_SamePeople_NotifiesNobody()
     {
-        var opener = await NewUserAsync(UserRole.BusinessAnalyst);
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var opener = await NewUserAsync(Permission.Analysis);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var created = await CreateAsync(opener, Request(analyst));
 
         var (_, notifications) = await AsAsync(opener, s => s.UpdateAsync(
@@ -785,7 +788,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_Phases_SplitEveryRecordInTwo()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var stage1 = await InsertProjectAsync(analyst, "1");
         var stage3 = await InsertProjectAsync(analyst, "4");
         var stage4 = await InsertProjectAsync(analyst, "12");
@@ -809,7 +812,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_NoPhase_ShowsEverything()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         await InsertProjectAsync(analyst, "1");
         await InsertProjectAsync(analyst, "12");
         await InsertProjectAsync(analyst, stepCode: null, ProjectStatus.Rejected);
@@ -820,7 +823,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_Status_KeepsOnlyThatStatus()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         await InsertProjectAsync(analyst, "12");
         var lost = await InsertProjectAsync(analyst, stepCode: null, ProjectStatus.Lost);
 
@@ -832,7 +835,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_Search_FindsProjectNoNameOrCustomerIgnoringCase()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var token = Guid.NewGuid().ToString("N")[..10];
         var created = await CreateAsync(analyst, Request(analyst, $"Portal {token} Sipariş") with
         {
@@ -853,7 +856,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task List_SearchByProjectNo_MatchesTheWholeNumberOnly()
     {
         // "14" finds Proje No 14, not 114 or 140. (Names may still contain the digits; those match by name.)
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var created = await CreateAsync(analyst, Request(analyst, "Numara araması"));
         var longer = await InsertProjectAsync(analyst, "1", code: created.Code + "0", name: "Başka proje");
 
@@ -866,7 +869,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_SearchWithSpaces_IsTrimmed()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var token = Guid.NewGuid().ToString("N")[..10];
         var created = await CreateAsync(analyst, Request(analyst, $"Ad {token}"));
 
@@ -879,7 +882,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     public async Task List_NewestRequestFirst_EvenAfterCode999()
     {
         // Not plain numbers, so the Proje No sequence of the other tests is not affected; the order rule is the same.
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var prefix = $"L{Guid.NewGuid():N}"[..8];
         var code998 = await InsertProjectAsync(analyst, "1", code: $"{prefix}998");
         var code1000 = await InsertProjectAsync(analyst, "1", code: $"{prefix}1000");
@@ -893,7 +896,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_Paging_ReturnsThePageAndTheTotal()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var prefix = $"P{Guid.NewGuid():N}"[..8];
         for (var i = 1; i <= 5; i++)
         {
@@ -911,7 +914,7 @@ public class ProjectServiceTests(DatabaseFixture database)
     [Fact]
     public async Task List_Row_ShowsCurrentStepAndAnalyst()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst, fullName: "Liste Analisti");
+        var analyst = await NewUserAsync(Permission.Analysis, fullName: "Liste Analisti");
         await InsertProjectAsync(analyst, "12");
 
         var row = Assert.Single((await ListAsync(new ProjectFilter { BusinessAnalystId = analyst })).Items);

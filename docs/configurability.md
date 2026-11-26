@@ -3,7 +3,7 @@
 Faz 7'nin uygulama ayrıntıları. Bu belgede şunlar yazılıdır: veri modeli, bugünkü verinin taşınması, kurallar, uç noktalar,
 hata mesajları ve testler. Konular: yetkiler, adım ön koşulları, atlama kuralları, şirkete özel alanlar, akış düzenleme,
 yapay zekâ modeli ve kullanımı. Plan, kararlar ve iş dağılımı: [phase-7-plan.md](phase-7-plan.md).
-Durum: **taslak** (26 Kasım 2026). Sorumlu: Erva (A1). Uygulama: A2–A9.
+Durum: **taslak** (26 Kasım 2026). Sorumlu: Erva (A1). Uygulama: A2–A9. Bölüm 2 (yetkiler, backend) A2 ile uygulandı.
 
 Kurallar uygulandıkça AGENTS.md'ye taşınır (Bölüm 10). Bölüm numaraları plandaki kararlara göndermede kullanılır:
 "karar 8", plan Bölüm 3'teki 8 numaralı karardır.
@@ -116,8 +116,10 @@ Atama yalnızca ekip iş yükü ve "Bana bekleyen adımlar" içindir.
 - JWT'deki `role` claim'i kalkar; `platformAdmin` (`"true"` / `"false"`) eklenir. `tenant`, `tenantAdmin`, `mustChangePassword`
   değişmez.
 - Yetkiler **token'a yazılmaz.** Şirket yöneticisi yetkiyi değiştirince bir sonraki istekte geçerli olsun diye servis gerekince
-  veritabanından okur. Bunun için `ICurrentUserService` içinde `HasPermissionAsync(Permission, CancellationToken)` vardır;
-  istek boyunca önbelleklenir.
+  veritabanından okur. *Uygulandı (A2):* `ICurrentUserService`'e metot eklenmedi; servisler `IApplicationDbContext` üzerindeki
+  `LoadAccessAsync(userId)` (yetkiler ve şirket yöneticilerinin adları, `UserAccess`) ve `IsActiveUserWithAsync(userId, yetki)` ile
+  okur (`Isdlc.Application/Identity/UserAccess.cs`). Şirket filtresinden geçtikleri için başka şirketin kullanıcısı bulunmaz;
+  testlerde `TestUser` değişmeden çalışır. Süreç servisi kullanıcıyı zaten her komutta okuyordu, ayrıca önbellek gerekmedi.
 - Giriş cevabının `user` nesnesinde `role` yerine `permissions: ["Analysis", …]` ve `isPlatformAdmin` döner.
 - Frontend oturumdaki yetkileri `GET /api/v1/users/me` ile tazeler: sayfa açılınca ve 403 alınca.
   Cevap: `{ id, fullName, email, tenant, isTenantAdmin, isPlatformAdmin, permissions }`.
@@ -159,6 +161,22 @@ böylece ekranda sabit liste kalmaz:
   ]
 }
 ```
+
+### A2'de netleşenler
+
+Sözleşmede yazmayan ama unvan kullanan yerler; A2 böyle uyguladı:
+
+| Yer | Bugün | Sonra |
+| --- | --- | --- |
+| Onay bildirimi ("… onayınızı bekliyor") | `NotifyRoleAsync(unvan)` | `INotificationService.NotifyPermissionAsync(yetki)`: adımın onaylayan yetkisine sahip aktif kullanıcılar |
+| `Seed/users.json` | `"role": "BusinessAnalyst"` | `"permissions": ["Analysis"]` (eşleme tablosu) |
+| `GET /users` cevabı (`UserLookupDto`) | `role` | `permissions: Permission[]` |
+| `TenantInterceptor`, `PlatformAdminSeeder` | `Role == PlatformAdmin` | `IsPlatformAdmin` |
+| Ertelenmiş talepte yetkisiz kişiye mesaj | "… Yazılım Departman Yöneticisi değerlendirmeye geri alınca devam eder." | "Talep ertelendi; «Onay ve karar» yetkisi olan biri değerlendirmeye geri alınca devam eder." (`MissingPermission = Approval`) |
+| Analist / yönetici seçimi, kişi pasif | "… aktif bir İş Analisti değil." | Yetkisi olmayanla aynı: "Seçilen kişinin «…» yetkisi yok." |
+| Yetki alma | — | Kaldırılan yetkinin `UserPermissions` satırı silinir: kayıt değil ayardır, geçmiş ona bağlı değildir |
+| `PUT /users/{id}` içinde `permissions` yok | — | Yetkiler değişmez (`null`); boş liste (`[]`) hepsini kaldırır. Yetki kutucukları olmayan eski form yetkileri silmesin diye |
+| JWT | `role` | `platformAdmin`. Eski `role`'lü token'la Platform Yöneticisi yeniden giriş yapana kadar yönetici sayılmaz |
 
 ### Uç noktalar (değişenler)
 

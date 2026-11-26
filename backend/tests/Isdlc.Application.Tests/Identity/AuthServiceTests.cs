@@ -65,7 +65,7 @@ public class AuthServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Login_CorrectPassword_ReturnsTokenAndUser()
     {
-        var user = await TestUsers.CreateAsync(database, Password, role: UserRole.ProjectManager);
+        var user = await TestUsers.CreateAsync(database, Password, permission: Permission.ProjectManagement);
 
         var (result, tokens) = await LoginAsync(user.Email, Password);
 
@@ -73,8 +73,10 @@ public class AuthServiceTests(DatabaseFixture database)
         Assert.Equal($"token-for-{user.Id}", result.Token);
         Assert.Equal(new DateTime(2026, 11, 10, 18, 0, 0, DateTimeKind.Utc), result.ExpiresAt);
         Assert.Equal(
-            new AuthUserDto(user.Id, user.FullName, user.Email, UserRole.ProjectManager, await IthinkaAsync(), IsTenantAdmin: false),
-            result.User);
+            (user.Id, user.FullName, user.Email, await IthinkaAsync(), false, false),
+            (result.User.Id, result.User.FullName, result.User.Email, result.User.Tenant, result.User.IsTenantAdmin,
+                result.User.IsPlatformAdmin));
+        Assert.Equal([Permission.ProjectManagement], result.User.Permissions);
         Assert.False(result.MustChangePassword);
         Assert.Equal(user.Id, Assert.Single(tokens.CreatedFor).Id);
     }
@@ -212,14 +214,15 @@ public class AuthServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Login_PlatformAdmin_HasNoCompany()
     {
-        var admin = await TestUsers.CreateAsync(database, Password, role: UserRole.PlatformAdmin);
+        var admin = await TestUsers.CreateAsync(database, Password, isPlatformAdmin: true);
 
         var (result, tokens) = await LoginAsync(admin.Email, Password);
 
         Assert.NotNull(result);
         Assert.Null(admin.TenantId);
         Assert.Null(result.User.Tenant);
-        Assert.Equal(UserRole.PlatformAdmin, result.User.Role);
+        Assert.True(result.User.IsPlatformAdmin);
+        Assert.Empty(result.User.Permissions);
         Assert.Null(Assert.Single(tokens.CreatedFor).TenantId);
     }
 
@@ -262,7 +265,7 @@ public class AuthServiceTests(DatabaseFixture database)
     [Fact]
     public async Task ChangePassword_PlatformAdmin_FindsTheirOwnRowWithoutACompany()
     {
-        var admin = await TestUsers.CreateAsync(database, Password, role: UserRole.PlatformAdmin, mustChangePassword: true);
+        var admin = await TestUsers.CreateAsync(database, Password, isPlatformAdmin: true, mustChangePassword: true);
 
         var result = await ChangeAsync(admin.Id, Password, "Platform-Parola-2026");
 

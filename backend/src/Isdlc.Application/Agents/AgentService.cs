@@ -2,6 +2,7 @@ using Isdlc.Application.Agents.Dtos;
 using Isdlc.Application.Common;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Application.Identity;
 using Isdlc.Application.Meetings.Dtos;
 using Isdlc.Application.OpenIssues;
 using Isdlc.Application.Risks;
@@ -224,11 +225,10 @@ public class AgentService(
         // Only who may open a request may have one drafted (the same rule as ProjectService.CreateAsync).
         var userId = currentUser.UserId
             ?? throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
-        var isAnalyst = await dbContext.Users.AnyAsync(
-            u => u.Id == userId && u.IsActive && u.Role == UserRole.BusinessAnalyst, cancellationToken);
-        if (!isAnalyst)
+        if (!await dbContext.IsActiveUserWithAsync(userId, Permission.Analysis, cancellationToken))
         {
-            throw new ForbiddenException("Talebi yalnızca İş Analisti açabilir.");
+            throw new ForbiddenException(
+                PermissionMessages.ForNewRequest(await dbContext.TenantAdminNamesAsync(cancellationToken)));
         }
 
         if (!agents.IsConfigured)

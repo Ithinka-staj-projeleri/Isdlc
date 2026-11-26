@@ -120,7 +120,7 @@ public class DatabaseFixture : IAsyncLifetime
         {
             Email = u.Email,
             FullName = u.FullName,
-            Role = u.Role,
+            Permissions = [new UserPermission { Permission = u.Permission }],
             CreatedAt = DateTime.UtcNow,
         }));
         await db.SaveChangesAsync();

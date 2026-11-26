@@ -46,8 +46,8 @@ public class CompanyAiSettingsTests(DatabaseFixture database)
             await scope.ServiceProvider.GetRequiredService<ITenantTemplates>().ApplyAsync();
         }
 
-        var analyst = await TestUsers.CreateAsync(database, null, role: UserRole.BusinessAnalyst, tenantId: tenantId);
-        await TestUsers.CreateAsync(database, null, role: UserRole.ProjectManager, tenantId: tenantId);
+        var analyst = await TestUsers.CreateAsync(database, null, permission: Permission.Analysis, tenantId: tenantId);
+        await TestUsers.CreateAsync(database, null, permission: Permission.ProjectManagement, tenantId: tenantId);
         return new Company(tenantId, analyst.Id);
     }
 
@@ -248,13 +248,14 @@ public class CompanyAiSettingsTests(DatabaseFixture database)
     {
         // The e-mail draft checks who may open a request before the company's switches.
         var company = await CreateCompanyAsync(aiEnabled: false, dataSharing: false);
-        var developer = await TestUsers.CreateAsync(database, null, role: UserRole.SoftwareDeveloper, tenantId: company.TenantId);
+        var developer = await TestUsers.CreateAsync(database, null, permission: Permission.Development, tenantId: company.TenantId);
         var agent = new FakeAgentClient();
 
         var error = await Assert.ThrowsAsync<ForbiddenException>(() => AsCompanyAsync(company with { AnalystId = developer.Id }, agent,
             s => s.DraftRequestFromEmailAsync(new DraftRequestFromEmailDto { EmailText = "Yeni ekran istiyoruz." }, CancellationToken.None)));
 
-        Assert.Equal("Talebi yalnızca İş Analisti açabilir.", error.Message);
+        // The test's own company may have no administrator, so only the permission part is checked.
+        Assert.StartsWith("Talep açmak için «Analiz adımları» yetkisi gerekir.", error.Message);
         Assert.False(agent.WasCalled);
     }
 }

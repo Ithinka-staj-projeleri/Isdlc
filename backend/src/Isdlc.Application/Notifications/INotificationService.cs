@@ -8,8 +8,8 @@ namespace Isdlc.Application.Notifications;
 /// </summary>
 public interface INotificationService
 {
-    /// <summary>Notifies every active user with the role.</summary>
-    Task NotifyRoleAsync(UserRole role, int projectId, string message, CancellationToken cancellationToken);
+    /// <summary>Notifies every active user with the permission (e.g. an approval step waits for "Onay ve karar").</summary>
+    Task NotifyPermissionAsync(Permission permission, int projectId, string message, CancellationToken cancellationToken);
 
     Task NotifyUsersAsync(IEnumerable<int> userIds, int projectId, string message, CancellationToken cancellationToken);
 }

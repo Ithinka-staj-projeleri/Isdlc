@@ -16,20 +16,22 @@ public static class TeamWorkloadRules
     private static readonly StringComparer TurkishNames = StringComparer.Create(new CultureInfo("tr-TR"), ignoreCase: true);
 
     /// <summary>
-    /// Who a waiting step belongs to — the same rule as "Bana bekleyen adımlar": the approver role, or the responsible role
-    /// when there is no approver; an analyst or project manager only on records they are assigned to, or nobody is.
+    /// Who a waiting step belongs to — the same rule as "Bana bekleyen adımlar": the user has the step's approver
+    /// permission, or its responsible permission when there is no approver; an analysis or project management step only
+    /// on records the user is assigned to, or nobody is.
     /// </summary>
-    public static bool IsWaitingFor(WorkloadStepRow step, int userId, UserRole role)
+    public static bool IsWaitingFor(WorkloadStepRow step, int userId, IReadOnlyCollection<Permission> permissions)
     {
-        if (role != (step.ApproverRole ?? step.ResponsibleRole))
+        var needed = step.ApproverPermission ?? step.ResponsiblePermission;
+        if (!permissions.Contains(needed))
         {
             return false;
         }
 
-        return role switch
+        return needed switch
         {
-            UserRole.BusinessAnalyst => step.BusinessAnalystId is null || step.BusinessAnalystId == userId,
-            UserRole.ProjectManager => step.ProjectManagerId is null || step.ProjectManagerId == userId,
+            Permission.Analysis => step.BusinessAnalystId is null || step.BusinessAnalystId == userId,
+            Permission.ProjectManagement => step.ProjectManagerId is null || step.ProjectManagerId == userId,
             _ => true,
         };
     }
@@ -46,10 +48,10 @@ public static class TeamWorkloadRules
                 var owned = openIssues.Where(i => i.OwnerUserId == user.Id && i.Status != OpenIssueStatus.Closed).ToList();
                 return new TeamMemberWorkloadDto(
                     new UserSummaryDto(user.Id, user.FullName),
-                    user.Role,
+                    user.Permissions,
                     owned.Count,
                     owned.Count(i => OpenIssueRules.IsOverdue(i.Status, i.DueDate, today)),
-                    steps.Count(s => IsWaitingFor(s, user.Id, user.Role)));
+                    steps.Count(s => IsWaitingFor(s, user.Id, user.Permissions)));
             })
             .OrderByDescending(w => w.OpenIssues + w.WaitingSteps)
             .ThenByDescending(w => w.OverdueOpenIssues)

@@ -15,7 +15,8 @@ Modüller bugün olduğu gibi yalnızca `INotificationService`'i çağırır ([p
 ```csharp
 public interface INotificationService
 {
-    Task NotifyRoleAsync(UserRole role, int projectId, string message, CancellationToken cancellationToken);
+    // Faz 7 · A2: NotifyRoleAsync(UserRole) yerine; o yetkiye sahip aktif kullanıcılara gider.
+    Task NotifyPermissionAsync(Permission permission, int projectId, string message, CancellationToken cancellationToken);
     Task NotifyUsersAsync(IEnumerable<int> userIds, int projectId, string message, CancellationToken cancellationToken);
 }
 ```
@@ -34,8 +35,8 @@ public interface INotificationService
 
 ## Gönderim kuralları
 
-- **Rol bildirimi** o anda o roldeki **her aktif kullanıcıya** ayrı bir bildirim olarak yazılır. Rolü sonradan alan kişi
-  eski bildirimleri görmez; her kullanıcının kendi okundu bilgisi olur.
+- **Yetki bildirimi** (Faz 7'den önce rol bildirimi) o anda o yetkiye sahip **her aktif kullanıcıya** ayrı bir bildirim
+  olarak yazılır. Yetkiyi sonradan alan kişi eski bildirimleri görmez; her kullanıcının kendi okundu bilgisi olur.
 - **Pasif kullanıcıya** bildirim yazılmaz. Aynı çağrıda aynı kişi iki kez geçerse bir kez yazılır.
 - **Kimse kendi yaptığı işlem için bildirim almaz.** Modüller bunu bugün de gözetiyor; servis ayrıca giriş yapan kullanıcıyı
   alıcılardan çıkarır. Böylece ör. bir yönetici kendi onay adımına ilerlettiği projede kendine "onayınızı bekliyor" almaz.

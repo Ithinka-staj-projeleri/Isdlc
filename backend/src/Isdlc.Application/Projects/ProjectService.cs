@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
+using Isdlc.Application.Identity;
 using Isdlc.Application.Common.Models;
 using Isdlc.Application.Notifications;
 using Isdlc.Application.Process;
@@ -137,10 +138,11 @@ public class ProjectService(
     {
         var userId = RequireSignedIn();
 
-        // Team decision: only a Business Analyst opens requests (docs/projects-api.md → Ortak kurallar).
-        if (!await IsActiveUserWithRoleAsync(userId, UserRole.BusinessAnalyst, cancellationToken))
+        // Opening a request is the flow's first step, so it needs the analysis permission (docs/configurability.md).
+        if (!await dbContext.IsActiveUserWithAsync(userId, Permission.Analysis, cancellationToken))
         {
-            throw new ForbiddenException("Talebi yalnızca İş Analisti açabilir.");
+            throw new ForbiddenException(
+                PermissionMessages.ForNewRequest(await dbContext.TenantAdminNamesAsync(cancellationToken)));
         }
 
         await ValidatePeopleAsync(request.BusinessAnalystId, request.ProjectManagerId, cancellationToken);
@@ -302,23 +304,25 @@ public class ProjectService(
         return new AddOnParent(parent.Id, parent.Code);
     }
 
-    /// <summary>An assigned person must be an active user with the matching role (400).</summary>
+    /// <summary>
+    /// An assigned person must be an active user with the matching permission (400): the analyst Analysis, the project
+    /// manager ProjectManagement. Another company's user is not found, so they fail the same way.
+    /// </summary>
     private async Task ValidatePeopleAsync(
         int? businessAnalystId, int? projectManagerId, CancellationToken cancellationToken)
     {
-        if (businessAnalystId is { } analystId && !await IsActiveUserWithRoleAsync(analystId, UserRole.BusinessAnalyst, cancellationToken))
+        if (businessAnalystId is { } analystId
+            && !await dbContext.IsActiveUserWithAsync(analystId, Permission.Analysis, cancellationToken))
         {
-            throw new BusinessRuleException("Seçilen iş analisti aktif bir İş Analisti değil.");
+            throw new BusinessRuleException(PermissionMessages.SelectedUserLacks(Permission.Analysis));
         }
 
-        if (projectManagerId is { } managerId && !await IsActiveUserWithRoleAsync(managerId, UserRole.ProjectManager, cancellationToken))
+        if (projectManagerId is { } managerId
+            && !await dbContext.IsActiveUserWithAsync(managerId, Permission.ProjectManagement, cancellationToken))
         {
-            throw new BusinessRuleException("Seçilen proje yöneticisi aktif bir Proje Yöneticisi değil.");
+            throw new BusinessRuleException(PermissionMessages.SelectedUserLacks(Permission.ProjectManagement));
         }
     }
-
-    private Task<bool> IsActiveUserWithRoleAsync(int userId, UserRole role, CancellationToken cancellationToken) =>
-        dbContext.Users.AnyAsync(u => u.Id == userId && u.IsActive && u.Role == role, cancellationToken);
 
     /// <summary>
     /// Gives the record the next code and saves it. Codes come from "highest + 1", so two requests saved at the

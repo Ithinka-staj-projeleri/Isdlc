@@ -168,7 +168,7 @@ public class RequestDecisionTests(DatabaseFixture database)
     [Theory]
     [InlineData(TestProjects.Analyst)]
     [InlineData(TestProjects.ProjectManager)]
-    public async Task Postpone_OtherRole_IsForbidden(string email)
+    public async Task Postpone_WithoutApproval_IsForbidden(string email)
     {
         var projectId = await TestProjects.CreateAsync(database, "3");
         await using var user = await SignInAsync(email);
@@ -177,7 +177,8 @@ public class RequestDecisionTests(DatabaseFixture database)
             new PostponeProjectDto { ExpectedStepId = await Step("3"), Decision = TestDecisions.Form(), ReevaluationDate = new DateOnly(2027, 1, 15) },
             default));
 
-        Assert.Equal("Talebi yalnızca Yazılım Departman Yöneticisi erteleyebilir ya da değerlendirmeye geri alabilir.", error.Message);
+        Assert.StartsWith("Talep hakkında karar vermek için «Onay ve karar» yetkisi gerekir. Şirket yöneticinizden isteyin: ", error.Message);
+        Assert.Contains("Mert Kaya", error.Message);
     }
 
     [Fact]
@@ -209,7 +210,7 @@ public class RequestDecisionTests(DatabaseFixture database)
         Assert.False(forManager.AvailableActions.CanReject || forManager.AvailableActions.CanPostpone);
         Assert.False(forAnalyst.AvailableActions.CanResume || forAnalyst.AvailableActions.CanComplete);
         Assert.Equal(
-            "Talep ertelendi; Yazılım Departman Yöneticisi değerlendirmeye geri alınca devam eder.",
+            "Talep ertelendi; «Onay ve karar» yetkisi olan biri değerlendirmeye geri alınca devam eder.",
             forAnalyst.AvailableActions.BlockedReason);
     }
 

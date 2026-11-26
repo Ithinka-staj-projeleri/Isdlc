@@ -1,3 +1,4 @@
+using Isdlc.Domain.Identity;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Common.Models;
@@ -112,7 +113,8 @@ public class ProcessQueryTests(DatabaseFixture database)
 
         Assert.False(actions.CanAnswer);
         Assert.False(actions.CanReject);
-        Assert.Equal("Bu adım Yazılım Departman Yöneticisi tarafından onaylanır.", actions.BlockedReason);
+        Assert.StartsWith("Bu adımı onaylamak için «Onay ve karar» yetkisi gerekir. Şirket yöneticinizden isteyin: ", actions.BlockedReason);
+        Assert.Equal(Permission.Approval, actions.MissingPermission);
     }
 
     [Fact]

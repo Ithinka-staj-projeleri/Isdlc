@@ -30,6 +30,7 @@ public class IsdlcDbContext(DbContextOptions<IsdlcDbContext> options, ITenantCon
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<ProcessFlow> ProcessFlows => Set<ProcessFlow>();
     public DbSet<ProcessStage> ProcessStages => Set<ProcessStage>();

@@ -21,14 +21,15 @@ public class UserAdminService(
         return await db.Users
             .AsNoTracking()
             .OrderBy(u => u.FullName)
-            .Select(u => new UserDto(u.Id, u.FullName, u.Email, u.Role, u.IsActive, u.IsTenantAdmin, u.MustChangePassword))
+            .Select(u => new UserDto(
+                u.Id, u.FullName, u.Email, u.Permissions.OrderBy(p => p.Permission).Select(p => p.Permission).ToList(),
+                u.IsActive, u.IsTenantAdmin, u.MustChangePassword))
             .ToListAsync(cancellationToken);
     }
 
     public async Task<UserDto> CreateAsync(CreateUserDto request, CancellationToken cancellationToken)
     {
         RequireTenantAdmin();
-        var role = UserAdminRules.CompanyRole(request.Role!.Value); // [Required]: the API answers 400 before this runs.
         var email = request.Email.Trim();
         await RequireUnusedEmailAsync(db, email, cancellationToken);
 
@@ -37,9 +38,9 @@ public class UserAdminService(
         {
             FullName = request.FullName.Trim(),
             Email = email,
-            Role = role,
             IsTenantAdmin = request.IsTenantAdmin,
             MustChangePassword = true,
+            Permissions = UserAdminRules.Distinct(request.Permissions).Select(p => new UserPermission { Permission = p }).ToList(),
             PasswordHash = passwordHasher.Hash(request.TemporaryPassword),
             CreatedAt = timeProvider.GetUtcNow().UtcDateTime,
         };
@@ -52,8 +53,7 @@ public class UserAdminService(
     public async Task<UserDto> UpdateAsync(int userId, UpdateUserDto request, CancellationToken cancellationToken)
     {
         RequireTenantAdmin();
-        var user = await FindAsync(userId, cancellationToken);
-        var role = UserAdminRules.CompanyRole(request.Role!.Value);
+        var user = await FindAsync(userId, cancellationToken, withPermissions: true);
 
         if (userId == currentUser.UserId && !request.IsActive)
         {
@@ -69,7 +69,12 @@ public class UserAdminService(
 
         var deactivated = user.IsActive && !request.IsActive;
         user.FullName = request.FullName.Trim();
-        user.Role = role;
+        // Not sent: left as they are, so a form that does not show permissions never takes them away.
+        if (request.Permissions is not null)
+        {
+            SetPermissions(user, UserAdminRules.Distinct(request.Permissions));
+        }
+
         user.IsActive = request.IsActive;
         user.IsTenantAdmin = request.IsTenantAdmin;
         await db.SaveChangesAsync(cancellationToken);
@@ -114,20 +119,40 @@ public class UserAdminService(
     }
 
     /// <summary>The query filter hides other companies' users, so one of them is simply not found.</summary>
-    private async Task<User> FindAsync(int userId, CancellationToken cancellationToken) =>
-        await db.Users.SingleOrDefaultAsync(u => u.Id == userId, cancellationToken)
-        ?? throw new NotFoundException("Kullanıcı bulunamadı.");
+    private async Task<User> FindAsync(int userId, CancellationToken cancellationToken, bool withPermissions = false)
+    {
+        IQueryable<User> users = withPermissions ? db.Users.Include(u => u.Permissions) : db.Users;
+        return await users.SingleOrDefaultAsync(u => u.Id == userId, cancellationToken)
+            ?? throw new NotFoundException("Kullanıcı bulunamadı.");
+    }
+
+    /// <summary>
+    /// Makes the user's permissions exactly the given ones. A taken-away permission's row is removed: it is a setting,
+    /// not a record, and the user's history (steps, records) does not depend on it.
+    /// </summary>
+    private void SetPermissions(User user, IReadOnlyCollection<Permission> wanted)
+    {
+        foreach (var removed in user.Permissions.Where(p => !wanted.Contains(p.Permission)).ToList())
+        {
+            user.Permissions.Remove(removed);
+            db.UserPermissions.Remove(removed);
+        }
+
+        foreach (var added in wanted.Where(p => user.Permissions.All(x => x.Permission != p)))
+        {
+            user.Permissions.Add(new UserPermission { Permission = added });
+        }
+    }
 
     private static UserDto ToDto(User u) =>
-        new(u.Id, u.FullName, u.Email, u.Role, u.IsActive, u.IsTenantAdmin, u.MustChangePassword);
+        new(u.Id, u.FullName, u.Email, u.Permissions.Select(p => p.Permission).Order().ToList(),
+            u.IsActive, u.IsTenantAdmin, u.MustChangePassword);
 }
 
-/// <summary>Rules shared by the company's user management and opening a company. Pure: no database.</summary>
+/// <summary>Rules of the company's user management. Pure: no database.</summary>
 public static class UserAdminRules
 {
-    /// <summary>A role a company may give. The Platform Administrator is never given from a form, only from configuration.</summary>
-    public static UserRole CompanyRole(UserRole role) =>
-        role == UserRole.PlatformAdmin
-            ? throw new BusinessRuleException("Platform yöneticisi rolü verilemez.")
-            : role;
+    /// <summary>The permissions as a set: a missing list is none, a repeated value counts once.</summary>
+    public static IReadOnlyCollection<Permission> Distinct(IEnumerable<Permission>? permissions) =>
+        (permissions ?? []).Distinct().Order().ToList();
 }

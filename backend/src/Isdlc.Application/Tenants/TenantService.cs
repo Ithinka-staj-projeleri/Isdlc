@@ -45,7 +45,6 @@ public class TenantService(
     {
         RequirePlatformAdmin();
         var admin = request.Admin!; // [Required]: the API answers 400 before this runs.
-        var role = UserAdminRules.CompanyRole(admin.Role!.Value);
         var code = request.Code.Trim();
         var email = admin.Email.Trim();
 
@@ -81,7 +80,6 @@ public class TenantService(
             {
                 FullName = admin.FullName.Trim(),
                 Email = email,
-                Role = role,
                 IsTenantAdmin = true,
                 MustChangePassword = true,
                 PasswordHash = passwordHasher.Hash(admin.TemporaryPassword),
@@ -113,15 +111,17 @@ public class TenantService(
         return new TenantDto(tenant.Id, tenant.Code, tenant.Name, tenant.IsActive, userCount, tenant.CreatedAt);
     }
 
-    public async Task<TenantSummaryDto> GetCurrentAsync(CancellationToken cancellationToken)
+    public async Task<CurrentTenantDto> GetCurrentAsync(CancellationToken cancellationToken)
     {
         var tenantId = currentUser.TenantId ?? throw new NotFoundException("Şirket bulunamadı.");
-        return await db.Tenants
+        var tenant = await db.Tenants
             .AsNoTracking()
             .Where(t => t.Id == tenantId)
-            .Select(t => new TenantSummaryDto(t.Id, t.Code, t.Name))
+            .Select(t => new { t.Id, t.Code, t.Name })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Şirket bulunamadı.");
+
+        return new CurrentTenantDto(tenant.Id, tenant.Code, tenant.Name, await db.TenantAdminNamesAsync(cancellationToken));
     }
 
     private void RequirePlatformAdmin()

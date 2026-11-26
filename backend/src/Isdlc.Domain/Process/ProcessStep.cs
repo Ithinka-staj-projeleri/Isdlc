@@ -45,10 +45,11 @@ public class ProcessStep : ITenantOwned
     /// <summary>What happens on "No".</summary>
     public string? NoBranchText { get; set; }
 
-    public UserRole ResponsibleRole { get; set; }
+    /// <summary>Who does the step: anyone with this permission (Faz 7 · A2).</summary>
+    public Permission ResponsiblePermission { get; set; }
 
-    /// <summary>Only set on approval steps. Then only this role can close the step.</summary>
-    public UserRole? ApproverRole { get; set; }
+    /// <summary>Only set on approval steps. Then only someone with this permission can close the step.</summary>
+    public Permission? ApproverPermission { get; set; }
 
     /// <summary>Set when "No" closes the request.</summary>
     public ProjectStatus? NoOutcome { get; set; }

@@ -18,6 +18,7 @@ public class JwtTokenService(JwtOptions options, TimeProvider timeProvider) : IT
 
     /// <summary>Only on the token of a user with a temporary password: every request but changing it gets 403.</summary>
     public const string MustChangePasswordClaim = "mustChangePassword";
+    public const string PlatformAdminClaim = "platformAdmin";
 
     private readonly JsonWebTokenHandler _handler = new();
 
@@ -29,7 +30,8 @@ public class JwtTokenService(JwtOptions options, TimeProvider timeProvider) : IT
             new Claim("sub", user.Id.ToString()),
             new Claim("name", user.FullName),
             new Claim("email", user.Email),
-            new Claim("role", user.Role.ToString()),
+            // Permissions are not in the token: a change by the company administrator counts from the next request.
+            new Claim(PlatformAdminClaim, user.IsPlatformAdmin ? "true" : "false"),
             new Claim(TenantAdminClaim, user.IsTenantAdmin ? "true" : "false"),
         ];
         if (user.TenantId is { } tenantId)

@@ -47,10 +47,10 @@ public static class TestProjects
             RequesterName = "Test",
             BusinessAnalystId = tenantId is null
                 ? await UserIdAsync(database, Analyst)
-                : await FirstUserIdAsync(db, UserRole.BusinessAnalyst),
+                : await FirstUserIdAsync(db, Permission.Analysis),
             ProjectManagerId = tenantId is null
                 ? await UserIdAsync(database, ProjectManager)
-                : await FirstUserIdAsync(db, UserRole.ProjectManager),
+                : await FirstUserIdAsync(db, Permission.ProjectManagement),
             Level = level,
             Status = status,
             ProcessFlowId = await FlowIdAsync(database, flowCode, tenantId),
@@ -103,8 +103,9 @@ public static class TestProjects
     private static AsyncServiceScope Scope(DatabaseFixture database, int? tenantId) =>
         tenantId is { } id ? database.CreateScope(id) : database.CreateScope();
 
-    private static Task<int> FirstUserIdAsync(IApplicationDbContext db, UserRole role) =>
-        db.Users.Where(u => u.Role == role && u.IsActive).OrderBy(u => u.Id).Select(u => u.Id).FirstAsync();
+    private static Task<int> FirstUserIdAsync(IApplicationDbContext db, Permission permission) =>
+        db.Users.Where(u => u.IsActive && u.Permissions.Any(p => p.Permission == permission))
+            .OrderBy(u => u.Id).Select(u => u.Id).FirstAsync();
 
     /// <summary>A seed project by its code (read-only use).</summary>
     public static async Task<int> SeedProjectIdAsync(DatabaseFixture database, string code)
