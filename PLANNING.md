@@ -25,7 +25,7 @@ entity, API ve ekranını uçtan uca yazar.
 | **4 — Şirket akışları** (kapatıldı) | Toplantı ve ziyaret tutanakları, süreç iyileştirme | Akış altyapısı, akış seed'leri, talep analizi; talepler, ret / erteleme, ek geliştirme | Soru bankası, seviye ve uygunluk |
 | **5 — Takım çalışması** (kapatıldı) | Zaman çizelgesi, tutanak aksiyonları, ses kaydından tutanak, e-postadan talep, demo | Proje özeti, panel eklemeleri | Genel arama, bağlantıyı kopyala, kişi profili |
 | **6 — Çok şirketli yapı** (T1–T8 yapıldı, demo provada denendi) | Sözleşme, şirket başına seed, yapay zekâ ayarları, belgeler ve demo | Ayrım altyapısı (`TenantId`, filtre, migration) | Platform ve şirket yönetimi, yönetim ekranları |
-| **7 — Ayarlanabilirlik** (taslak plan) | Sözleşme, adım ön koşulları, atlama koşulları, akış düzenleme (backend), demo | Şirkete özel alanlar, akış düzenleme ekranı, yapay zekâ modeli ve kullanım | Unvandan yetkiye, yetki ekranları |
+| **7 — Ayarlanabilirlik** (onaylandı) | Sözleşme, adım ön koşulları, atlama koşulları, akış düzenleme (backend), demo | Şirkete özel alanlar, akış düzenleme ekranı, yapay zekâ modeli ve kullanım | Unvandan yetkiye, yetki ekranları |
 | **8+ — Entegrasyonlar** (yol haritası) | Faz 7 biterken planlanır | | |
 
 Faz 6'dan sonraki yön ve gerekçesi: Bölüm 6 (Yol haritası).
@@ -110,7 +110,7 @@ değiştiremediği testlerle gösteriliyor.
 
 ### Faz 7 — Şirkete göre ayarlanabilirlik
 
-Taslak, ekip onayı bekliyor. Kapsamı:
+Onaylandı (26 Kasım 2026). Sözleşme: [docs/configurability.md](docs/configurability.md). Kapsamı:
 - **Unvandan yetkiye:** Unvan (rol) kalkar. Platform yalnızca şirketi ve şirketin yönetici hesabını açar; şirket yöneticisi
   kullanıcılarını ekler ve onlara sabit, kısa bir listeden yetki verir. Yetki yalnızca akış adımları için istenir; yetkisi
   olmayan kişiye ekran hangi yetkiyi şirket yöneticisinden isteyeceğini söyler.

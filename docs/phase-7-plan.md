@@ -2,7 +2,7 @@
 
 Bu dosya Faz 7'de yapılacak işleri, kimin neyi yapacağını ve işlerin sırasını anlatır.
 Ortak kurallar için: [AGENTS.md](../AGENTS.md), ekip ve çalışma kuralları için: [PLANNING.md](../PLANNING.md).
-Durum: **taslak, ekip onayı bekliyor** (26 Kasım 2026). Erva'nın geri bildirimiyle güncellendi:
+Durum: **onaylandı** (26 Kasım 2026, #177). Sözleşme (A1): [configurability.md](configurability.md), taslak. Erva'nın geri bildirimiyle güncellendi:
 - Unvan (rol) kalkıyor; yerine yönetim panelinden basit yetkilendirme geliyor.
 - Platform şirketi ve yöneticisini açıyor, kullanıcıları ve yetkileri şirket yöneticisi veriyor.
 - Süreçte bir adım, işi yapılmadan geçilemiyor.
@@ -108,7 +108,7 @@ onaylarken değiştirebilir.
 
 | No | İş | Sorumlu | Bağımlılık |
 | --- | --- | --- | --- |
-| A1 | **Sözleşme:** `docs/configurability.md`: Bölüm 3'teki kararların uygulama ayrıntıları. Yetki listesi, migration eşlemesi, ön koşul ve atlama kuralı biçimleri, uç noktalar, hata mesajları. Kurallar uygulandıkça AGENTS.md'ye taşınır | Erva | — |
+| A1 | **Sözleşme:** [configurability.md](configurability.md): Bölüm 3'teki kararların uygulama ayrıntıları. Yetki listesi, migration eşlemesi, ön koşul ve atlama kuralı biçimleri, uç noktalar, hata mesajları. Kurallar uygulandıkça AGENTS.md'ye taşınır | Erva | — |
 | A2 | **Unvandan yetkiye (backend):** yetki listesi ve kullanıcının yetkileri; yetki kontrolünün yalnızca akış işlerinde yapılması ve eksik yetkide yetki adını ve şirket yöneticilerini söyleyen `403` (karar 2a, 2b); `User.Role` ve `UserRole`'ün kaldırılması; adımda sorumlu / onaylayan yetki; unvan kullanan bütün kuralların yetkiye çevrilmesi; `IsPlatformAdmin`; şirket açarken unvansız yönetici hesabı; migration (karar 1–7). **Kritik yol:** `Users` ve `ProcessSteps` tablolarına ve unvan kullanan bütün servislere dokunur | Baran | A1 |
 | A3 | **Yetki ekranları:** Yönetim → Kullanıcılar'da yetki kutucukları ve hazır yetki setleri; yetkisi olmayan kullanıcıya Süreç sekmesinde ve "Yeni talep"te gereken yetkinin ve şirket yöneticisinin gösterilmesi (karar 2b); Platform → Yeni şirket formundan unvan alanının kaldırılması; frontend'deki sabit unvan listesinin ve unvana göre menü / buton kontrollerinin yetkiye çevrilmesi; üst barda unvan yerine şirket adı | Baran | A2 |
 | A4 | **Adım ön koşulları:** ön koşul türleri ve saf değerlendirme sınıfı; tamamlama ve "Evet" cevabında backend kontrolü; Süreç sekmesinde eksik işin ve yönlendirme düğmesinin gösterilmesi; Ithinka şablonuna ön koşulların eklenmesi (karar 8–11). Test yardımcıları (`TestProjects`) ön koşulları sağlayarak proje ilerletir | Erva | A1 |
