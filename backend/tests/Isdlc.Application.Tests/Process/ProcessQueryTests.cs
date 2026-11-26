@@ -2,6 +2,7 @@ using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Common.Models;
 using Isdlc.Application.Process;
+using Isdlc.Application.QuestionBank;
 using Isdlc.Application.Process.Dtos;
 using Isdlc.Application.Tests.Common;
 using Isdlc.Domain.Process;
@@ -26,7 +27,8 @@ public class ProcessQueryTests(DatabaseFixture database)
             scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(),
             new TestUser(userId),
             new RecordingNotificationService(),
-            TimeProvider.System);
+            TimeProvider.System,
+            scope.ServiceProvider.GetRequiredService<IQuestionnaireService>());
         return await call(service);
     }
 

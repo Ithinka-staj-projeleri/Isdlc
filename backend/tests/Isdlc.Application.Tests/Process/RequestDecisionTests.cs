@@ -2,6 +2,7 @@ using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Common.Models;
 using Isdlc.Application.Process;
+using Isdlc.Application.QuestionBank;
 using Isdlc.Application.Process.Dtos;
 using Isdlc.Application.Projects;
 using Isdlc.Application.Projects.Dtos;
@@ -38,7 +39,8 @@ public class RequestDecisionTests(DatabaseFixture database)
             scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(),
             new TestUser(userId),
             notifications,
-            TimeProvider.System);
+            TimeProvider.System,
+            scope.ServiceProvider.GetRequiredService<IQuestionnaireService>());
         return new Session(scope, service, notifications);
     }
 

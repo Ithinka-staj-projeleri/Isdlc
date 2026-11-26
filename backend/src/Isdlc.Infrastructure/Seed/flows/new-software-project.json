@@ -70,7 +70,8 @@
       "noJumps": [],
       "requiresExternalRequest": false,
       "requiresOffer": false,
-      "minLevel": null
+      "minLevel": null,
+      "prerequisites": [{ "kind": "RequestFormComplete" }]
     },
     {
       "code": "4",
@@ -85,7 +86,8 @@
       "noJumps": [],
       "requiresExternalRequest": true,
       "requiresOffer": true,
-      "minLevel": null
+      "minLevel": null,
+      "prerequisites": [{ "kind": "QuestionnaireComplete", "value": "customer-fit" }]
     },
     {
       "code": "5",
@@ -100,7 +102,8 @@
       "noJumps": [],
       "requiresExternalRequest": false,
       "requiresOffer": false,
-      "minLevel": null
+      "minLevel": null,
+      "prerequisites": [{ "kind": "LevelApplied" }]
     },
     {
       "code": "6",
@@ -115,7 +118,8 @@
       "noJumps": [],
       "requiresExternalRequest": false,
       "requiresOffer": false,
-      "minLevel": null
+      "minLevel": null,
+      "prerequisites": [{ "kind": "MeetingExists" }]
     },
     {
       "code": "7",
@@ -145,7 +149,8 @@
       "noJumps": [],
       "requiresExternalRequest": false,
       "requiresOffer": false,
-      "minLevel": null
+      "minLevel": null,
+      "prerequisites": [{ "kind": "RiskExists" }]
     },
     {
       "code": "9",

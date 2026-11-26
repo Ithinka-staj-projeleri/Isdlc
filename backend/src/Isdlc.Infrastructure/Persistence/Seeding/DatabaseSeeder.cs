@@ -120,6 +120,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                 RequiresExternalRequest = s.RequiresExternalRequest,
                 RequiresOffer = s.RequiresOffer,
                 MinLevel = s.MinLevel,
+                Prerequisites = s.Prerequisites ?? [],
             });
 
         foreach (var stepSeed in file.Steps)
@@ -193,6 +194,7 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
             changed += Set(step.RequiresExternalRequest, stepSeed.RequiresExternalRequest, v => step.RequiresExternalRequest = v);
             changed += Set(step.RequiresOffer, stepSeed.RequiresOffer, v => step.RequiresOffer = v);
             changed += Set(step.MinLevel, stepSeed.MinLevel, v => step.MinLevel = v);
+            changed += SyncPrerequisites(step, stepSeed);
             changed += SyncJumps(step, stepSeed, stepsByCode);
         }
 
@@ -200,6 +202,19 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
         {
             logger.LogInformation("Flow {Flow}: updated {Changes} values from its seed file.", file.Code, changed);
         }
+    }
+
+    /// <summary>Prerequisites follow the file as a whole list (Faz 7 · A4).</summary>
+    private static int SyncPrerequisites(ProcessStep step, StepSeed stepSeed)
+    {
+        var wanted = stepSeed.Prerequisites ?? [];
+        if (step.Prerequisites.SequenceEqual(wanted))
+        {
+            return 0;
+        }
+
+        step.Prerequisites = wanted.ToList();
+        return 1;
     }
 
     /// <summary>Return options follow the file: missing ones are added, extra ones removed, labels updated.</summary>

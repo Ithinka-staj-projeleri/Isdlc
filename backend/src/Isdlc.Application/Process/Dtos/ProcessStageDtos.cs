@@ -41,7 +41,8 @@ public record ProcessStepDto(
     UserRole? ApproverRole,
     ProjectStatus? NoOutcome,
     IReadOnlyList<ProcessStepJumpDto> NoJumps,
-    StepConditionDto Condition);
+    StepConditionDto Condition,
+    IReadOnlyList<StepPrerequisite> Prerequisites);
 
 /// <summary>A step the flow can return to when the decision is answered "No".</summary>
 public record ProcessStepJumpDto(

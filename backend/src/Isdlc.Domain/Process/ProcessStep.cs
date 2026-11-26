@@ -53,6 +53,9 @@ public class ProcessStep : ITenantOwned
     /// <summary>Set when "No" closes the request.</summary>
     public ProjectStatus? NoOutcome { get; set; }
 
+    /// <summary>Work that must exist on the project before the step is completed or answered "Yes"; empty: none.</summary>
+    public List<StepPrerequisite> Prerequisites { get; set; } = [];
+
     /// <summary>Steps the flow can return to on "No".</summary>
     public ICollection<ProcessStepJump> NoJumps { get; set; } = new List<ProcessStepJump>();
 }

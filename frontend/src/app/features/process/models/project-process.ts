@@ -1,6 +1,6 @@
 import { ProjectStatus } from '../../../shared/models/project-status';
 import { UserSummary } from '../../../shared/models/user-summary';
-import { ProcessFlowKind, ProcessStep } from './process-stage';
+import { PrerequisiteKind, ProcessFlowKind, ProcessStep } from './process-stage';
 import { RequestDecisionForm } from './request-decision';
 
 export type ProcessStageState = 'Completed' | 'Current' | 'Pending' | 'Stopped';
@@ -50,6 +50,20 @@ export interface AvailableActions {
     canResume: boolean;
     /** Why the user cannot act on the current step; null when they can. */
     blockedReason: string | null;
+    /**
+     * Work the step still needs (Faz 7 · A4). While not empty "Adımı tamamla" and "Evet" are refused; "Hayır" and
+     * rejecting still work. Only filled for someone who may act on the step.
+     */
+    unmetPrerequisites: UnmetPrerequisite[];
+}
+
+/** A prerequisite of the current step that does not hold, and where the person can do it. */
+export interface UnmetPrerequisite {
+    kind: PrerequisiteKind;
+    message: string;
+    linkText: string;
+    /** An address in the app, e.g. "/projects/11?tab=meetings". */
+    link: string;
 }
 
 /** One action taken on a step (process history). */

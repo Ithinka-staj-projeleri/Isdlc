@@ -72,6 +72,20 @@ akış o adıma hiç uğramaz ve `StepRecord` yazılmaz.
 **Sonraki adım:** aynı akışta, `Order`'ı mevcut adımdan büyük ve koşulları sağlanan **ilk** adım. Yoksa kayıt `Closed` olur.
 **İlk adım:** talep açılırken akışın koşulları sağlanan ilk adımı.
 
+### Adım ön koşulları (Faz 7 · A4)
+
+Bir adım, işi yapılmadan geçilemez. Her adımın isteğe bağlı ön koşul listesi vardır (`ProcessStep.Prerequisites`, JSON;
+seed dosyasında `prerequisites`). Türler, mesajlar ve yönlendirme: [configurability.md](configurability.md) → Adım ön koşulları.
+
+- "Adımı tamamla"da ve "Evet"te kontrol edilir; eksik varsa `400` "Bu adım tamamlanamaz: {ilk eksik}".
+- "Hayır", reddetme ve erteleme kontrol etmez.
+- Önce yetki, sonra ön koşul: adımda işlem yapamayan kişiye ön koşul listesi gönderilmez.
+- Değerlendirme saf sınıfta: `StepPrerequisites` (`Isdlc.Application/Process/StepPrerequisites.cs`). Servis yalnızca
+  adımın sorduğu bilgileri sorgular (`ProcessService.UnmetPrerequisitesAsync`).
+
+Ithinka'nın yeni yazılım projesi akışında: 3 → Talep Kayıt Formu, 4 → müşteri uygunluk anketi, 5 → seviye uygulandı,
+6 → en az bir tutanak, 8 → en az bir risk.
+
 ### Talep mi, proje mi
 
 Talepler ve Projeler menüleri aynı `Project` tablosunu gösterir. Hangisinde görüneceğini akış belirler
@@ -186,7 +200,11 @@ talep sahibi) projede zaten var; form kaydı yalnızca karar, gerekçe ve ertele
     "canReject": false,
     "canPostpone": false,  // D2: yalnızca yönetici, yalnızca talep aşamasında
     "canResume": false,    // D2: ertelenmiş talepte yalnızca yönetici
-    "blockedReason": null
+    "blockedReason": null,
+    "unmetPrerequisites": [ // Faz 7 · A4: adımın eksik işleri; boşsa adım ilerleyebilir
+      { "kind": "MeetingExists", "message": "En az bir toplantı tutanağı girilmeli.",
+        "linkText": "Tutanaklara git", "link": "/projects/11?tab=meetings" }
+    ]
   }
 }
 
@@ -216,6 +234,10 @@ talep sahibi) projede zaten var; form kaydı yalnızca karar, gerekçe ve ertele
 - `availableActions`: giriş yapan kullanıcıya göre hesaplanır (bkz. Yetki kuralları).
   Kullanıcı mevcut adımda işlem yapamıyorsa `blockedReason` dolar, ör.
   "Bu adım Yazılım Departman Yöneticisi tarafından onaylanır."
+- `availableActions.unmetPrerequisites` (Faz 7 · A4): adımda işlem yapabilen kullanıcıya, adımın sağlanmamış ön koşulları
+  (bkz. [Adım ön koşulları](#adım-ön-koşulları-faz-7--a4)). Liste boş değilse `canComplete` `false` olur. Karar adımında
+  `canAnswer` `true` kalır, çünkü "Hayır" yine verilebilir; ekran "Evet"i kapatır.
+- `currentStep.prerequisites` (Faz 7 · A4): adımın ön koşulları, `[{ kind, value? }]`.
 
 **`step-records` sorgu parametreleri:** `page` (varsayılan 1), `pageSize` (varsayılan 20, en fazla 100).
 Sıralama: en yeni kayıt önce.

@@ -40,4 +40,14 @@ public record AvailableActionsDto(
     bool CanReject,
     bool CanPostpone, // a request (before the project stage) can be put on hold
     bool CanResume,   // a postponed request can be taken back
-    string? BlockedReason); // why the user cannot act on the current step; null when they can
+    string? BlockedReason) // why the user cannot act on the current step; null when they can
+{
+    /// <summary>
+    /// Work the current step still needs (Faz 7 · A4). When not empty the step cannot be completed and "Yes" is refused;
+    /// "No" and rejecting still work. Filled only for a user who may act on the step.
+    /// </summary>
+    public IReadOnlyList<UnmetPrerequisiteDto> UnmetPrerequisites { get; init; } = [];
+}
+
+/// <summary>A prerequisite of the current step that does not hold, with where the person can do it.</summary>
+public record UnmetPrerequisiteDto(PrerequisiteKind Kind, string Message, string LinkText, string Link);

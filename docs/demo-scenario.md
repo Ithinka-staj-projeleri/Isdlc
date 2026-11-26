@@ -98,6 +98,9 @@ Proje → **Toplantı Tutanakları** → "+ Tutanak oluştur".
 | 4.5 | **Açık Konular** sekmesi → "+ Kayıt ekle": tür Soru, konu *Saha ekibi çevrimdışı çalışabilmeli mi?*, sorumlu: Ekip üyesi açılır listesini göster | Her kişinin yanında iş yükü: "Can Öztürk · 1 açık konu". Sorumluyu seçip kaydet |
 | 4.6 | `AK-001` satırında **Düzenle** → pencerenin üstündeki **Bağlantıyı kopyala** | Düğme "Kopyalandı" olur; bağlantıyı açan kişi doğrudan bu kayda gelir |
 
+*Faz 7:* Tutanak girilmeden 6. adım tamamlanamaz. İstersen 4.1'den önce Süreç sekmesine bak: "Adımı tamamla" yerine
+"En az bir toplantı tutanağı girilmeli · Tutanaklara git" görünür.
+
 *Anlatım: "Yapay zekâ toplantıdan kimin neyi ne zamana yapacağını çıkarıyor, kişiyi ekipten eşleştiriyor; kaydeden yine kişi.
 Sorumlu seçerken herkesin elindeki iş görünüyor."*
 

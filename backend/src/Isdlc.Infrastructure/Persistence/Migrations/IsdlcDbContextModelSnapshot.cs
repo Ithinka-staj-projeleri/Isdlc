@@ -592,6 +592,11 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
+                    b.Property<string>("Prerequisites")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<int>("ProcessFlowId")
                         .HasColumnType("int");
 

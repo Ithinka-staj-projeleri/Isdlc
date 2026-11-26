@@ -2,6 +2,7 @@ using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Common.Models;
 using Isdlc.Application.Process;
+using Isdlc.Application.QuestionBank;
 using Isdlc.Application.Process.Dtos;
 using Isdlc.Application.ProcessImprovements;
 using Isdlc.Application.ProcessImprovements.Dtos;
@@ -28,7 +29,8 @@ public class ProcessIsolationTests(DatabaseFixture database)
         await using var scope = database.CreateScope(tenantId);
         var service = new ProcessService(
             scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(), new TestUser(userId, tenantId),
-            new RecordingNotificationService(), TimeProvider.System);
+            new RecordingNotificationService(), TimeProvider.System,
+            scope.ServiceProvider.GetRequiredService<IQuestionnaireService>());
         return await action(service);
     }
 

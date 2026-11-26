@@ -24,5 +24,6 @@ public static class ProcessMappings
             .OrderBy(jump => jump.TargetStep.Order)
             .Select(jump => new ProcessStepJumpDto(jump.TargetStepId, jump.TargetStep.Code, jump.Label))
             .ToList(),
-        new StepConditionDto(step.RequiresExternalRequest, step.RequiresOffer, step.MinLevel));
+        new StepConditionDto(step.RequiresExternalRequest, step.RequiresOffer, step.MinLevel),
+        step.Prerequisites);
 }
