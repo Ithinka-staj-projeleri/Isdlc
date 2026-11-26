@@ -28,5 +28,11 @@ public class Tenant
     /// <summary>Text may be sent to the outside model provider.</summary>
     public bool AiDataSharingAllowed { get; set; }
 
+    /// <summary>The model the company chose (Faz 7 · A9); empty: the AI service's default.</summary>
+    public string? AiModel { get; set; }
+
+    /// <summary>Input + output tokens a month (UTC calendar month); empty: no limit.</summary>
+    public int? AiMonthlyTokenLimit { get; set; }
+
     public DateTime CreatedAt { get; set; }
 }

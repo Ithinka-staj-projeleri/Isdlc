@@ -1,4 +1,6 @@
 using Isdlc.Api.Common;
+using Isdlc.Application.Agents;
+using Isdlc.Application.Agents.Dtos;
 using Isdlc.Application.Common.Models;
 using Isdlc.Application.Identity.Dtos;
 using Isdlc.Application.Tenants;
@@ -12,7 +14,8 @@ namespace Isdlc.Api.Controllers;
 /// anyone else, T4); "current" is every user's; "current/settings" (the AI switches, T6) is the company administrator's.
 /// Contract: docs/multi-tenancy.md → Uç noktalar.
 /// </summary>
-public class TenantsController(ITenantService tenantService, ITenantSettingsService settingsService) : ApiControllerBase
+public class TenantsController(
+    ITenantService tenantService, ITenantSettingsService settingsService, IAiUsageService usageService) : ApiControllerBase
 {
     /// <summary>Every company, inactive ones too, by name. Paging: ?page=1&amp;pageSize=20</summary>
     [HttpGet]
@@ -72,5 +75,18 @@ public class TenantsController(ITenantService tenantService, ITenantSettingsServ
     public async Task<TenantSettingsDto> UpdateSettings(UpdateTenantSettingsDto dto, CancellationToken cancellationToken)
     {
         return await settingsService.UpdateAsync(dto, cancellationToken);
+    }
+
+    /// <summary>
+    /// What the company used of the AI assistants in a UTC month (Faz 7 · A9): ?month=2026-11, empty for this month.
+    /// Company administrators only.
+    /// </summary>
+    [HttpGet("current/ai-usage")]
+    [ProducesResponseType<AiUsageSummaryDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public async Task<AiUsageSummaryDto> AiUsage([FromQuery] string? month, CancellationToken cancellationToken)
+    {
+        return await usageService.GetMonthAsync(month, cancellationToken);
     }
 }

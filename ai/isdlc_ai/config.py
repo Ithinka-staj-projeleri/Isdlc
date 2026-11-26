@@ -12,6 +12,8 @@ class Settings:
     isdlc_api_url: str
     gemini_api_key: str | None
     gemini_model: str | None
+    # Tried in order when the requested model is overloaded or out of quota (GEMINI_FALLBACK_MODELS, comma separated).
+    gemini_fallback_models: tuple[str, ...] = ()
     # Shared with the backend (Agents:ServiceKey); when set, the HTTP service requires it.
     agent_service_key: str | None = None
     # Speech to text (isdlc_ai/transcription.py); used only when faster-whisper is installed.
@@ -26,6 +28,9 @@ def load_settings() -> Settings:
         isdlc_api_url=os.getenv("ISDLC_API_URL", "http://localhost:5091").rstrip("/"),
         gemini_api_key=os.getenv("GEMINI_API_KEY") or None,
         gemini_model=os.getenv("GEMINI_MODEL") or None,
+        gemini_fallback_models=tuple(
+            m.strip() for m in (os.getenv("GEMINI_FALLBACK_MODELS") or "").split(",") if m.strip()
+        ),
         agent_service_key=os.getenv("AGENT_SERVICE_KEY") or None,
         whisper_model=os.getenv("WHISPER_MODEL") or "small",
         whisper_device=os.getenv("WHISPER_DEVICE") or "cpu",

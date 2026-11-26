@@ -24,7 +24,7 @@ class FailingLlm:
 
 
 def client(*responses: str, error: LlmError | None = None) -> TestClient:
-    def make_llm():
+    def make_llm(model=None):
         return FailingLlm(error) if error is not None else FakeLlmClient(list(responses))
 
     settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
@@ -197,7 +197,7 @@ def test_requestDraft_ReturnsTheFormInCamelCase():
 
 def test_requestDraft_WithoutKey_Is401():
     settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
-    plain = TestClient(create_app(settings, llm_factory=lambda: FakeLlmClient([])))
+    plain = TestClient(create_app(settings, llm_factory=lambda model: FakeLlmClient([])))
 
     response = plain.post("/v1/request/draft", json={"emailText": "Talep", "today": "2026-11-20"})
 
@@ -221,7 +221,7 @@ class FakeTranscriber:
 
 def transcribing(transcriber) -> TestClient:
     settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
-    app = create_app(settings, llm_factory=lambda: FakeLlmClient([]), transcriber=transcriber)
+    app = create_app(settings, llm_factory=lambda model: FakeLlmClient([]), transcriber=transcriber)
     return TestClient(app, headers={"X-Agent-Key": KEY})
 
 
@@ -237,6 +237,7 @@ def test_transcribe_ReturnsTheTextAndRemovesTheFile():
         "language": "tr",
         "truncated": False,
         "modelName": "fake-whisper",
+        "usage": {"model": "fake-whisper", "inputTokens": None, "outputTokens": None, "audioSeconds": 61},
     }
     assert fake.received == b"fake audio bytes"
 
@@ -270,7 +271,89 @@ def test_transcribe_EmptyBody_Is400():
 def test_transcribe_NotInstalled_Is503AndHealthSaysSo(monkeypatch):
     monkeypatch.setattr("isdlc_ai.server.transcription_available", lambda: False)
     settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
-    off = TestClient(create_app(settings, llm_factory=lambda: FakeLlmClient([])), headers={"X-Agent-Key": KEY})
+    off = TestClient(create_app(settings, llm_factory=lambda model: FakeLlmClient([])), headers={"X-Agent-Key": KEY})
 
     assert off.get("/health").json()["transcriptionAvailable"] is False
     assert off.post("/v1/meeting/transcribe", content=b"x").status_code == 503
+
+
+# ---- The company's model and the usage record (Faz 7 · A9) ----
+
+
+class CountingLlm(FakeLlmClient):
+    """A fake that also reports tokens, like Gemini's usage metadata."""
+
+    def generate_json(self, system, user, schema):
+        from isdlc_ai.llm import LlmResult
+
+        result = super().generate_json(system, user, schema)
+        return LlmResult(result.text, input_tokens=100, output_tokens=20)
+
+
+def test_requestDraft_TheCompanysModel_IsAskedFor():
+    asked = []
+
+    def make_llm(model):
+        asked.append(model)
+        empty = dict.fromkeys(["name", "description", "customer_name", "requester_name", "requester_contact",
+                               "request_type", "request_date", "due_date", "notes"])
+        return FakeLlmClient([json.dumps({**empty, "warnings": []})], model_name=model or "fake")
+
+    settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
+    response = TestClient(create_app(settings, llm_factory=make_llm), headers={"X-Agent-Key": KEY}).post(
+        "/v1/request/draft", json={"emailText": "Talep var.", "today": "2026-11-26", "model": "gemini-x-pro"})
+
+    assert response.status_code == 200
+    assert asked == ["gemini-x-pro"]
+    assert response.json()["usage"]["model"] == "gemini-x-pro"
+
+
+def test_riskSuggestions_Usage_AddsUpEveryCall():
+    settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
+    app = create_app(settings, llm_factory=lambda model: CountingLlm([identified(RISK), ASSESSED, MITIGATED]))
+
+    response = TestClient(app, headers={"X-Agent-Key": KEY}).post(
+        "/v1/risk/suggestions", json={"projectCode": "14", "sourceText": NOTES})
+
+    assert response.status_code == 200
+    assert response.json()["usage"] == {"model": "fake", "inputTokens": 300, "outputTokens": 60, "audioSeconds": None}
+
+
+def test_riskSuggestions_NoTokensReported_UsageHasOnlyTheModel():
+    response = client(identified()).post("/v1/risk/suggestions", json={"projectCode": "14", "sourceText": NOTES})
+
+    assert response.json()["usage"] == {"model": "fake", "inputTokens": None, "outputTokens": None, "audioSeconds": None}
+
+
+def test_models_ListsWhatTheCompanyCanChoose():
+    settings = Settings(isdlc_api_url="http://localhost", gemini_api_key="k", gemini_model="gemini-a", agent_service_key=KEY)
+    app = create_app(settings, llm_factory=lambda model: FakeLlmClient([]), model_lister=lambda: ["gemini-a", "gemini-b"])
+
+    response = TestClient(app, headers={"X-Agent-Key": KEY}).get("/v1/models")
+
+    assert response.status_code == 200
+    assert response.json() == {"models": ["gemini-a", "gemini-b"], "defaultModel": "gemini-a"}
+
+
+def test_models_NoModelConfigured_IsEmpty():
+    settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
+
+    response = TestClient(create_app(settings), headers={"X-Agent-Key": KEY}).get("/v1/models")
+
+    assert response.json() == {"models": [], "defaultModel": None}
+
+
+def test_models_ProviderFails_Is503():
+    def failing():
+        raise LlmError("down", 503)
+
+    settings = Settings(isdlc_api_url="http://localhost", gemini_api_key="k", gemini_model="gemini-a", agent_service_key=KEY)
+    app = create_app(settings, llm_factory=lambda model: FakeLlmClient([]), model_lister=failing)
+
+    assert TestClient(app, headers={"X-Agent-Key": KEY}).get("/v1/models").status_code == 503
+
+
+def test_models_WithoutKey_Is401():
+    settings = Settings(isdlc_api_url="http://localhost", gemini_api_key=None, gemini_model=None, agent_service_key=KEY)
+
+    assert TestClient(create_app(settings)).get("/v1/models").status_code == 401
