@@ -1,3 +1,4 @@
+using Isdlc.Application.Identity;
 using Isdlc.Application.Assessment;
 using Isdlc.Application.Common.Exceptions;
 using Isdlc.Application.Common.Interfaces;
@@ -37,15 +38,15 @@ public class DashboardServiceTests(DatabaseFixture database)
     }
 
     /// <summary>A user of this test only, so seed users and other tests are not affected.</summary>
-    private async Task<int> NewUserAsync(UserRole role)
+    private async Task<int> NewUserAsync(Permission permission)
     {
         await using var scope = database.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var user = new User
         {
-            FullName = $"Test {role}",
+            FullName = $"Test {permission}",
             Email = $"dashboard-{Guid.NewGuid():N}@isdlc.local",
-            Role = role,
+            Permissions = [new UserPermission { Permission = permission }],
             CreatedAt = DateTime.UtcNow,
         };
         db.Users.Add(user);
@@ -118,8 +119,8 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MyWaitingSteps_AnalystStep_OnlyTheAssignedAnalystSeesIt()
     {
-        var mine = await NewUserAsync(UserRole.BusinessAnalyst);
-        var other = await NewUserAsync(UserRole.BusinessAnalyst);
+        var mine = await NewUserAsync(Permission.Analysis);
+        var other = await NewUserAsync(Permission.Analysis);
         var projectId = await NewProjectAsync("6", analystId: mine);
 
         await WaitingSinceLongAgoAsync(projectId, "4");
@@ -138,7 +139,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MyWaitingSteps_NoAnalystAssigned_EveryAnalystSeesIt()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var projectId = await NewProjectAsync("14", analystId: null);
         await WaitingSinceLongAgoAsync(projectId, "14");
 
@@ -148,8 +149,8 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MyWaitingSteps_ProjectManagerStep_OnlyTheAssignedManagerSeesIt()
     {
-        var mine = await NewUserAsync(UserRole.ProjectManager);
-        var other = await NewUserAsync(UserRole.ProjectManager);
+        var mine = await NewUserAsync(Permission.ProjectManagement);
+        var other = await NewUserAsync(Permission.ProjectManagement);
         var projectId = await NewProjectAsync("12", analystId: null, managerId: mine);
         await WaitingSinceLongAgoAsync(projectId, "12");
 
@@ -158,10 +159,10 @@ public class DashboardServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task MyWaitingSteps_ApprovalStep_ShownToTheApproverRoleNotTheResponsibleRole()
+    public async Task MyWaitingSteps_ApprovalStep_ShownToTheApproverPermissionNotTheResponsiblePermission()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var manager = await NewUserAsync(UserRole.SoftwareDepartmentManager);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var manager = await NewUserAsync(Permission.Approval);
         var projectId = await NewProjectAsync("10", analystId: analyst);
         await WaitingSinceLongAgoAsync(projectId, "9");
 
@@ -175,7 +176,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MyWaitingSteps_ProjectNotActive_IsNotShown()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var projectId = await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Lost);
 
         var dashboard = await AsAsync(analyst);
@@ -187,7 +188,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MyWaitingSteps_LongestWaitingFirst_FromTheLastProcessRecord()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var newer = await NewProjectAsync("6", analystId: analyst);
         var older = await NewProjectAsync("14", analystId: analyst);
         await AddStepRecordAsync(newer, "6", new DateTime(2000, 1, 3, 9, 0, 0, DateTimeKind.Utc), analyst);
@@ -205,7 +206,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MyWaitingSteps_EveryItem_IsAllowedByTheProcessRule()
     {
-        var manager = await NewUserAsync(UserRole.SoftwareDepartmentManager);
+        var manager = await NewUserAsync(Permission.Approval);
         await NewProjectAsync("10", analystId: null);
         await NewProjectAsync("10", analystId: null);
 
@@ -218,7 +219,8 @@ public class DashboardServiceTests(DatabaseFixture database)
         var steps = await db.ProcessSteps.Where(s => stepIds.Contains(s.Id)).ToListAsync();
         Assert.NotEmpty(steps);
         Assert.All(steps, s => Assert.True(ProcessProgress.CanActOnStep(
-            new StepPermissionInfo(s.IsDecision, s.ResponsibleRole, s.ApproverRole), UserRole.SoftwareDepartmentManager)));
+            new StepPermissionInfo(s.IsDecision, s.ResponsiblePermission, s.ApproverPermission),
+            new UserAccess(0, new HashSet<Permission> { Permission.Approval }, []))));
     }
 
     // ---- Summary and stages ("mine" scope) ----
@@ -226,8 +228,8 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Summary_Mine_CountsOnlyTheUsersProjects()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var manager = await NewUserAsync(UserRole.ProjectManager);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var manager = await NewUserAsync(Permission.ProjectManagement);
         await NewProjectAsync("1", analystId: analyst);                                   // request, stage 1
         await NewProjectAsync("10", analystId: analyst);                                    // request, stage 2
         await NewProjectAsync("12", analystId: null, managerId: analyst);                   // project, stage 3 (the user as its manager)
@@ -251,7 +253,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Summary_FinishedLastYear_IsNotCounted()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var projectId = await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Rejected);
         await AddStepRecordAsync(projectId, "4", new DateTime(DateTime.UtcNow.Year - 1, 6, 1, 9, 0, 0, DateTimeKind.Utc), analyst);
 
@@ -265,7 +267,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MyOpenIssues_NotClosedOnActiveProjects_OverdueFirst()
     {
-        var owner = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var owner = await NewUserAsync(Permission.Development);
         var projectId = await NewProjectAsync("14", analystId: null);
         var closedProjectId = await NewProjectAsync(null, analystId: null, status: ProjectStatus.Closed);
         var noDue = await AddOpenIssueAsync(projectId, "AK-001", owner, null);
@@ -279,14 +281,14 @@ public class DashboardServiceTests(DatabaseFixture database)
         Assert.Equal(3, dashboard.MyOpenIssues.TotalCount);
         Assert.Equal([late, later, noDue], dashboard.MyOpenIssues.Items.Select(x => x.Id));
         Assert.True(dashboard.MyOpenIssues.Items[0].IsOverdue);
-        Assert.Equal("Test SoftwareDeveloper", dashboard.MyOpenIssues.Items[0].Owner.Name);
+        Assert.Equal("Test Development", dashboard.MyOpenIssues.Items[0].Owner.Name);
     }
 
     [Fact]
     public async Task OverdueOpenIssues_Mine_OnlyActiveProjectsAndNotClosed()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var owner = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var owner = await NewUserAsync(Permission.Development);
         var projectId = await NewProjectAsync("14", analystId: analyst);
         var closedProjectId = await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Closed);
         var oldest = await AddOpenIssueAsync(projectId, "AK-001", owner, Today.AddDays(-10));
@@ -306,8 +308,8 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MyOpenIssuesDueThisWeek_MineNotClosed_FromTodayToSunday()
     {
-        var me = await NewUserAsync(UserRole.SoftwareDeveloper);
-        var someoneElse = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var me = await NewUserAsync(Permission.Development);
+        var someoneElse = await NewUserAsync(Permission.Development);
         var projectId = await NewProjectAsync("15", analystId: null);
         var endOfWeek = TeamWorkloadRules.EndOfWeek(Today);
 
@@ -328,7 +330,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task MyOpenIssuesDueThisWeek_ClosedProject_IsLeftOut()
     {
-        var me = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var me = await NewUserAsync(Permission.Development);
         var projectId = await NewProjectAsync(null, analystId: null, status: ProjectStatus.Closed);
         await AddOpenIssueAsync(projectId, "AK-001", me, Today);
 
@@ -338,7 +340,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task TeamWorkload_ListsTheUserWithTheirOpenIssuesAndWaitingSteps()
     {
-        var developer = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var developer = await NewUserAsync(Permission.Development);
         var activeProject = await NewProjectAsync("15", analystId: null);     // step 15: a developer step
         var closedProject = await NewProjectAsync(null, analystId: null, status: ProjectStatus.Closed);
         await AddOpenIssueAsync(activeProject, "AK-001", developer, Today.AddDays(-2));
@@ -348,7 +350,7 @@ public class DashboardServiceTests(DatabaseFixture database)
 
         var member = Assert.Single((await AsAsync(developer)).TeamWorkload, w => w.User.Id == developer);
 
-        Assert.Equal(UserRole.SoftwareDeveloper, member.Role);
+        Assert.Equal([Permission.Development], member.Permissions);
         Assert.Equal((2, 1), (member.OpenIssues, member.OverdueOpenIssues));
         // Other tests' projects at developer steps wait for every developer too; this one is among them.
         Assert.True(member.WaitingSteps >= 1);
@@ -357,8 +359,8 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task TeamWorkload_SameForEveryScope_InactiveUsersLeftOut()
     {
-        var me = await NewUserAsync(UserRole.BusinessAnalyst);
-        var inactive = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var me = await NewUserAsync(Permission.Analysis);
+        var inactive = await NewUserAsync(Permission.Development);
         await using (var scope = database.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
@@ -379,7 +381,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task RecentActivity_Mine_NewestFirstFromTheUsersProjects()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var projectId = await NewProjectAsync("5", analystId: analyst);
         var otherProjectId = await NewProjectAsync("5", analystId: null);
         await AddStepRecordAsync(projectId, "1", DateTime.UtcNow.AddHours(-3), analyst);
@@ -390,7 +392,7 @@ public class DashboardServiceTests(DatabaseFixture database)
 
         Assert.Equal(["2", "1"], dashboard.RecentActivity.Select(x => x.StepCode));
         Assert.All(dashboard.RecentActivity, x => Assert.Equal(projectId, x.Project.Id));
-        Assert.Equal("Test BusinessAnalyst", dashboard.RecentActivity[0].PerformedBy.FullName);
+        Assert.Equal("Test Analysis", dashboard.RecentActivity[0].PerformedBy.FullName);
     }
 
     // ---- High risks (decisions 10 and 11) ----
@@ -398,8 +400,8 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task HighRisks_Mine_OnlyOpenHighRisksOnActiveProjects_HighestScoreFirst()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
-        var owner = await NewUserAsync(UserRole.SoftwareDeveloper);
+        var analyst = await NewUserAsync(Permission.Analysis);
+        var owner = await NewUserAsync(Permission.Development);
         var projectId = await NewProjectAsync("8", analystId: analyst);
         var closedProjectId = await NewProjectAsync(null, analystId: analyst, status: ProjectStatus.Closed);
         await AddRiskAsync(projectId, "RSK-001", 3, 5, owner, RiskStatus.Monitoring);  // 15: high (lowest high score)
@@ -417,7 +419,7 @@ public class DashboardServiceTests(DatabaseFixture database)
         Assert.Equal(16, first.Score);
         Assert.Equal(RiskSeverity.High, RiskRules.SeverityOf(first.Score));
         Assert.Equal(projectId, first.Project.Id);
-        Assert.Equal("Test SoftwareDeveloper", first.Owner.FullName);
+        Assert.Equal("Test Development", first.Owner.FullName);
         Assert.Equal(RiskStatus.Monitoring, dashboard.HighRisks.Items[1].Status);
     }
 
@@ -426,7 +428,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task Levels_Mine_CountsActiveRecordsByAppliedLevel()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         await SetLevelAsync(await NewProjectAsync("6", analystId: analyst), 1);
         await SetLevelAsync(await NewProjectAsync("6", analystId: analyst), 2);
         await SetLevelAsync(await NewProjectAsync("14", analystId: analyst), 2);
@@ -447,7 +449,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task AcceptanceQueue_Mine_OnlyTheCustomerFitStep_WithRatingOnceFullyAnswered()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var notAnswered = await NewProjectAsync("4", analystId: analyst);
         var fit = await NewProjectAsync("4", analystId: analyst);
         var conditional = await NewProjectAsync("4", analystId: analyst);
@@ -481,7 +483,7 @@ public class DashboardServiceTests(DatabaseFixture database)
     [Fact]
     public async Task AcceptanceQueue_MatchesTheSurveyResult()
     {
-        var analyst = await NewUserAsync(UserRole.BusinessAnalyst);
+        var analyst = await NewUserAsync(Permission.Analysis);
         var projectId = await NewProjectAsync("4", analystId: analyst);
         var points = new Queue<int>([10, 2, 8, 0, 5, 6, 9, 3, 7, 4]); // 54
         await AnswerFitAsync(projectId, q => TestQuestionnaires.Points(q, points.Dequeue()));

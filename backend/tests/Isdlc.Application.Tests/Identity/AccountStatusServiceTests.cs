@@ -84,7 +84,7 @@ public class AccountStatusServiceTests(DatabaseFixture database)
     [Fact]
     public async Task IsActive_PlatformAdminWithoutACompany_IsTrue()
     {
-        var admin = await TestUsers.CreateAsync(database, password: null, role: UserRole.PlatformAdmin);
+        var admin = await TestUsers.CreateAsync(database, password: null, isPlatformAdmin: true);
 
         Assert.True(await IsActiveAsync(admin.Id, null));
         Assert.False(await IsActiveAsync(admin.Id, Tenant.IthinkaId));
@@ -105,12 +105,12 @@ public class AccountStatusServiceTests(DatabaseFixture database)
         var db = scope.ServiceProvider.GetRequiredService<IsdlcDbContext>();
         db.Users.Add(new User
         {
-            FullName = "Platform", Email = $"platform.{Guid.NewGuid():N}@isdlc.local", Role = UserRole.PlatformAdmin,
+            FullName = "Platform", Email = $"platform.{Guid.NewGuid():N}@isdlc.local", IsPlatformAdmin = true,
             IsTenantAdmin = true, CreatedAt = DateTime.UtcNow,
         });
 
         var error = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
-        Assert.Contains("CK_Users_TenantByRole", error.InnerException?.Message);
+        Assert.Contains("CK_Users_PlatformAdmin", error.InnerException?.Message);
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public class AccountStatusServiceTests(DatabaseFixture database)
         db.Users.Add(new User
         {
             TenantId = Tenant.IthinkaId, FullName = "Platform", Email = $"platform.{Guid.NewGuid():N}@isdlc.local",
-            Role = UserRole.PlatformAdmin, CreatedAt = DateTime.UtcNow,
+            IsPlatformAdmin = true, CreatedAt = DateTime.UtcNow,
         });
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync());
@@ -136,7 +136,7 @@ public class AccountStatusServiceTests(DatabaseFixture database)
         var db = scope.ServiceProvider.GetRequiredService<IsdlcDbContext>();
         var admin = new User
         {
-            FullName = "Platform", Email = $"platform.{Guid.NewGuid():N}@isdlc.local", Role = UserRole.PlatformAdmin,
+            FullName = "Platform", Email = $"platform.{Guid.NewGuid():N}@isdlc.local", IsPlatformAdmin = true,
             CreatedAt = DateTime.UtcNow,
         };
         db.Users.Add(admin);
@@ -160,7 +160,7 @@ public class AccountStatusServiceTests(DatabaseFixture database)
     [Fact]
     public async Task IsActive_PlatformAdminTokenWithACompany_IsFalse()
     {
-        var admin = await TestUsers.CreateAsync(database, password: null, role: UserRole.PlatformAdmin);
+        var admin = await TestUsers.CreateAsync(database, password: null, isPlatformAdmin: true);
 
         Assert.False(await IsActiveAsync(admin.Id, Tenant.IthinkaId));
     }

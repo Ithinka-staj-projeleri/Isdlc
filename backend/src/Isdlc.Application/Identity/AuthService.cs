@@ -14,6 +14,7 @@ public class AuthService(IApplicationDbContext db, IPasswordHasher passwordHashe
         var email = request.Email.Trim();
         // tenant: the company is not known before sign-in; the e-mail is unique across companies and gives it.
         var user = await db.Users.IgnoreQueryFilters().AsNoTracking()
+            .Include(u => u.Permissions)
             .SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
 
         // Unknown e-mail, inactive user and wrong password all give the same answer.
@@ -38,6 +39,7 @@ public class AuthService(IApplicationDbContext db, IPasswordHasher passwordHashe
         // tenant: the signed-in user's own row, found by the id in their token. The Platform Administrator has no
         // company, so the filter would never find them (docs/multi-tenancy.md → Okuma kuralı).
         var user = await db.Users.IgnoreQueryFilters()
+            .Include(u => u.Permissions)
             .SingleOrDefaultAsync(u => u.Id == userId && u.IsActive, cancellationToken)
             ?? throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
 
@@ -59,6 +61,18 @@ public class AuthService(IApplicationDbContext db, IPasswordHasher passwordHashe
         return Result(user, await TenantOfAsync(user, cancellationToken));
     }
 
+    public async Task<AuthUserDto> GetMeAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        // tenant: the signed-in user's own row, found by the id in their token; the Platform Administrator has no
+        // company, so the filter would never find them (docs/configurability.md → Giriş ve istek).
+        var user = await db.Users.IgnoreQueryFilters().AsNoTracking()
+            .Include(u => u.Permissions)
+            .SingleOrDefaultAsync(u => u.Id == userId && u.IsActive, cancellationToken)
+            ?? throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
+
+        return ToAuthUser(user, await TenantOfAsync(user, cancellationToken));
+    }
+
     /// <summary>The user's company when it is active; null for the Platform Administrator and an inactive company.</summary>
     private async Task<TenantSummaryDto?> TenantOfAsync(User user, CancellationToken cancellationToken) =>
         user.TenantId is not { } tenantId
@@ -75,7 +89,11 @@ public class AuthService(IApplicationDbContext db, IPasswordHasher passwordHashe
         return new LoginResultDto(
             token.Value,
             token.ExpiresAt,
-            new AuthUserDto(user.Id, user.FullName, user.Email, user.Role, tenant, user.IsTenantAdmin),
+            ToAuthUser(user, tenant),
             user.MustChangePassword);
     }
+
+    private static AuthUserDto ToAuthUser(User user, TenantSummaryDto? tenant) =>
+        new(user.Id, user.FullName, user.Email, tenant, user.IsTenantAdmin, user.IsPlatformAdmin,
+            user.Permissions.Select(p => p.Permission).Order().ToList());
 }

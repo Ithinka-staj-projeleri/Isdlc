@@ -1,4 +1,5 @@
 using Isdlc.Api.Common;
+using Isdlc.Application.Common.Interfaces;
 using Isdlc.Application.Identity;
 using Isdlc.Application.Identity.Dtos;
 using Isdlc.Domain.Identity;
@@ -10,15 +11,28 @@ namespace Isdlc.Api.Controllers;
 /// /api/v1/users — Identity module: the people list used by forms, the person profile (docs/users-api.md), and the
 /// company administrator's user management (docs/multi-tenancy.md → Şirket Yöneticisi).
 /// </summary>
-public class UsersController(IUserService userService, IUserProfileService profileService, IUserAdminService adminService)
-    : ApiControllerBase
+public class UsersController(
+    IUserService userService,
+    IUserProfileService profileService,
+    IUserAdminService adminService,
+    IAuthService authService,
+    ICurrentUserService currentUser) : ApiControllerBase
 {
-    /// <summary>Active users sorted by name: ?role=BusinessAnalyst for one role, nothing for everyone.</summary>
+    /// <summary>Active users sorted by name: ?permission=Analysis for those who have it, nothing for everyone.</summary>
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<UserLookupDto>>(StatusCodes.Status200OK)]
-    public async Task<IReadOnlyList<UserLookupDto>> List([FromQuery] UserRole? role, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<UserLookupDto>> List([FromQuery] Permission? permission, CancellationToken cancellationToken)
     {
-        return await userService.ListActiveAsync(role, cancellationToken);
+        return await userService.ListActiveAsync(permission, cancellationToken);
+    }
+
+    /// <summary>The signed-in user with their permissions as they are now (docs/configurability.md → Giriş ve istek).</summary>
+    [HttpGet("me")]
+    [ProducesResponseType<AuthUserDto>(StatusCodes.Status200OK)]
+    public async Task<AuthUserDto> Me(CancellationToken cancellationToken)
+    {
+        // The fallback policy lets only signed-in users here, so the token always has a user id.
+        return await authService.GetMeAsync(currentUser.UserId!.Value, cancellationToken);
     }
 
     /// <summary>Active users with their expertise and workload, sorted by name: the open issue form's owner selector.</summary>

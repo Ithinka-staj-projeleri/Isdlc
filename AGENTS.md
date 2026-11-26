@@ -163,12 +163,13 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Kişi profili / sorumlu önerisi | `UserProfileDto` (`GET /users/{id}/profile`), `UserWorkloadDto` (`GET /users/workload`); sayılar `ITeamWorkloadService`'ten (bkz. [docs/users-api.md](docs/users-api.md)) |
 | Şirket (uygulamayı kullanan kurum) / şirket kimliği | `Tenant` (`Code`, `Name`, `IsActive`; Faz 6) / `TenantId` (`Tenants` dışında her tabloda) |
 | Şirkete ait kayıt / isteğin şirketi | `ITenantOwned` / `ITenantContext` (bkz. [docs/multi-tenancy.md](docs/multi-tenancy.md)) |
-| Platform Yöneticisi / Şirket Yöneticisi | `UserRole.PlatformAdmin` (şirketi yok, `TenantId` boş) / `User.IsTenantAdmin` (rol değil işaret); `ICurrentUserService.IsPlatformAdmin`, `IsTenantAdmin` |
+| Platform Yöneticisi / Şirket Yöneticisi | `User.IsPlatformAdmin` (şirketi ve yetkisi yok, `TenantId` boş) / `User.IsTenantAdmin` (yetki değil işaret); `ICurrentUserService.IsPlatformAdmin`, `IsTenantAdmin` |
 | Geçici parola / parola değiştirme | `User.MustChangePassword`; `POST /auth/change-password` (`ChangePasswordDto`, en az 12 karakter, `PasswordRules`) |
 | Şirket içi kullanıcı yönetimi / şirket yönetimi | `IUserAdminService` (`/users/manage`, `POST`/`PUT /users`, `reset-password`; yalnızca Şirket Yöneticisi) / `ITenantService` (`/tenants`; yalnızca Platform Yöneticisi, `GET /tenants/current` herkes) |
 | Şablondan gelen kayıt (akış, doküman türü, soru seti) | `TemplateCode` (kopyalandığı `Seed/` kodu), `IsCustomized` (şirket değiştirdi mi) |
-| Rol | `UserRole` (kullanıcı başına tek rol). *Faz 7'de kalkar:* yerine yetkiler gelir (aşağıda) |
-| Yetki / kullanıcının yetkileri (Faz 7, A2) | `Permission` (`Analysis`, `ProjectManagement`, `Approval`, `Sales`, `Development`, `Testing`) / `UserPermission`; yalnızca akış işleri için istenir (bkz. [docs/configurability.md](docs/configurability.md)) |
+| Yetki / kullanıcının yetkileri (Faz 7, A2; unvanın yerini aldı) | `Permission` (`Analysis`, `ProjectManagement`, `Approval`, `Sales`, `Development`, `Testing`; adları `PermissionNames.ToDisplayName()`) / `UserPermission` (kullanıcı başına sıfır ya da daha fazla). Yalnızca akış işleri için istenir; akış dışındaki işler (risk, açık konu, tutanak, gereksinim, doküman, formlar, panel, arama, yapay zekâ) yetki istemez (bkz. [docs/configurability.md](docs/configurability.md)) |
+| Adımın sorumlusu / onaylayanı | `ProcessStep.ResponsiblePermission` / `ApproverPermission` (yalnızca onay adımında) |
+| Hazır yetki seti / eksik yetki mesajı | `PermissionPresets` (bugünkü unvanlar; kaydedilmez) / `PermissionMessages` (yetkinin adı ve şirket yöneticilerinin adları; ekran ve 403 aynı metni kullanır) |
 | Adım ön koşulu (Faz 7, A4) | `ProcessStep.Prerequisites` (`RequestFormComplete`, `QuestionnaireComplete`, `LevelApplied`, `MeetingExists`, `RiskExists`, `RequirementsApproved`, `DocumentApproved`) |
 | Atlama kuralı (Faz 7, A5) | `ProcessStep.Conditions` (`StepConditionRule`: `field`, `op`, `value`, `whenEmpty`); değerlendirme `StepConditions`. Faz 4'teki `RequiresExternalRequest`, `RequiresOffer`, `MinLevel` migration ile kurala çevrildi |
 | Şirkete özel alan (Faz 7, A6) | `CustomField` / değeri `Project.CustomValues` |
@@ -295,10 +296,14 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
 - **Giriş yapan kullanıcı:** `ICurrentUserService.UserId` ve şirketi `ICurrentUserService.TenantId`. API'de JWT'nin
   `sub` ve `tenant` claim'lerinden okunur (`HttpCurrentUserService`). Faz 6'dan önce alınmış token'da `tenant` yoktur;
   o kullanıcı yeniden giriş yapana kadar hiçbir kayıt görmez. Giriş: `POST /api/v1/auth/login` (`{ email, password }`), cevap
-  `{ token, expiresAt, user, mustChangePassword }` (`user`: `tenant { id, code, name }` ve `isTenantAdmin` dahil);
+  `{ token, expiresAt, user, mustChangePassword }` (`user`: `tenant { id, code, name }`, `isTenantAdmin`, `isPlatformAdmin` ve
+  `permissions` dahil); `GET /users/me` aynı `user`'ı döner.
   hatalı giriş, pasif kullanıcı, pasif şirket ve bilinmeyen e-posta aynı 401'i alır.
   Her istekte kullanıcının ve şirketinin aktifliği kontrol edilir (1 dakika önbellekli, `AccountGateMiddleware`); biri pasifse
   401. Geçici parolayla giren kullanıcı `POST /auth/change-password` dışındaki her istekte 403 alır.
+  **Yetkiler token'a yazılmaz:** servis gerekince veritabanından okur (`IApplicationDbContext.LoadAccessAsync`,
+  `IsActiveUserWithAsync`; `Isdlc.Application/Identity/UserAccess.cs`), böylece Şirket Yöneticisinin değişikliği bir sonraki istekte
+  geçerlidir. Eksik yetkide `ForbiddenException(PermissionMessages…)`: hangi yetkinin gerektiği ve şirket yöneticilerinin adları.
   Girişsiz hiçbir uç nokta çalışmaz (`[AllowAnonymous]` olanlar hariç). Swagger'da token'ı "Authorize"
   düğmesine yapıştırın. Lokal test parolası ve JWT anahtarı `dotnet user-secrets` ile verilir
   (`Identity:TestPassword`, `Jwt:SigningKey`; bkz. README); repoya yazılmaz. Servis testlerinde kullanıcı

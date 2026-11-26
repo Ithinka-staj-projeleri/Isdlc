@@ -45,21 +45,35 @@ public class UserAdminServiceTests(DatabaseFixture database)
     private Task<User> AdminAsync(int? tenantId = null) =>
         TestUsers.CreateAsync(database, Temporary, isTenantAdmin: true, tenantId: tenantId);
 
-    private static CreateUserDto NewUser(UserRole role = UserRole.SoftwareDeveloper, string? email = null) => new()
+    private static CreateUserDto NewUser(Permission? permission = Permission.Development, string? email = null) => new()
     {
         FullName = "  Yeni Kullanıcı  ",
         Email = email ?? $"yeni.{Guid.NewGuid():N}@isdlc.local",
-        Role = role,
+        Permissions = permission is { } one ? [one] : [],
         TemporaryPassword = Temporary,
     };
 
-    private static UpdateUserDto Edit(User user, bool? isActive = null, bool? isTenantAdmin = null, UserRole? role = null) => new()
+    /// <summary>The user as they are, with the given changes; the permission list is sent whole, as the screen does.</summary>
+    private static UpdateUserDto Edit(
+        User user, bool? isActive = null, bool? isTenantAdmin = null, List<Permission>? permissions = null) => new()
     {
         FullName = user.FullName,
-        Role = role ?? user.Role,
+        Permissions = permissions ?? user.Permissions.Select(p => p.Permission).ToList(),
         IsActive = isActive ?? user.IsActive,
         IsTenantAdmin = isTenantAdmin ?? user.IsTenantAdmin,
     };
+
+    /// <summary>The user's saved permissions, in the list's order.</summary>
+    private async Task<List<Permission>> PermissionsOfAsync(int userId)
+    {
+        await using var scope = database.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<IApplicationDbContext>().UserPermissions
+            .IgnoreQueryFilters() // tenant: a test reads any company's rows by the user id
+            .Where(p => p.UserId == userId)
+            .Select(p => p.Permission)
+            .OrderBy(p => p)
+            .ToListAsync();
+    }
 
     /// <summary>A company of this test only, so "the company's only administrator" is not affected by other tests.</summary>
     private async Task<int> NewCompanyAsync()
@@ -120,10 +134,11 @@ public class UserAdminServiceTests(DatabaseFixture database)
     {
         var admin = await AdminAsync(database.DenemeId);
 
-        var created = await AsAsync(admin.Id, s => s.CreateAsync(NewUser(UserRole.ProjectManager), default), database.DenemeId);
+        var created = await AsAsync(admin.Id, s => s.CreateAsync(NewUser(Permission.ProjectManagement), default), database.DenemeId);
 
-        Assert.Equal(("Yeni Kullanıcı", UserRole.ProjectManager, true, true, false),
-            (created.FullName, created.Role, created.IsActive, created.MustChangePassword, created.IsTenantAdmin));
+        Assert.Equal(("Yeni Kullanıcı", true, true, false),
+            (created.FullName, created.IsActive, created.MustChangePassword, created.IsTenantAdmin));
+        Assert.Equal([Permission.ProjectManagement], created.Permissions);
         var saved = await ReadAsync(created.Id);
         Assert.Equal(database.DenemeId, saved.TenantId);
         await using var scope = database.CreateScope();
@@ -143,28 +158,76 @@ public class UserAdminServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task Create_PlatformAdminRole_IsRefused()
+    public async Task Create_SeveralOrNoPermissions_AreSavedAsASet()
     {
         var admin = await AdminAsync();
+        var several = NewUser();
+        several.Permissions = [Permission.Testing, Permission.Analysis, Permission.Testing];
 
-        await Assert.ThrowsAsync<BusinessRuleException>(() =>
-            AsAsync(admin.Id, s => s.CreateAsync(NewUser(UserRole.PlatformAdmin), default)));
+        var withSeveral = await AsAsync(admin.Id, s => s.CreateAsync(several, default));
+        var withNone = await AsAsync(admin.Id, s => s.CreateAsync(NewUser(permission: null), default));
+
+        Assert.Equal([Permission.Analysis, Permission.Testing], withSeveral.Permissions);
+        Assert.Empty(withNone.Permissions);
+        Assert.Equal([Permission.Analysis, Permission.Testing], await PermissionsOfAsync(withSeveral.Id));
     }
 
     // ---- Update ----
 
     [Fact]
-    public async Task Update_ChangesNameRoleAndMarks_NeverTheEmail()
+    public async Task Update_ChangesNamePermissionsAndMarks_NeverTheEmail()
     {
         var admin = await AdminAsync();
         var user = await TestUsers.CreateAsync(database, null);
 
         var updated = await AsAsync(admin.Id, s => s.UpdateAsync(user.Id, new UpdateUserDto
         {
-            FullName = "Yeni Ad", Role = UserRole.TestSpecialist, IsActive = true, IsTenantAdmin = true,
+            FullName = "Yeni Ad", Permissions = [Permission.Testing], IsActive = true, IsTenantAdmin = true,
         }, default));
 
-        Assert.Equal(("Yeni Ad", UserRole.TestSpecialist, true, user.Email), (updated.FullName, updated.Role, updated.IsTenantAdmin, updated.Email));
+        Assert.Equal(("Yeni Ad", true, user.Email), (updated.FullName, updated.IsTenantAdmin, updated.Email));
+        Assert.Equal([Permission.Testing], updated.Permissions);
+    }
+
+    [Fact]
+    public async Task Update_Permissions_AddsAndTakesAwayToMatchTheList()
+    {
+        var admin = await AdminAsync();
+        var user = await TestUsers.CreateAsync(
+            database, null, permissions: [Permission.Analysis, Permission.Development]);
+
+        await AsAsync(admin.Id, s => s.UpdateAsync(
+            user.Id, Edit(user, permissions: [Permission.Development, Permission.Approval]), default));
+        Assert.Equal([Permission.Approval, Permission.Development], await PermissionsOfAsync(user.Id));
+
+        await AsAsync(admin.Id, s => s.UpdateAsync(user.Id, Edit(user, permissions: []), default));
+        Assert.Empty(await PermissionsOfAsync(user.Id));
+    }
+
+    [Fact]
+    public async Task Update_PermissionsNotSent_LeavesThemAsTheyAre()
+    {
+        // A form without the permission boxes (the screen before A3) must not take them away.
+        var admin = await AdminAsync();
+        var user = await TestUsers.CreateAsync(database, null, permission: Permission.Sales);
+
+        var update = Edit(user);
+        update.Permissions = null;
+        await AsAsync(admin.Id, s => s.UpdateAsync(user.Id, update, default));
+
+        Assert.Equal([Permission.Sales], await PermissionsOfAsync(user.Id));
+    }
+
+    [Fact]
+    public async Task Update_AdministratorGivesThemselvesAPermission_IsAllowed()
+    {
+        var admin = await AdminAsync();
+
+        var updated = await AsAsync(admin.Id, s => s.UpdateAsync(
+            admin.Id, Edit(admin, permissions: [Permission.Approval]), default));
+
+        Assert.Equal([Permission.Approval], updated.Permissions);
+        Assert.True(updated.IsTenantAdmin);
     }
 
     [Fact]

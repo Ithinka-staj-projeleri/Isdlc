@@ -23,5 +23,5 @@ public interface ITenantService
     Task<TenantDto> UpdateAsync(int tenantId, UpdateTenantDto request, CancellationToken cancellationToken);
 
     /// <summary>The signed-in user's company, for the top bar. 404 for the Platform Administrator, who has none.</summary>
-    Task<TenantSummaryDto> GetCurrentAsync(CancellationToken cancellationToken);
+    Task<CurrentTenantDto> GetCurrentAsync(CancellationToken cancellationToken);
 }

@@ -34,11 +34,12 @@ public class DashboardService(
     {
         var userId = currentUser.UserId
             ?? throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
-        var role = await dbContext.Users
-            .Where(u => u.Id == userId)
-            .Select(u => (UserRole?)u.Role)
-            .SingleOrDefaultAsync(cancellationToken)
-            ?? throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
+        if (!await dbContext.Users.AnyAsync(u => u.Id == userId, cancellationToken))
+        {
+            throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");
+        }
+
+        var permissions = await PermissionsOfAsync(dbContext, userId, cancellationToken);
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var today = DateOnly.FromDateTime(now);
@@ -51,7 +52,7 @@ public class DashboardService(
             projects = projects.Where(p => p.BusinessAnalystId == userId || p.ProjectManagerId == userId);
         }
 
-        var myWaitingSteps = await WaitingStepsAsync(dbContext, userId, role, now, cancellationToken);
+        var myWaitingSteps = await WaitingStepsAsync(dbContext, userId, permissions, now, cancellationToken);
         var overdueOpenIssues = await OpenIssueListAsync(
             dbContext.OpenIssues.Where(x =>
                 projects.Any(p => p.Id == x.ProjectId && p.Status == ProjectStatus.Active)
@@ -215,6 +216,15 @@ public class DashboardService(
         return new DashboardListDto<AcceptanceQueueItemDto>(totalCount, items);
     }
 
+    /// <summary>The user's permissions, for the waiting steps (also the person profile's).</summary>
+    internal static async Task<IReadOnlyCollection<Permission>> PermissionsOfAsync(
+        IApplicationDbContext dbContext, int userId, CancellationToken cancellationToken) =>
+        await dbContext.UserPermissions
+            .AsNoTracking()
+            .Where(p => p.UserId == userId)
+            .Select(p => p.Permission)
+            .ToListAsync(cancellationToken);
+
     /// <summary>
     /// Active projects whose current step this user can act on: the step's approver role, or its responsible role
     /// when it has no approver (ProcessProgress.CanActOnStep, written so the database can run it).
@@ -222,22 +232,19 @@ public class DashboardService(
     /// Longest waiting first. Also the person profile's list (docs/users-api.md, P5).
     /// </summary>
     internal static async Task<DashboardListDto<WaitingStepDto>> WaitingStepsAsync(
-        IApplicationDbContext dbContext, int userId, UserRole role, DateTime now, CancellationToken cancellationToken)
+        IApplicationDbContext dbContext, int userId, IReadOnlyCollection<Permission> permissions, DateTime now,
+        CancellationToken cancellationToken)
     {
+        // The step's needed permission is one of the user's; with several permissions the list is their union.
+        // An analysis or project management step waits only for the project's assigned person (or anyone, if nobody is).
         var query = dbContext.Projects
             .AsNoTracking()
             .Where(p => p.Status == ProjectStatus.Active && p.CurrentStep != null
-                && (p.CurrentStep.ApproverRole == role
-                    || (p.CurrentStep.ApproverRole == null && p.CurrentStep.ResponsibleRole == role)));
-
-        if (role == UserRole.BusinessAnalyst)
-        {
-            query = query.Where(p => p.BusinessAnalystId == null || p.BusinessAnalystId == userId);
-        }
-        else if (role == UserRole.ProjectManager)
-        {
-            query = query.Where(p => p.ProjectManagerId == null || p.ProjectManagerId == userId);
-        }
+                && permissions.Contains(p.CurrentStep.ApproverPermission ?? p.CurrentStep.ResponsiblePermission))
+            .Where(p => (p.CurrentStep!.ApproverPermission ?? p.CurrentStep.ResponsiblePermission) != Permission.Analysis
+                || p.BusinessAnalystId == null || p.BusinessAnalystId == userId)
+            .Where(p => (p.CurrentStep!.ApproverPermission ?? p.CurrentStep.ResponsiblePermission) != Permission.ProjectManagement
+                || p.ProjectManagerId == null || p.ProjectManagerId == userId);
 
         var totalCount = await query.CountAsync(cancellationToken);
 
@@ -262,7 +269,7 @@ public class DashboardService(
                     x.Project.CurrentStep.Code,
                     x.Project.CurrentStep.ProcessStage.Order,
                     x.Project.CurrentStep.ProcessStage.ShortTitle),
-                IsApproval = x.Project.CurrentStep.ApproverRole != null,
+                IsApproval = x.Project.CurrentStep.ApproverPermission != null,
                 x.Project.CurrentStep.IsDecision,
                 x.WaitingSince,
             })

@@ -57,7 +57,7 @@ public class IdentityNotificationIsolationTests(DatabaseFixture database)
             .ListActiveAsync(null, CancellationToken.None);
         await using var denemeScope = database.CreateScope(database.DenemeId);
         var deneme = await new UserService(denemeScope.ServiceProvider.GetRequiredService<IApplicationDbContext>())
-            .ListActiveAsync(UserRole.BusinessAnalyst, CancellationToken.None);
+            .ListActiveAsync(Permission.Analysis, CancellationToken.None);
 
         Assert.Contains(ithinka, u => u.Id == ithinkaAnalystId);
         Assert.DoesNotContain(ithinka, u => u.Id == denemeAnalystId);
@@ -85,7 +85,7 @@ public class IdentityNotificationIsolationTests(DatabaseFixture database)
         var denemeAnalystId = await DenemeUserAsync(TestTenants.DenemeAnalyst);
         var message = $"Rol bildirimi {Guid.NewGuid():N}";
 
-        await SendAsync(database.DenemeId, managerId, s => s.NotifyRoleAsync(UserRole.BusinessAnalyst, projectId, message, CancellationToken.None));
+        await SendAsync(database.DenemeId, managerId, s => s.NotifyPermissionAsync(Permission.Analysis, projectId, message, CancellationToken.None));
 
         Assert.Contains((denemeAnalystId, message), await NotificationsAsync(database.DenemeId, message));
         Assert.Empty(await NotificationsAsync(Tenant.IthinkaId, message));

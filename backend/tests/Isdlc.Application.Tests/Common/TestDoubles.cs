@@ -28,9 +28,9 @@ public sealed class RecordingNotificationService : INotificationService
 {
     public List<SentNotification> Sent { get; } = [];
 
-    public Task NotifyRoleAsync(UserRole role, int projectId, string message, CancellationToken cancellationToken)
+    public Task NotifyPermissionAsync(Permission permission, int projectId, string message, CancellationToken cancellationToken)
     {
-        Sent.Add(new SentNotification(role, [], projectId, message));
+        Sent.Add(new SentNotification(permission, [], projectId, message));
         return Task.CompletedTask;
     }
 
@@ -41,5 +41,5 @@ public sealed class RecordingNotificationService : INotificationService
     }
 }
 
-/// <summary>One notification: to a role, or to a list of users.</summary>
-public sealed record SentNotification(UserRole? Role, IReadOnlyList<int> UserIds, int ProjectId, string Message);
+/// <summary>One notification: to everyone with a permission, or to a list of users.</summary>
+public sealed record SentNotification(Permission? Permission, IReadOnlyList<int> UserIds, int ProjectId, string Message);

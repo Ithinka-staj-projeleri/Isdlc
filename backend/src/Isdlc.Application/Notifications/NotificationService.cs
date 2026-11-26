@@ -16,11 +16,16 @@ public class NotificationService(
     TimeProvider timeProvider,
     ILogger<NotificationService> logger) : INotificationService
 {
-    public async Task NotifyRoleAsync(UserRole role, int projectId, string message, CancellationToken cancellationToken)
+    public async Task NotifyPermissionAsync(
+        Permission permission, int projectId, string message, CancellationToken cancellationToken)
     {
-        // One row per user who has the role now; whoever gets the role later does not see old notifications.
+        // One row per user who has the permission now; whoever gets it later does not see old notifications.
         await SendAsync(
-            () => dbContext.Users.AsNoTracking().Where(u => u.Role == role).Select(u => u.Id).ToListAsync(cancellationToken),
+            () => dbContext.UserPermissions.AsNoTracking()
+                .Where(p => p.Permission == permission)
+                .Select(p => p.UserId)
+                .Distinct()
+                .ToListAsync(cancellationToken),
             projectId, message, cancellationToken);
     }
 

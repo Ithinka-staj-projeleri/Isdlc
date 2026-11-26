@@ -95,7 +95,7 @@ public class NotificationServiceTests(DatabaseFixture database)
     }
 
     /// <summary>A user of this test only, so seed users stay as they are.</summary>
-    private async Task<int> CreateInactiveUserAsync(UserRole role)
+    private async Task<int> CreateInactiveUserAsync(Permission permission)
     {
         await using var scope = database.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
@@ -103,7 +103,7 @@ public class NotificationServiceTests(DatabaseFixture database)
         {
             FullName = "Pasif Kullanıcı",
             Email = $"pasif-{Guid.NewGuid():N}@isdlc.local",
-            Role = role,
+            Permissions = [new UserPermission { Permission = permission }],
             IsActive = false,
             CreatedAt = DateTime.UtcNow,
         };
@@ -140,7 +140,7 @@ public class NotificationServiceTests(DatabaseFixture database)
         var projectId = await TestProjects.CreateAsync(database, "8");
         var analystId = await UserIdAsync(TestProjects.Analyst);
         var developerId = await UserIdAsync(TestProjects.Developer);
-        var inactiveUserId = await CreateInactiveUserAsync(UserRole.SoftwareDeveloper);
+        var inactiveUserId = await CreateInactiveUserAsync(Permission.Development);
 
         await SendAsync(TestProjects.Analyst, s => s.NotifyUsersAsync(
             [analystId, developerId, developerId, inactiveUserId, int.MaxValue], projectId, "Mesaj",
@@ -195,24 +195,24 @@ public class NotificationServiceTests(DatabaseFixture database)
         Assert.Equal("Ulaşır", Assert.Single(await RowsAsync(projectId)).Message);
     }
 
-    // ---- NotifyRoleAsync ----
+    // ---- NotifyPermissionAsync ----
 
     [Fact]
-    public async Task NotifyRole_WritesARowForEveryActiveUserOfTheRole()
+    public async Task NotifyPermission_WritesARowForEveryActiveUserWithThePermission()
     {
         var projectId = await TestProjects.CreateAsync(database, "8");
-        var inactiveDeveloperId = await CreateInactiveUserAsync(UserRole.SoftwareDeveloper);
+        var inactiveDeveloperId = await CreateInactiveUserAsync(Permission.Development);
         List<int> activeDeveloperIds;
         await using (var scope = database.CreateScope())
         {
             activeDeveloperIds = await scope.ServiceProvider.GetRequiredService<IApplicationDbContext>().Users
-                .Where(u => u.Role == UserRole.SoftwareDeveloper && u.IsActive)
+                .Where(u => u.Permissions.Any(p => p.Permission == Permission.Development) && u.IsActive)
                 .Select(u => u.Id)
                 .ToListAsync();
         }
 
-        await SendAsync(TestProjects.Analyst, s => s.NotifyRoleAsync(
-            UserRole.SoftwareDeveloper, projectId, "Geliştirme başladı.", CancellationToken.None));
+        await SendAsync(TestProjects.Analyst, s => s.NotifyPermissionAsync(
+            Permission.Development, projectId, "Geliştirme başladı.", CancellationToken.None));
 
         var recipients = (await RowsAsync(projectId)).Select(r => r.UserId).ToList();
         Assert.True(activeDeveloperIds.Count >= 2, "Seed has two developers.");
@@ -221,13 +221,13 @@ public class NotificationServiceTests(DatabaseFixture database)
     }
 
     [Fact]
-    public async Task NotifyRole_ActingUserHasTheRole_IsLeftOut()
+    public async Task NotifyPermission_ActingUserHasThePermission_IsLeftOut()
     {
         var projectId = await TestProjects.CreateAsync(database, "8");
         var developerId = await UserIdAsync(TestProjects.Developer);
 
-        await SendAsync(TestProjects.Developer, s => s.NotifyRoleAsync(
-            UserRole.SoftwareDeveloper, projectId, "Mesaj", CancellationToken.None));
+        await SendAsync(TestProjects.Developer, s => s.NotifyPermissionAsync(
+            Permission.Development, projectId, "Mesaj", CancellationToken.None));
 
         var recipients = (await RowsAsync(projectId)).Select(r => r.UserId).ToList();
         Assert.NotEmpty(recipients);

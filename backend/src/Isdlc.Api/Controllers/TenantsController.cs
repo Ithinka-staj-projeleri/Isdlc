@@ -48,9 +48,9 @@ public class TenantsController(ITenantService tenantService, ITenantSettingsServ
 
     /// <summary>The signed-in user's company, for the top bar.</summary>
     [HttpGet("current")]
-    [ProducesResponseType<TenantSummaryDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<CurrentTenantDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<TenantSummaryDto> Current(CancellationToken cancellationToken)
+    public async Task<CurrentTenantDto> Current(CancellationToken cancellationToken)
     {
         return await tenantService.GetCurrentAsync(cancellationToken);
     }

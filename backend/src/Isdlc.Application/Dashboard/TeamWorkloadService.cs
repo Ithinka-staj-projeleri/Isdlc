@@ -19,7 +19,8 @@ public class TeamWorkloadService(IApplicationDbContext dbContext, TimeProvider t
         var users = await dbContext.Users
             .AsNoTracking()
             .Where(u => u.IsActive)
-            .Select(u => new WorkloadUserRow(u.Id, u.FullName, u.Role))
+            .Select(u => new WorkloadUserRow(
+                u.Id, u.FullName, u.Permissions.OrderBy(p => p.Permission).Select(p => p.Permission).ToList()))
             .ToListAsync(cancellationToken);
 
         var openIssues = await dbContext.OpenIssues
@@ -34,7 +35,7 @@ public class TeamWorkloadService(IApplicationDbContext dbContext, TimeProvider t
             .AsNoTracking()
             .Where(p => p.Status == ProjectStatus.Active && p.CurrentStep != null)
             .Select(p => new WorkloadStepRow(
-                p.CurrentStep!.ResponsibleRole, p.CurrentStep.ApproverRole, p.BusinessAnalystId, p.ProjectManagerId))
+                p.CurrentStep!.ResponsiblePermission, p.CurrentStep.ApproverPermission, p.BusinessAnalystId, p.ProjectManagerId))
             .ToListAsync(cancellationToken);
 
         return TeamWorkloadRules.Compute(users, openIssues, steps, today);

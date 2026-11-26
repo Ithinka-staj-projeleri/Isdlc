@@ -1,4 +1,4 @@
-using Isdlc.Application.Common;
+using Isdlc.Application.Identity;
 using Isdlc.Application.Process.Dtos;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Projects;
@@ -6,7 +6,11 @@ using Isdlc.Domain.Projects;
 namespace Isdlc.Application.Process;
 
 /// <summary>The current step's fields that decide who can act on it.</summary>
-public record StepPermissionInfo(bool IsDecision, UserRole ResponsibleRole, UserRole? ApproverRole);
+public record StepPermissionInfo(bool IsDecision, Permission ResponsiblePermission, Permission? ApproverPermission)
+{
+    /// <summary>An approval step is closed by its approver; any other step by its responsible permission.</summary>
+    public Permission Required => ApproverPermission ?? ResponsiblePermission;
+}
 
 /// <summary>
 /// Pure calculations for a project's place in the flow. No database access, so they can be unit tested directly.
@@ -60,16 +64,22 @@ public static class ProcessProgress
         return status == ProjectStatus.Active ? ProcessStageState.Current : ProcessStageState.Stopped;
     }
 
+    /// <param name="user">The signed-in user's permissions; null when nobody (active) is signed in.</param>
     /// <param name="inRequestPhase">The record is a request (before its flow's project stage), so it can be postponed.</param>
     public static AvailableActionsDto GetAvailableActions(
-        ProjectStatus status, StepPermissionInfo? currentStep, UserRole? userRole, bool inRequestPhase = false)
+        ProjectStatus status, StepPermissionInfo? currentStep, UserAccess? user, bool inRequestPhase = false)
     {
         if (status == ProjectStatus.Postponed)
         {
-            return userRole is { } role && CanReject(role)
-                ? new AvailableActionsDto(false, false, false, false, CanResume: true,
-                    "Talep ertelendi; değerlendirmeye geri alınınca bu adımdan devam eder.")
-                : Blocked("Talep ertelendi; Yazılım Departman Yöneticisi değerlendirmeye geri alınca devam eder.");
+            if (user is not null && CanDecide(user))
+            {
+                return new AvailableActionsDto(false, false, false, false, CanResume: true,
+                    "Talep ertelendi; değerlendirmeye geri alınınca bu adımdan devam eder.");
+            }
+
+            return Blocked(
+                "Talep ertelendi; «Onay ve karar» yetkisi olan biri değerlendirmeye geri alınca devam eder.",
+                user is null ? null : Permission.Approval);
         }
 
         if (status != ProjectStatus.Active)
@@ -82,17 +92,18 @@ public static class ProcessProgress
             return Blocked("Projenin mevcut adımı bulunamadı.");
         }
 
-        if (userRole is null)
+        if (user is null)
         {
             return Blocked("İşlem yapmak için giriş yapılmalıdır.");
         }
 
-        var canReject = CanReject(userRole.Value);
+        var canReject = CanDecide(user);
         var canPostpone = canReject && inRequestPhase;
 
-        if (!CanActOnStep(currentStep, userRole.Value))
+        if (!CanActOnStep(currentStep, user))
         {
-            return new AvailableActionsDto(false, false, canReject, canPostpone, false, GetBlockedReason(currentStep));
+            return new AvailableActionsDto(
+                false, false, canReject, canPostpone, false, GetBlockedReason(currentStep, user.TenantAdmins), currentStep.Required);
         }
 
         return new AvailableActionsDto(
@@ -105,32 +116,28 @@ public static class ProcessProgress
     }
 
     /// <summary>
-    /// Who can complete or answer a step. Used both for the buttons (GetAvailableActions)
-    /// and for the check in the commands, so the two can never disagree.
-    /// An approval step can only be closed by the approver; any other step by its responsible role.
+    /// Who can complete or answer a step: anyone with the step's permission (its approver's on an approval step).
+    /// Used both for the buttons (GetAvailableActions) and for the check in the commands, so the two never disagree.
     /// </summary>
-    public static bool CanActOnStep(StepPermissionInfo step, UserRole userRole) =>
-        userRole == (step.ApproverRole ?? step.ResponsibleRole);
+    public static bool CanActOnStep(StepPermissionInfo step, UserAccess user) => user.Has(step.Required);
 
-    /// <summary>Only the Software Department Manager can reject, postpone or take back a request.</summary>
-    public static bool CanReject(UserRole userRole) => userRole == UserRole.SoftwareDepartmentManager;
+    /// <summary>Rejecting, postponing and taking back a request need the approval permission.</summary>
+    public static bool CanDecide(UserAccess user) => user.Has(Permission.Approval);
 
     /// <summary>Why the user cannot complete or answer the step; null when they can.</summary>
-    public static string? WhyCannotActOnStep(StepPermissionInfo step, UserRole userRole) =>
-        CanActOnStep(step, userRole) ? null : GetBlockedReason(step);
+    public static string? WhyCannotActOnStep(StepPermissionInfo step, UserAccess user) =>
+        CanActOnStep(step, user) ? null : GetBlockedReason(step, user.TenantAdmins);
 
-    /// <summary>Why the user cannot reject the request; null when they can. Rejecting is allowed on any step.</summary>
-    public static string? WhyCannotReject(StepPermissionInfo step, UserRole userRole) =>
-        CanReject(userRole) ? null : "Talebi yalnızca Yazılım Departman Yöneticisi reddedebilir.";
+    /// <summary>Why the user cannot reject, postpone or take back the request; null when they can. Allowed on any step.</summary>
+    public static string? WhyCannotDecide(StepPermissionInfo step, UserAccess user) =>
+        CanDecide(user) ? null : PermissionMessages.ForDecision(user.TenantAdmins);
 
-    /// <summary>Why the user cannot postpone or take back the request; null when they can.</summary>
-    public static string? WhyCannotDecide(StepPermissionInfo step, UserRole userRole) =>
-        CanReject(userRole) ? null : "Talebi yalnızca Yazılım Departman Yöneticisi erteleyebilir ya da değerlendirmeye geri alabilir.";
+    /// <summary>Message for a user who cannot act on the step: the permission it needs and whom to ask.</summary>
+    public static string GetBlockedReason(StepPermissionInfo step, IReadOnlyList<string> tenantAdmins) =>
+        step.ApproverPermission is not null
+            ? PermissionMessages.ForApproval(tenantAdmins)
+            : PermissionMessages.ForStep(step.ResponsiblePermission, tenantAdmins);
 
-    /// <summary>Message for a user who cannot act on the step.</summary>
-    public static string GetBlockedReason(StepPermissionInfo step) => step.ApproverRole is { } approver
-        ? $"Bu adım {approver.ToDisplayName()} tarafından onaylanır."
-        : $"Bu adım {step.ResponsibleRole.ToDisplayName()} tarafından yapılır.";
-
-    private static AvailableActionsDto Blocked(string reason) => new(false, false, false, false, false, reason);
+    private static AvailableActionsDto Blocked(string reason, Permission? missing = null) =>
+        new(false, false, false, false, false, reason, missing);
 }

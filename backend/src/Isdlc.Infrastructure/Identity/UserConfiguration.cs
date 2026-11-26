@@ -16,10 +16,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(x => x.Email).IsUnique();
 
-        // Only the Platform Administrator belongs to no company, and never manages one (docs/multi-tenancy.md → Users).
+        // Only the Platform Administrator belongs to no company, and never manages one (docs/configurability.md → Veri modeli).
         builder.ToTable(t => t.HasCheckConstraint(
-            "CK_Users_TenantByRole",
-            $"([Role] = '{nameof(UserRole.PlatformAdmin)}' AND [TenantId] IS NULL AND [IsTenantAdmin] = 0)"
-            + $" OR ([Role] <> '{nameof(UserRole.PlatformAdmin)}' AND [TenantId] IS NOT NULL)"));
+            "CK_Users_PlatformAdmin",
+            "([IsPlatformAdmin] = 1 AND [TenantId] IS NULL AND [IsTenantAdmin] = 0)"
+            + " OR ([IsPlatformAdmin] = 0 AND [TenantId] IS NOT NULL)"));
     }
 }
