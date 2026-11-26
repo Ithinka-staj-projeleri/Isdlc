@@ -3,6 +3,20 @@
     <p class="blocked">{{ reason }}</p>
     }
 
+    @if (actions().unmetPrerequisites.length) {
+    <div class="prerequisites" role="status">
+        <p><b>Bu adımı tamamlamadan önce:</b></p>
+        <ul>
+            @for (item of actions().unmetPrerequisites; track $index) {
+            <li>
+                <span>{{ item.message }}</span>
+                <button type="button" class="button small" (click)="openPrerequisite(item.link)">{{ item.linkText }}</button>
+            </li>
+            }
+        </ul>
+    </div>
+    }
+
     @if (canWork()) {
     <label class="field">
         Not (isteğe bağlı)
@@ -16,7 +30,10 @@
         }
 
         @if (actions().canAnswer) {
-        <button type="button" class="button yes" [disabled]="busy()" (click)="answerYes()">Evet → sonraki adım</button>
+        <button type="button" class="button yes" [disabled]="busy() || actions().unmetPrerequisites.length > 0"
+            [title]="actions().unmetPrerequisites.length ? 'Önce yukarıdaki işler tamamlanmalı.' : ''" (click)="answerYes()">
+            Evet → sonraki adım
+        </button>
 
         @if (step().noOutcome; as outcome) {
         <button type="button" class="button no" [disabled]="busy() || !!decisionMode()" (click)="answerNoAndClose()">

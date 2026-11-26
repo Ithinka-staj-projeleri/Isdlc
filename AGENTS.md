@@ -347,5 +347,7 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
     verir, kullanıcıları `TestTenants`'tadır (`TestTenants.DenemeAnalyst` vb.). Ayrıca seed'in atlaması gereken pasif bir şirket
     vardır (`database.InactiveTenantId`). Şablonları değiştiren testler kendi şirketini açar.
   - `RecordingNotificationService`: gönderilen bildirimleri listede tutar; test ne gönderildiğini kontrol eder.
+  - **Adım ön koşulları (Faz 7 · A4):** bir adımı tamamlayan test, adımın ön koşulunu önce sağlar:
+    `TestProjects.SatisfyAsync(database, projectId, PrerequisiteKind.MeetingExists)` (seviye, tutanak, risk).
 - Saf kural sınıfları (`ProcessProgress`, `ProcessTransitions` gibi) veritabanısız test edilir; bütün kombinasyonlar burada denenir.
 - Test adı neyi kontrol ettiğini söyler: `Metot_Durum_Beklenen` (ör. `GetStages_Returns13StagesInOrder`).

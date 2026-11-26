@@ -62,7 +62,8 @@ internal static class SeedFiles
         List<JumpSeed> NoJumps,
         bool RequiresExternalRequest = false,
         bool RequiresOffer = false,
-        int? MinLevel = null);
+        int? MinLevel = null,
+        List<StepPrerequisite>? Prerequisites = null);
 
     public record JumpSeed(string TargetStepCode, string Label);
 

@@ -51,6 +51,8 @@ export interface ProcessStep {
     noJumps: ProcessStepJump[];
     /** When the step is done; all false / null: on every record. */
     condition: StepCondition;
+    /** Work that must exist on the project before the step is completed or answered "Yes" (Faz 7 · A4). */
+    prerequisites: StepPrerequisite[];
 }
 
 export interface ProcessStepJump {
@@ -73,4 +75,19 @@ export function conditionLabels(condition: StepCondition): string[] {
     if (condition.requiresOffer) labels.push('Teklif hazırlanacaksa');
     if (condition.minLevel !== null) labels.push(`Seviye ${condition.minLevel} ve üstü`);
     return labels;
+}
+
+export type PrerequisiteKind =
+    | 'RequestFormComplete'
+    | 'QuestionnaireComplete'
+    | 'LevelApplied'
+    | 'MeetingExists'
+    | 'RiskExists'
+    | 'RequirementsApproved'
+    | 'DocumentApproved';
+
+/** Rules: docs/configurability.md → Adım ön koşulları. `value` is a form or document type code where the kind needs one. */
+export interface StepPrerequisite {
+    kind: PrerequisiteKind;
+    value?: string | null;
 }
