@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { splitPermissionName } from '../../../shared/models/permission';
 import { PROJECT_STATUS_LABELS } from '../../../shared/models/project-status';
 import { ProcessFlowKind, ProcessStep } from '../models/process-stage';
 import { AvailableActions, ProjectProcess } from '../models/project-process';
@@ -48,6 +49,12 @@ export class StepActionsComponent {
     readonly projectId = input.required<number>();
     readonly step = input.required<ProcessStep>();
     readonly actions = input.required<AvailableActions>();
+
+    /** The refusal with the permission's name apart, so it can be shown in bold. */
+    protected readonly blockedParts = computed(() => {
+        const reason = this.actions().blockedReason;
+        return reason ? splitPermissionName(reason) : null;
+    });
     /** The kind of the project's flow: only a request's closing "No" needs the form. */
     readonly flowKind = input.required<ProcessFlowKind>();
 

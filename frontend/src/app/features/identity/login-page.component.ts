@@ -36,7 +36,7 @@ export class LoginPageComponent {
     this._auth.login(this.email, this.password).subscribe({
       // A temporary password or the Platform Administrator goes to its own page, not to the page they came from.
       next: res => this._router.navigateByUrl(
-        res.mustChangePassword || res.user.role === 'PlatformAdmin' ? this._auth.homeUrl() : this._returnUrl ?? this._auth.homeUrl()),
+        res.mustChangePassword || res.user.isPlatformAdmin ? this._auth.homeUrl() : this._returnUrl ?? this._auth.homeUrl()),
       error: (err: unknown) => {
         this.loading.set(false);
         this.error.set(loginErrorMessage(err));

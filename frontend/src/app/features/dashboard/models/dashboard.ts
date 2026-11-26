@@ -2,7 +2,7 @@ import { UserSummary } from '../../../shared/models/user-summary';
 import { CustomerFitRating } from '../../assessment/models/assessment';
 import { OpenIssueStatus, OpenIssueType, Owner } from '../../open-issues/models/open-issue';
 import { StepAction } from '../../process/models/project-process';
-import { UserRole } from '../../../shared/models/user-role';
+import { Permission } from '../../../shared/models/permission';
 import { RiskStatus } from '../../risks/models/risk';
 
 // Shapes of the Dashboard API. Contract: docs/dashboard-api.md
@@ -133,7 +133,7 @@ export interface Dashboard {
 /** One team member's open issues and waiting steps on active records (shared with the person profile, F9). */
 export interface TeamMemberWorkload {
   user: UserSummary;
-  role: UserRole;
+  permissions: Permission[];
   openIssues: number;
   overdueOpenIssues: number;
   waitingSteps: number;

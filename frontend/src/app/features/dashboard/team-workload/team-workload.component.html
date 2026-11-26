@@ -10,7 +10,7 @@
   <li>
     <span class="who">
       <a [routerLink]="['/users', m.user.id]"><b>{{ m.user.fullName }}</b></a>
-      <span class="role">{{ roleLabels[m.role] }}</span>
+      <span class="role">{{ permissionNames(m.permissions) }}</span>
     </span>
     <span class="bar" [attr.aria-label]="m.openIssues + ' açık konu, ' + m.waitingSteps + ' bekleyen adım'">
       <span class="issues" [style.width.%]="percent(m.openIssues)"></span>

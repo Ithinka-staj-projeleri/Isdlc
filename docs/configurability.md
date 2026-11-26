@@ -194,6 +194,12 @@ Sözleşmede yazmayan ama unvan kullanan yerler; A2 böyle uyguladı:
 
 ## 3. Ekranlar (A3)
 
+Uygulandı. Yetki adları ve yardımcılar `shared/models/permission.ts`'te; `user-role.ts` ve `role.guard.ts` kaldırıldı. Oturum,
+sayfa açılınca (`LayoutComponent`) ve her 403'te (`errorInterceptor`) `GET /users/me` ile tazelenir (`AuthService.refreshMe`);
+Şirket Yöneticisi kendi yetkisini değiştirince form da tazeler. "Yeni talep" herkese görünür; yetkisi olmayanda talep formunun
+yerine mesaj çıkar (`newRequestBlockedMessage`, şirket yöneticileri `GET /tenants/current`'ten). Süreç sekmesi `BlockedReason`'daki
+«yetki adı»nı kalın gösterir.
+
 | Ekran | Değişiklik |
 | --- | --- |
 | Platform → Yeni şirket | "Rol" alanı kalkar |

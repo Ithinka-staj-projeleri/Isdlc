@@ -45,7 +45,11 @@ describe('passwords', () => {
 });
 
 describe('who sees what', () => {
-  const user = (role: 'BusinessAnalyst' | 'PlatformAdmin') => ({ id: 1, fullName: 'X', email: 'x@x', role });
+  const user = (kind: 'BusinessAnalyst' | 'PlatformAdmin') => ({
+    id: 1, fullName: 'X', email: 'x@x', tenant: null, isTenantAdmin: false,
+    isPlatformAdmin: kind === 'PlatformAdmin',
+    permissions: kind === 'PlatformAdmin' ? [] : ['Analysis' as const],
+  });
 
   it('sends a temporary password to the password change, the Platform Administrator to the companies', () => {
     expect(homeUrlFor({ user: user('BusinessAnalyst'), mustChangePassword: true })).toBe('/change-password');

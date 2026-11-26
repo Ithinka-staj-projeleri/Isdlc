@@ -10,7 +10,7 @@
 <span class="user">{{ user.fullName }}</span>
 } @else {
 <app-notification-bell />
-<a class="user" [routerLink]="['/users', user.id]" title="Profilim">{{ user.fullName }} · {{ roleLabels[user.role] }}</a>
+<a class="user" [routerLink]="['/users', user.id]" title="Profilim">{{ user.fullName }}</a>
 }
 <a class="user" routerLink="/change-password" title="Parolamı değiştir">Parola</a>
 <button type="button" (click)="auth.logout()">Çıkış</button>

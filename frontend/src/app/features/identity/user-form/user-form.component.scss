@@ -48,3 +48,32 @@
     color: var(--muted);
     font-size: 12px;
 }
+
+.permissions {
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+
+    legend {
+        padding: 0 4px;
+        font-size: 13px;
+        color: var(--muted);
+    }
+
+    > .hint {
+        margin: 0 0 10px;
+    }
+}
+
+.preset {
+    @include ui.field;
+    max-width: 320px;
+    margin-bottom: 10px;
+}
+
+.boxes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 14px;
+}

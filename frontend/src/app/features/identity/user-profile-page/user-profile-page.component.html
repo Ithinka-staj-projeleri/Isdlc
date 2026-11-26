@@ -8,7 +8,7 @@
         {{ p.fullName }}
         @if (!p.isActive) { <app-status-badge label="Pasif" tone="neutral" /> }
       </h2>
-      <p class="muted">{{ roleLabels[p.role] }} · {{ p.email }}</p>
+      <p class="muted">{{ permissionNames(p.permissions) }} · {{ p.email }}</p>
     </div>
     @if (isMine() && !editing()) {
       <button type="button" class="button" (click)="startEditing(p)">Profili düzenle</button>

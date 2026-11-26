@@ -1,5 +1,5 @@
 import { ProjectStatus } from '../../../shared/models/project-status';
-import { UserRole } from '../../../shared/models/user-role';
+import { Permission } from '../../../shared/models/permission';
 
 /** Which menu lists the flow's records. */
 export type ProcessFlowKind = 'Request' | 'Improvement' | 'ResourcePlanning' | 'Billing';
@@ -42,9 +42,10 @@ export interface ProcessStep {
     isDecision: boolean;
     /** What the "No" answer means, in the prototype's words. */
     noBranchText: string | null;
-    responsibleRole: UserRole;
-    /** Set on approval steps: only this role can act on the step. */
-    approverRole: UserRole | null;
+    /** Who does the step: anyone with this permission (Faz 7). */
+    responsiblePermission: Permission;
+    /** Set on approval steps: only someone with this permission can close the step. */
+    approverPermission: Permission | null;
     /** "No" closes the request with this status. */
     noOutcome: ProjectStatus | null;
     /** Steps the flow can return to when the answer is "No". */

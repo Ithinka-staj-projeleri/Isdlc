@@ -7,7 +7,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
-import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
+import { permissionNames } from '../../../shared/models/permission';
 import { DateOnlyPipe } from '../../../shared/pipes/date-only.pipe';
 import { OPEN_ISSUE_TYPE_LABELS } from '../../open-issues/models/open-issue';
 import { EXPERTISE_MAX_LENGTH, UserProfile, WORKING_NOTE_MAX_LENGTH, expertiseAreas } from '../models/user-profile';
@@ -29,7 +29,7 @@ export class UserProfilePageComponent {
   private readonly _auth = inject(AuthService);
   private readonly _fb = inject(FormBuilder);
 
-  protected readonly roleLabels = USER_ROLE_LABELS;
+  protected readonly permissionNames = permissionNames;
   protected readonly issueTypeLabels = OPEN_ISSUE_TYPE_LABELS;
   protected readonly expertiseMax = EXPERTISE_MAX_LENGTH;
   protected readonly noteMax = WORKING_NOTE_MAX_LENGTH;

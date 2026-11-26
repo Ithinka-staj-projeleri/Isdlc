@@ -21,17 +21,6 @@
                 @if (errorFor('email'); as error) { <span class="error">{{ error }}</span> }
             </label>
 
-            <label class="field" [class.invalid]="errorFor('role')">
-                Rol
-                <select name="role" [(ngModel)]="role">
-                    <option [ngValue]="null">Seçin…</option>
-                    @for (r of roles; track r) {
-                    <option [ngValue]="r">{{ roleLabels[r] }}</option>
-                    }
-                </select>
-                @if (errorFor('role'); as error) { <span class="error">{{ error }}</span> }
-            </label>
-
             @if (!user()) {
             <label class="field" [class.invalid]="errorFor('temporaryPassword')">
                 Geçici parola
@@ -43,6 +32,35 @@
                 @if (errorFor('temporaryPassword'); as error) { <span class="error">{{ error }}</span> }
             </label>
             }
+
+            <fieldset class="permissions full">
+                <legend>Yetkiler</legend>
+                <p class="hint">
+                    Yalnızca süreçteki işler için gerekir. Risk, açık konu, tutanak ve formları herkes kullanır.
+                    Hiç yetki verilmezse kişi yalnızca akış dışındaki işleri yapar.
+                </p>
+                @if (presets().length) {
+                <label class="preset">
+                    Hazır set
+                    <select name="preset" [ngModel]="preset()?.name ?? ''" (ngModelChange)="applyPreset($event)">
+                        <option value="">{{ preset() ? '' : (permissions().length ? 'Özel' : 'Seçin…') }}</option>
+                        @for (p of presets(); track p.name) {
+                        <option [value]="p.name">{{ p.name }}</option>
+                        }
+                    </select>
+                    <span class="hint">Kutucukları doldurur; sonra tek tek değiştirebilirsiniz.</span>
+                </label>
+                }
+                <div class="boxes">
+                    @for (option of permissionOptions(); track option.value) {
+                    <label class="check">
+                        <input type="checkbox" [name]="'permission-' + option.value" [ngModel]="has(option.value)"
+                            (ngModelChange)="toggle(option.value, $event)" />
+                        {{ option.name }}
+                    </label>
+                    }
+                </div>
+            </fieldset>
 
             <label class="check full">
                 <input type="checkbox" name="isTenantAdmin" [(ngModel)]="isTenantAdmin" />

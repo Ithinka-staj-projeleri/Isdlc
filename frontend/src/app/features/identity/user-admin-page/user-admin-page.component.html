@@ -29,7 +29,7 @@
             <tr>
                 <th>Ad soyad</th>
                 <th>E-posta</th>
-                <th>Rol</th>
+                <th>Yetkiler</th>
                 <th>Durum</th>
                 <th></th>
             </tr>
@@ -42,7 +42,7 @@
                     @if (user.isTenantAdmin) { <app-status-badge label="Şirket yöneticisi" tone="info" /> }
                 </td>
                 <td>{{ user.email }}</td>
-                <td>{{ roleLabels[user.role] }}</td>
+                <td [class.muted]="!user.permissions.length">{{ permissionNames(user.permissions) }}</td>
                 <td class="status">
                     @if (!user.isActive) {
                     <app-status-badge label="Pasif" />

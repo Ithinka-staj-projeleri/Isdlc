@@ -1,3 +1,4 @@
+import { Permission } from '../../../shared/models/permission';
 import { ProjectStatus } from '../../../shared/models/project-status';
 import { UserSummary } from '../../../shared/models/user-summary';
 import { PrerequisiteKind, ProcessFlowKind, ProcessStep } from './process-stage';
@@ -48,8 +49,10 @@ export interface AvailableActions {
     canPostpone: boolean;
     /** A postponed request can be taken back. */
     canResume: boolean;
-    /** Why the user cannot act on the current step; null when they can. */
+    /** Why the user cannot act on the current step (which permission, whom to ask); null when they can. */
     blockedReason: string | null;
+    /** The permission the user lacks for the current step (Faz 7, karar 2b); null when none is missing. */
+    missingPermission: Permission | null;
     /**
      * Work the step still needs (Faz 7 · A4). While not empty "Adımı tamamla" and "Evet" are refused; "Hayır" and
      * rejecting still work. Only filled for someone who may act on the step.

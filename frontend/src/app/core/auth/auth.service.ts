@@ -2,7 +2,8 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
-import { UserRole, roleFromPermissions } from '../../shared/models/user-role';
+import { silentErrors } from '../http/problem-details';
+import { Permission } from '../../shared/models/permission';
 
 /** The signed-in user's company (backend: TenantSummaryDto). */
 export interface AuthTenant {
@@ -11,19 +12,17 @@ export interface AuthTenant {
     name: string;
 }
 
-/** Signed-in user (backend: AuthUserDto). */
+/** Signed-in user (backend: AuthUserDto; also GET /api/v1/users/me). */
 export interface AuthUser {
     id: number;
     fullName: string;
     email: string;
-    /** Worked out from the permissions until A3 (roleFromPermissions); the API no longer sends it. */
-    role: UserRole;
-    /** Faz 7 · A2: what the user can do in the flow. */
-    permissions?: string[];
-    isPlatformAdmin?: boolean;
-    /** null for the Platform Administrator. Missing in a session saved before Faz 6. */
-    tenant?: AuthTenant | null;
-    isTenantAdmin?: boolean;
+    /** What the user can do in the flow (Faz 7 · A2). Not in the token: refreshed with GET /users/me. */
+    permissions: Permission[];
+    isPlatformAdmin: boolean;
+    /** null for the Platform Administrator. */
+    tenant: AuthTenant | null;
+    isTenantAdmin: boolean;
 }
 
 /** POST /api/v1/auth/login and /auth/change-password answer (backend: LoginResultDto). */
@@ -38,6 +37,7 @@ export interface LoginResponse {
 
 export const LOGIN_URL = '/api/v1/auth/login';
 export const CHANGE_PASSWORD_URL = '/api/v1/auth/change-password';
+export const ME_URL = '/api/v1/users/me';
 
 /** Where the Platform Administrator works; it is the only page they see (docs/multi-tenancy.md → Ekranlar). */
 export const PLATFORM_HOME = '/platform/tenants';
@@ -53,7 +53,7 @@ export class AuthService {
 
     readonly user = computed(() => this._session()?.user ?? null);
     readonly mustChangePassword = computed(() => !!this._session()?.mustChangePassword);
-    readonly isPlatformAdmin = computed(() => this.user()?.role === 'PlatformAdmin');
+    readonly isPlatformAdmin = computed(() => !!this.user()?.isPlatformAdmin);
     readonly isTenantAdmin = computed(() => !!this.user()?.isTenantAdmin);
 
     /** Token to send to the API; null when signed out or when the token has expired. */
@@ -97,13 +97,31 @@ export class AuthService {
         this._router.navigate(['/login'], returnUrl ? { queryParams: { returnUrl } } : {});
     }
 
-    hasRole(...roles: UserRole[]): boolean {
-        const user = this.user();
-        return !!user && roles.includes(user.role);
+    /** Work in the flow only (karar 2a): the screen shows the button anyway and explains a missing permission. */
+    hasPermission(permission: Permission): boolean {
+        return !!this.user()?.permissions?.includes(permission);
+    }
+
+    /**
+     * Reads the user again (GET /users/me): permissions are not in the token, so a change by the company administrator
+     * shows up when a page opens or after a 403. A failure keeps the session as it is.
+     */
+    refreshMe(): void {
+        if (!this.isLoggedIn()) {
+            return;
+        }
+        this._http.get<AuthUser>(ME_URL, { context: silentErrors() }).subscribe({
+            next: user => {
+                const session = this._session();
+                if (session) {
+                    this.saveSession({ ...session, user });
+                }
+            },
+            error: () => { /* the next page or 403 tries again */ },
+        });
     }
 
     private saveSession(res: LoginResponse): void {
-        res = withRole(res);
         try {
             localStorage.setItem(SESSION_KEY, JSON.stringify(res));
         } catch {
@@ -127,15 +145,7 @@ export function homeUrlFor(session: Pick<LoginResponse, 'user' | 'mustChangePass
     if (session?.mustChangePassword) {
         return '/change-password';
     }
-    return session?.user.role === 'PlatformAdmin' ? PLATFORM_HOME : '/dashboard';
-}
-
-/** A2 bridge (removed by A3): the old screens read user.role, so it is worked out from the permissions. */
-function withRole(session: LoginResponse): LoginResponse {
-    if (!session.user.permissions && !session.user.isPlatformAdmin) {
-        return session; // a session saved before A2 still has its role
-    }
-    return { ...session, user: { ...session.user, role: roleFromPermissions(session.user.permissions, session.user.isPlatformAdmin) } };
+    return session?.user.isPlatformAdmin ? PLATFORM_HOME : '/dashboard';
 }
 
 function isExpired(session: LoginResponse): boolean {

@@ -5,7 +5,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { fieldErrorsOf } from '../../../core/http/problem-details';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
-import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
+import { permissionNames } from '../../../shared/models/permission';
 import { PASSWORD_MIN_LENGTH, generateTemporaryPassword } from '../models/password';
 import { ManagedUser } from '../models/managed-user';
 import { UserAdminService } from '../user-admin.service';
@@ -24,7 +24,7 @@ import { UserFormComponent } from '../user-form/user-form.component';
 export class UserAdminPageComponent {
     private readonly service = inject(UserAdminService);
 
-    protected readonly roleLabels = USER_ROLE_LABELS;
+    protected readonly permissionNames = permissionNames;
     protected readonly currentUserId = inject(AuthService).user()?.id;
 
     protected readonly users = rxResource({ stream: () => this.service.list() });

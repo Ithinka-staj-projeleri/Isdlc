@@ -1,6 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
+import { permissionNames } from '../../../shared/models/permission';
 import { TeamMemberWorkload } from '../models/dashboard';
 
 /**
@@ -17,7 +17,7 @@ import { TeamMemberWorkload } from '../models/dashboard';
 export class TeamWorkloadComponent {
   readonly members = input.required<TeamMemberWorkload[]>();
 
-  protected readonly roleLabels = USER_ROLE_LABELS;
+  protected readonly permissionNames = permissionNames;
 
   /** The busiest person fills the bar. */
   protected readonly max = computed(() =>

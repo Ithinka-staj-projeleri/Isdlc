@@ -5,7 +5,7 @@ import { map } from 'rxjs';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { PROJECT_STATUS_LABELS } from '../../../shared/models/project-status';
-import { USER_ROLE_LABELS } from '../../../shared/models/user-role';
+import { PERMISSION_LABELS } from '../../../shared/models/permission';
 import { ProcessFlowListItem, ProcessStage } from '../models/process-stage';
 import { ProcessService } from '../process.service';
 
@@ -24,7 +24,7 @@ export class ProcessLibraryComponent {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
 
-    protected readonly roleLabels = USER_ROLE_LABELS;
+    protected readonly permissionLabels = PERMISSION_LABELS;
     protected readonly statusLabels = PROJECT_STATUS_LABELS;
 
     // The error interceptor already tells the user what went wrong; the page only shows it is empty.
@@ -60,7 +60,7 @@ export class ProcessLibraryComponent {
             stageCount: this.stages().length,
             stepCount: steps.length,
             decisionCount: steps.filter(s => s.isDecision).length,
-            approvalCount: steps.filter(s => s.approverRole).length,
+            approvalCount: steps.filter(s => s.approverPermission).length,
         };
     });
 
