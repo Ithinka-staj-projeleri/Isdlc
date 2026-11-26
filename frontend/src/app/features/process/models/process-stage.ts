@@ -49,8 +49,12 @@ export interface ProcessStep {
     noOutcome: ProjectStatus | null;
     /** Steps the flow can return to when the answer is "No". */
     noJumps: ProcessStepJump[];
-    /** When the step is done; all false / null: on every record. */
-    condition: StepCondition;
+    /** When the step is done: on a record where all rules hold; empty, on every record (Faz 7 · A5). */
+    conditions: StepConditionRule[];
+    /** The rules as the screens show them, from the API ("Yalnızca dış talepte", "Seviye 2 ve üstü"). */
+    conditionLabels: string[];
+    /** Work that must exist on the project before the step is completed or answered "Yes" (Faz 7 · A4). */
+    prerequisites: StepPrerequisite[];
 }
 
 export interface ProcessStepJump {
@@ -59,18 +63,33 @@ export interface ProcessStepJump {
     label: string;
 }
 
-/** Contract: docs/process-api.md → "Adım koşulları". */
-export interface StepCondition {
-    requiresExternalRequest: boolean;
-    requiresOffer: boolean;
-    minLevel: number | null;
+/**
+ * One skip rule of a step. `field`: "source", "requestType", "requiresOffer", "level" or "custom:{key}".
+ * Contract: docs/configurability.md → Atlama kuralları.
+ */
+export interface StepConditionRule {
+    field: string;
+    op: 'equals' | 'notEquals' | 'atLeast' | 'atMost' | 'isSet' | 'isNotSet';
+    value?: string | number | boolean | null;
+    whenEmpty?: 'notMet' | 'met';
 }
 
-/** Short Turkish labels of a step's conditions, e.g. ["Yalnızca dış talepte"]; empty when the step is always done. */
-export function conditionLabels(condition: StepCondition): string[] {
-    const labels: string[] = [];
-    if (condition.requiresExternalRequest) labels.push('Yalnızca dış talepte');
-    if (condition.requiresOffer) labels.push('Teklif hazırlanacaksa');
-    if (condition.minLevel !== null) labels.push(`Seviye ${condition.minLevel} ve üstü`);
-    return labels;
+/** Whether any rule of the step looks at the field. */
+export function dependsOn(step: ProcessStep, field: string): boolean {
+    return step.conditions.some((rule) => rule.field === field);
+}
+
+export type PrerequisiteKind =
+    | 'RequestFormComplete'
+    | 'QuestionnaireComplete'
+    | 'LevelApplied'
+    | 'MeetingExists'
+    | 'RiskExists'
+    | 'RequirementsApproved'
+    | 'DocumentApproved';
+
+/** Rules: docs/configurability.md → Adım ön koşulları. `value` is a form or document type code where the kind needs one. */
+export interface StepPrerequisite {
+    kind: PrerequisiteKind;
+    value?: string | null;
 }

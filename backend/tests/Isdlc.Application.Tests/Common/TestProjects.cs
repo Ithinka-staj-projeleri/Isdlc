@@ -1,7 +1,9 @@
 using Isdlc.Application.Common.Interfaces;
 using Isdlc.Domain.Identity;
+using Isdlc.Domain.Meetings;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
+using Isdlc.Domain.Risks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -62,6 +64,43 @@ public static class TestProjects
         db.Projects.Add(project);
         await db.SaveChangesAsync();
         return project.Id;
+    }
+
+    /// <summary>
+    /// Does the work a step prerequisite asks for (Faz 7 · A4), so a test can complete the step: a level, a meeting, a risk.
+    /// Forms, requirements and documents are filled through their own services where a test needs them.
+    /// </summary>
+    public static async Task SatisfyAsync(DatabaseFixture database, int projectId, PrerequisiteKind kind)
+    {
+        await using var scope = database.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var analystId = await UserIdAsync(database, Analyst);
+
+        switch (kind)
+        {
+            case PrerequisiteKind.LevelApplied:
+                var project = await db.Projects.SingleAsync(p => p.Id == projectId);
+                project.Level = 2;
+                break;
+            case PrerequisiteKind.MeetingExists:
+                db.Meetings.Add(new Meeting
+                {
+                    ProjectId = projectId, Code = "TT-001", Type = MeetingType.AnalysisSession,
+                    Date = new DateOnly(2026, 11, 2), RecordedById = analystId, Agenda = "Test toplantısı",
+                });
+                break;
+            case PrerequisiteKind.RiskExists:
+                db.Risks.Add(new Risk
+                {
+                    ProjectId = projectId, Code = "RSK-001", Title = "Test riski", Category = RiskCategory.Technical,
+                    Probability = 2, Impact = 2, OwnerUserId = analystId,
+                });
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(kind), kind, "Not supported by the test helper.");
+        }
+
+        await db.SaveChangesAsync();
     }
 
     public static async Task<Project> GetAsync(DatabaseFixture database, int projectId)

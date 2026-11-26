@@ -3,7 +3,8 @@
 Faz 7'nin uygulama ayrıntıları. Bu belgede şunlar yazılıdır: veri modeli, bugünkü verinin taşınması, kurallar, uç noktalar,
 hata mesajları ve testler. Konular: yetkiler, adım ön koşulları, atlama kuralları, şirkete özel alanlar, akış düzenleme,
 yapay zekâ modeli ve kullanımı. Plan, kararlar ve iş dağılımı: [phase-7-plan.md](phase-7-plan.md).
-Durum: **taslak** (26 Kasım 2026). Sorumlu: Erva (A1). Uygulama: A2–A9. Bölüm 2 (yetkiler, backend) A2 ile uygulandı.
+Durum: **onaylandı** (26 Kasım 2026, #178). Sorumlu: Erva (A1). Uygulama: A2–A9.
+A2 (yetkiler, backend), A4 (adım ön koşulları) ve A5 (atlama kuralları) uygulandı.
 
 Kurallar uygulandıkça AGENTS.md'ye taşınır (Bölüm 10). Bölüm numaraları plandaki kararlara göndermede kullanılır:
 "karar 8", plan Bölüm 3'teki 8 numaralı karardır.
@@ -248,8 +249,9 @@ Bilinmeyen `kind` ya da şirkette olmayan `value` kaydedilemez (`400`, Bölüm 7
 ]
 ```
 
-Liste boş değilse `canComplete` ve `canAnswer` `false` olur, `blockedReason` boş kalır (yetki varken engel ön koşuldur).
-Süreç sekmesi butonların yerinde listeyi ve düğmeleri gösterir.
+Liste boş değilse `canComplete` `false` olur ve `blockedReason` boş kalır (yetki varken engel ön koşuldur). Karar adımında
+`canAnswer` `true` kalır, çünkü "Hayır" ön koşul istemez; ekran listeyi gösterir ve "Evet"i kapatır.
+Süreç sekmesi listeyi, her eksiğin yanında "… git" düğmesiyle gösterir.
 
 ### Ithinka şablonu
 
@@ -271,7 +273,8 @@ değiştirilmemiş kopyalara ön koşulları da taşır.
 - `StepPrerequisites` için her tür, sağlanmış ve sağlanmamış durumlar veritabanısız test edilir.
 - `ProcessService`: eksik ön koşulda tamamlama ve "Evet" `400`, "Hayır" ve reddetme çalışır.
 - `TestProjects.CreateAsync(database, "4")` bugünkü gibi projeyi doğrudan adıma koyar. Adımı tamamlayan testler ön koşulu
-  önce sağlar; bunun için `TestProjects.SatisfyAsync(database, projectId, kind, value)` yardımcı metodu eklenir.
+  önce sağlar: `TestProjects.SatisfyAsync(database, projectId, kind)` (seviye, tutanak, risk). Formlar, gereksinimler ve
+  dokümanlar gereken testte kendi servisleriyle doldurulur.
 
 ## 5. Atlama kuralları (A5)
 

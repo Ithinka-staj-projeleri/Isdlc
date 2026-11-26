@@ -96,11 +96,13 @@ public class TeamWorkloadCrossTests(DatabaseFixture database)
         await using var scope = database.CreateScope();
         var steps = await scope.ServiceProvider.GetRequiredService<IApplicationDbContext>().ProcessSteps
             .AsNoTracking()
-            .Where(s => s.ProcessFlow.Code == ProcessFlowCodes.NewRequest
-                && !s.RequiresExternalRequest && s.MinLevel == null)
+            .Where(s => s.ProcessFlow.Code == ProcessFlowCodes.NewRequest)
             .OrderBy(s => s.Order)
             .ToListAsync();
-        return steps.First(pick);
+        // The rules are a JSON column: steps done on every request (no source or level rule) are picked here.
+        return steps
+            .Where(s => !s.Conditions.Any(r => r.Field is StepConditionRule.Source or StepConditionRule.Level))
+            .First(pick);
     }
 
     // ---- Waiting steps (F2-3) ----

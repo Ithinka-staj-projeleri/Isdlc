@@ -118,7 +118,11 @@ public class ProcessServiceTests(DatabaseFixture database)
         // "Doğrudan proje" skips step 4; the chart also says it is done only for external customers.
         var step = await StepAsync(ProcessFlowCodes.NewRequest, "4");
 
-        Assert.Equal(new StepConditionDto(RequiresExternalRequest: true, RequiresOffer: true, MinLevel: null), step.Condition);
+        Assert.Equal(
+            [new StepConditionRule("source", ConditionOperator.Equals, "External"),
+             new StepConditionRule("requiresOffer", ConditionOperator.Equals, "true")],
+            step.Conditions);
+        Assert.Equal(["Yalnızca dış talepte", "Teklif hazırlanacaksa"], step.ConditionLabels);
     }
 
     [Theory]
@@ -128,7 +132,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     {
         var step = await StepAsync(ProcessFlowCodes.NewRequest, code);
 
-        Assert.Equal(new StepConditionDto(RequiresExternalRequest: false, RequiresOffer: true, MinLevel: null), step.Condition);
+        Assert.Equal([new StepConditionRule("requiresOffer", ConditionOperator.Equals, "true")], step.Conditions);
     }
 
     [Theory]
@@ -138,7 +142,9 @@ public class ProcessServiceTests(DatabaseFixture database)
     {
         var step = await StepAsync(ProcessFlowCodes.AddOn, code);
 
-        Assert.Equal(new StepConditionDto(RequiresExternalRequest: false, RequiresOffer: false, MinLevel: minLevel), step.Condition);
+        Assert.Equal(
+            [new StepConditionRule("level", ConditionOperator.AtLeast, minLevel.ToString(), ConditionWhenEmpty.Met)],
+            step.Conditions);
     }
 
     [Fact]
@@ -148,7 +154,7 @@ public class ProcessServiceTests(DatabaseFixture database)
         foreach (var code in AllFlowCodes)
         {
             conditional.AddRange(AllSteps(await GetFlowAsync(code))
-                .Where(s => s.Condition != new StepConditionDto(false, false, null))
+                .Where(s => s.Conditions.Count > 0)
                 .Select(s => $"{code}/{s.Code}"));
         }
 

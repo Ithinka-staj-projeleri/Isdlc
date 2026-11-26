@@ -4,6 +4,7 @@ using Isdlc.Application.Identity;
 using Isdlc.Application.Identity.Dtos;
 using Isdlc.Application.Process;
 using Isdlc.Application.Process.Dtos;
+using Isdlc.Application.QuestionBank;
 using Isdlc.Application.Tenants;
 using Isdlc.Application.Tests.Common;
 using Isdlc.Domain.Identity;
@@ -178,7 +179,8 @@ public class PermissionTests(DatabaseFixture database)
                 scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(),
                 new TestUser(developer.Id),
                 new RecordingNotificationService(),
-                TimeProvider.System)
+                TimeProvider.System,
+                scope.ServiceProvider.GetRequiredService<IQuestionnaireService>())
             .GetProjectProcessAsync(projectId, default);
 
         Assert.False(process.AvailableActions.CanComplete);
@@ -242,7 +244,8 @@ public class PermissionTests(DatabaseFixture database)
             scope.ServiceProvider.GetRequiredService<IApplicationDbContext>(),
             new TestUser(userId),
             new RecordingNotificationService(),
-            TimeProvider.System);
+            TimeProvider.System,
+            scope.ServiceProvider.GetRequiredService<IQuestionnaireService>());
         return await service.CompleteStepAsync(
             projectId, new CompleteStepDto { ExpectedStepId = await TestProjects.StepIdAsync(database, "1") }, default);
     }

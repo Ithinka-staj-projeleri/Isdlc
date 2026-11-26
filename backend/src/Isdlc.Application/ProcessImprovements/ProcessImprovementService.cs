@@ -141,8 +141,7 @@ public class ProcessImprovementService(
             .SingleAsync(cancellationToken);
         var flowSteps = await dbContext.ProcessSteps
             .Where(s => s.ProcessFlowId == flowId)
-            .Select(s => new ConditionalStep(
-                s.Id, s.Order, new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel)))
+            .Select(s => new ConditionalStep(s.Id, s.Order, s.Conditions))
             .ToListAsync(cancellationToken);
 
         // The request fields of Project mean nothing here; an internal source keeps every step of the flow.
@@ -153,7 +152,7 @@ public class ProcessImprovementService(
             Source = RequestSource.Internal,
             RequestDate = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime),
         };
-        project.CurrentStepId = StepConditions.FirstStepId(flowSteps, new ConditionContext(project.Source, false, null))
+        project.CurrentStepId = StepConditions.FirstStepId(flowSteps, new ConditionContext(project.Source, project.RequestType, false, null))
             ?? throw new InvalidOperationException($"Flow {ProcessFlowCodes.ProcessImprovement} has no steps.");
 
         var proposal = new ProcessImprovement { Project = project };

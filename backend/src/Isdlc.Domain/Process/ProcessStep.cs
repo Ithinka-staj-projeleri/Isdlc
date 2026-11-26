@@ -26,16 +26,11 @@ public class ProcessStep : ITenantOwned
     /// <summary>Position in the flow; unique within the flow. The next step is the first later one whose conditions hold.</summary>
     public int Order { get; set; }
 
-    // Conditions: the step is skipped unless all of them hold for the record (StepConditions).
-
-    /// <summary>Done only for external requests.</summary>
-    public bool RequiresExternalRequest { get; set; }
-
-    /// <summary>Done only when an offer will be prepared (Project.RequiresOffer).</summary>
-    public bool RequiresOffer { get; set; }
-
-    /// <summary>Done only when Project.Level is at least this, or not decided yet.</summary>
-    public int? MinLevel { get; set; }
+    /// <summary>
+    /// When the step is done: on a record where all rules hold, skipped otherwise; empty, on every record (StepConditions).
+    /// Replaces the three fixed conditions (external request, offer, level) of Faz 4 (Faz 7 · A5).
+    /// </summary>
+    public List<StepConditionRule> Conditions { get; set; } = [];
 
     public string Text { get; set; } = string.Empty;
 
@@ -53,6 +48,9 @@ public class ProcessStep : ITenantOwned
 
     /// <summary>Set when "No" closes the request.</summary>
     public ProjectStatus? NoOutcome { get; set; }
+
+    /// <summary>Work that must exist on the project before the step is completed or answered "Yes"; empty: none.</summary>
+    public List<StepPrerequisite> Prerequisites { get; set; } = [];
 
     /// <summary>Steps the flow can return to on "No".</summary>
     public ICollection<ProcessStepJump> NoJumps { get; set; } = new List<ProcessStepJump>();

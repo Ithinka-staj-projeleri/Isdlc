@@ -67,7 +67,7 @@
                         @if (state === 'current') { <app-status-badge label="Mevcut adım" tone="info" /> }
                         @if (state === 'skipped') {
                         <app-status-badge label="Atlanır" tone="neutral" />
-                        <span class="muted small">{{ conditionLabels(step.condition).join(' · ') }}</span>
+                        <span class="muted small">{{ step.conditionLabels.join(' · ') }}</span>
                         }
                     </div>
 

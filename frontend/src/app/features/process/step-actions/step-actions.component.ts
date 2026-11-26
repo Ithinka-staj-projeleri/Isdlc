@@ -1,5 +1,6 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PROJECT_STATUS_LABELS } from '../../../shared/models/project-status';
@@ -42,6 +43,7 @@ function formatDate(value: string): string {
 })
 export class StepActionsComponent {
     private readonly processService = inject(ProcessService);
+    private readonly router = inject(Router);
 
     readonly projectId = input.required<number>();
     readonly step = input.required<ProcessStep>();
@@ -186,5 +188,10 @@ export class StepActionsComponent {
                 this.failed.emit();
             },
         });
+    }
+
+    /** Takes the person to where the missing work is done (another tab of the project, or the request form). */
+    protected openPrerequisite(link: string): void {
+        void this.router.navigateByUrl(link);
     }
 }

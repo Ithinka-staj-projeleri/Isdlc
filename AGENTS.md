@@ -171,7 +171,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | Adımın sorumlusu / onaylayanı | `ProcessStep.ResponsiblePermission` / `ApproverPermission` (yalnızca onay adımında) |
 | Hazır yetki seti / eksik yetki mesajı | `PermissionPresets` (bugünkü unvanlar; kaydedilmez) / `PermissionMessages` (yetkinin adı ve şirket yöneticilerinin adları; ekran ve 403 aynı metni kullanır) |
 | Adım ön koşulu (Faz 7, A4) | `ProcessStep.Prerequisites` (`RequestFormComplete`, `QuestionnaireComplete`, `LevelApplied`, `MeetingExists`, `RiskExists`, `RequirementsApproved`, `DocumentApproved`) |
-| Atlama kuralı (Faz 7, A5) | `ProcessStep.Conditions` (`field`, `op`, `value`, `whenEmpty`); `RequiresExternalRequest`, `RequiresOffer`, `MinLevel`'in yerini alır |
+| Atlama kuralı (Faz 7, A5) | `ProcessStep.Conditions` (`StepConditionRule`: `field`, `op`, `value`, `whenEmpty`); değerlendirme `StepConditions`. Faz 4'teki `RequiresExternalRequest`, `RequiresOffer`, `MinLevel` migration ile kurala çevrildi |
 | Şirkete özel alan (Faz 7, A6) | `CustomField` / değeri `Project.CustomValues` |
 | Akışın kullanımı (Faz 7, A7) | `ProcessFlow.UsedFor` (`NewRequest`, `AdditionalModule`, `Improvement`, `ResourcePlanning`, `Billing`); `ProcessFlowCodes`'un yerini alır |
 | Yapay zekâ kullanım kaydı (Faz 7, A9) | `AiUsage`; şirketin modeli `Tenant.AiModel` |
@@ -179,7 +179,7 @@ Aynı kavram için herkesin aynı ismi kullanması amacıyla:
 | İş akışı (yeni yazılım projesi, ek geliştirme, süreç iyileştirme, kaynak planlama, faturalama) | `ProcessFlow` (`Project.ProcessFlowId`; türü `ProcessFlowKind`: `Request`, `Improvement`, `ResourcePlanning`, `Billing`) |
 | Aşama (akıştaki "bölüm") | `ProcessStage` |
 | Adım | `ProcessStep` |
-| Atlanan adım (yalnızca dış talepte / teklif hazırlanacaksa / seviye ≥ N) | `ProcessStep.RequiresExternalRequest`, `RequiresOffer`, `MinLevel` |
+| Atlanan adım (yalnızca dış talepte / teklif hazırlanacaksa / seviye ≥ N) | Adımın atlama kuralları sağlanmıyor (`ProcessStep.Conditions`, yukarıda) |
 | Teklif hazırlanacak mı | `Project.RequiresOffer` |
 | "Hayır" cevabında dönülecek adım | `ProcessStepJump` |
 | Adımda yapılan işlem | `StepRecord` |
@@ -352,5 +352,7 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
     verir, kullanıcıları `TestTenants`'tadır (`TestTenants.DenemeAnalyst` vb.). Ayrıca seed'in atlaması gereken pasif bir şirket
     vardır (`database.InactiveTenantId`). Şablonları değiştiren testler kendi şirketini açar.
   - `RecordingNotificationService`: gönderilen bildirimleri listede tutar; test ne gönderildiğini kontrol eder.
+  - **Adım ön koşulları (Faz 7 · A4):** bir adımı tamamlayan test, adımın ön koşulunu önce sağlar:
+    `TestProjects.SatisfyAsync(database, projectId, PrerequisiteKind.MeetingExists)` (seviye, tutanak, risk).
 - Saf kural sınıfları (`ProcessProgress`, `ProcessTransitions` gibi) veritabanısız test edilir; bütün kombinasyonlar burada denenir.
 - Test adı neyi kontrol ettiğini söyler: `Metot_Durum_Beklenen` (ör. `GetStages_Returns13StagesInOrder`).

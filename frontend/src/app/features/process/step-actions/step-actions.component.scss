@@ -71,3 +71,31 @@
         align-self: stretch;
     }
 }
+
+.prerequisites {
+    padding: 10px 12px;
+    border: 1px solid var(--warn);
+    border-radius: 6px;
+    background: var(--panel);
+
+    p {
+        margin: 0 0 6px;
+    }
+
+    ul {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+}

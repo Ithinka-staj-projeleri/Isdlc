@@ -38,9 +38,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "2",
@@ -53,9 +51,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "3",
@@ -68,9 +64,8 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": [],
+      "prerequisites": [{ "kind": "RequestFormComplete" }]
     },
     {
       "code": "4",
@@ -83,9 +78,11 @@
       "approverPermission": null,
       "noOutcome": "Rejected",
       "noJumps": [],
-      "requiresExternalRequest": true,
-      "requiresOffer": true,
-      "minLevel": null
+      "conditions": [
+        { "field": "source", "op": "equals", "value": "External" },
+        { "field": "requiresOffer", "op": "equals", "value": true }
+      ],
+      "prerequisites": [{ "kind": "QuestionnaireComplete", "value": "customer-fit" }]
     },
     {
       "code": "5",
@@ -98,9 +95,8 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": [],
+      "prerequisites": [{ "kind": "LevelApplied" }]
     },
     {
       "code": "6",
@@ -113,9 +109,8 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": [],
+      "prerequisites": [{ "kind": "MeetingExists" }]
     },
     {
       "code": "7",
@@ -128,9 +123,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "8",
@@ -143,9 +136,8 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": [],
+      "prerequisites": [{ "kind": "RiskExists" }]
     },
     {
       "code": "9",
@@ -158,9 +150,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "10",
@@ -178,9 +168,7 @@
           "label": "Kapsam değişti: 9. adıma dön"
         }
       ],
-      "requiresExternalRequest": false,
-      "requiresOffer": true,
-      "minLevel": null
+      "conditions": [{ "field": "requiresOffer", "op": "equals", "value": true }]
     },
     {
       "code": "11",
@@ -193,9 +181,7 @@
       "approverPermission": null,
       "noOutcome": "Lost",
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": true,
-      "minLevel": null
+      "conditions": [{ "field": "requiresOffer", "op": "equals", "value": true }]
     },
     {
       "code": "12",
@@ -208,9 +194,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "13",
@@ -223,9 +207,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "14",
@@ -238,9 +220,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "15",
@@ -253,9 +233,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "16",
@@ -268,9 +246,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "17",
@@ -288,9 +264,7 @@
           "label": "Hata: teste (16. adım) dön"
         }
       ],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "18",
@@ -303,9 +277,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "19",
@@ -318,9 +290,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     }
   ]
 }

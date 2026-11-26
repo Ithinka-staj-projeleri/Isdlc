@@ -38,9 +38,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "2",
@@ -53,9 +51,7 @@
       "approverPermission": null,
       "noOutcome": "Rejected",
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "3",
@@ -68,9 +64,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "4",
@@ -88,9 +82,7 @@
           "label": "Revizyon: 3. adıma dön"
         }
       ],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "5",
@@ -103,9 +95,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "6",
@@ -118,9 +108,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "7",
@@ -142,9 +130,7 @@
           "label": "Karşılanmadı: 3. adıma dön"
         }
       ],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "8",
@@ -157,9 +143,7 @@
       "approverPermission": "Approval",
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     }
   ]
 }

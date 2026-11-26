@@ -58,7 +58,7 @@
                         @if (step.approverRole) {
                         <app-status-badge [label]="'Onay: ' + roleLabels[step.approverRole]" tone="warn" />
                         }
-                        @for (label of conditionLabels(step.condition); track label) {
+                        @for (label of step.conditionLabels; track label) {
                         <app-status-badge [label]="label" tone="neutral" />
                         }
                     </div>

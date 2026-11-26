@@ -54,23 +54,41 @@ bilgi amaçlı kalır, akışı seçmez.
 
 ### Adım koşulları (atlanan adımlar)
 
-Bazı adımlar her kayıtta yapılmaz. Adımda en fazla üç koşul tutulur; hepsi sağlanmıyorsa adım **atlanır**:
-akış o adıma hiç uğramaz ve `StepRecord` yazılmaz.
+Bazı adımlar her kayıtta yapılmaz. Adımın **atlama kuralları** vardır (`ProcessStep.Conditions`, Faz 7 · A5); hepsi
+sağlanmıyorsa adım **atlanır**: akış o adıma hiç uğramaz ve `StepRecord` yazılmaz. Kural biçimi, alanlar ve karşılaştırmalar:
+[configurability.md](configurability.md) → Atlama kuralları. Faz 4'teki üç sabit koşul (`RequiresExternalRequest`,
+`RequiresOffer`, `MinLevel`) bir migration ile aynı anlama gelen kurallara çevrildi:
 
-| Koşul (`ProcessStep`) | Adım yapılır, eğer… | Örnek |
+| Kural | Adım yapılır, eğer… | Örnek |
 | --- | --- | --- |
-| `RequiresExternalRequest` | `Project.Source = External` | Yeni proje 4: Müşteri uygunluğu (yalnızca dış müşteri) |
-| `RequiresOffer` | `Project.RequiresOffer = true` (talep kaydında "teklif var / yok") | Yeni proje 4 ("doğrudan proje" 3 → 5) ve 10–11: Teklif ve anlaşma (teklifsizde 9 → 12) |
-| `MinLevel` | `Project.Level ≥ MinLevel` | Ek geliştirme 8: Kapsam ve efor (Seviye 2–3); 9: Teklif (Seviye 3, 8 → 10) |
+| `{ field: "source", op: "equals", value: "External" }` | `Project.Source = External` | Yeni proje 4: Müşteri uygunluğu (yalnızca dış müşteri) |
+| `{ field: "requiresOffer", op: "equals", value: true }` | `Project.RequiresOffer = true` (talep kaydında "teklif var / yok") | Yeni proje 4 ("doğrudan proje" 3 → 5) ve 10–11: Teklif ve anlaşma (teklifsizde 9 → 12) |
+| `{ field: "level", op: "atLeast", value: N, whenEmpty: "met" }` | `Project.Level ≥ N` | Ek geliştirme 8: Kapsam ve efor (Seviye 2–3); 9: Teklif (Seviye 3, 8 → 10) |
 
-- `Project.Level` henüz belirlenmediyse `MinLevel` koşulu **sağlanmış sayılır** (adım atlanmaz). Seviye, koşullu adımlardan
-  önceki bir adımda belirlendiği için normal akışta bu durum olmaz.
+- `Project.Level` henüz belirlenmediyse seviye kuralı **sağlanmış sayılır** (`whenEmpty: "met"`, adım atlanmaz). Seviye, koşullu
+  adımlardan önceki bir adımda belirlendiği için normal akışta bu durum olmaz.
+- Değerlendirme saf sınıfta: `StepConditions` (`Holds`, `Applies`, `Describe`). Ekrandaki etiketler ("Yalnızca dış talepte",
+  "Teklif hazırlanacaksa", "Seviye 2 ve üstü") API'den gelir (`conditionLabels`).
 - Koşullar her geçişte projenin o anki değerleriyle değerlendirilir. Talep sırasında "teklif yok" "teklif var"a dönerse
   teklif adımları artık atlanmaz.
 - Geri dönüşlerde (`ProcessStepJump`) hedef adımın koşulu kontrol edilmez; seed yalnızca anlamlı dönüşleri tanımlar.
 
 **Sonraki adım:** aynı akışta, `Order`'ı mevcut adımdan büyük ve koşulları sağlanan **ilk** adım. Yoksa kayıt `Closed` olur.
 **İlk adım:** talep açılırken akışın koşulları sağlanan ilk adımı.
+
+### Adım ön koşulları (Faz 7 · A4)
+
+Bir adım, işi yapılmadan geçilemez. Her adımın isteğe bağlı ön koşul listesi vardır (`ProcessStep.Prerequisites`, JSON;
+seed dosyasında `prerequisites`). Türler, mesajlar ve yönlendirme: [configurability.md](configurability.md) → Adım ön koşulları.
+
+- "Adımı tamamla"da ve "Evet"te kontrol edilir; eksik varsa `400` "Bu adım tamamlanamaz: {ilk eksik}".
+- "Hayır", reddetme ve erteleme kontrol etmez.
+- Önce yetki, sonra ön koşul: adımda işlem yapamayan kişiye ön koşul listesi gönderilmez.
+- Değerlendirme saf sınıfta: `StepPrerequisites` (`Isdlc.Application/Process/StepPrerequisites.cs`). Servis yalnızca
+  adımın sorduğu bilgileri sorgular (`ProcessService.UnmetPrerequisitesAsync`).
+
+Ithinka'nın yeni yazılım projesi akışında: 3 → Talep Kayıt Formu, 4 → müşteri uygunluk anketi, 5 → seviye uygulandı,
+6 → en az bir tutanak, 8 → en az bir risk.
 
 ### Talep mi, proje mi
 
@@ -162,8 +180,10 @@ talep sahibi) projede zaten var; form kaydı yalnızca karar, gerekçe ve ertele
   "noJumps": [
     { "targetStepId": 17, "targetStepCode": "4.9", "label": "Akış 4.9 adımına dön" }
   ],
-  // Faz 4: hepsi false / null ise adım her kayıtta yapılır
-  "condition": { "requiresExternalRequest": false, "requiresOffer": false, "minLevel": null }
+  // Faz 7 · A5: atlama kuralları; boşsa adım her kayıtta yapılır
+  "conditions": [ { "field": "requiresOffer", "op": "equals", "value": true } ],
+  "conditionLabels": [ "Teklif hazırlanacaksa" ],
+  "prerequisites": [] // Faz 7 · A4
 }
 
 // ProjectProcessDto
@@ -186,7 +206,11 @@ talep sahibi) projede zaten var; form kaydı yalnızca karar, gerekçe ve ertele
     "canReject": false,
     "canPostpone": false,  // D2: yalnızca yönetici, yalnızca talep aşamasında
     "canResume": false,    // D2: ertelenmiş talepte yalnızca yönetici
-    "blockedReason": null
+    "blockedReason": null,
+    "unmetPrerequisites": [ // Faz 7 · A4: adımın eksik işleri; boşsa adım ilerleyebilir
+      { "kind": "MeetingExists", "message": "En az bir toplantı tutanağı girilmeli.",
+        "linkText": "Tutanaklara git", "link": "/projects/11?tab=meetings" }
+    ]
   }
 }
 
@@ -216,6 +240,10 @@ talep sahibi) projede zaten var; form kaydı yalnızca karar, gerekçe ve ertele
 - `availableActions`: giriş yapan kullanıcıya göre hesaplanır (bkz. Yetki kuralları).
   Kullanıcı mevcut adımda işlem yapamıyorsa `blockedReason` dolar, ör.
   "Bu adım Yazılım Departman Yöneticisi tarafından onaylanır."
+- `availableActions.unmetPrerequisites` (Faz 7 · A4): adımda işlem yapabilen kullanıcıya, adımın sağlanmamış ön koşulları
+  (bkz. [Adım ön koşulları](#adım-ön-koşulları-faz-7--a4)). Liste boş değilse `canComplete` `false` olur. Karar adımında
+  `canAnswer` `true` kalır, çünkü "Hayır" yine verilebilir; ekran "Evet"i kapatır.
+- `currentStep.prerequisites` (Faz 7 · A4): adımın ön koşulları, `[{ kind, value? }]`.
 
 **`step-records` sorgu parametreleri:** `page` (varsayılan 1), `pageSize` (varsayılan 20, en fazla 100).
 Sıralama: en yeni kayıt önce.

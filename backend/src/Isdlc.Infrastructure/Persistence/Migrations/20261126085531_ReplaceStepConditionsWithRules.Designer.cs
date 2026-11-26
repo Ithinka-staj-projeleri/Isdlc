@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Isdlc.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(IsdlcDbContext))]
-    [Migration("20261126084729_ReplaceRolesWithPermissions")]
-    partial class ReplaceRolesWithPermissions
+    [Migration("20261126085531_ReplaceStepConditionsWithRules")]
+    partial class ReplaceStepConditionsWithRules
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -209,9 +209,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsPlatformAdmin")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsTenantAdmin")
                         .HasColumnType("bit");
 
@@ -222,6 +219,11 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int?>("TenantId")
                         .HasColumnType("int");
@@ -239,37 +241,8 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     b.ToTable("Users", t =>
                         {
-                            t.HasCheckConstraint("CK_Users_PlatformAdmin", "([IsPlatformAdmin] = 1 AND [TenantId] IS NULL AND [IsTenantAdmin] = 0) OR ([IsPlatformAdmin] = 0 AND [TenantId] IS NOT NULL)");
+                            t.HasCheckConstraint("CK_Users_TenantByRole", "([Role] = 'PlatformAdmin' AND [TenantId] IS NULL AND [IsTenantAdmin] = 0) OR ([Role] <> 'PlatformAdmin' AND [TenantId] IS NOT NULL)");
                         });
-                });
-
-            modelBuilder.Entity("Isdlc.Domain.Identity.UserPermission", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Permission")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("TenantId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId");
-
-                    b.HasIndex("UserId", "Permission")
-                        .IsUnique();
-
-                    b.ToTable("UserPermissions");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Meetings.Meeting", b =>
@@ -596,7 +569,7 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ApproverPermission")
+                    b.Property<string>("ApproverRole")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -605,11 +578,13 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<string>("Conditions")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<bool>("IsDecision")
                         .HasColumnType("bit");
-
-                    b.Property<int?>("MinLevel")
-                        .HasColumnType("int");
 
                     b.Property<string>("NoBranchText")
                         .HasMaxLength(500)
@@ -622,19 +597,18 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
+                    b.Property<string>("Prerequisites")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<int>("ProcessFlowId")
                         .HasColumnType("int");
 
                     b.Property<int>("ProcessStageId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("RequiresExternalRequest")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("RequiresOffer")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ResponsiblePermission")
+                    b.Property<string>("ResponsibleRole")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -1733,23 +1707,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
-            modelBuilder.Entity("Isdlc.Domain.Identity.UserPermission", b =>
-                {
-                    b.HasOne("Isdlc.Domain.Tenants.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Isdlc.Domain.Identity.User", "User")
-                        .WithMany("Permissions")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Isdlc.Domain.Meetings.Meeting", b =>
                 {
                     b.HasOne("Isdlc.Domain.Identity.User", null)
@@ -2313,11 +2270,6 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Navigation("OwnerUser");
 
                     b.Navigation("Project");
-                });
-
-            modelBuilder.Entity("Isdlc.Domain.Identity.User", b =>
-                {
-                    b.Navigation("Permissions");
                 });
 
             modelBuilder.Entity("Isdlc.Domain.Process.ProcessFlow", b =>

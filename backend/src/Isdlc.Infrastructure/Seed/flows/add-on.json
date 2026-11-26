@@ -38,9 +38,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "2",
@@ -53,9 +51,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "3",
@@ -68,9 +64,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "4",
@@ -83,9 +77,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "5",
@@ -98,9 +90,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "6",
@@ -113,9 +103,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "7",
@@ -128,9 +116,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "8",
@@ -143,9 +129,7 @@
       "approverPermission": "ProjectManagement",
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": 2
+      "conditions": [{ "field": "level", "op": "atLeast", "value": 2, "whenEmpty": "met" }]
     },
     {
       "code": "9",
@@ -158,9 +142,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": 3
+      "conditions": [{ "field": "level", "op": "atLeast", "value": 3, "whenEmpty": "met" }]
     },
     {
       "code": "10",
@@ -178,9 +160,7 @@
           "label": "Kapsam değişti: 9. adıma dön"
         }
       ],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "11",
@@ -193,9 +173,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "12",
@@ -208,9 +186,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "13",
@@ -223,9 +199,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "14",
@@ -238,9 +212,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "15",
@@ -253,9 +225,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "16",
@@ -268,9 +238,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     },
     {
       "code": "17",
@@ -283,9 +251,7 @@
       "approverPermission": null,
       "noOutcome": null,
       "noJumps": [],
-      "requiresExternalRequest": false,
-      "requiresOffer": false,
-      "minLevel": null
+      "conditions": []
     }
   ]
 }

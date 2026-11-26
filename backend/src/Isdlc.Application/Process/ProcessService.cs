@@ -5,9 +5,12 @@ using Isdlc.Application.Common.Models;
 using Isdlc.Application.Identity;
 using Isdlc.Application.Notifications;
 using Isdlc.Application.Process.Dtos;
+using Isdlc.Application.QuestionBank;
+using Isdlc.Domain.Documents;
 using Isdlc.Domain.Identity;
 using Isdlc.Domain.Process;
 using Isdlc.Domain.Projects;
+using Isdlc.Domain.Requirements;
 using Microsoft.EntityFrameworkCore;
 
 namespace Isdlc.Application.Process;
@@ -16,7 +19,8 @@ public class ProcessService(
     IApplicationDbContext dbContext,
     ICurrentUserService currentUser,
     INotificationService notifications,
-    TimeProvider timeProvider) : IProcessService
+    TimeProvider timeProvider,
+    IQuestionnaireService questionnaires) : IProcessService
 {
     public async Task<IReadOnlyList<ProcessFlowListItemDto>> GetFlowsAsync(CancellationToken cancellationToken)
     {
@@ -76,7 +80,7 @@ public class ProcessService(
                 p.ProcessFlowId,
                 Flow = new ProcessFlowSummaryDto(p.ProcessFlow.Code, p.ProcessFlow.Name, p.ProcessFlow.Kind),
                 p.ProcessFlow.ProjectStageOrder,
-                Context = new ConditionContext(p.Source, p.RequiresOffer, p.Level),
+                Context = new ConditionContext(p.Source, p.RequestType, p.RequiresOffer, p.Level),
             })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
@@ -123,7 +127,7 @@ public class ProcessService(
 
         var flowSteps = await LoadFlowStepsAsync(project.ProcessFlowId, cancellationToken);
         var appliedOrders = flowSteps
-            .Where(s => StepConditions.Applies(s.Condition, project.Context))
+            .Where(s => StepConditions.Applies(s.Conditions, project.Context))
             .Select(s => s.Order)
             .ToList();
 
@@ -133,6 +137,22 @@ public class ProcessService(
             : appliedOrders.Count(order => order < referenceStep.Order) + 1;
 
         var access = await dbContext.LoadAccessAsync(currentUser.UserId, cancellationToken);
+
+        var actions = ProcessProgress.GetAvailableActions(
+            project.Status,
+            hasCurrentStep ? referenceStep?.Permission : null,
+            access,
+            // Only a request can be postponed: a record of a request flow before its project stage.
+            inRequestPhase: project.Flow.Kind == ProcessFlowKind.Request
+                && referenceStep is not null
+                && (project.ProjectStageOrder is null || referenceStep.StageOrder < project.ProjectStageOrder));
+
+        // The step's prerequisites, shown only to someone who may act on it (Faz 7 · A4). "No" stays possible.
+        if (currentStep is not null && (actions.CanComplete || actions.CanAnswer))
+        {
+            var unmet = await UnmetPrerequisitesAsync(projectId, currentStep.Prerequisites, cancellationToken);
+            actions = actions with { CanComplete = actions.CanComplete && unmet.Count == 0, UnmetPrerequisites = unmet };
+        }
 
         return new ProjectProcessDto(
             project.Id,
@@ -150,14 +170,7 @@ public class ProcessService(
                     stage.StepCount,
                     ProcessProgress.GetStageState(project.Status, stage.Order, referenceStep?.StageOrder)))
                 .ToList(),
-            ProcessProgress.GetAvailableActions(
-                project.Status,
-                hasCurrentStep ? referenceStep?.Permission : null,
-                access,
-                // Only a request can be postponed: a record of a request flow before its project stage.
-                inRequestPhase: project.Flow.Kind == ProcessFlowKind.Request
-                    && referenceStep is not null
-                    && (project.ProjectStageOrder is null || referenceStep.StageOrder < project.ProjectStageOrder)));
+            actions);
     }
 
     public async Task<PagedResult<StepRecordDto>> GetStepRecordsAsync(
@@ -204,6 +217,8 @@ public class ProcessService(
             throw new BusinessRuleException("Bu adım bir karar adımıdır; Evet/Hayır cevabı verilmelidir.");
         }
 
+        await EnsurePrerequisitesAsync(project.Id, step.Id, cancellationToken);
+
         var nextStep = await LoadNextStepAsync(project, step, cancellationToken);
         var transition = ProcessTransitions.AfterCompleted(nextStep?.Id);
 
@@ -236,6 +251,8 @@ public class ProcessService(
             {
                 throw new BusinessRuleException("Evet cevabında dönüş adımı seçilmez.");
             }
+
+            await EnsurePrerequisitesAsync(project.Id, step.Id, cancellationToken);
 
             targetStep = await LoadNextStepAsync(project, step, cancellationToken);
             transition = ProcessTransitions.AfterYes(targetStep?.Id);
@@ -405,7 +422,7 @@ public class ProcessService(
         Project project, CurrentStepInfo step, CancellationToken cancellationToken)
     {
         var flowSteps = await LoadFlowStepsAsync(project.ProcessFlowId, cancellationToken);
-        var context = new ConditionContext(project.Source, project.RequiresOffer, project.Level);
+        var context = new ConditionContext(project.Source, project.RequestType, project.RequiresOffer, project.Level);
 
         return StepConditions.NextStepId(flowSteps, step.Order, context) is { } nextStepId
             ? await LoadStepRefAsync(nextStepId, cancellationToken)
@@ -419,8 +436,7 @@ public class ProcessService(
             .AsNoTracking()
             .Where(s => s.ProcessFlowId == flowId)
             .OrderBy(s => s.Order)
-            .Select(s => new ConditionalStep(
-                s.Id, s.Order, new StepCondition(s.RequiresExternalRequest, s.RequiresOffer, s.MinLevel)))
+            .Select(s => new ConditionalStep(s.Id, s.Order, s.Conditions))
             .ToListAsync(cancellationToken);
 
     private Task<StepRef?> LoadStepRefAsync(int stepId, CancellationToken cancellationToken) =>
@@ -429,6 +445,132 @@ public class ProcessService(
             .Where(s => s.Id == stepId)
             .Select(s => new StepRef(s.Id, s.Code, s.ApproverPermission))
             .SingleOrDefaultAsync(cancellationToken);
+
+    /// <summary>Completing a step or answering "Yes" needs the step's prerequisites (Faz 7 · A4); 400 with the first missing one.</summary>
+    private async Task EnsurePrerequisitesAsync(int projectId, int stepId, CancellationToken cancellationToken)
+    {
+        var prerequisites = await dbContext.ProcessSteps
+            .AsNoTracking()
+            .Where(s => s.Id == stepId)
+            .Select(s => s.Prerequisites)
+            .SingleAsync(cancellationToken);
+
+        var unmet = await UnmetPrerequisitesAsync(projectId, prerequisites, cancellationToken);
+        if (unmet.Count > 0)
+        {
+            throw new BusinessRuleException(StepPrerequisites.BlockedMessage(unmet));
+        }
+    }
+
+    /// <summary>
+    /// Collects only what the step's prerequisites ask about, then lets StepPrerequisites decide.
+    /// Rules: docs/configurability.md → Adım ön koşulları.
+    /// </summary>
+    private async Task<IReadOnlyList<UnmetPrerequisiteDto>> UnmetPrerequisitesAsync(
+        int projectId, IReadOnlyList<StepPrerequisite> prerequisites, CancellationToken cancellationToken)
+    {
+        if (prerequisites.Count == 0)
+        {
+            return [];
+        }
+
+        var kinds = prerequisites.Select(p => p.Kind).ToHashSet();
+        string[] ValuesOf(PrerequisiteKind kind) => prerequisites
+            .Where(p => p.Kind == kind && p.Value is not null)
+            .Select(p => p.Value!)
+            .Distinct()
+            .ToArray();
+
+        var requestFormComplete = false;
+        var levelApplied = false;
+        if (kinds.Contains(PrerequisiteKind.RequestFormComplete) || kinds.Contains(PrerequisiteKind.LevelApplied))
+        {
+            var project = await dbContext.Projects
+                .AsNoTracking()
+                .Where(p => p.Id == projectId)
+                .Select(p => new
+                {
+                    p.Name, p.Description, p.CustomerName, p.RequesterName, p.RequestChannel, p.RequestChannelOther, p.Level,
+                })
+                .SingleAsync(cancellationToken);
+
+            // The same required fields as the request form (CreateProjectDto).
+            requestFormComplete = !string.IsNullOrWhiteSpace(project.Name)
+                && !string.IsNullOrWhiteSpace(project.Description)
+                && !string.IsNullOrWhiteSpace(project.CustomerName)
+                && !string.IsNullOrWhiteSpace(project.RequesterName)
+                && (project.RequestChannel != RequestChannel.Other || !string.IsNullOrWhiteSpace(project.RequestChannelOther));
+            levelApplied = project.Level is not null;
+        }
+
+        var completedForms = new HashSet<string>();
+        var formNames = new Dictionary<string, string>();
+        foreach (var setCode in ValuesOf(PrerequisiteKind.QuestionnaireComplete))
+        {
+            try
+            {
+                var form = await questionnaires.GetAsync(projectId, setCode, cancellationToken);
+                formNames[setCode] = form.Set.Name;
+                if (form.Summary.IsComplete)
+                {
+                    completedForms.Add(setCode);
+                }
+            }
+            catch (NotFoundException)
+            {
+                // The company has no such form: the prerequisite cannot hold, and its code is shown as the name.
+            }
+        }
+
+        var meetingCount = kinds.Contains(PrerequisiteKind.MeetingExists)
+            ? await dbContext.Meetings.CountAsync(m => m.ProjectId == projectId, cancellationToken)
+            : 0;
+        var riskCount = kinds.Contains(PrerequisiteKind.RiskExists)
+            ? await dbContext.Risks.CountAsync(r => r.ProjectId == projectId, cancellationToken)
+            : 0;
+
+        var requirementCount = 0;
+        var unapprovedRequirementCount = 0;
+        if (kinds.Contains(PrerequisiteKind.RequirementsApproved))
+        {
+            var statuses = await dbContext.Requirements
+                .AsNoTracking()
+                .Where(r => r.ProjectId == projectId)
+                .Select(r => r.Status)
+                .ToListAsync(cancellationToken);
+            requirementCount = statuses.Count;
+            unapprovedRequirementCount = statuses.Count(s => s is RequirementStatus.Draft or RequirementStatus.InReview);
+        }
+
+        var approvedDocuments = new HashSet<string>();
+        var documentNames = new Dictionary<string, string>();
+        var documentCodes = ValuesOf(PrerequisiteKind.DocumentApproved);
+        if (documentCodes.Length > 0)
+        {
+            var types = await dbContext.DocumentTypes
+                .AsNoTracking()
+                .Where(t => documentCodes.Contains(t.Code))
+                .Select(t => new { t.Code, t.Name })
+                .ToListAsync(cancellationToken);
+            foreach (var type in types)
+            {
+                documentNames[type.Code] = type.Name;
+            }
+
+            approvedDocuments.UnionWith(await dbContext.ProjectDocuments
+                .AsNoTracking()
+                .Where(d => d.ProjectId == projectId
+                    && documentCodes.Contains(d.DocumentType.Code)
+                    && (d.Status == DocumentStatus.Approved || d.Status == DocumentStatus.NotRequired))
+                .Select(d => d.DocumentType.Code)
+                .ToListAsync(cancellationToken));
+        }
+
+        var facts = new PrerequisiteFacts(
+            requestFormComplete, completedForms, levelApplied, meetingCount, riskCount,
+            requirementCount, unapprovedRequirementCount, approvedDocuments, formNames, documentNames);
+        return StepPrerequisites.Evaluate(prerequisites, facts, projectId);
+    }
 
     /// <summary>
     /// Loads the project (tracked, so RowVersion is checked on save), its current step and the acting user,
