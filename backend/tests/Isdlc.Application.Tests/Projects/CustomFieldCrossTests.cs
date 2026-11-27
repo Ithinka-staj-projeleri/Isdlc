@@ -189,9 +189,8 @@ public class CustomFieldCrossTests(DatabaseFixture database)
         Assert.Equal("1", project.CurrentStep!.Code);
     }
 
-    // Found by this cross test: StepConditions reads the stored value (CustomValueRules.ToText) without asking whether the
-    // field is still active, so the rule still holds. Waiting for the fix (A5 rules · A6 fields); remove Skip then.
-    [Fact(Skip = "Pasif özel alana bakan kural hâlâ sağlanıyor; düzeltme bekleniyor (A5/A6).")]
+    // Found by this cross test and fixed: StepConditions gets the active fields (ConditionContext.ActiveCustomFields).
+    [Fact]
     public async Task SkipRule_OnAFieldSwitchedOff_IsNotMet()
     {
         // "Pasif özel alana ya da artık olmayan bir seçeneğe bakan kural sağlanmamış sayılır" (docs/configurability.md,

@@ -37,4 +37,10 @@ public static class CustomFieldQueries
 
         return rows.Select(f => new CustomFieldDefinition(f.Key, f.Type, f.Options, f.IsRequired)).ToList();
     }
+
+    /// <summary>The keys of the company's active fields, for the skip rules (ConditionContext.ActiveCustomFields).</summary>
+    public static async Task<IReadOnlySet<string>> ActiveKeysAsync(
+        this IQueryable<CustomField> fields, CancellationToken cancellationToken) =>
+        (await fields.AsNoTracking().Where(f => f.IsActive).Select(f => f.Key).ToListAsync(cancellationToken))
+            .ToHashSet(StringComparer.Ordinal);
 }

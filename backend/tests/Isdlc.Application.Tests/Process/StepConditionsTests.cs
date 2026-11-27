@@ -161,6 +161,44 @@ public class StepConditionsTests
         Assert.True(StepConditions.Holds(rule with { WhenEmpty = ConditionWhenEmpty.Met }, Context()));
     }
 
+    // A field the company switched off (docs/configurability.md → Atlama kuralları): the record keeps its value, the rule
+    // does not hold whatever it asks.
+    public static TheoryData<StepConditionRule> RulesOnASwitchedOffField => new()
+    {
+        new StepConditionRule("custom:bolge", ConditionOperator.Equals, "Ege"),
+        new StepConditionRule("custom:bolge", ConditionOperator.NotEquals, "Marmara"),
+        new StepConditionRule("custom:bolge", ConditionOperator.IsSet),
+        new StepConditionRule("custom:bolge", ConditionOperator.IsNotSet),
+        new StepConditionRule("custom:bolge", ConditionOperator.Equals, "Ege", ConditionWhenEmpty.Met),
+    };
+
+    [Theory]
+    [MemberData(nameof(RulesOnASwitchedOffField))]
+    public void Holds_CustomFieldSwitchedOff_NeverHolds(StepConditionRule rule)
+    {
+        var values = new Dictionary<string, string> { ["bolge"] = "Ege" };
+
+        Assert.False(StepConditions.Holds(rule, Context(custom: values) with { ActiveCustomFields = new HashSet<string>() }));
+    }
+
+    [Fact]
+    public void Holds_CustomFieldStillActive_ComparesAsBefore()
+    {
+        var rule = new StepConditionRule("custom:bolge", ConditionOperator.Equals, "Ege");
+        var context = Context(custom: new() { ["bolge"] = "Ege" }) with { ActiveCustomFields = new HashSet<string> { "bolge" } };
+
+        Assert.True(StepConditions.Holds(rule, context));
+    }
+
+    [Fact]
+    public void Holds_ActiveFieldsAskOnlyAboutCustomFields()
+    {
+        var rule = new StepConditionRule(StepConditionRule.Source, ConditionOperator.Equals, "External");
+
+        Assert.True(StepConditions.Holds(
+            rule, Context(source: RequestSource.External) with { ActiveCustomFields = new HashSet<string>() }));
+    }
+
     [Theory]
     [InlineData("unknown")]
     [InlineData("custom:")]

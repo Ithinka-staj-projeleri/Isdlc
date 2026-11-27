@@ -162,7 +162,8 @@ public class ProjectService(
         await ApplyCustomValuesAsync(project, request, cancellationToken);
         project.CurrentStepId = StepConditions.FirstStepId(
                 flowSteps, new ConditionContext(project.Source, project.RequestType, project.RequiresOffer, project.Level,
-                    CustomValueRules.ToText(project.CustomValues)))
+                    CustomValueRules.ToText(project.CustomValues),
+                    await dbContext.CustomFields.ActiveKeysAsync(cancellationToken)))
             ?? throw new BusinessRuleException("Akışta bu talep için yapılacak bir adım yok.");
         dbContext.Projects.Add(project);
 
