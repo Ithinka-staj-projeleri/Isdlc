@@ -93,11 +93,18 @@ public class ProcessService(
                 p.ProcessFlowId,
                 Flow = new ProcessFlowSummaryDto(p.ProcessFlow.Code, p.ProcessFlow.Name, p.ProcessFlow.Kind),
                 p.ProcessFlow.ProjectStageOrder,
-                Context = new ConditionContext(
-                    p.Source, p.RequestType, p.RequiresOffer, p.Level, CustomValueRules.ToText(p.CustomValues)),
+                p.Source,
+                p.RequestType,
+                p.RequiresOffer,
+                p.Level,
+                p.CustomValues,
             })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
+        var context = new ConditionContext(
+            project.Source, project.RequestType, project.RequiresOffer, project.Level,
+            CustomValueRules.ToText(project.CustomValues),
+            await dbContext.CustomFields.ActiveKeysAsync(cancellationToken));
 
         // Active or postponed: the current step. Closed: the step where the project was closed (last record).
         var hasCurrentStep = project.CurrentStepId is not null;
@@ -141,7 +148,7 @@ public class ProcessService(
 
         var flowSteps = await LoadFlowStepsAsync(project.ProcessFlowId, cancellationToken);
         var appliedOrders = flowSteps
-            .Where(s => StepConditions.Applies(s.Conditions, project.Context))
+            .Where(s => StepConditions.Applies(s.Conditions, context))
             .Select(s => s.Order)
             .ToList();
 
@@ -172,7 +179,7 @@ public class ProcessService(
             project.Id,
             project.Code,
             project.Flow,
-            StepConditions.SkippedStepIds(flowSteps, project.Context),
+            StepConditions.SkippedStepIds(flowSteps, context),
             project.Status,
             currentStep,
             ProcessProgress.CalculateProgressPercent(project.Status, referencePosition, appliedOrders.Count),
@@ -438,7 +445,8 @@ public class ProcessService(
         var flowSteps = await LoadFlowStepsAsync(project.ProcessFlowId, cancellationToken);
         var context = new ConditionContext(
             project.Source, project.RequestType, project.RequiresOffer, project.Level,
-            CustomValueRules.ToText(project.CustomValues));
+            CustomValueRules.ToText(project.CustomValues),
+            await dbContext.CustomFields.ActiveKeysAsync(cancellationToken));
 
         return StepConditions.NextStepId(flowSteps, step.Order, context) is { } nextStepId
             ? await LoadStepRefAsync(nextStepId, cancellationToken)

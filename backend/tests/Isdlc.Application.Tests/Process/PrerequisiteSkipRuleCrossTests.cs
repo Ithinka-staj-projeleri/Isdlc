@@ -290,8 +290,17 @@ public class PrerequisiteSkipRuleCrossTests(DatabaseFixture database)
 
     // ---- A5: a skip rule on a custom field decides where a completed step goes ----
 
+    /// <summary>An active company field: a rule on a field the company does not have (or switched off) never holds.</summary>
+    private Task AddFieldAsync(Company company, string key, CustomFieldType type, List<string>? options = null) =>
+        AddAsync(company, db =>
+        {
+            db.CustomFields.Add(new CustomField { Key = key, Label = key, Type = type, Options = options ?? [] });
+            return Task.CompletedTask;
+        });
+
     private async Task<int> ProjectAtStep6WithRegionAsync(Company company, string region)
     {
+        await AddFieldAsync(company, "bolge", CustomFieldType.Select, ["Ege", "Marmara"]);
         var projectId = await TestProjects.CreateAsync(database, "6", tenantId: company.TenantId);
         await AddAsync(company, async db =>
         {
@@ -334,6 +343,7 @@ public class PrerequisiteSkipRuleCrossTests(DatabaseFixture database)
         var company = await OpenCompanyAsync();
         await SetStepAsync(company, "6", prerequisites: []);
         await SetStepAsync(company, "7", conditions: [new("custom:butce-onayli", ConditionOperator.Equals, "true")]);
+        await AddFieldAsync(company, "butce-onayli", CustomFieldType.Boolean);
         var projectId = await TestProjects.CreateAsync(database, "6", tenantId: company.TenantId);
 
         await CompleteAsync(company, projectId, "6");

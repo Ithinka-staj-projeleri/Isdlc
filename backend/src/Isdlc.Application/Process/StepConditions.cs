@@ -6,13 +6,16 @@ namespace Isdlc.Application.Process;
 
 /// <summary>
 /// The record's values the rules are checked against. Custom fields (Faz 7 · A6) by key; empty until the company has any.
+/// ActiveCustomFields: the keys of the company's active fields. A rule on a field that is not among them never holds, even
+/// though the record keeps its value (docs/configurability.md → Atlama kuralları). Null: every key counts as active.
 /// </summary>
 public record ConditionContext(
     RequestSource Source,
     RequestType RequestType,
     bool RequiresOffer,
     int? Level,
-    IReadOnlyDictionary<string, string>? CustomValues = null);
+    IReadOnlyDictionary<string, string>? CustomValues = null,
+    IReadOnlySet<string>? ActiveCustomFields = null);
 
 /// <summary>A step as the rules need it: its order in the flow and its rules.</summary>
 public record ConditionalStep(int Id, int Order, IReadOnlyList<StepConditionRule> Conditions);
@@ -33,6 +36,14 @@ public static class StepConditions
     /// </summary>
     public static bool Holds(StepConditionRule rule, ConditionContext context)
     {
+        // A switched-off field: not met whatever the rule asks (IsNotSet and WhenEmpty.Met included).
+        if (rule.Field.StartsWith(StepConditionRule.CustomPrefix, StringComparison.Ordinal)
+            && context.ActiveCustomFields is { } active
+            && !active.Contains(rule.Field[StepConditionRule.CustomPrefix.Length..]))
+        {
+            return false;
+        }
+
         var value = ValueOf(rule.Field, context);
 
         switch (rule.Op)
