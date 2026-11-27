@@ -374,7 +374,7 @@ liste, ekle, düzenle, pasife al.
 ## 7. Akış düzenleme (A7, A8)
 
 **A7 (backend) uygulandı:** `ProcessFlowEditService`, `ProcessFlowsController`, `ProcessFlowQueries`; testler
-`ProcessFlowEditTests`. A8 (ekran) bu uç noktaları kullanır.
+`ProcessFlowEditTests`. **A8 (ekran) uygulandı:** `/process-library/{code}/edit` (`FlowEditorComponent`, `StepFormComponent`).
 
 ### Veri
 

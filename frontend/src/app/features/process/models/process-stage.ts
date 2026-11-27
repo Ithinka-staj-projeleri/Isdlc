@@ -13,6 +13,8 @@ export interface ProcessFlowListItem {
     /** The stage from which a record counts as a project; null: never. */
     projectStageOrder: number | null;
     stepCount: number;
+    /** Which records the flow starts (Faz 7 · A7); null: none. */
+    usedFor: ProcessFlowUse | null;
 }
 
 /** GET /api/v1/process-flows/{code} — a flow with its stages and steps in flow order. */
@@ -23,6 +25,11 @@ export interface ProcessFlow {
     kind: ProcessFlowKind;
     projectStageOrder: number | null;
     stages: ProcessStage[];
+    usedFor: ProcessFlowUse | null;
+    /** The company changed its copy; the template sync no longer touches it. */
+    isCustomized: boolean;
+    /** Base64; sent back with every edit (409 when someone else saved meanwhile). */
+    rowVersion: string;
 }
 
 /** A stage ("bölüm") of a flow with its steps in flow order. */
@@ -32,6 +39,8 @@ export interface ProcessStage {
     title: string;
     shortTitle: string;
     steps: ProcessStep[];
+    /** Inactive stages and steps are listed only to the company administrator (?includeInactive=true). */
+    isActive: boolean;
 }
 
 export interface ProcessStep {
@@ -56,6 +65,7 @@ export interface ProcessStep {
     conditionLabels: string[];
     /** Work that must exist on the project before the step is completed or answered "Yes" (Faz 7 · A4). */
     prerequisites: StepPrerequisite[];
+    isActive: boolean;
 }
 
 export interface ProcessStepJump {
@@ -70,9 +80,9 @@ export interface ProcessStepJump {
  */
 export interface StepConditionRule {
     field: string;
-    op: 'equals' | 'notEquals' | 'atLeast' | 'atMost' | 'isSet' | 'isNotSet';
+    op: ConditionOperator;
     value?: string | number | boolean | null;
-    whenEmpty?: 'notMet' | 'met';
+    whenEmpty?: 'NotMet' | 'Met';
 }
 
 /** Whether any rule of the step looks at the field. */
@@ -94,3 +104,17 @@ export interface StepPrerequisite {
     kind: PrerequisiteKind;
     value?: string | null;
 }
+
+/** The API sends and takes the operators in PascalCase (docs/configurability.md → Akış düzenleme). */
+export type ConditionOperator = 'Equals' | 'NotEquals' | 'AtLeast' | 'AtMost' | 'IsSet' | 'IsNotSet';
+
+/** Which records a flow starts; each at most once in a company (Faz 7 · A7). */
+export type ProcessFlowUse = 'NewRequest' | 'AdditionalModule' | 'Improvement' | 'ResourcePlanning' | 'Billing';
+
+export const PROCESS_FLOW_USE_LABELS: Record<ProcessFlowUse, string> = {
+    NewRequest: 'Yeni talepler',
+    AdditionalModule: 'Ek geliştirmeler',
+    Improvement: 'Süreç iyileştirme önerileri',
+    ResourcePlanning: 'Kaynak planlama',
+    Billing: 'Faturalama',
+};
