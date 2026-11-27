@@ -117,7 +117,7 @@ onaylarken değiştirebilir.
 | A7 | *İlk parça yapıldı: kural ve ön koşul doğrulaması (`StepRuleValidation`).* **Akış düzenleme (backend):** aşama ve adım ekle, düzenle, pasife al, sırala; sorumlu yetki, ön koşul, dönüş ve atlama koşulu; varsayılan akış işareti ve `ProcessFlowCodes`'un kaldırılması; çalışan proje kuralları; `IsCustomized` (karar 13, 14, 16) | Erva | A2, A4, A5 |
 | A8 | **Akış düzenleme ekranı:** Süreç Kütüphanesi'nde şirket yöneticisi için düzenleme. Aşama ve adım listesi, sıralama, adım formu (sorumlu, onaylayan, karar, dönüş, ön koşul, atlama kuralları) | Dide | A6, A7 |
 | A9 | **Yapay zekâ modeli ve kullanım:** `ai/` servisinde istekle gelen model ve cevapta kullanım; `AiUsage`; Şirket Ayarları'nda model seçimi, bu ayın kullanımı ve isteğe bağlı aylık sınır (karar 17, 18) | Dide | A1 |
-| A10 | **Çapraz testler:** her işin testlerini başkası yazar (aşağıdaki tablo). Ayrıca ayrım testleri: A şirketinin yetkisi, alanı ve akış değişikliği B'yi etkilemez | Herkes | A2–A9 |
+| A10 | *Erva → Baran (A2, A3) yapıldı: `Identity/PermissionCrossTests`, frontend `core/auth/auth.service.spec.ts`.* **Çapraz testler:** her işin testlerini başkası yazar (aşağıdaki tablo). Ayrıca ayrım testleri: A şirketinin yetkisi, alanı ve akış değişikliği B'yi etkilemez | Herkes | A2–A9 |
 | A11 | **Belgeler ve demo:** data-model.md, README (şirket açma ve yetkiler), demo senaryosu. Demo: yeni şirket açılır, yönetici kullanıcı ekleyip yetki verir, akışa adım ve alan ekler; talep yürür, ön koşulu sağlanmamış adım geçilemez | Erva | Hepsi |
 
 ### Çapraz testler
