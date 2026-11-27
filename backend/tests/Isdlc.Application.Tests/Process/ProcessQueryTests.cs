@@ -56,7 +56,7 @@ public class ProcessQueryTests(DatabaseFixture database)
     public async Task Flow_UnknownCode_IsNotFound()
     {
         await Assert.ThrowsAsync<NotFoundException>(
-            () => AsUserAsync(TestProjects.Analyst, s => s.GetFlowAsync("no-such-flow", default)));
+            () => AsUserAsync(TestProjects.Analyst, s => s.GetFlowAsync("no-such-flow", false, default)));
     }
 
     [Fact]

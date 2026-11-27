@@ -20,7 +20,7 @@ public class ProcessServiceTests(DatabaseFixture database)
     {
         await using var scope = database.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IProcessService>();
-        return await service.GetFlowAsync(code, CancellationToken.None);
+        return await service.GetFlowAsync(code, false, CancellationToken.None);
     }
 
     private async Task<IReadOnlyList<ProcessFlowListItemDto>> GetFlowsAsync()

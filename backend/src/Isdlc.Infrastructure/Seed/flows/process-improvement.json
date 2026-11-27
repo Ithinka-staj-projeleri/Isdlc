@@ -3,6 +3,7 @@
   "order": 3,
   "name": "Süreç İyileştirme",
   "kind": "Improvement",
+  "usedFor": "Improvement",
   "projectStageOrder": null,
   "stages": [
     {

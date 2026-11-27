@@ -64,6 +64,8 @@ Kurallar ve akış listesi: [process-api.md → Akışlar](process-api.md#akış
 | `Code` | string | `new-software-project`, `add-on`, `process-improvement`, `resource-planning`, `billing`; benzersiz, en fazla 50 |
 | `Name` | string | "Yeni Yazılım Projesi"; en fazla 100 |
 | `Kind` | `ProcessFlowKind` | Kaydın listelendiği menü: `Request` (Talepler / Projeler), `Improvement` (Süreç İyileştirme), `ResourcePlanning` (Kaynak Planlama), `Billing` (Faturalama) |
+| `UsedFor` | `ProcessFlowUse?` | Faz 7 · A7. Hangi kayıtları başlattığı (`NewRequest`, `AdditionalModule`, `Improvement`, `ResourcePlanning`, `Billing`); şirkette her değer en fazla bir akışta. Servisler akışı bununla bulur |
+| `RowVersion` | rowversion | Faz 7 · A7. Akışın aynı anda düzenlenmesi `409` |
 | `ProjectStageOrder` | int? | Kaydın proje sayılmaya başladığı bölüm; boşsa kayıt hiç projeye dönüşmez |
 
 ### `ProcessStage` — akışın aşamaları (Faz 4'te "bölüm")
@@ -75,6 +77,7 @@ Kurallar ve akış listesi: [process-api.md → Akışlar](process-api.md#akış
 | `Order` | int | Akış içinde 1'den başlar; (`ProcessFlowId`, `Order`) benzersiz. Eski akışta 1–13 |
 | `Title` | string | "Talebin Kayda Alınması" |
 | `ShortTitle` | string | "Talep Kaydı" (menü ve listelerde) |
+| `IsActive` | bool | Faz 7 · A7. Aşama silinmez; bütün adımları pasifse pasife alınır |
 
 ### `ProcessStep` — aşamalardaki adımlar
 
@@ -85,6 +88,7 @@ Kurallar ve akış listesi: [process-api.md → Akışlar](process-api.md#akış
 | `ProcessFlowId` | int (FK → ProcessFlow) | Faz 4. Aşamanın akışıyla aynıdır; benzersizlik ve "sonraki adım" sorgusu için adımda da tutulur |
 | `Code` | string | Eski akışta "4.7", yeni akışlarda adım numarası ("12"). (`ProcessFlowId`, `Code`) benzersiz |
 | `Order` | int | Akış içindeki sıra; (`ProcessFlowId`, `Order`) benzersiz. Faz 4'te sonraki adım `Order + 1` değil, koşulları sağlanan ilk büyük `Order`'dır |
+| `IsActive` | bool | Faz 7 · A7. Adım silinmez; pasif adım hiçbir kayıtta yapılmaz, kodu `P{Id}` olur |
 | `Conditions` | JSON (`StepConditionRule[]`) | Faz 7 · A5. Atlama kuralları; hepsi sağlanırsa adım yapılır, boşsa her kayıtta. Faz 4'teki `RequiresExternalRequest`, `RequiresOffer`, `MinLevel` buna çevrildi ([configurability.md](configurability.md) → Atlama kuralları) |
 | `Prerequisites` | JSON (`StepPrerequisite[]`) | Faz 7 · A4. Adım tamamlanmadan önce projede olması gereken işler |
 | `Text` | string | Adımın açıklaması |

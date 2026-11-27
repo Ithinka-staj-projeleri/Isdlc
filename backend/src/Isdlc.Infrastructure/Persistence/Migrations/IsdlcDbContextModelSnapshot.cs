@@ -589,6 +589,12 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int?>("ProjectStageOrder")
                         .HasColumnType("int");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("TemplateCode")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -596,10 +602,18 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                     b.Property<int>("TenantId")
                         .HasColumnType("int");
 
+                    b.Property<string>("UsedFor")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId", "Code")
                         .IsUnique();
+
+                    b.HasIndex("TenantId", "UsedFor")
+                        .IsUnique()
+                        .HasFilter("[UsedFor] IS NOT NULL");
 
                     b.ToTable("ProcessFlows");
                 });
@@ -611,6 +625,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<int>("Order")
                         .HasColumnType("int");
@@ -662,6 +679,9 @@ namespace Isdlc.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDecision")
                         .HasColumnType("bit");

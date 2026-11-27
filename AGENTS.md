@@ -329,8 +329,11 @@ Veri modeli: [docs/data-model.md](docs/data-model.md).
   şirketin değiştirmediği kopyaları (`IsCustomized = false`) dosyayla eşitler; kopyalar `TemplateCode` ile eşleşir. Yeni şirket
   açılırken de aynı kod çalışır: `ITenantContext.Use(yeniŞirket)` ve `ITenantTemplates.ApplyAsync()` (çağıran transaction açar).
   `Seed/users.json` ve örnek projeler yalnızca Ithinka'nındır (örnek projeler yalnızca geliştirme ortamında).
-  Metin, rol ve dönüş değişiklikleri için yalnızca dosya değiştirilir; adım eklemek, çıkarmak veya sıralamak migration ister
-  ve migration bütün şirketlerin kopyasını değiştirir (bkz. data-model.md → Seed verisi).
+  Metin, rol ve dönüş değişiklikleri için yalnızca dosya değiştirilir; şablona adım eklemek, çıkarmak veya sıralamak migration
+  ister ve migration yalnızca şirketlerin değiştirmediği kopyaları değiştirmelidir (bkz. data-model.md → Seed verisi).
+  Şirket kendi akışını ekrandan düzenler (Faz 7 · A7, `IProcessFlowEditService`); düzenlenen akış `IsCustomized` olur.
+  Servisler akışı koduyla değil `ProcessFlow.UsedFor` ile bulur (`ProcessFlowQueries.FlowIdForAsync`); `ProcessFlowCodes`
+  yalnızca şablon kodlarıdır. Akışın adımlarını yürüyen kod pasif adımları atlar (`ConditionalStepsAsync`).
 - **Migration:** Geliştirme ortamında API açılırken otomatik uygulanır. Üretmek için (repo kökünde):
   `dotnet ef migrations add <Ad> --project backend/src/Isdlc.Infrastructure --startup-project backend/src/Isdlc.Api --output-dir Persistence/Migrations`
 

@@ -16,7 +16,8 @@ public interface IProcessService
     /// A flow with its stages and steps, both in flow order.
     /// Throws NotFoundException when no flow has this code.
     /// </summary>
-    Task<ProcessFlowDto> GetFlowAsync(string code, CancellationToken cancellationToken);
+    /// <param name="includeInactive">Also inactive stages and steps; honoured only for the company administrator (Faz 7 · A7).</param>
+    Task<ProcessFlowDto> GetFlowAsync(string code, bool includeInactive, CancellationToken cancellationToken);
 
     /// <summary>
     /// The project's place in the flow and what the signed-in user can do on the current step.

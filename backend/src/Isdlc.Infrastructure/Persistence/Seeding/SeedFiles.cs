@@ -45,7 +45,8 @@ internal static class SeedFiles
         ProcessFlowKind Kind,
         int? ProjectStageOrder,
         List<StageSeed> Stages,
-        List<StepSeed> Steps);
+        List<StepSeed> Steps,
+        ProcessFlowUse? UsedFor = null);
 
     public record StageSeed(int Order, string Title, string ShortTitle);
 

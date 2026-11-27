@@ -11,7 +11,9 @@ public record ProcessFlowListItemDto(
     string Name,
     ProcessFlowKind Kind,
     int? ProjectStageOrder,
-    int StepCount);
+    int StepCount,
+    ProcessFlowUse? UsedFor,
+    bool IsCustomized);
 
 /// <summary>A flow with its stages and steps (GET /process-flows/{code}).</summary>
 public record ProcessFlowDto(
@@ -20,7 +22,10 @@ public record ProcessFlowDto(
     string Name,
     ProcessFlowKind Kind,
     int? ProjectStageOrder,
-    IReadOnlyList<ProcessStageDto> Stages);
+    IReadOnlyList<ProcessStageDto> Stages,
+    ProcessFlowUse? UsedFor,
+    bool IsCustomized,
+    string RowVersion); // base64; sent back with every edit (409 when someone else saved meanwhile)
 
 /// <summary>A stage of a flow with its steps in flow order.</summary>
 public record ProcessStageDto(
@@ -28,7 +33,8 @@ public record ProcessStageDto(
     int Order,
     string Title,
     string ShortTitle,
-    IReadOnlyList<ProcessStepDto> Steps);
+    IReadOnlyList<ProcessStepDto> Steps,
+    bool IsActive = true);
 
 public record ProcessStepDto(
     int Id,
@@ -42,7 +48,8 @@ public record ProcessStepDto(
     ProjectStatus? NoOutcome,
     IReadOnlyList<ProcessStepJumpDto> NoJumps,
     IReadOnlyList<StepConditionRule> Conditions,
-    IReadOnlyList<StepPrerequisite> Prerequisites)
+    IReadOnlyList<StepPrerequisite> Prerequisites,
+    bool IsActive = true)
 {
     /// <summary>The rules as the screens show them ("Yalnızca dış talepte"); empty when the step is done on every record.</summary>
     public IReadOnlyList<string> ConditionLabels => StepConditions.Describe(Conditions);

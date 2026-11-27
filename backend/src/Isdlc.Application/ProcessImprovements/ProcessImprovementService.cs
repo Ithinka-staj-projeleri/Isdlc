@@ -135,14 +135,8 @@ public class ProcessImprovementService(
         await CheckOwnerAsync(request.OwnerUserId!.Value, cancellationToken);
 
         // Like a new request: the proposal starts Active at the first step of its flow.
-        var flowId = await dbContext.ProcessFlows
-            .Where(f => f.Code == ProcessFlowCodes.ProcessImprovement)
-            .Select(f => f.Id)
-            .SingleAsync(cancellationToken);
-        var flowSteps = await dbContext.ProcessSteps
-            .Where(s => s.ProcessFlowId == flowId)
-            .Select(s => new ConditionalStep(s.Id, s.Order, s.Conditions))
-            .ToListAsync(cancellationToken);
+        var flowId = await dbContext.ProcessFlows.FlowIdForAsync(ProcessFlowUse.Improvement, cancellationToken);
+        var flowSteps = await dbContext.ProcessSteps.ConditionalStepsAsync(flowId, cancellationToken);
 
         // The request fields of Project mean nothing here; an internal source keeps every step of the flow.
         var project = new Project
@@ -153,7 +147,7 @@ public class ProcessImprovementService(
             RequestDate = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime),
         };
         project.CurrentStepId = StepConditions.FirstStepId(flowSteps, new ConditionContext(project.Source, project.RequestType, false, null))
-            ?? throw new InvalidOperationException($"Flow {ProcessFlowCodes.ProcessImprovement} has no steps.");
+            ?? throw new BusinessRuleException("Süreç iyileştirme akışında aktif adım yok.");
 
         var proposal = new ProcessImprovement { Project = project };
         ApplyProposal(proposal, request);
@@ -217,7 +211,7 @@ public class ProcessImprovementService(
 
     /// <summary>Proposals only: an id of a record on another flow is not found.</summary>
     private IQueryable<ProcessImprovement> Proposals() =>
-        dbContext.ProcessImprovements.Where(x => x.Project.ProcessFlow.Code == ProcessFlowCodes.ProcessImprovement);
+        dbContext.ProcessImprovements.Where(x => x.Project.ProcessFlow.Kind == ProcessFlowKind.Improvement);
 
     private int RequireSignedIn() =>
         currentUser.UserId ?? throw new ForbiddenException("İşlem yapmak için giriş yapılmalıdır.");

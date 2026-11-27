@@ -3,7 +3,7 @@ using Isdlc.Domain.Common;
 namespace Isdlc.Domain.Process;
 
 /// <summary>
-/// A stage ("bölüm") of a flow. Master data loaded from the seed; not edited by users.
+/// A stage ("bölüm") of a flow. Copied from the seed; the company administrator can edit it (Faz 7 · A7).
 /// </summary>
 public class ProcessStage : ITenantOwned
 {
@@ -19,6 +19,9 @@ public class ProcessStage : ITenantOwned
 
     public string Title { get; set; } = string.Empty;
     public string ShortTitle { get; set; } = string.Empty;
+
+    /// <summary>Never deleted: a stage is deactivated once all its steps are (Faz 7 · A7).</summary>
+    public bool IsActive { get; set; } = true;
 
     public ICollection<ProcessStep> Steps { get; set; } = new List<ProcessStep>();
 }
