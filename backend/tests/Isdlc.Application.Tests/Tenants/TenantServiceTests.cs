@@ -171,10 +171,20 @@ public class TenantServiceTests(DatabaseFixture database)
         var opened = await AsPlatformAsync((s, _) => s.CreateAsync(NewTenant(), default));
         await AsPlatformAsync((s, _) => s.UpdateAsync(opened.Id, new UpdateTenantDto { Name = opened.Name, IsActive = false }, default));
 
-        var list = await AsPlatformAsync((s, _) => s.ListAsync(new PageRequest { Page = 1, PageSize = 100 }, default));
+        // Every page: other tests open companies too, so these two may be past the first 100 (the list is by name).
+        var all = new List<TenantDto>();
+        for (var page = 1; ; page++)
+        {
+            var list = await AsPlatformAsync((s, _) => s.ListAsync(new PageRequest { Page = page, PageSize = 100 }, default));
+            all.AddRange(list.Items);
+            if (list.Items.Count == 0 || all.Count >= list.TotalCount)
+            {
+                break;
+            }
+        }
 
-        Assert.Contains(list.Items, t => t.Id == opened.Id && !t.IsActive && t.UserCount == 1);
-        Assert.Contains(list.Items, t => t.Id == Tenant.IthinkaId && t.UserCount > 1);
+        Assert.Contains(all, t => t.Id == opened.Id && !t.IsActive && t.UserCount == 1);
+        Assert.Contains(all, t => t.Id == Tenant.IthinkaId && t.UserCount > 1);
     }
 
     [Fact]
