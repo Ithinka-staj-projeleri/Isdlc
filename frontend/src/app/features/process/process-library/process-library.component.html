@@ -3,6 +3,9 @@
         <h2>Süreç Kütüphanesi</h2>
         <p class="muted">Şirketin iş akışları. Her kayıt kendi akışının adımlarıyla, Süreç sekmesinde yürütülür.</p>
     </div>
+    @if (isTenantAdmin() && selectedFlow(); as current) {
+    <a class="button" [routerLink]="['/process-library', current.code, 'edit']">Akışı düzenle</a>
+    }
     @if (flow.hasValue()) {
     <div class="summary">
         <span><b>{{ summary().stageCount }}</b> aşama</span>

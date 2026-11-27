@@ -1,0 +1,198 @@
+<header class="page-head">
+    <div>
+        <a routerLink="/process-library" [queryParams]="{ flow: flow()?.code }" class="back">← Süreç Kütüphanesi</a>
+        <h2>
+            Akışı düzenle
+            @if (flow(); as f) { <span class="muted">· {{ f.name }}</span> }
+        </h2>
+        <p class="hint">
+            Değişiklikler kaydedildiği anda bu akıştaki bütün kayıtlar için geçerli olur. Adımlar silinmez, pasife alınır;
+            adım numaraları sıraya göre yeniden verilir. Bekleyen kayıtlar bulundukları adımda kalır.
+        </p>
+    </div>
+    @if (flow(); as f) {
+    <div class="head-actions">
+        <label class="check">
+            <input type="checkbox" [ngModel]="showInactive()" (ngModelChange)="showInactive.set($event)" />
+            Pasifleri göster @if (inactiveCount()) { <span class="muted">({{ inactiveCount() }})</span> }
+        </label>
+        <button type="button" class="button" (click)="openSettings()" [disabled]="busy()">Akış ayarları</button>
+    </div>
+    }
+</header>
+
+@if (loadFailed()) {
+<app-empty-state message="Akış yüklenemedi. Akış silinmiş ya da düzenleme yetkiniz yok olabilir." />
+} @else if (!flow()) {
+<app-empty-state message="Yükleniyor…" />
+} @else {
+@let f = flow()!;
+<div class="flow-meta">
+    <span>Bu akışla başlayan kayıtlar: <b>{{ f.usedFor ? useLabels[f.usedFor] : 'Hiçbiri' }}</b></span>
+    @if (!f.isCustomized) {
+    <span class="muted">Şablondan geliyor; ilk değişiklikten sonra şablon güncellemeleri bu akışa uygulanmaz.</span>
+    }
+</div>
+
+@if (orderChanged()) {
+<div class="notice order" role="status">
+    <span>Sıra değişti ama henüz kaydedilmedi.</span>
+    <span class="actions">
+        <button type="button" class="button small" (click)="cancelOrder()" [disabled]="busy()">Vazgeç</button>
+        <button type="button" class="button small primary" (click)="saveOrder()" [disabled]="busy()">Sırayı kaydet</button>
+    </span>
+</div>
+}
+
+<ol class="stages">
+    @for (stage of stages(); track stage.id; let first = $first; let last = $last) {
+    <li class="card stage" [class.inactive]="!stage.isActive">
+        <div class="stage-head">
+            <h3>
+                <span class="no">{{ $index + 1 }}</span> {{ stage.title }}
+                <span class="muted short">({{ stage.shortTitle }})</span>
+                @if (!stage.isActive) { <app-status-badge label="Pasif" /> }
+            </h3>
+            <div class="actions">
+                <button type="button" class="button small icon" title="Aşamayı yukarı taşı" aria-label="Aşamayı yukarı taşı"
+                    (click)="moveStage(stage, -1)" [disabled]="busy() || !canMoveStage(stage, -1)">↑</button>
+                <button type="button" class="button small icon" title="Aşamayı aşağı taşı" aria-label="Aşamayı aşağı taşı"
+                    (click)="moveStage(stage, 1)" [disabled]="busy() || !canMoveStage(stage, 1)">↓</button>
+                <button type="button" class="button small" (click)="editStage(stage)" [disabled]="busy() || orderChanged()">Düzenle</button>
+                @if (stage.isActive) {
+                <button type="button" class="button small" (click)="setStageActive(stage, false)"
+                    [disabled]="busy() || orderChanged()"
+                    title="Aşama ancak bütün adımları pasifse pasife alınır">Pasife al</button>
+                } @else {
+                <button type="button" class="button small" (click)="setStageActive(stage, true)"
+                    [disabled]="busy() || orderChanged()">Geri al</button>
+                }
+            </div>
+        </div>
+
+        <ol class="steps">
+            @for (step of stage.steps; track step.id) {
+            <li class="step" [class.inactive]="!step.isActive" [class.decision]="step.isDecision">
+                <span class="code">{{ step.isActive ? 'Adım ' + step.code : 'Pasif' }}</span>
+                <div class="body">
+                    <p class="text">{{ step.text }}</p>
+                    <div class="meta">
+                        <span class="role">{{ permissionLabels[step.responsiblePermission] }}</span>
+                        @if (step.isDecision) { <app-status-badge label="Karar" tone="info" /> }
+                        @if (step.approverPermission) {
+                        <app-status-badge [label]="'Onay: ' + permissionLabels[step.approverPermission]" tone="warn" />
+                        }
+                        @if (step.isDecision && step.noOutcome) {
+                        <app-status-badge [label]="'Hayır: ' + statusLabels[step.noOutcome]" tone="bad" />
+                        }
+                        @for (jump of step.noJumps; track jump.targetStepId) {
+                        <app-status-badge [label]="'Hayır: Adım ' + jump.targetStepCode + '’e döner'" tone="neutral" />
+                        }
+                        @for (label of step.conditionLabels; track label) {
+                        <app-status-badge [label]="label" tone="neutral" />
+                        }
+                        @for (p of step.prerequisites; track p.kind + (p.value ?? '')) {
+                        <app-status-badge [label]="'Ön koşul: ' + prerequisiteText(p)" tone="ok" />
+                        }
+                    </div>
+                    @if (hasRuleOnInactiveField(step)) {
+                    <p class="warn" role="note">
+                        Bu adımın bir kuralı pasif ya da silinmiş bir özel alana bakıyor; kural sağlanmaz ve adım her kayıtta
+                        atlanır. Kuralı düzenleyin ya da alanı Talep Alanları'ndan geri açın.
+                    </p>
+                    }
+                </div>
+                <div class="actions">
+                    <button type="button" class="button small icon" title="Adımı yukarı taşı" aria-label="Adımı yukarı taşı"
+                        (click)="moveStep(step, -1)" [disabled]="busy() || !canMoveStep(step, -1)">↑</button>
+                    <button type="button" class="button small icon" title="Adımı aşağı taşı" aria-label="Adımı aşağı taşı"
+                        (click)="moveStep(step, 1)" [disabled]="busy() || !canMoveStep(step, 1)">↓</button>
+                    <button type="button" class="button small" (click)="editStep(step, stage)"
+                        [disabled]="busy() || orderChanged()">Düzenle</button>
+                    @if (step.isActive) {
+                    <button type="button" class="button small" (click)="setStepActive(step, false)"
+                        [disabled]="busy() || orderChanged()">Pasife al</button>
+                    } @else {
+                    <button type="button" class="button small" (click)="setStepActive(step, true)"
+                        [disabled]="busy() || orderChanged()">Geri al</button>
+                    }
+                </div>
+            </li>
+            } @empty {
+            <li class="muted">Bu aşamada {{ showInactive() ? '' : 'aktif ' }}adım yok.</li>
+            }
+        </ol>
+
+        @if (stage.isActive) {
+        <button type="button" class="button small add" (click)="addStep(stage)" [disabled]="busy() || orderChanged()">
+            + Adım ekle
+        </button>
+        }
+    </li>
+    }
+</ol>
+
+<button type="button" class="button add-stage" (click)="editStage(null)" [disabled]="busy() || orderChanged()">+ Aşama ekle</button>
+
+@if (stageDraft(); as draft) {
+<div class="overlay">
+    <form class="dialog" (ngSubmit)="saveStage()" novalidate>
+        <h3>{{ draft.id === null ? 'Yeni aşama' : 'Aşamayı düzenle' }}</h3>
+        <label class="field" [class.invalid]="stageErrors()['title']">
+            Başlık
+            <input name="title" [(ngModel)]="draft.title" maxlength="100" />
+            @if (stageErrors()['title']; as e) { <span class="error">{{ e[0] }}</span> }
+        </label>
+        <label class="field" [class.invalid]="stageErrors()['shortTitle']">
+            Kısa başlık <span class="hint">(Süreç sekmesinde ve listelerde görünür)</span>
+            <input name="shortTitle" [(ngModel)]="draft.shortTitle" maxlength="50" />
+            @if (stageErrors()['shortTitle']; as e) { <span class="error">{{ e[0] }}</span> }
+        </label>
+        @if (draft.id === null) {
+        <p class="hint">Yeni aşama akışın sonuna eklenir; yukarı / aşağı ile yerine taşıyabilirsiniz.</p>
+        }
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="stageDraft.set(null)">Vazgeç</button>
+            <button type="submit" class="button primary" [disabled]="busy()">Kaydet</button>
+        </div>
+    </form>
+</div>
+}
+
+@if (settingsOpen()) {
+<div class="overlay">
+    <form class="dialog" (ngSubmit)="saveSettings()" novalidate>
+        <h3>Akış ayarları</h3>
+        <label class="field" [class.invalid]="settingsErrors()['name']">
+            Akışın adı
+            <input name="name" [(ngModel)]="flowName" maxlength="100" />
+            @if (settingsErrors()['name']; as e) { <span class="error">{{ e[0] }}</span> }
+        </label>
+        <label class="field" [class.invalid]="settingsErrors()['usedFor']">
+            Bu akışla başlayan kayıtlar
+            <select name="usedFor" [(ngModel)]="flowUse">
+                <option [ngValue]="null">Hiçbiri</option>
+                @for (option of useOptions; track option[0]) {
+                <option [ngValue]="option[0]">{{ option[1] }}</option>
+                }
+            </select>
+            <span class="hint">Her kullanım şirkette yalnızca bir akışta olabilir. Kullanım başka akışa geçince eski
+                akıştaki kayıtlar yerinde kalır; yeni kayıtlar yeni akışla başlar.</span>
+            @if (settingsErrors()['usedFor']; as e) { <span class="error">{{ e[0] }}</span> }
+        </label>
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="settingsOpen.set(false)">Vazgeç</button>
+            <button type="submit" class="button primary" [disabled]="busy()">Kaydet</button>
+        </div>
+    </form>
+</div>
+}
+
+@if (stepTarget(); as target) {
+<app-step-form [flow]="f" [target]="target"
+    [customFields]="customFields.hasValue() ? customFields.value() : []"
+    [questionSets]="questionSets.hasValue() ? questionSets.value() : []"
+    [documentTypes]="documentTypes.hasValue() ? documentTypes.value() : []"
+    (saved)="onStepSaved($event)" (cancelled)="stepTarget.set(null)" />
+}
+}

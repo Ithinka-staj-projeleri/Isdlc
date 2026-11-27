@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
 import { map } from 'rxjs';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -15,7 +16,7 @@ import { ProcessService } from '../process.service';
  */
 @Component({
     selector: 'app-process-library',
-    imports: [EmptyStateComponent, StatusBadgeComponent],
+    imports: [RouterLink, EmptyStateComponent, StatusBadgeComponent],
     templateUrl: './process-library.component.html',
     styleUrl: './process-library.component.scss',
 })
@@ -23,6 +24,9 @@ export class ProcessLibraryComponent {
     private readonly processService = inject(ProcessService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
+
+    /** Only the company administrator edits flows (Faz 7 · A8). */
+    protected readonly isTenantAdmin = inject(AuthService).isTenantAdmin;
 
     protected readonly permissionLabels = PERMISSION_LABELS;
     protected readonly statusLabels = PROJECT_STATUS_LABELS;

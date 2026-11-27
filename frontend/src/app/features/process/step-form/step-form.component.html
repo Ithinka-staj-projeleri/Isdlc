@@ -1,0 +1,200 @@
+<!-- Closes only with "Vazgeç", so a stray click outside does not lose what was typed. -->
+<div class="overlay">
+    <form class="dialog wide" (ngSubmit)="save()" novalidate>
+        <h3>
+            @if (target().step; as step) {
+            Adım {{ step.isActive ? step.code : '(pasif)' }} · düzenle
+            } @else {
+            Yeni adım
+            }
+            <span class="muted">· {{ stageTitle() }}</span>
+        </h3>
+
+        @if (otherErrors().length) {
+        <ul class="errors" role="alert">
+            @for (message of otherErrors(); track $index) { <li>{{ message }}</li> }
+        </ul>
+        }
+
+        <label class="field full" [class.invalid]="errorFor('text')">
+            Adımda ne yapılır?
+            <textarea name="text" [(ngModel)]="text" maxlength="500" rows="3"></textarea>
+            @if (errorFor('text'); as e) { <span class="error">{{ e }}</span> }
+        </label>
+
+        <div class="grid">
+            <label class="field" [class.invalid]="errorFor('responsiblePermission')">
+                Adımı kim yapar?
+                <select name="responsiblePermission" [(ngModel)]="responsiblePermission">
+                    <option [ngValue]="null" disabled>Yetki seçin</option>
+                    @for (p of permissions; track p) { <option [ngValue]="p">{{ permissionLabels[p] }}</option> }
+                </select>
+                <span class="hint">Bu yetkisi olan herkes adımda işlem yapabilir.</span>
+                @if (errorFor('responsiblePermission'); as e) { <span class="error">{{ e }}</span> }
+            </label>
+
+            <label class="check decision">
+                <input type="checkbox" name="isDecision" [(ngModel)]="isDecision" />
+                Karar adımı <span class="hint">(Evet / Hayır sorulur)</span>
+            </label>
+        </div>
+
+        @if (isDecision) {
+        <fieldset class="group">
+            <legend>Karar</legend>
+
+            <label class="field" [class.invalid]="errorFor('approverPermission')">
+                Onaylayan yetki <span class="hint">(isteğe bağlı)</span>
+                <select name="approverPermission" [(ngModel)]="approverPermission">
+                    <option [ngValue]="null">Yok: adımı yapan cevaplar</option>
+                    @for (p of permissions; track p) { <option [ngValue]="p">{{ permissionLabels[p] }}</option> }
+                </select>
+                <span class="hint">Seçilirse kararı yalnızca bu yetkisi olanlar verir.</span>
+                @if (errorFor('approverPermission'); as e) { <span class="error">{{ e }}</span> }
+            </label>
+
+            <div class="field">
+                "Hayır" denirse
+                <div class="options">
+                    <label class="check"><input type="radio" name="noMode" value="none" [(ngModel)]="noMode" /> Adım tekrar yapılır</label>
+                    <label class="check"><input type="radio" name="noMode" value="close" [(ngModel)]="noMode" /> Kayıt kapanır</label>
+                    <label class="check"><input type="radio" name="noMode" value="return" [(ngModel)]="noMode" /> Önceki bir adıma dönülür</label>
+                </div>
+            </div>
+
+            @if (noMode === 'close') {
+            <label class="field" [class.invalid]="errorFor('noOutcome')">
+                Kayıt nasıl kapanır?
+                <select name="noOutcome" [(ngModel)]="noOutcome">
+                    <option [ngValue]="null" disabled>Seçin</option>
+                    @for (o of outcomes; track o) { <option [ngValue]="o">{{ statusLabels[o] }}</option> }
+                </select>
+                @if (errorFor('noOutcome'); as e) { <span class="error">{{ e }}</span> }
+            </label>
+            }
+
+            @if (noMode === 'return') {
+            <div class="rows">
+                @for (jump of jumps; track $index; let i = $index) {
+                <div class="row" [class.invalid]="jumpError(i)">
+                    <select [name]="'jumpTarget' + i" [(ngModel)]="jump.targetStepId" aria-label="Dönülecek adım">
+                        <option [ngValue]="null" disabled>Dönülecek adım</option>
+                        @for (s of jumpTargets(); track s.id) {
+                        <option [ngValue]="s.id">Adım {{ s.code }} · {{ s.text.length > 60 ? s.text.slice(0, 60) + '…' : s.text }}</option>
+                        }
+                    </select>
+                    <input [name]="'jumpLabel' + i" [(ngModel)]="jump.label" maxlength="200" placeholder="Açıklama (ör. Teklif revize edilir)"
+                        aria-label="Dönüşün açıklaması" />
+                    <button type="button" class="button small" (click)="removeJump(i)" aria-label="Dönüşü kaldır">Kaldır</button>
+                    @if (jumpError(i); as e) { <span class="error">{{ e }}</span> }
+                </div>
+                }
+                @if (jumpTargets().length === 0) {
+                <p class="hint">Bu adımdan önce aktif bir adım yok; dönüş eklenemez.</p>
+                } @else {
+                <button type="button" class="button small" (click)="addJump()">+ Dönüş ekle</button>
+                }
+                @if (errorFor('noJumps'); as e) { <span class="error">{{ e }}</span> }
+            </div>
+            }
+
+            <label class="field" [class.invalid]="errorFor('noBranchText')">
+                "Hayır" açıklaması <span class="hint">(isteğe bağlı; Süreç Kütüphanesi'nde görünür)</span>
+                <input name="noBranchText" [(ngModel)]="noBranchText" maxlength="500" />
+                @if (errorFor('noBranchText'); as e) { <span class="error">{{ e }}</span> }
+            </label>
+        </fieldset>
+        }
+
+        <fieldset class="group">
+            <legend>Ön koşullar <span class="hint">(adım bunlar olmadan tamamlanamaz)</span></legend>
+            <div class="rows">
+                @for (p of prerequisites; track $index; let i = $index) {
+                <div class="row" [class.invalid]="rowError('prerequisites', i)">
+                    <select [name]="'preKind' + i" [(ngModel)]="p.kind" (ngModelChange)="p.value = null" aria-label="Ön koşul">
+                        @for (k of prerequisiteKinds; track k) { <option [ngValue]="k">{{ prerequisiteLabels[k] }}</option> }
+                    </select>
+                    @if (prerequisiteTakesValue(p.kind)) {
+                    <select [name]="'preValue' + i" [(ngModel)]="p.value"
+                        [attr.aria-label]="p.kind === 'DocumentApproved' ? 'Doküman' : 'Form'">
+                        <option [ngValue]="null" disabled>{{ p.kind === 'DocumentApproved' ? 'Doküman seçin' : 'Form seçin' }}</option>
+                        @for (o of valueOptions(p.kind); track o.code) { <option [ngValue]="o.code">{{ o.name }}</option> }
+                    </select>
+                    }
+                    <button type="button" class="button small" (click)="removePrerequisite(i)" aria-label="Ön koşulu kaldır">Kaldır</button>
+                    @if (rowError('prerequisites', i); as e) { <span class="error">{{ e }}</span> }
+                </div>
+                } @empty {
+                <p class="hint">Ön koşul yok: adım işi yapılmadan da tamamlanabilir.</p>
+                }
+                @if (prerequisites.length < maxPrerequisites) {
+                <button type="button" class="button small" (click)="addPrerequisite()">+ Ön koşul ekle</button>
+                }
+            </div>
+        </fieldset>
+
+        <fieldset class="group">
+            <legend>Atlama kuralları <span class="hint">(adım yalnızca bütün kurallar sağlanınca yapılır)</span></legend>
+            <div class="rows">
+                @for (rule of rules; track $index; let i = $index) {
+                <div class="row rule" [class.invalid]="rowError('conditions', i)">
+                    <select [name]="'ruleField' + i" [(ngModel)]="rule.field" (ngModelChange)="onFieldChange(rule)" aria-label="Alan">
+                        @if (!fieldOf(rule)) {
+                        <option [ngValue]="rule.field">{{ rule.field }} (pasif ya da olmayan alan)</option>
+                        }
+                        @for (f of fields(); track f.field) { <option [ngValue]="f.field">{{ f.name }}</option> }
+                    </select>
+                    <select [name]="'ruleOp' + i" [(ngModel)]="rule.op" aria-label="Karşılaştırma">
+                        @for (op of operatorsOf(rule); track op) { <option [ngValue]="op">{{ operatorLabels[op] }}</option> }
+                    </select>
+                    @if (takesValue(rule.op)) {
+                    @switch (fieldOf(rule)?.type) {
+                    @case ('Choice') {
+                    <select [name]="'ruleValue' + i" [(ngModel)]="rule.value" aria-label="Değer">
+                        <option [ngValue]="null" disabled>Değer seçin</option>
+                        @for (o of fieldOf(rule)!.options ?? []; track o[0]) { <option [ngValue]="o[0]">{{ o[1] }}</option> }
+                    </select>
+                    }
+                    @case ('Boolean') {
+                    <select [name]="'ruleValue' + i" [(ngModel)]="rule.value" aria-label="Değer">
+                        <option [ngValue]="null" disabled>Değer seçin</option>
+                        <option ngValue="true">Evet</option>
+                        <option ngValue="false">Hayır</option>
+                    </select>
+                    }
+                    @case ('Number') {
+                    <input type="number" [name]="'ruleValue' + i" [(ngModel)]="rule.value" aria-label="Değer" />
+                    }
+                    @case ('Date') {
+                    <input type="date" [name]="'ruleValue' + i" [(ngModel)]="rule.value" aria-label="Değer" />
+                    }
+                    @default {
+                    <input [name]="'ruleValue' + i" [(ngModel)]="rule.value" maxlength="100" aria-label="Değer" />
+                    }
+                    }
+                    <label class="check small">
+                        <input type="checkbox" [name]="'ruleEmpty' + i" [(ngModel)]="rule.whenEmptyMet" />
+                        Alan boşsa sağlanmış say
+                    </label>
+                    }
+                    <button type="button" class="button small" (click)="removeRule(i)" aria-label="Kuralı kaldır">Kaldır</button>
+                    @if (!fieldOf(rule)) {
+                    <span class="warn">Bu alan pasif ya da yok; kural sağlanmaz ve adım her kayıtta atlanır.</span>
+                    }
+                    @if (rowError('conditions', i); as e) { <span class="error">{{ e }}</span> }
+                </div>
+                } @empty {
+                <p class="hint">Kural yok: adım her kayıtta yapılır.</p>
+                }
+                @if (rules.length < maxRules) {
+                <button type="button" class="button small" (click)="addRule()">+ Kural ekle</button>
+                }
+            </div>
+        </fieldset>
+
+        <div class="dialog-actions">
+            <button type="button" class="button" (click)="cancelled.emit()">Vazgeç</button>
+            <button type="submit" class="button primary" [disabled]="saving()">{{ saving() ? 'Kaydediliyor…' : 'Kaydet' }}</button>
+        </div>
+    </form>
+</div>

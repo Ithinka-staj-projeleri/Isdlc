@@ -248,3 +248,15 @@ section.card {
         margin-top: 2px;
     }
 }
+
+a.button {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    white-space: nowrap;
+}
