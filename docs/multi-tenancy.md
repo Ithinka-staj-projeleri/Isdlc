@@ -18,8 +18,8 @@ Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9)
 | İsteğin şirketi | `ITenantContext` | Filtrenin ve interceptor'ın kullandığı şirket. İstek (kapsam) başına bir tane; API'de girişten, seed ve şirket açarken koddan ayarlanır (Bölüm 3) |
 | Şablon | `Seed/` dosyaları | Yeni şirkete kopyalanan başlangıç akışları, soru setleri ve doküman türleri |
 | Şablondan gelen kayıt | `TemplateCode`, `IsCustomized` | Kopyanın hangi şablondan geldiği ve şirketin onu değiştirip değiştirmediği |
-| Platform Yöneticisi | `UserRole.PlatformAdmin` | Hiçbir şirkete ait değildir; şirket açar ve pasife alır. Şirketlerin kayıtlarını göremez |
-| Şirket Yöneticisi | `User.IsTenantAdmin` | Kendi şirketinin kullanıcılarını ve ayarlarını yönetir. Rol değil işarettir: bir İş Analisti aynı zamanda şirket yöneticisi olabilir (kullanıcı başına tek rol kuralı değişmez) |
+| Platform Yöneticisi | `User.IsPlatformAdmin` (Faz 7 · A2; önce `UserRole.PlatformAdmin`) | Hiçbir şirkete ait değildir; şirket açar ve pasife alır. Şirketlerin kayıtlarını göremez |
+| Şirket Yöneticisi | `User.IsTenantAdmin` | Kendi şirketinin kullanıcılarını ve ayarlarını yönetir. Yetki değil işarettir: yetkileri ne olursa olsun bir kullanıcı aynı zamanda şirket yöneticisi olabilir |
 
 ## 2. Veri modeli
 
@@ -56,10 +56,10 @@ Bu belge onaylanınca kurallar T2 ile birlikte AGENTS.md'ye (Bölüm 6, 7, 8, 9)
 | `TenantId` | int? | Platform Yöneticisinde boş, diğer herkeste dolu |
 | `IsTenantAdmin` | bool | Şirket Yöneticisi işareti. Varsayılan `false`; Platform Yöneticisinde hep `false` |
 | `MustChangePassword` | bool | Geçici parolayla açıldıysa `true`; parola değişince `false` (Bölüm 4) |
-| `Role` | `UserRole` | Yeni değer `PlatformAdmin` |
+| `IsPlatformAdmin` | bool | Faz 7 · A2 (önce `Role = PlatformAdmin`). Platform Yöneticisi |
 
 - Kural veritabanında da tutulur:
-  `CHECK ((Role = 'PlatformAdmin' AND TenantId IS NULL AND IsTenantAdmin = 0) OR (Role <> 'PlatformAdmin' AND TenantId IS NOT NULL))`.
+  `CHECK ((IsPlatformAdmin = 1 AND TenantId IS NULL AND IsTenantAdmin = 0) OR (IsPlatformAdmin = 0 AND TenantId IS NOT NULL))`.
 - `User`, `TenantId`'si boş olabildiği için `ITenantOwned` uygulamaz. Filtresi ve interceptor kuralı ayrıca yazılır
   (Bölüm 3 ve 5). Böylece Platform Yöneticisi, şirketsiz kayıt yasağına takılmadan seed'den açılabilir.
 
@@ -221,8 +221,8 @@ Bugün parolalar yalnızca seed'den (`Identity:TestPassword`) geliyor. Yeni şir
 | Yeni kayıt, `TenantId` dolu ve mevcut şirketten farklı | **Hata** (`InvalidOperationException` → 500, loga yazılır). Yalnızca seed ve şirket yönetimi başka şirkete yazabilir; onlar `ITenantContext`'i o şirkete ayarlar |
 | Var olan kaydın `TenantId`'si değiştirilmiş | **Hata** (aynı) |
 | Şirket bilinmiyor (girişsiz, Platform Yöneticisi) ve `ITenantOwned` kayıt ekleniyor | **Hata** (aynı) |
-| Yeni `User`, rolü `PlatformAdmin` | `TenantId` boş kalır (Bölüm 2 → `Users`) |
-| Yeni `User`, başka rol | `ITenantOwned` gibi: boşsa `ITenantContext.TenantId` yazılır, farklıysa ya da şirket bilinmiyorsa hata |
+| Yeni `User`, `IsPlatformAdmin` | `TenantId` boş kalır (Bölüm 2 → `Users`) |
+| Yeni `User`, diğerleri | `ITenantOwned` gibi: boşsa `ITenantContext.TenantId` yazılır, farklıysa ya da şirket bilinmiyorsa hata |
 
 **Sıra ve denetim kaydı:**
 
@@ -295,7 +295,7 @@ Bütün yeni uç noktalar AGENTS.md Bölüm 7'deki ortak kurallara uyar.
 {
   "code": "ornek-lojistik",
   "name": "Örnek Lojistik A.Ş.",
-  "admin": { "fullName": "Deniz Aydın", "email": "deniz@ornek-lojistik.com", "role": "BusinessAnalyst",
+  "admin": { "fullName": "Deniz Aydın", "email": "deniz@ornek-lojistik.com",
              "temporaryPassword": "…" }
 }
 
@@ -374,7 +374,6 @@ Backend, kapalı bir yardımcı çağrılırsa servisi çağırmadan `503` döne
 | Geçici ya da yeni parola kısa | `400` | "Parola en az 12 karakter olmalıdır." |
 | Yeni parola eskisiyle aynı | `400` | "Yeni parola eskisinden farklı olmalıdır." |
 | Parola değiştirirken mevcut parola yanlış | `400` | "Mevcut parola hatalı." |
-| Formdan `PlatformAdmin` rolü verilmek istendi | `400` | "Platform yöneticisi rolü verilemez." |
 | Başka şirketin kullanıcısı ya da olmayan şirket | `404` | "Kullanıcı bulunamadı." / "Şirket bulunamadı." |
 | Yapay zekâ yardımcıları kapalı | `503` | "Yapay zekâ yardımcıları şirketiniz için kapalı." |
 | Pasif şirket ya da kullanıcı | `401` | Girişteki genel mesaj |

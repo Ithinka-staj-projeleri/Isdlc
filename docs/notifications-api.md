@@ -25,7 +25,7 @@ public interface INotificationService
 
 | Modül | Olay | Kime |
 | --- | --- | --- |
-| `Process` | Onay adımına gelindi (3.2, 4.5, 5.1) | Onaylayan roldeki kullanıcılar |
+| `Process` | Onay adımına gelindi (3.2, 4.5, 5.1) | Onaylayan yetkisi olan kullanıcılar |
 | `Process` | "Hayır" ile önceki bir adıma dönüldü | Projenin iş analisti |
 | `Process` | Proje kapandı | İş analisti ve proje yöneticisi |
 | `Projects` | İş analisti veya proje yöneticisi atandı | Atanan kişi |

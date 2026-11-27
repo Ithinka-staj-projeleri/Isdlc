@@ -32,6 +32,7 @@ Project      1 ──── * ProjectDocument * ── 1 DocumentType
 ProcessStage 1 ──── * DocumentType        (dokümanın ilk hazırlandığı aşama)
 Project      1 ──── * Risk
 User         1 ──── * Notification        (UserId: alıcı)
+User         1 ──── * UserPermission      (Faz 7 · A2: kullanıcının yetkileri)
 Project      1 ──── * Notification        (bildirimin ilgili olduğu proje)
 User         1 ──── * Risk                (OwnerUserId: sorumlu ekip üyesi)
 ```
@@ -94,14 +95,17 @@ Kurallar ve akış listesi: [process-api.md → Akışlar](process-api.md#akış
 | `Text` | string | Adımın açıklaması |
 | `IsDecision` | bool | Evet/Hayır sorusu mu |
 | `NoBranchText` | string? | "Hayır ise" açıklaması |
-| `ResponsibleRole` | `UserRole` | Adımı yapan rol |
-| `ApproverRole` | `UserRole`? | Yalnızca onay adımlarında dolu |
+| `ResponsiblePermission` | `Permission` | *Faz 7 · A2.* Adımı yapan yetki (eski `ResponsibleRole`) |
+| `ApproverPermission` | `Permission`? | *Faz 7 · A2.* Yalnızca onay adımlarında dolu (eski `ApproverRole`) |
 | `NoOutcome` | `ProjectStatus`? | "Hayır" talebi kapatıyorsa sonuç |
 
 Kurallar:
-- Sorumlu rol, prototipteki gibi kodla hesaplanmaz; her adım için seed'de açıkça yazılır.
-- `ApproverRole` doluysa adımı (karar adımı olsun olmasın) yalnızca o roldeki kullanıcı tamamlayabilir veya cevaplayabilir.
-  Örnek 5.1: teklifi Satış Temsilcisi hazırlar (`ResponsibleRole`), Yazılım Departman Yöneticisi onaylayarak adımı kapatır (`ApproverRole`).
+- Sorumlu yetki, prototipteki gibi kodla hesaplanmaz; her adım için seed'de açıkça yazılır, şirket yöneticisi akış
+  düzenlemede değiştirebilir.
+- `ApproverPermission` doluysa adımı (karar adımı olsun olmasın) yalnızca o yetkisi olan kullanıcı tamamlayabilir veya
+  cevaplayabilir. Örnek 5.1: teklifi «Teklif ve anlaşma» yetkisi olan hazırlar (`ResponsiblePermission`), «Onay ve karar»
+  yetkisi olan onaylayarak adımı kapatır (`ApproverPermission`).
+- Yetkisi eksik kullanıcıya hangi yetkinin gerektiği ve şirket yöneticilerinin adları gösterilir (`PermissionMessages`).
 - Bir karar adımında `NoOutcome` ve dönüş seçenekleri (`ProcessStepJump`) birlikte bulunmaz.
 - İkisi de yoksa "Hayır" cevabı projeyi aynı adımda bırakır (eksikler tamamlanınca tekrar cevaplanır).
 
@@ -129,13 +133,29 @@ yapı birden fazlasına izin verir.
 | `FullName` | string | |
 | `Email` | string | Bütün şirketlerde benzersiz (giriş kimliği; sonradan değişmez) |
 | `PasswordHash` | string | `Identity` modülünde kullanılır |
-| `Role` | `UserRole` | Kullanıcı başına tek rol (MVP kararı). `PlatformAdmin` yalnızca yapılandırmayla açılır |
 | `IsActive` | bool | Kullanıcı silinmez, pasife alınır |
-| `IsTenantAdmin` | bool | *Faz 6.* Şirket Yöneticisi işareti (rol değil): kendi şirketinin kullanıcılarını ve ayarlarını yönetir. Platform Yöneticisinde hep `false` |
+| `IsPlatformAdmin` | bool | *Faz 7 · A2* (eski `Role = PlatformAdmin`). Platform Yöneticisi: şirket açar ve pasife alır; şirketi (`TenantId`) ve yetkisi yoktur, şirketlerin kayıtlarını görmez. Yalnızca yapılandırmayla açılır |
+| `IsTenantAdmin` | bool | *Faz 6.* Şirket Yöneticisi işareti (yetki değil): kendi şirketinin kullanıcılarını, talep alanlarını ve ayarlarını yönetir. Platform Yöneticisinde hep `false` |
 | `MustChangePassword` | bool | *Faz 6.* Geçici parolayla açıldı; parolasını değiştirene kadar başka hiçbir istek çalışmaz (403) |
 | `Expertise` | string? | *Faz 5 · F9.* Uzmanlık alanları, virgülle ayrılmış; en fazla 300 karakter. Kişi kendisi düzenler |
 | `WorkingNote` | string? | *Faz 5 · F9.* "Benimle nasıl çalışılır" notu; en fazla 1000 karakter. Kişi kendisi düzenler |
 | `CreatedAt` | DateTime (UTC) | |
+
+Faz 7 · A2'de `Role` kolonu kalktı; migration her kullanıcıya eski unvanının yetkisini verdi (ör. İş Analisti → `Analysis`).
+
+### `UserPermission` — kullanıcının yetkileri (Faz 7 · A2)
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| `Id` | int | |
+| `TenantId` | int (FK → Tenant) | Kullanıcının şirketi |
+| `UserId` | int (FK → User) | |
+| `Permission` | `Permission` | |
+
+- `(UserId, Permission)` benzersizdir. Kullanıcının sıfır ya da daha fazla yetkisi olur; yetkisiz kullanıcı yalnızca akış
+  dışındaki işleri yapar (risk, açık konu, tutanak, gereksinim, doküman, formlar, panel, arama, yapay zekâ).
+- Ayardır, işlem verisi değildir: `User` gibi denetim kaydına yazılmaz. Geri alınan yetkinin satırı silinir.
+- Yetkiler token'a yazılmaz; servis gerektiğinde buradan okur, değişiklik bir sonraki istekte geçerlidir.
 
 ### `Project` — talep ve proje aynı kayıttır
 
@@ -408,7 +428,7 @@ API sözleşmesi ve gönderim kuralları: [notifications-api.md](notifications-a
 | `ReadAt` | DateTime? (UTC) | Okunduysa; ilk okunma zamanı değişmez |
 
 - Proje verisi değildir: `AuditableEntity`'den türemez, denetim kaydına yazılmaz.
-- Rol bildirimi gönderildiği andaki her aktif kullanıcı için ayrı bir satırdır.
+- Yetkiye gönderilen bildirim (`NotifyPermissionAsync`) gönderildiği anda o yetkisi olan her aktif kullanıcı için ayrı bir satırdır.
 - Silinmez. `(UserId, ReadAt)` ve `(UserId, CreatedAt)` üzerinde indeks bulunur (okunmamış sayısı ve liste için).
 
 ## Soru bankası (Faz 4 · B1)
@@ -556,7 +576,7 @@ Tanım şirket verisidir; değer projede (`Project.CustomValues`) anahtarla tutu
 
 | Enum | Değerler |
 | --- | --- |
-| `UserRole` | `BusinessAnalyst` (İş Analisti), `SoftwareDepartmentManager` (Yazılım Departman Yöneticisi), `ProjectManager` (Proje Yöneticisi), `SoftwareDeveloper` (Yazılım Geliştirici), `TestSpecialist` (Test Uzmanı), `SalesRepresentative` (Satış Temsilcisi), `PlatformAdmin` (Platform Yöneticisi; Faz 6, şirketi yok, yalnızca şirketleri yönetir) |
+| `Permission` | *(Faz 7 · A2; `UserRole`'ün yerini aldı)* `Analysis` (Analiz adımları), `ProjectManagement` (Proje yönetimi adımları), `Approval` (Onay ve karar), `Sales` (Teklif ve anlaşma), `Development` (Geliştirme), `Testing` (Test). Türkçe adları yalnızca `PermissionNames`'te yazılır |
 | `RequestSource` | `Internal` (Kurum içi), `External` (Dış, müşteri), `Affiliated` (İlişkili şirket; soru bankası için, talep formunda yok) |
 | `RequestChannel` | `Email` (E-posta), `Phone` (Telefon), `Meeting` (Toplantı), `Other` (Diğer). Faz 4 öncesindeki `Written` / `Verbal` migration ile çevrildi |
 | `RequestType` | `NewProject` (Yeni yazılım projesi), `AdditionalModule` (Ek geliştirme; `ParentProjectId` ile, D3), `CompanyProduct` (Şirket ürünü), `Support` (Destek / ticket) |
@@ -598,8 +618,8 @@ Tanım şirket verisidir; değer projede (`Project.CustomValues`) anahtarla tutu
 | "Hayır" + dönüş seçeneği var | Kullanıcı seçeneği seçer; `StepRecord(No, JumpedToStepId)`; `CurrentStepId` = seçilen adım |
 | "Hayır" + sonuç da dönüş de yok | `StepRecord(No)`; `CurrentStepId` değişmez |
 | Son adım (13.5) tamamlanır | `Status` = `Closed`, `CurrentStepId` = boş |
-| Onay adımı | İşlemi yalnızca `ApproverRole` rolündeki kullanıcı yapabilir |
-| Talebi reddet (herhangi bir adımda) | Yalnızca Yazılım Departman Yöneticisi; gerekçe zorunlu. `StepRecord(Rejected)` mevcut adıma yazılır; `Status` = `Rejected`, `CurrentStepId` = boş |
+| Onay adımı | İşlemi yalnızca `ApproverPermission` yetkisi olan kullanıcı yapabilir |
+| Talebi reddet (herhangi bir adımda) | Yalnızca «Onay ve karar» yetkisi olan; gerekçe zorunlu. `StepRecord(Rejected)` mevcut adıma yazılır; `Status` = `Rejected`, `CurrentStepId` = boş |
 
 "Talebi reddet" işlemi, prototipte 2.2'nin "Hayır" açıklamasında geçen 2.3 kuralını karşılar
 ("Bir aydır cevap alınamıyorsa talep Yazılım Departman Yöneticisi kararıyla reddedilir").
@@ -607,13 +627,13 @@ Tanım şirket verisidir; değer projede (`Project.CustomValues`) anahtarla tutu
 
 ## Alınan kararlar
 
-1. Kullanıcı başına tek rol (enum). İleride gerekirse rol tablosuna çevrilir.
+1. ~~Kullanıcı başına tek rol (enum).~~ Faz 7 · A2: rol yerine yetkiler; kullanıcı başına sıfır ya da daha fazla (`UserPermission`).
 2. Talebi ileten kişi bir `User` değildir; `Project.RequesterName` metin alanında tutulur.
 3. Mevcut adım `Project.CurrentStepId` alanında tutulur; sorgular kolaylaşır.
 4. Talep sahibi (müşteri firma / birim) ayrı bir tablo değildir; `Project.CustomerName` metin alanında tutulur.
 5. Bir karar adımının birden fazla dönüş seçeneği olabilir; seçenekler `ProcessStepJump` tablosunda tutulur.
 6. 2.3 bir adım değildir; yöneticinin her adımda kullanabileceği "Talebi reddet" işlemiyle karşılanır.
-7. `ApproverRole` dolu olan adımı yalnızca o rol kapatabilir (5.1: Satış hazırlar, yönetici onaylar).
+7. `ApproverPermission` dolu olan adımı yalnızca o yetkisi olan kapatabilir (5.1: Teklif ve anlaşma hazırlar, Onay ve karar onaylar).
 8. Denetim kaydı alan bazında eski/yeni değer tutar ve proje bazında listelenebilir (`AuditLog.ProjectId`); `StepRecord` loglanmaz.
 9. Açık konunun sorumlusu bir kullanıcı (`OwnerUserId`) **ya da** sistem dışından biri (`OwnerName`) olabilir.
 10. Proje kayıtlarının kodu proje içinde artar (`AK-001`, `TT-001`).
@@ -653,7 +673,7 @@ böyle bir fark logda uyarı olarak görünür ve ayrı bir migration gerektirir
 Dosyanın alanları:
 - Akış: `code`, `order`, `name`, `kind`, `projectStageOrder`.
 - `stages`: 4 bölüm (`order`, `title`, `shortTitle`).
-- `steps`: `code`, `stageOrder`, `order`, `text`, `isDecision`, `noBranchText`, `responsibleRole`, `approverRole`,
+- `steps`: `code`, `stageOrder`, `order`, `text`, `isDecision`, `noBranchText`, `responsiblePermission`, `approverPermission`,
   `noOutcome`, `noJumps`, `conditions` (atlama kuralları, Faz 7 · A5), `prerequisites` (ön koşullar, Faz 7 · A4).
 - Adımlar birbirine ve bölümlere `Id` ile değil `code` ve `stageOrder` ile bağlanır; seeder bunları kaydederken
   `Id`'lere çevirir. Enum değerleri metin olarak yazılır.
@@ -675,11 +695,11 @@ Ekip gerekirse dosyada adım adım değiştirebilir.
 - Tablo boşsa yüklenir; listeyi sonradan değiştirmek için tabloyu boşaltmak (veritabanını sıfırlamak) gerekir.
 
 **`backend/src/Isdlc.Infrastructure/Seed/users.json`** (hazır)
-- Prototipteki 7 kişi; her rolden en az bir kullanıcı (`fullName`, `email`, `role`).
+- Prototipteki 7 kişi; her yetkiden en az bir kullanıcı (`fullName`, `email`, `permissions`, isteğe bağlı `isTenantAdmin`).
 - Dosyada parola yoktur. Test parolasını `Identity` modülü belirler ve yalnızca geliştirme ortamında
   yapılandırmadan (`.env` / `appsettings.Development.json`) okur; depoya gerçek parola yazılmaz.
-- `Identity` bitene kadar API'nin kullandığı sabit kullanıcı: `elif.yilmaz@isdlc.local` (İş Analisti;
-  adımların çoğu bu role ait).
+- `Identity` bitene kadar API'nin kullandığı sabit kullanıcı: `elif.yilmaz@isdlc.local` (Analiz adımları;
+  adımların çoğu bu yetkiye ait).
 
 **`backend/src/Isdlc.Infrastructure/Seed/sample-projects.json`** (hazır, yalnızca geliştirme ortamı)
 - 8 örnek proje, hepsi yeni yazılım projesi akışında: 5 `Active` (1, 6, 10, 14, 16. adımlarda), 1 `Closed`,
@@ -692,5 +712,6 @@ Ekip gerekirse dosyada adım adım değiştirebilir.
 **Örnek projelerin süreç geçmişi** JSON'da tek tek yazılmaz; seeder şu kurala göre `StepRecord` üretir:
 - Mevcut (veya kapanış) adımından önceki her adım için bir kayıt: karar adımıysa `Yes`, değilse `Completed`. Projede atlanan adımlara kayıt yazılmaz.
 - Kapanmış projelerde kapanış adımı için de bir kayıt: `Closed` ise `Completed` (19), diğerlerinde `No`.
-- `PerformedById`: adımın `ApproverRole`'ü varsa o rolden, yoksa `ResponsibleRole`'den seed'deki ilk kullanıcı.
+- `PerformedById`: adımın `ApproverPermission`'ı varsa o yetkisi olan, yoksa `ResponsiblePermission`'ı olan seed'deki ilk
+  kullanıcı. Erteleme kaydını «Onay ve karar» yetkisi olan ilk kullanıcı yazar.
 - `PerformedAt`: projenin `RequestDate`'inden başlayarak adım başına bir gün artar, bugünü geçmez.
