@@ -172,12 +172,12 @@ public class QuestionnaireService(IApplicationDbContext dbContext, ICurrentUserS
         var project = await dbContext.Projects
             .AsNoTracking()
             .Where(p => p.Id == projectId)
-            .Select(p => new { p.Source, FlowCode = p.ProcessFlow.Code, p.Level, p.ResearchDays })
+            .Select(p => new { p.Source, p.ProcessFlow.TemplateCode, p.Level, p.ResearchDays })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Proje bulunamadı.");
 
         return new ProjectForForm(
-            QuestionnaireRules.WorkTypeFor(project.FlowCode), project.Source, project.Level, project.ResearchDays);
+            QuestionnaireRules.WorkTypeFor(project.TemplateCode), project.Source, project.Level, project.ResearchDays);
     }
 
     /// <summary>The project's flow (work type) and request source, and the level applied to it.</summary>

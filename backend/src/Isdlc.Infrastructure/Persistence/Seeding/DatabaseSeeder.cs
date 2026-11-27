@@ -66,7 +66,9 @@ public class DatabaseSeeder(IsdlcDbContext db, TimeProvider timeProvider, ILogge
                     continue;
                 }
 
-                flow = new ProcessFlow { Code = file.Code, TemplateCode = file.Code };
+                // A new copy takes the template's use unless the company already starts those records with another flow.
+                var useTaken = file.UsedFor is { } use && flows.Any(f => f.UsedFor == use);
+                flow = new ProcessFlow { Code = file.Code, TemplateCode = file.Code, UsedFor = useTaken ? null : file.UsedFor };
                 db.ProcessFlows.Add(flow);
             }
 

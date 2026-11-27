@@ -3,6 +3,7 @@
   "order": 5,
   "name": "Aylık Faturalama",
   "kind": "Billing",
+  "usedFor": "Billing",
   "projectStageOrder": null,
   "stages": [
     {

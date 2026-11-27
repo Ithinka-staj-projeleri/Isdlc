@@ -3,6 +3,7 @@
   "order": 1,
   "name": "Yeni Yazılım Projesi",
   "kind": "Request",
+  "usedFor": "NewRequest",
   "projectStageOrder": 3,
   "stages": [
     {

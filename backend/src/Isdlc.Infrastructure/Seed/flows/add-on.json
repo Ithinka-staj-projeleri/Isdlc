@@ -3,6 +3,7 @@
   "order": 2,
   "name": "Devam Eden Proje Ek Modül veya Geliştirme",
   "kind": "Request",
+  "usedFor": "AdditionalModule",
   "projectStageOrder": null,
   "stages": [
     {

@@ -26,7 +26,8 @@ public class ProjectService(
     /// or are closed. A waiting request, a rejected, lost or redirected one, and an add-on itself cannot have add-ons.
     /// </summary>
     private static readonly Expression<Func<Project, bool>> AcceptsAddOns = p =>
-        p.ProcessFlow.Code == ProcessFlowCodes.NewRequest
+        // A request flow's own record, not an add-on: add-ons cannot have add-ons (Faz 7 · A7: by kind, not by flow code).
+        p.ParentProjectId == null && p.ProcessFlow.Kind == ProcessFlowKind.Request
         && (p.Status == ProjectStatus.Closed
             || (p.Status == ProjectStatus.Active
                 && p.CurrentStep != null
@@ -149,17 +150,12 @@ public class ProjectService(
 
         // An add-on (ek geliştirme) belongs to a project and follows the add-on flow; every other request is a new project.
         var parent = request.ParentProjectId is { } parentId ? await FindAddOnParentAsync(parentId, cancellationToken) : null;
-        var flowCode = parent is null ? ProcessFlowCodes.NewRequest : ProcessFlowCodes.AddOn;
+        var use = parent is null ? ProcessFlowUse.NewRequest : ProcessFlowUse.AdditionalModule;
 
         // Agreed with Process: a new request starts Active at the first step of its flow whose conditions hold.
-        var flowId = await dbContext.ProcessFlows
-            .Where(f => f.Code == flowCode)
-            .Select(f => f.Id)
-            .SingleAsync(cancellationToken);
-        var flowSteps = await dbContext.ProcessSteps
-            .Where(s => s.ProcessFlowId == flowId)
-            .Select(s => new ConditionalStep(s.Id, s.Order, s.Conditions))
-            .ToListAsync(cancellationToken);
+        // The flow is the one the company starts these records with (Faz 7 · A7).
+        var flowId = await dbContext.ProcessFlows.FlowIdForAsync(use, cancellationToken);
+        var flowSteps = await dbContext.ProcessSteps.ConditionalStepsAsync(flowId, cancellationToken);
 
         var project = new Project { Status = ProjectStatus.Active, ProcessFlowId = flowId, ParentProjectId = parent?.Id };
         ApplyContent(project, request);
@@ -167,7 +163,7 @@ public class ProjectService(
         project.CurrentStepId = StepConditions.FirstStepId(
                 flowSteps, new ConditionContext(project.Source, project.RequestType, project.RequiresOffer, project.Level,
                     CustomValueRules.ToText(project.CustomValues)))
-            ?? throw new InvalidOperationException($"Flow {flowCode} has no step for this request.");
+            ?? throw new BusinessRuleException("Akışta bu talep için yapılacak bir adım yok.");
         dbContext.Projects.Add(project);
 
         await SaveWithNewCodeAsync(project, parent is null
@@ -277,7 +273,7 @@ public class ProjectService(
         // The rules are a JSON column: the flow's steps (a few dozen) are read and checked here.
         var flowSteps = await dbContext.ProcessSteps
             .AsNoTracking()
-            .Where(s => s.ProcessFlowId == project.ProcessFlowId)
+            .Where(s => s.ProcessFlowId == project.ProcessFlowId && s.IsActive)
             .OrderBy(s => s.Order)
             .Select(s => new { s.Order, s.Code, s.Conditions })
             .ToListAsync(cancellationToken);
@@ -309,11 +305,11 @@ public class ProjectService(
         var parent = await dbContext.Projects
             .AsNoTracking()
             .Where(p => p.Id == parentId)
-            .Select(p => new { p.Id, p.Code, FlowCode = p.ProcessFlow.Code })
+            .Select(p => new { p.Id, p.Code, p.ParentProjectId, FlowKind = p.ProcessFlow.Kind })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new BusinessRuleException("Ek geliştirmenin ait olduğu proje bulunamadı.");
 
-        if (parent.FlowCode != ProcessFlowCodes.NewRequest)
+        if (parent.ParentProjectId is not null || parent.FlowKind != ProcessFlowKind.Request)
         {
             throw new BusinessRuleException("Ek geliştirme yalnızca bir yeni yazılım projesine açılabilir.");
         }

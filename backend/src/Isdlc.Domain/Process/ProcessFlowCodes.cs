@@ -1,6 +1,9 @@
 namespace Isdlc.Domain.Process;
 
-/// <summary>Codes of the flows that code opens records in. Flows themselves come from Seed/flows/*.json.</summary>
+/// <summary>
+/// Codes of the template flows in Seed/flows/*.json. Services find a company's flow by ProcessFlow.UsedFor (Faz 7 · A7),
+/// not by these: a company can start its records with a flow of its own. Seed and tests use them.
+/// </summary>
 public static class ProcessFlowCodes
 {
     /// <summary>The flow a new request (Talepler → Yeni talep) follows.</summary>

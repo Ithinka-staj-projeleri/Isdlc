@@ -15,5 +15,10 @@ public class ProcessFlowConfiguration : IEntityTypeConfiguration<ProcessFlow>
 
         // Every company has its own copy of the templates (docs/multi-tenancy.md → Benzersizlik).
         builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
+
+        // One flow per use in a company; flows without a use are not counted (Faz 7 · A7).
+        builder.HasIndex(x => new { x.TenantId, x.UsedFor }).IsUnique().HasFilter("[UsedFor] IS NOT NULL");
+
+        builder.Property(x => x.RowVersion).IsRowVersion();
     }
 }

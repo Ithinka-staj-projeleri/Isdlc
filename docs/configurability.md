@@ -373,6 +373,9 @@ liste, ekle, düzenle, pasife al.
 
 ## 7. Akış düzenleme (A7, A8)
 
+**A7 (backend) uygulandı:** `ProcessFlowEditService`, `ProcessFlowsController`, `ProcessFlowQueries`; testler
+`ProcessFlowEditTests`. A8 (ekran) bu uç noktaları kullanır.
+
 ### Veri
 
 | Alan | Değişiklik |
@@ -381,16 +384,27 @@ liste, ekle, düzenle, pasife al.
 | `ProcessFlow.RowVersion` | Yeni; aynı akışın aynı anda düzenlenmesi `409` |
 | `ProcessStage.IsActive`, `ProcessStep.IsActive` | Yeni, varsayılan `true` |
 
-`ProcessFlowCodes` sabitleri kalkar. Servisler akışı `UsedFor` ile bulur: yeni talep `NewRequest`, ek geliştirme
-`AdditionalModule`, süreç iyileştirme `Improvement`. Migration bugünkü beş akışı koduna göre işaretler.
-Soru listelerinin iş tipi (`WorkType`) bugünkü gibi akışın şablon koduyla eşleşir. Kopyalanmış akış, kopyalandığı akışın
-iş tipini kullanır.
+Servisler akışı koduyla değil `UsedFor` ile bulur (`ProcessFlowQueries.FlowIdForAsync`): yeni talep `NewRequest`, ek
+geliştirme `AdditionalModule`, süreç iyileştirme `Improvement`. Şirket bu kullanımı hiçbir akışa vermemişse kayıt açılamaz:
+`400` "Şirkette yeni talepler için bir akış seçilmemiş. Şirket yöneticisi Süreç Kütüphanesi'nden seçebilir."
+- "Bu kayıt bir talep mi, süreç iyileştirme mi?" sorusu akışın türüne (`Kind`) bakar, kullanımına değil. Böylece kullanımı
+  başka akışa geçse de eski akıştaki kayıtlar yerinde kalır. Ek geliştirme yalnızca talep türünde bir akışın kendi kaydına,
+  ek geliştirmeye değil, açılabilir.
+- `ProcessFlowCodes` yalnızca şablonların kodu olarak kalır; seed ve testler kullanır.
+- Migration (`AddFlowEditing`), her şirketin şablon kopyalarını şablon koduna göre işaretler. Yeni şirkete kopyalanan
+  şablon kullanımını seed dosyasından alır (`usedFor`); şirket o kullanımı başka akışa vermişse kopya kullanımsız gelir.
+- Soru listelerinin iş tipi (`WorkType`) akışın şablon koduyla eşleşir. Şirketin kendi yaptığı (kopyalanmış) akışın
+  şablonu yoktur, bu yüzden yeni yazılım projesi sorularını kullanır.
+- Pasif adım hiçbir kayıtta yapılmaz: sonraki adım, ilk adım ve atlanan adımlar yalnızca aktif adımlara bakar
+  (`ProcessFlowQueries.ConditionalStepsAsync`). Projenin Süreç sekmesi ve panel pasif aşama ve adımları saymaz.
 
 ### Adım numarası
 
-Adımın `Code`'u ekranda "Adım 12" diye görünür. Akış düzenlenince aktif adımlar **sırayla yeniden numaralanır** (1, 2, 3…;
-aşama aşama değil, akış boyunca). Pasif adımların kodu `P{Id}` olur. Kayıtlar adıma `Id` ile bağlı olduğu için süreç geçmişi
-etkilenmez; geçmişte adımın bugünkü numarası görünür.
+Adımın `Code`'u ekranda "Adım 12" diye görünür. Adım eklenince, pasife alınınca, geri alınınca ya da sıra değişince aktif
+adımlar **sırayla yeniden numaralanır** (1, 2, 3…; aşama aşama değil, akış boyunca). Pasif adımların kodu `P{Id}` olur.
+Pasif adım sıradaki yerini korur; geri alınınca aynı yere döner. Kayıtlar adıma `Id` ile bağlı olduğu için süreç geçmişi
+etkilenmez; geçmişte adımın bugünkü numarası görünür. Metin, yetki, kural gibi değişiklikler numarayı değiştirmez.
+(Açık konu 1 bu şekilde kapandı.)
 
 ### Kurallar
 
@@ -399,7 +413,15 @@ etkilenmez; geçmişte adımın bugünkü numarası görünür.
 - **Pasife alma:** Adımda bekleyen aktif ya da ertelenmiş kayıt varsa `409` "Bu adımda bekleyen kayıtlar var: 20, 21." Başka
   bir adımın "Hayır" dönüşü bu adıma gidiyorsa `409` "Bu adıma «Hayır» dönüşü olan adımlar var: 10." Aşama ancak bütün adımları
   pasifse pasife alınır. Akışta en az bir aktif adım kalmalıdır.
-- **Sıra:** Kayıtlar bulundukları adımda kalır. "Sonraki adım" yeni sıraya göre bulunur.
+- **Sıra:** Kayıtlar bulundukları adımda kalır. "Sonraki adım" yeni sıraya göre bulunur. Sıra isteği akışın bütün
+  aşamalarını ve adımlarını bir kez içermelidir; aktif adım pasif aşamaya taşınamaz; bir "Hayır" dönüşü sonraki bir adıma
+  gidecek hale gelemez. Projenin "proje sayılır" aşaması (`ProjectStageOrder`) taşınınca onu izler.
+- **Eşzamanlılık:** Her yazma isteği akışın `rowVersion`'ını (base64) taşır. Başkası arada kaydettiyse `409` "Akış bu arada
+  değişti; sayfayı yenileyin." Aşama ya da adım isteği de aynı akışın sürümünü gönderir.
+- **Kopya:** Kopya şirketin kendi akışıdır: şablonu yoktur (`TemplateCode` boş, açılış eşitlemesi dokunmaz), kullanımı
+  yoktur, akışların sonuna eklenir. Adımlar, kurallar, ön koşullar ve "Hayır" dönüşleri kopyanın kendi adımlarına bağlanır.
+- **API'de enum değerleri** diğer uç noktalardaki gibi PascalCase gelir ve gider (`"Equals"`, `"AtLeast"`, `"MeetingExists"`);
+  okurken büyük-küçük harf fark etmez. Veritabanında ve seed dosyalarında kurallar camelCase'tir (`"equals"`).
 - **Adım formu kuralları:**
   - Karar adımında "Hayır" ya kaydı kapatır (`NoOutcome`) ya da geri döner (`NoJumps`); ikisi birden olmaz.
   - Dönüş yalnızca aynı akıştaki daha önceki aktif bir adıma yapılabilir.
@@ -425,7 +447,7 @@ etkilenmez; geçmişte adımın bugünkü numarası görünür.
 | `POST /process-flows/{code}/stages` · `PUT /process-stages/{id}` | Aşama ekle / başlık, kısa başlık |
 | `POST /process-flows/{code}/steps` | `{ stageId, afterStepId?, text, … }` adım ekle |
 | `PUT /process-steps/{id}` | Metin, karar mı, "Hayır" metni, sorumlu ve onaylayan yetki, `NoOutcome`, `NoJumps`, `Prerequisites`, `Conditions` |
-| `POST /process-steps/{id}/deactivate` · `/activate` | Pasife al / geri al |
+| `POST /process-steps/{id}/deactivate` · `/activate` | Pasife al / geri al; gövde `{ rowVersion }` |
 | `POST /process-stages/{id}/deactivate` · `/activate` | Aynı |
 | `PUT /process-flows/{code}/order` | `{ stages: [{ id, stepIds: [...] }], rowVersion }`; aşama ve adımların yeni sırası |
 
@@ -500,6 +522,16 @@ Sürükle-bırak isteğe bağlıdır; yukarı / aşağı yeterlidir.
 | Akışta aktif adım kalmıyor | `400` | "Akışta en az bir aktif adım olmalıdır." |
 | Akış başkası tarafından değişti | `409` | "Akış bu arada değişti; sayfayı yenileyin." |
 | Kullanım zaten başka akışta | `409` | "Bu kullanım başka bir akışta seçili: {akış}." |
+| Kullanım akışın türüne uymuyor | `400` (`usedFor`) | "Bu akış bu kayıtlar için kullanılamaz." |
+| Şirkette o kayıtlar için akış yok | `400` | "Şirkette {kullanım} için bir akış seçilmemiş. Şirket yöneticisi Süreç Kütüphanesi'nden seçebilir." |
+| Kopyanın kodu kullanılıyor | `409` | "Bu kodla bir akış zaten var." |
+| Aşamada aktif adım varken aşamayı pasife alma | `409` | "Aşamada aktif adımlar var; önce adımları pasife alın." |
+| Pasif aşamadaki adımı geri alma | `409` | "Önce adımın aşamasını etkinleştirin." |
+| Pasif aşamaya adım ekleme | `400` (`stageId`) | "Pasif bir aşamaya adım eklenemez." |
+| Sıra isteği eksik ya da tekrarlı | `400` | "Sıra akışın bütün aşamalarını ve adımlarını bir kez içermelidir." |
+| Sırada aktif adım pasif aşamada | `400` | "Aktif bir adım pasif bir aşamaya taşınamaz." |
+| Sırada dönüş ileri gidiyor | `400` | "Bu sırada şu adımların «Hayır» dönüşü sonraki bir adıma gider: {adımlar}." |
+| Adım formu | `400` (alan anahtarlarıyla) | "Onaylayan yalnızca karar adımında seçilir." · "Kapanış yalnızca karar adımında seçilir." · "Dönüş yalnızca karar adımında seçilir." · "«Hayır» ya kaydı kapatır ya da bir adıma döner; ikisi birden seçilemez." · "Kapanış sonucu Reddedildi, Kaybedildi ya da Yönlendirildi olmalıdır." · "Dönülecek adım bu akışın aktif bir adımı olmalıdır." · "Yalnızca daha önceki bir adıma dönülebilir." · "Aynı adıma iki dönüş eklenemez." |
 | Özel alan anahtarı kullanılıyor | `409` | "Bu anahtarla bir alan zaten var." |
 | Özel alan anahtarı biçimi | `400` | "Anahtar küçük harf, rakam ve tireden oluşmalıdır (2–50 karakter)." |
 | Kuralda kullanılan seçenek çıkarılıyor | `409` | "Bu seçenek bir atlama kuralında kullanılıyor: {akış} · Adım {no}." |
@@ -526,7 +558,7 @@ Her iş kendi PR'ında taşır:
 
 ## 11. Açık konular
 
-1. **Adım numarası:** Yeniden numaralama (Bölüm 7) geçmişteki "Adım 12" yazılarını değiştirir. Alternatif: kod hiç değişmez,
+1. ~~**Adım numarası**~~ Kapandı (A7): aktif adımlar yeniden numaralanır, pasifler `P{Id}` olur (Bölüm 7). Eski not: Yeniden numaralama (Bölüm 7) geçmişteki "Adım 12" yazılarını değiştirir. Alternatif: kod hiç değişmez,
    yeni adım en büyük + 1 alır. A7'de karar verilir.
 2. **Ön koşul listesi:** Bölüm 4'teki yedi tür bugün şirketin süreç dokümanında geçen işlerdir; yeni tür istenirse A4'te eklenir.
 3. **Özel alanlar talep listesinde görünsün mü?** Bu fazda hayır (plan Bölüm 7).

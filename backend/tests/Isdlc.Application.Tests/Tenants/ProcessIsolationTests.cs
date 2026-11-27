@@ -73,7 +73,7 @@ public class ProcessIsolationTests(DatabaseFixture database)
         Assert.Empty(deneme.Select(f => f.Id).Intersect(ithinka.Select(f => f.Id)));
 
         var denemeFlow = await ProcessAsync(database.DenemeId, denemeId,
-            s => s.GetFlowAsync(ProcessFlowCodes.NewRequest, CancellationToken.None));
+            s => s.GetFlowAsync(ProcessFlowCodes.NewRequest, false, CancellationToken.None));
         Assert.Equal(deneme.Single(f => f.Code == ProcessFlowCodes.NewRequest).Id, denemeFlow.Id);
     }
 

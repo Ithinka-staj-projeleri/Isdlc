@@ -34,14 +34,19 @@ public class ProcessService(
                 flow.Name,
                 flow.Kind,
                 flow.ProjectStageOrder,
-                dbContext.ProcessSteps.Count(step => step.ProcessFlowId == flow.Id)))
+                dbContext.ProcessSteps.Count(step => step.ProcessFlowId == flow.Id && step.IsActive),
+                flow.UsedFor,
+                flow.IsCustomized))
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<ProcessFlowDto> GetFlowAsync(string code, CancellationToken cancellationToken)
+    public async Task<ProcessFlowDto> GetFlowAsync(string code, bool includeInactive, CancellationToken cancellationToken)
     {
+        // Inactive stages and steps are the administrator's to see (flow editing); everyone else reads the flow as it runs.
+        var all = includeInactive && currentUser.IsTenantAdmin;
+
         // Read-only query: AsNoTracking skips change tracking, and Select loads only the DTO fields.
-        return await dbContext.ProcessFlows
+        var flow = await dbContext.ProcessFlows
             .AsNoTracking()
             .Where(flow => flow.Code == code)
             .Select(flow => new ProcessFlowDto(
@@ -51,6 +56,7 @@ public class ProcessService(
                 flow.Kind,
                 flow.ProjectStageOrder,
                 flow.Stages
+                    .Where(stage => all || stage.IsActive)
                     .OrderBy(stage => stage.Order)
                     .Select(stage => new ProcessStageDto(
                         stage.Id,
@@ -59,12 +65,18 @@ public class ProcessService(
                         stage.ShortTitle,
                         stage.Steps
                             .AsQueryable()
+                            .Where(step => all || step.IsActive)
                             .OrderBy(step => step.Order)
                             .Select(ProcessMappings.ToStepDto)
-                            .ToList()))
-                    .ToList()))
+                            .ToList(),
+                        stage.IsActive))
+                    .ToList(),
+                flow.UsedFor,
+                flow.IsCustomized,
+                Convert.ToBase64String(flow.RowVersion)))
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Akış bulunamadı.");
+        return flow;
     }
 
     public async Task<ProjectProcessDto> GetProjectProcessAsync(int projectId, CancellationToken cancellationToken)
@@ -122,9 +134,9 @@ public class ProcessService(
 
         var stages = await dbContext.ProcessStages
             .AsNoTracking()
-            .Where(stage => stage.ProcessFlowId == project.ProcessFlowId)
+            .Where(stage => stage.ProcessFlowId == project.ProcessFlowId && stage.IsActive)
             .OrderBy(stage => stage.Order)
-            .Select(stage => new { stage.Id, stage.Order, stage.ShortTitle, StepCount = stage.Steps.Count })
+            .Select(stage => new { stage.Id, stage.Order, stage.ShortTitle, StepCount = stage.Steps.Count(s => s.IsActive) })
             .ToListAsync(cancellationToken);
 
         var flowSteps = await LoadFlowStepsAsync(project.ProcessFlowId, cancellationToken);
@@ -436,12 +448,7 @@ public class ProcessService(
     /// <summary>Every step of the flow with its order and conditions (a flow has at most a few dozen steps).</summary>
     private async Task<IReadOnlyList<ConditionalStep>> LoadFlowStepsAsync(
         int flowId, CancellationToken cancellationToken) =>
-        await dbContext.ProcessSteps
-            .AsNoTracking()
-            .Where(s => s.ProcessFlowId == flowId)
-            .OrderBy(s => s.Order)
-            .Select(s => new ConditionalStep(s.Id, s.Order, s.Conditions))
-            .ToListAsync(cancellationToken);
+        await dbContext.ProcessSteps.ConditionalStepsAsync(flowId, cancellationToken);
 
     private Task<StepRef?> LoadStepRefAsync(int stepId, CancellationToken cancellationToken) =>
         dbContext.ProcessSteps

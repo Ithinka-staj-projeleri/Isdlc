@@ -17,10 +17,12 @@ public static class QuestionnaireRules
     public const string DefaultWorkType = ProcessFlowCodes.NewRequest;
 
     /// <summary>
-    /// The work type whose questions a project's form lists: the project's flow. Add-on work has no questions of its own
-    /// yet, so it uses the new software project questions (decision 4, phase-4-plan.md → Açık konular 6).
+    /// The work type whose questions a project's form lists: the template of the project's flow. Add-on work has no
+    /// questions of its own yet, so it uses the new software project questions (decision 4, phase-4-plan.md → Açık
+    /// konular 6); so does a flow the company made itself (no template, Faz 7 · A7).
     /// </summary>
-    public static string WorkTypeFor(string flowCode) => flowCode == ProcessFlowCodes.AddOn ? DefaultWorkType : flowCode;
+    public static string WorkTypeFor(string? templateCode) =>
+        templateCode is null || templateCode == ProcessFlowCodes.AddOn ? DefaultWorkType : templateCode;
 
     /// <summary>Active questions of the work type, for the subcategory or for every subcategory (null).</summary>
     public static Expression<Func<Question, bool>> ListedIn(string workType, RequestSource subcategory) =>

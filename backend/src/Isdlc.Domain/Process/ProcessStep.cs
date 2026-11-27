@@ -27,6 +27,12 @@ public class ProcessStep : ITenantOwned
     public int Order { get; set; }
 
     /// <summary>
+    /// Never deleted, so history keeps pointing at it: an inactive step is skipped by every record and hidden from the
+    /// flow (Faz 7 · A7). Its code is "P{Id}".
+    /// </summary>
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>
     /// When the step is done: on a record where all rules hold, skipped otherwise; empty, on every record (StepConditions).
     /// Replaces the three fixed conditions (external request, offer, level) of Faz 4 (Faz 7 · A5).
     /// </summary>

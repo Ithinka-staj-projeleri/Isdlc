@@ -25,5 +25,6 @@ public static class ProcessMappings
             .Select(jump => new ProcessStepJumpDto(jump.TargetStepId, jump.TargetStep.Code, jump.Label))
             .ToList(),
         step.Conditions,
-        step.Prerequisites);
+        step.Prerequisites,
+        step.IsActive);
 }

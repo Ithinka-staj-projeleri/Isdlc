@@ -3,6 +3,7 @@
   "order": 4,
   "name": "Haftalık Kaynak Planlama",
   "kind": "ResourcePlanning",
+  "usedFor": "ResourcePlanning",
   "projectStageOrder": null,
   "stages": [
     {

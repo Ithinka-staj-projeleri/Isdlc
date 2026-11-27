@@ -164,7 +164,7 @@ public class DashboardService(
     {
         var requests = projects.Where(p => p.Status == ProjectStatus.Active
             && p.CurrentStep != null && p.CurrentStep.Code == AcceptanceStepCode
-            && p.ProcessFlow.Code == ProcessFlowCodes.NewRequest);
+            && p.ProcessFlow.UsedFor == ProcessFlowUse.NewRequest);
 
         var totalCount = await requests.CountAsync(cancellationToken);
 
@@ -352,14 +352,14 @@ public class DashboardService(
     {
         var counts = await projects
             .Where(p => p.Status == ProjectStatus.Active && p.CurrentStep != null
-                && p.ProcessFlow.Code == ProcessFlowCodes.NewRequest)
+                && p.ProcessFlow.UsedFor == ProcessFlowUse.NewRequest)
             .GroupBy(p => p.CurrentStep!.ProcessStage.Order)
             .Select(g => new { Order = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Order, x => x.Count, cancellationToken);
 
         var stages = await dbContext.ProcessStages
             .AsNoTracking()
-            .Where(s => s.ProcessFlow.Code == ProcessFlowCodes.NewRequest)
+            .Where(s => s.ProcessFlow.UsedFor == ProcessFlowUse.NewRequest && s.IsActive)
             .OrderBy(s => s.Order)
             .Select(s => new { s.Order, s.ShortTitle })
             .ToListAsync(cancellationToken);
