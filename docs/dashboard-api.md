@@ -13,8 +13,8 @@ Uç nokta AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin
 | # | Soru | Öneri |
 | --- | --- | --- |
 | 1 | Panel herkese aynı mı? | Genel bölümler herkese aynı; **"Bana bekleyenler"** bölümleri giriş yapan kullanıcıya göre hesaplanır |
-| 2 | "Bana bekleyen adım" ne demek? | Projenin mevcut adımını kullanıcı yapabiliyorsa: Process'teki yetki kuralının aynısı (`ApproverRole ?? ResponsibleRole` = kullanıcının rolü, `ProcessProgress.CanActOnStep`). Panelde görünen her iş, kullanıcının gerçekten yapabileceği bir iştir |
-| 3 | İş Analisti bütün analistlerin işlerini mi görür? | Hayır. Adım İş Analisti'nin ise yalnızca **analisti olduğu** projeler, Proje Yöneticisi'nin ise yalnızca **yöneticisi olduğu** projeler listelenir. Projeye o rolde kimse atanmamışsa adım o roldeki herkese görünür. Diğer roller (Yazılım Departman Yöneticisi, Satış, Test, Geliştirici) rolündeki bütün işleri görür |
+| 2 | "Bana bekleyen adım" ne demek? | Projenin mevcut adımını kullanıcı yapabiliyorsa: Process'teki yetki kuralının aynısı (`ApproverPermission ?? ResponsiblePermission` kullanıcının yetkilerinde var mı, `ProcessProgress.CanActOnStep`; Faz 7 · A2). Panelde görünen her iş, kullanıcının gerçekten yapabileceği bir iştir |
+| 3 | İş Analisti bütün analistlerin işlerini mi görür? | Hayır. Adım «Analiz adımları» yetkisi istiyorsa yalnızca kişinin **analisti olduğu** projeler, «Proje yönetimi adımları» istiyorsa yalnızca **yöneticisi olduğu** projeler listelenir. Projeye o görevde kimse atanmamışsa adım o yetkisi olan herkese görünür. Diğer yetkiler (Onay ve karar, Teklif ve anlaşma, Geliştirme, Test) o yetkinin bütün işlerini görür (Faz 7 · A2) |
 | 4 | "Yalnızca benim projelerim" filtresi | `?scope=mine`: genel bölümler yalnızca kullanıcının analist ya da proje yöneticisi olduğu projelerden hesaplanır. Varsayılan `all` |
 | 5 | Kapanış tarihi nereden gelir? | `Project`'te kapanış tarihi alanı yoktur. Kapanmış kaydın **son süreç kaydının** (`StepRecord.PerformedAt`) tarihi kullanılır. Yeni kolon gerekmez |
 | 6 | "Ne kadar süredir bekliyor" nasıl hesaplanır? | Son süreç kaydından bu yana geçen gün; hiç kaydı yoksa talebin açıldığı tarihten (`CreatedAt`) |
@@ -66,7 +66,7 @@ Uç nokta AGENTS.md'deki ortak kurallara uyar: `/api/v1/` öneki, enum'lar metin
       {
         "project": { "id": 3, "code": "ISDLC-2026-016", "name": "B2B Sipariş Portalı v2" },
         "step": { "id": 31, "code": "4.5", "stageOrder": 4, "stageShortTitle": "Ön Analiz & Plan" },
-        "isApproval": true,               // adımın ApproverRole'ü var
+        "isApproval": true,               // adımın ApproverPermission'ı var
         "isDecision": true,
         "waitingSince": "2026-11-03T09:00:00Z",
         "waitingDays": 7
@@ -222,7 +222,7 @@ Plan: [phase-5-plan.md](phase-5-plan.md) → F2. Yeni tablo yok; `DashboardDto`'
   // … mevcut alanlar …
   "myOpenIssuesDueThisWeek": { "totalCount": 2, "items": [ /* DashboardOpenIssueDto, "myOpenIssues" ile aynı */ ] },
   "teamWorkload": [
-    { "user": { "id": 5, "fullName": "Can Öztürk" }, "role": "SoftwareDeveloper",
+    { "user": { "id": 5, "fullName": "Can Öztürk" }, "permissions": ["Development"],
       "openIssues": 2, "overdueOpenIssues": 1, "waitingSteps": 1 }
   ]
 }

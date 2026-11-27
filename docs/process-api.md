@@ -302,12 +302,12 @@ Sıralama: en yeni kayıt önce.
 | İşlem | Kim yapabilir |
 | --- | --- |
 | Okuma uç noktaları | Giriş yapmış her kullanıcı |
-| `complete` / `answer` — `ApproverRole` dolu adım | Yalnızca `ApproverRole` rolündeki kullanıcı |
-| `complete` / `answer` — diğer adımlar | Yalnızca adımın `ResponsibleRole` rolündeki kullanıcı |
-| `reject`, `postpone`, `resume` | Yalnızca `SoftwareDepartmentManager` (`postpone` ayrıca yalnızca talep aşamasında; D2-5) |
+| `complete` / `answer` — `ApproverPermission` dolu adım | Yalnızca o yetkisi olan kullanıcı |
+| `complete` / `answer` — diğer adımlar | Yalnızca adımın `ResponsiblePermission` yetkisi olan kullanıcı |
+| `reject`, `postpone`, `resume` | Yalnızca «Onay ve karar» (`Approval`) yetkisi olan (Faz 7 · A2; önce `SoftwareDepartmentManager`) (`postpone` ayrıca yalnızca talep aşamasında; D2-5) |
 
 > **Ekip kararı bekleniyor:** Prototipte onay adımları dışında herkes her adımı işleyebiliyordu.
-> Uygulanan kural daha sıkı (yalnızca sorumlu rol). Daha esnek bir kural istenirse
+> Uygulanan kural daha sıkı (yalnızca sorumlu yetki). Daha esnek bir kural istenirse
 > (ör. projenin iş analisti her adımı işleyebilir) yalnızca bu tablo ve `ProcessProgress` değişir.
 
 Kurallar `ProcessProgress` içinde tek yerdedir (`CanActOnStep`, `CanReject`). Hem `availableActions` (butonlar)
@@ -365,14 +365,14 @@ hiçbir şey yapmayan bir uygulama kaydediliyordu; artık `NotificationService` 
 ```csharp
 public interface INotificationService
 {
-    Task NotifyRoleAsync(UserRole role, int projectId, string message, CancellationToken cancellationToken);
+    Task NotifyPermissionAsync(Permission permission, int projectId, string message, CancellationToken cancellationToken);
     Task NotifyUsersAsync(IEnumerable<int> userIds, int projectId, string message, CancellationToken cancellationToken);
 }
 ```
 
 | Olay | Kime | Mesaj örneği |
 | --- | --- | --- |
-| Proje `ApproverRole`'ü olan bir adıma geldi (3.2, 4.5, 5.1) | O roldeki kullanıcılar | "ISDLC-2026-016 · 4.5 onayınızı bekliyor." |
+| Proje `ApproverPermission`'ı olan bir adıma geldi (3.2, 4.5, 5.1) | O yetkisi olan kullanıcılar | "ISDLC-2026-016 · 4.5 onayınızı bekliyor." |
 | "Hayır" ile önceki bir adıma dönüldü | Projenin iş analisti | "ISDLC-2026-016 · 4.7 adımından 4.1 adımına dönüldü." |
 | Proje kapandı (`Closed`, `Rejected`, `Lost`, `Redirected`) | Projenin iş analisti ve proje yöneticisi (atanmışsa) | "11 kapandı: Kaybedildi." |
 | Talep ertelendi (D2) | Projenin iş analisti ve proje yöneticisi | "19 ertelendi; yeniden değerlendirme tarihi 15.01.2027." |

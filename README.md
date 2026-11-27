@@ -117,18 +117,48 @@ göremez.
 
 **2. Şirketi açar.** Menü → **Şirketler** → **+ Yeni şirket** (`/platform/tenants`):
 - Şirket adı ve kodu (küçük harf, rakam ve tire; sonradan değişmez).
-- Şirketin ilk yöneticisi: ad soyad, e-posta, rol ve geçici parola (form üretir; "Yeni üret" ile değişir).
+- Şirketin ilk yöneticisi: ad soyad, e-posta ve geçici parola (form üretir; "Yeni üret" ile değişir). Yönetici yetkisiz
+  açılır; yetkileri kendi ekranından verir (adım 3).
 - **Şirketi aç** denince şirkete beş akış, doküman türleri ve soru listeleri şablondan kopyalanır. Geçici parola ekranda bir
   kez gösterilir; kişiye uygulama dışından iletilir.
 
 **3. Şirket Yöneticisi ilk kez girer.** Geçici parolayla girince parola değiştirme ekranı açılır; yeni parola en az 12
 karakterdir. Sonra menüde **Yönetim** bölümünü görür:
-- **Kullanıcılar** (`/admin/users`): kullanıcı ekler (geçici parolayla), rol ve şirket yöneticisi işareti verir, pasife
-  alır, yeniden geçici parola verir. Kullanıcı silinmez.
+- **Kullanıcılar** (`/admin/users`): kullanıcı ekler (geçici parolayla), yetki ve şirket yöneticisi işareti verir, pasife
+  alır, yeniden geçici parola verir. Kullanıcı silinmez. Yetkiler aşağıda.
+- **Talep Alanları** (`/admin/request-fields`): şirketin talep formuna kendi alanlarını ekler (metin, sayı, tarih, seçim,
+  evet / hayır; zorunlu ya da değil). Alan silinmez, pasife alınır; pasif alan formda görünmez, projedeki değeri saklı kalır.
 - **Şirket Ayarları** (`/admin/settings`): yapay zekâ yardımcıları ve metinlerin dış modele gönderilme izni. Yeni şirkette
   ikisi de kapalıdır; ne anlama geldikleri ekranda yazar.
 
 **4. Kullanıcılar çalışmaya başlar.** Proje numaraları ve kayıt kodları her şirkette 1'den başlar.
+
+### Yetkiler
+
+Akıştaki işleri kimin yapacağını yetkiler belirler (Faz 7 · A2; eski unvanların yerini aldı). Liste sabittir ve her şirkette
+aynıdır; bir kişiye istenen sayıda yetki verilebilir:
+
+| Yetki | Ne için |
+| --- | --- |
+| Analiz adımları | Analiz adımları; talep açmak; projenin iş analisti olmak |
+| Proje yönetimi adımları | Proje yönetimi adımları; projenin proje yöneticisi olmak |
+| Onay ve karar | Onay adımları; talebi reddetmek, ertelemek, değerlendirmeye geri almak |
+| Teklif ve anlaşma | Teklif ve anlaşma adımları |
+| Geliştirme | Geliştirme adımları |
+| Test | Test adımları |
+
+- **Yalnızca akış işleri yetki ister.** Risk, açık konu, tutanak, gereksinim, doküman, formlar, panel, arama ve yapay zekâ
+  yardımcıları için yetki gerekmez; yetkisiz kişi bunları yapabilir.
+- **Hazır setler:** Kullanıcı formundaki "Hazır set" eski unvanları seçer (ör. İş Analisti → Analiz adımları). Set
+  kaydedilmez; yalnızca kutuları işaretler.
+- **Yetki eksikse** ekran düğmeyi kapatır ve hangi yetkinin gerektiğini, kimden isteneceğini yazar: "Bu adım için «Analiz
+  adımları» yetkisi gerekir. Şirket yöneticinizden isteyin: Mert Kaya." API de aynı metinle 403 döner.
+- **Değişiklik hemen geçerli olur.** Yetkiler token'a yazılmaz; yönetici değiştirince kişinin bir sonraki isteği yeni
+  yetkiyle çalışır, yeniden giriş gerekmez.
+- **Şirket Yöneticisi** bir yetki değil işarettir: kullanıcıları, talep alanlarını ve şirket ayarlarını yönetir. Akışta iş
+  yapacaksa ona da yetki verilir. Platform Yöneticisinin şirketi ve yetkisi yoktur.
+
+Kurallar ve uç noktalar: [docs/configurability.md](docs/configurability.md) → Yetkiler.
 
 Ithinka'nın Şirket Yöneticisi seed'den gelir: `mert.kaya@isdlc.local` (`Seed/users.json` → `isTenantAdmin`). Eski bir
 veritabanında şirketin hiç aktif yöneticisi yoksa API açılırken bu kullanıcı yönetici yapılır.
